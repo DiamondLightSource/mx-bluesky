@@ -17,10 +17,11 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
+from daq_config_server.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
-    GDABeamlineParameters,
+    get_beamline_parameters,
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
@@ -362,8 +363,8 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    return GDABeamlineParameters.from_file(
-        "tests/test_data/test_beamline_parameters.txt"
+    return get_beamline_parameters(
+        "test_beamline", "tests/test_data/test_beamline_parameters.txt"
     )
 
 
@@ -579,7 +580,7 @@ def attenuator():
 
 @pytest.fixture
 def beamstop_phase1(
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
@@ -1703,10 +1704,30 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-def _fake_config_server_read(
+IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
+    get_hyperion_config_client,
+    get_i04_config_client,
+]
+
+
+@pytest.fixture(autouse=True)
+def mock_mx_config_server():
+    # Don't actually talk to central service during unit tests, and reset caches between test
+
+    for client in IMPLEMENTED_CONFIG_CLIENTS:
+        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
+
+    with patch(
+        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
+        side_effect=_fake_config_server_get_file_contents,
+    ):
+        yield
+
+
+def _fake_config_server_get_file_contents(
     filepath: str | Path,
-    desired_return_type: type[str] | type[dict] = str,
-    reset_cached_result=False,
+    desired_return_type: type[str] | type[dict] | ConfigModel = str,
+    reset_cached_result: bool = True,
 ):
     filepath = Path(filepath)
     # Minimal logic required for unit tests
@@ -1716,24 +1737,17 @@ def _fake_config_server_read(
             return contents
         elif desired_return_type is dict:
             return json.loads(contents)
-
-
-IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
-    get_hyperion_config_client,
-    get_i04_config_client,
-]
+        elif issubclass(desired_return_type, ConfigModel):  # type: ignore
+            return desired_return_type.model_validate(json.loads(contents))
 
 
 @pytest.fixture(autouse=True)
 def mock_config_server():
     # Don't actually talk to central service during unit tests, and reset caches between test
 
-    for client in IMPLEMENTED_CONFIG_CLIENTS:
-        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
-
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=_fake_config_server_read,
+        "daq_config_server.client.ConfigServer.get_file_contents",
+        side_effect=_fake_config_server_get_file_contents,
     ):
         yield
 

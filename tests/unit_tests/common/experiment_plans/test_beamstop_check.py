@@ -1,10 +1,10 @@
 from contextlib import nullcontext
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky import Msg, RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.common.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.ipin import IPinGain
@@ -246,14 +246,14 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
     mock_post_beamstop_out_actions,
     beamstop_check_devices: BeamstopCheckDevices,
     run_engine: RunEngine,
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     ipin_reading_with_beamstop_out,
     beamstop_threshold: float,
     commissioning_mode: bool,
     expected_exception: Exception | None,
 ):
     set_mock_value(beamstop_check_devices.baton.commissioning, commissioning_mode)
-    beamline_parameters.params["ipin_threshold"] = beamstop_threshold
+    beamline_parameters["ipin_threshold"] = beamstop_threshold
     value_iter = set_mock_values(
         beamstop_check_devices.ipin.pin_readback, [ipin_reading_with_beamstop_out, 0]
     )
@@ -293,12 +293,12 @@ def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     mock_post_beamstop_out_actions,
     beamstop_check_devices: BeamstopCheckDevices,
     run_engine: RunEngine,
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     ipin_reading_with_beamstop_in,
     beamstop_threshold: float,
     expected_exception: Exception | None,
 ):
-    beamline_parameters.params["ipin_threshold"] = beamstop_threshold
+    beamline_parameters["ipin_threshold"] = beamstop_threshold
     value_iter = set_mock_values(
         beamstop_check_devices.ipin.pin_readback, [100, ipin_reading_with_beamstop_in]
     )
@@ -324,7 +324,7 @@ def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
 def test_beamstop_check_operates_shutter_and_beamstop_during_ipin_check(
     sim_run_engine: RunEngineSimulator,
     beamstop_check_devices: BeamstopCheckDevices,
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
 ):
     msgs = sim_run_engine.simulate_plan(
         move_beamstop_in_and_verify_using_diode(
