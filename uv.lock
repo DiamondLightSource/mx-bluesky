@@ -1268,8 +1268,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "1.69.1.dev19+g0ce884c00"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#0ce884c0099797154e63437d7632faeb0effd8ac" }
+version = "1.69.1.dev22+ga7dde93f2"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#a7dde93f262de0c778d8a2a824cdb5cdfc1fffaa" }
 dependencies = [
     { name = "aiofiles" },
     { name = "aiohttp" },
