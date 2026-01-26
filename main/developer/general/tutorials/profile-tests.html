@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Unit test performance &#8212; mx-bluesky 1.5.14.dev21+g75ea25073 documentation</title>
+    <title>Unit test performance &#8212; mx-bluesky 1.6.2.dev5+g8b545a6c0 documentation</title>
   
   
   
@@ -41,9 +41,9 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=8bf6b135"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/documentation_options.js?v=87908367"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
@@ -551,20 +551,20 @@ tests.</p>
 <h2>Generating profiler output<a class="headerlink" href="#generating-profiler-output" title="Link to this heading">#</a></h2>
 <p>You can install <code class="docutils literal notranslate"><span class="pre">pytest-profiling</span></code> to run the tests and generate profiling output</p>
 <p>e.g.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pytest-profiling
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>pytest-profiling
 pytest<span class="w"> </span>--profile<span class="w"> </span>tests/unit_tests/hyperion/external_interaction/test_write_rotation_nexus.py::test_given_detector_bit_depth_changes_then_vds_datatype_as_expected
 </pre></div>
 </div>
 <p>The output of this is quite brief but it will generate more detailed <code class="docutils literal notranslate"><span class="pre">.prof</span></code> files in the <code class="docutils literal notranslate"><span class="pre">prof</span></code> directory</p>
 <p>To browse these files you need something useful. Snakeviz is a tool that can be used to browse the output:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>prof
-pip<span class="w"> </span>install<span class="w"> </span>snakeviz
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>snakeviz
 snakeviz<span class="w"> </span>combined.prof
 </pre></div>
 </div>
 <p>An alternative tool is py-spy.</p>
 <p>e.g.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>py-spy
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>add<span class="w"> </span>--frozen<span class="w"> </span>py-spy
 py-spy<span class="w"> </span>record<span class="w"> </span>-o<span class="w"> </span>profile.svg<span class="w"> </span>--<span class="w"> </span>pytest<span class="w"> </span>-s<span class="w"> </span>tests/unit_tests/hyperion/experiment_plans/test_robot_load_then_centre.py::test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set_on_eiger
 </pre></div>
 </div>
