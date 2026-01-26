@@ -30,6 +30,9 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from dodal.devices.zocalo.zocalo_results import (
+    ZOCALO_STAGE_GROUP,
+)
 from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
@@ -176,6 +179,10 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
 )
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
+)
 def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     mock_create_gridscan_callbacks: MagicMock,
     mock_setup_beamline_for_oav: MagicMock,
@@ -210,23 +217,19 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.XRayCentreEventHandler"
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
-)
-@patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength"
 )
 @patch(
     "mx_bluesky.common.preprocessors.preprocessors.check_and_pause_feedback",
     autospec=True,
 )
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
+)
 def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_xbpm_feedback_before_run(
     mock_pause_feedback: MagicMock,
     mock_fix_transmission_and_exp_time: MagicMock,
-    mock_change_aperture_then_move: MagicMock,
-    mock_events_handler: MagicMock,
     mock_create_parameters: MagicMock,
     mock_grid_detection_callback: MagicMock,
     mock_grid_detection_plan: MagicMock,
@@ -239,9 +242,6 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
 ):
     desired_transmission = 0.4
     mock_fix_transmission_and_exp_time.return_value = (desired_transmission, 1)
-    flyscan_event_handler = MagicMock()
-    flyscan_event_handler.xray_centre_results = "dummy"
-    mock_events_handler.return_value = flyscan_event_handler
     mock_create_parameters.return_value = hyperion_fgs_params
     simulate_xrc_result(
         sim_run_engine,
@@ -299,14 +299,10 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
     "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
-)
-@patch(
     "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
 )
 def test_i04_default_grid_detect_and_xray_centre_does_undulator_check_before_collection(
     mock_verify_gap: MagicMock,
-    mock_fetch_zocalo_results: MagicMock,
     mock_run_gridscan: MagicMock,
     mock_create_parameters: MagicMock,
     mock_grid_params_callback: MagicMock,
@@ -361,6 +357,10 @@ def test_i04_grid_detect_then_xrc_tidies_up_on_exception(
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.create_gridscan_callbacks",
     autospec=True,
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
 )
 async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_reverts(
     mock_create_gridscan_callbacks: MagicMock,
@@ -442,6 +442,10 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
     return_value=(1, 0.004),
 )
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
+)
 def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses_grid_common(
     mock_fix_transmission: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
@@ -489,3 +493,34 @@ def test_get_grid_common_params(
     grid_common_params = _get_grid_common_params(1, entry_params)
     assert grid_common_params.exposure_time_s == expected_exposure_time
     assert grid_common_params.transmission_frac == expected_trans_frac
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
+    new=MagicMock(return_value=(1, 0.004)),
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
+)
+def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
+    sim_run_engine: RunEngineSimulator,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+):
+    msgs = sim_run_engine.simulate_plan(i04_grid_detect_then_xrc_default_params())
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "stage"
+        and msg.obj.name == "zocalo"
+        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "unstage" and msg.obj.name == "zocalo",
+    )

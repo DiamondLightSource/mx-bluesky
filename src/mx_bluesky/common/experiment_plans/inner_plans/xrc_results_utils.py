@@ -6,14 +6,15 @@ from collections.abc import Sequence
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
-from bluesky.utils import MsgGenerator
+from bluesky.utils import MsgGenerator, make_decorator
 from dodal.common.beamlines.commissioning_mode import read_commissioning_mode
-from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     XrcResult,
+    ZocaloResults,
     get_full_processing_results,
 )
 
+from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
     PlanNameConstants,
@@ -23,7 +24,7 @@ from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 
 
 def fetch_xrc_results_from_zocalo(
@@ -129,3 +130,14 @@ def _fire_xray_centre_result_event(results: Sequence[XRayCentreResult]):
         ),
         PlanNameConstants.FLYSCAN_RESULTS,
     )
+
+
+# Remove after https://github.com/bluesky/bluesky/issues/1979
+def _zocalo_stage_wrapper(plan: MsgGenerator, zocalo: ZocaloResults):
+    yield from bps.stage(zocalo, group=ZOCALO_STAGE_GROUP)
+    yield from bpp.contingency_wrapper(
+        plan, final_plan=lambda: (yield from bps.unstage(zocalo))
+    )
+
+
+zocalo_stage_decorator = make_decorator(_zocalo_stage_wrapper)

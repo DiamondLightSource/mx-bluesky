@@ -208,7 +208,7 @@ commands = [
 description = "Run tests with coverage"
 commands = [
     [
-        "pytest", 
+        "pytest",
         "--cov=mx_bluesky",
         "--cov-report",
         "term",
@@ -245,7 +245,7 @@ setenv = [
 ]
 commands = [
     [
-        "pytest", 
+        "pytest",
         "-m",
         "system_test",
         "--timeout=60",

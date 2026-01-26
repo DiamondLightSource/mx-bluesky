@@ -22,7 +22,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )

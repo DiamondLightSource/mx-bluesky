@@ -18,7 +18,7 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
-from dodal.devices.zocalo import ZocaloResults, ZocaloStartInfo
+from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import completed_status, set_mock_value
@@ -33,9 +33,6 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
-from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
-    fetch_xrc_results_from_zocalo,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -43,32 +40,25 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
-)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
-    CrystalNotFoundError,
     WarningError,
 )
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler, XRayCentreResult
 from tests.conftest import (
     RunEngineSimulator,
     create_dummy_scan_spec,
 )
-from tests.unit_tests.hyperion.experiment_plans.conftest import mock_zocalo_trigger
 
 from ....conftest import TestData
 from ...conftest import (
+    ReWithSubs,
     modified_store_grid_scan_mock,
     run_generic_ispyb_handler_setup,
 )
-
-ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
 
 
 class CompleteError(Exception):
@@ -587,140 +577,3 @@ class TestFlyscanXrayCentrePlan:
         app_to_comment.assert_called()
         append_aperture_call = app_to_comment.call_args_list[0].args[1]
         assert "Aperture:" in append_aperture_call
-
-    # Below are tests involving getting zocalo results from the zocalo device post gridscan
-
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
-        autospec=True,
-    )
-    async def test_results_adjusted_and_event_raised(
-        self,
-        run_gridscan: MagicMock,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params: SpecifiedThreeDGridScan,
-        beamline_specific: BeamlineSpecificFGSFeatures,
-        run_engine_with_subs: ReWithSubs,
-        zocalo: ZocaloResults,
-    ):
-        run_engine, _ = run_engine_with_subs
-        x_ray_centre_event_handler = XRayCentreEventHandler()
-        run_engine.subscribe(x_ray_centre_event_handler)
-        mock_zocalo_trigger(zocalo, TestData.test_result_large)
-
-        def plan():
-            yield from fetch_xrc_results_from_zocalo(zocalo, test_fgs_params)
-
-        run_engine(plan())
-
-        actual = x_ray_centre_event_handler.xray_centre_results
-        expected = XRayCentreResult(
-            centre_of_mass_mm=np.array([0.05, 0.15, 0.25]),
-            bounding_box_mm=(
-                np.array([0.15, 0.15, 0.15]),
-                np.array([0.75, 0.75, 0.65]),
-            ),
-            max_count=105062,
-            total_count=2387574,
-            sample_id=12345,
-        )
-        assert actual and len(actual) == 1
-        assert all(np.isclose(actual[0].centre_of_mass_mm, expected.centre_of_mass_mm))
-        assert all(
-            np.isclose(actual[0].bounding_box_mm[0], expected.bounding_box_mm[0])
-        )
-        assert all(
-            np.isclose(actual[0].bounding_box_mm[1], expected.bounding_box_mm[1])
-        )
-
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
-        MagicMock(),
-    )
-    def test_run_gridscan_and_fetch_results_discards_results_below_threshold(
-        self,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        test_fgs_params: SpecifiedThreeDGridScan,
-        beamline_specific: BeamlineSpecificFGSFeatures,
-        run_engine: RunEngine,
-        zocalo: ZocaloResults,
-    ):
-        callback = XRayCentreEventHandler()
-        run_engine.subscribe(callback)
-
-        mock_zocalo_trigger(
-            zocalo,
-            TestData.test_result_medium
-            + TestData.test_result_below_threshold
-            + TestData.test_result_small,
-        )
-        run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
-
-        assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
-        assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
-
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
-        new=MagicMock(),
-    )
-    def test_when_gridscan_finds_no_xtal_exception_is_raised(
-        self,
-        run_engine_with_subs: ReWithSubs,
-        test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        beamline_specific: BeamlineSpecificFGSFeatures,
-        zocalo: ZocaloResults,
-    ):
-        run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs
-
-        def wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params)
-            yield from common_flyscan_xray_centre(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
-            )
-
-        mock_zocalo_trigger(zocalo, [])
-        run_engine(
-            ispyb_activation_wrapper(wrapped_gridscan_and_move(), test_fgs_params)
-        )
-        with pytest.raises(CrystalNotFoundError):
-            run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
-
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
-        MagicMock(),
-    )
-    def test_dummy_result_returned_when_gridscan_finds_no_xtal_and_commissioning_mode_enabled(
-        self,
-        run_engine: RunEngine,
-        test_fgs_params: SpecifiedThreeDGridScan,
-        fake_fgs_composite: FlyScanEssentialDevices,
-        beamline_specific: BeamlineSpecificFGSFeatures,
-        zocalo: ZocaloResults,
-        baton_in_commissioning_mode,
-    ):
-        xrc_event_handler = XRayCentreEventHandler()
-        run_engine.subscribe(xrc_event_handler)
-
-        mock_zocalo_trigger(zocalo, [])
-        run_engine(
-            common_flyscan_xray_centre(
-                fake_fgs_composite,
-                test_fgs_params,
-                beamline_specific,
-            )
-        )
-
-        run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
-
-        results = xrc_event_handler.xray_centre_results or []
-        assert len(results) == 1
-        result = results[0]
-        assert result.sample_id == test_fgs_params.sample_id
-        assert result.max_count == 10000
-        assert result.total_count == 100000
-        assert all(np.isclose(result.bounding_box_mm[0], [1.95, 0.95, 0.45]))
-        assert all(np.isclose(result.bounding_box_mm[1], [2.05, 1.05, 0.55]))
-        assert all(np.isclose(result.centre_of_mass_mm, [2.0, 1.0, 0.5]))

@@ -8,6 +8,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
@@ -33,8 +34,6 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
-GENERIC_TIDY_GROUP = "generic_tidy"
-
 
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures:
@@ -48,20 +47,17 @@ class BeamlineSpecificFGSFeatures:
     read_during_collection_plan: Callable[..., MsgGenerator]
 
 
-def generic_tidy(xrc_composite: FlyScanEssentialDevices) -> MsgGenerator:
+def tidy_eiger(eiger: EigerDetector) -> MsgGenerator:
     """Turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
-
-    group = GENERIC_TIDY_GROUP
 
     # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
     LOGGER.info("Turning off Eiger dev/shm streaming")
     # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     yield from bps.abs_set(
-        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore
+        eiger.odin.fan.dev_shm_enable,  # type: ignore
         0,
-        group=group,
+        wait=True,
     )
-    yield from bps.wait(group)
 
 
 def construct_beamline_specific_fast_gridscan_features(
@@ -141,7 +137,7 @@ def common_flyscan_xray_centre(
 
     def _overall_tidy():
         yield from beamline_specific.tidy_plan()
-        yield from generic_tidy(composite)
+        yield from tidy_eiger(composite.eiger)
 
     def _decorated_flyscan():
         @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)

@@ -63,6 +63,16 @@ class GridCommon(
 
     tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
+    # Available after grid detection, used by entry point plans which need to
+    # get the grid parameters to retrieve zocalo results
+    _specified_grid_params: SpecifiedGrid | None = PrivateAttr(default=None)
+
+    def set_specified_grid_params(self, params: SpecifiedGrid):
+        self._specified_grid_params = params
+
+    def specified_grid_params(self) -> SpecifiedGrid | None:
+        return self._specified_grid_params
+
     @property
     def detector_params(self):
         self.det_dist_to_beam_converter_path = (

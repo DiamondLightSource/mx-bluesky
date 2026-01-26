@@ -1,9 +1,10 @@
 import asyncio
 import pprint
 import sys
+from collections.abc import Generator
 from functools import partial
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -232,11 +233,14 @@ def mock_subscriptions(test_fgs_params):
         yield (nexus_callback, ispyb_callback)
 
 
+ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback | GridscanISPyBCallback]]
+
+
 @pytest.fixture
 def run_engine_with_subs(
     run_engine: RunEngine,
     mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
-):
+) -> Generator[ReWithSubs, Any, None]:
     for cb in list(mock_subscriptions):
         run_engine.subscribe(cb)
     yield run_engine, mock_subscriptions

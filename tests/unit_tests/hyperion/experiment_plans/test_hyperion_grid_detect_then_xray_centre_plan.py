@@ -107,16 +107,8 @@ class TestHyperionGridDetectThenXrayCentrePlan:
     @patch(
         "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
     )
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.XRayCentreEventHandler"
-    )
-    @patch(
-        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
-    )
     def test_hyperion_grid_detect_then_xray_centre_pauses_and_unpauses_xbpm_feedback_in_correct_order(
         self,
-        mock_change_aperture_then_move: MagicMock,
-        mock_events_handler: MagicMock,
         mock_create_parameters: MagicMock,
         mock_grid_detection_callback: MagicMock,
         mock_grid_detection_plan: MagicMock,
@@ -128,9 +120,6 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         test_config_files,
         hyperion_fgs_params,
     ):
-        flyscan_event_handler = MagicMock()
-        flyscan_event_handler.xray_centre_results = "dummy"
-        mock_events_handler.return_value = flyscan_event_handler
         mock_create_parameters.return_value = hyperion_fgs_params
         simulate_xrc_result(
             sim_run_engine,
@@ -192,15 +181,11 @@ class TestHyperionGridDetectThenXrayCentrePlan:
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan",
     )
     @patch(
-        "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.fetch_xrc_results_from_zocalo",
-    )
-    @patch(
         "dodal.plans.preprocessors.verify_undulator_gap.verify_undulator_gap",
     )
     def test_hyperion_grid_detect_then_xray_centre_does_undulator_check_before_collection(
         self,
         mock_verify_gap: MagicMock,
-        mock_fetch_zocalo_results: MagicMock,
         mock_run_gridscan: MagicMock,
         mock_bps_stage: MagicMock,
         mock_create_parameters: MagicMock,
