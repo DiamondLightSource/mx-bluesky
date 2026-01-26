@@ -154,7 +154,7 @@ def optimise_transmission_with_oav(
     upper_bound: float = 100,
     lower_bound: float = 0,
     target_brightness_fraction: float = 0.75,
-    max_transmission_change: float = 5,
+    min_transmission_change: float = 5,
     max_iterations: int = 10,
     max_pixel: MaxPixel = inject("max_pixel"),
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
@@ -170,7 +170,7 @@ def optimise_transmission_with_oav(
         lower_bound: Minimum transmission which will be searched. In percent.
         target_brightness_fraction: Fraction of the brightest pixel at 100%
                     transmission which should be used as the target max pixel brightness.
-        max_transmission_change: If the next search point would require a transmission
+        min_transmission_change: If the next search point would require a transmission
                     change less than this then we stop.
         max_iterations: Maximum amount of iterations.
     """
@@ -200,9 +200,9 @@ def optimise_transmission_with_oav(
 
         current_transmission = yield from bps.rd(attenuator.actual_transmission)
         transmission_change_percent = abs(mid - current_transmission * 100)
-        if transmission_change_percent < max_transmission_change:
+        if transmission_change_percent < min_transmission_change:
             LOGGER.info(
-                f"Next transmission change would be small ({transmission_change_percent}%) so stopping"
+                f"Next transmission change would be small ({transmission_change_percent}%) so stopping at {current_transmission}"
             )
             return
 
@@ -235,7 +235,7 @@ def optimise_transmission_with_oav(
 
 def _get_all_zoom_levels(
     zoom_controller: ZoomControllerWithBeamCentres,
-) -> MsgGenerator[list[str]]:
+) -> MsgGenerator[tuple[str]]:
     zoom_levels = []
     level_signals = [
         centring_device.level_name
@@ -245,12 +245,12 @@ def _get_all_zoom_levels(
         level_name = yield from bps.rd(signal)
         if level_name:
             zoom_levels.append(level_name)
-    return zoom_levels
+    return tuple(zoom_levels)
 
 
 def find_beam_centres(
-    zoom_levels_to_centre: list[str] | None = None,
-    zoom_levels_to_optimise_transmission: list[str] | None = None,
+    zoom_levels_to_centre: tuple[str, ...] | None = None,
+    zoom_levels_to_optimise_transmission: tuple[str, ...] = ("1.0x", "7.5x"),
     robot: BartRobot = inject("robot"),
     beamstop: Beamstop = inject("beamstop"),
     backlight: Backlight = inject("backlight"),
@@ -271,11 +271,14 @@ def find_beam_centres(
     zoom_levels_to_optimise_transmission: The levels to optimise transmission at,
                            defaults to 1x and 7.5x
     """
-    if zoom_levels_to_optimise_transmission is None:
-        zoom_levels_to_optimise_transmission = ["1.0x", "7.5x"]
 
+    all_zooms = yield from _get_all_zoom_levels(zoom_controller)
     if zoom_levels_to_centre is None:
-        zoom_levels_to_centre = yield from _get_all_zoom_levels(zoom_controller)
+        zoom_levels_to_centre = all_zooms
+
+    for zoom in [*zoom_levels_to_optimise_transmission, *zoom_levels_to_centre]:
+        if zoom not in all_zooms:
+            raise ValueError(f"Unknown zoom ({zoom}). Known zooms are {all_zooms}")
 
     LOGGER.info("Preparing beamline for images...")
     yield from _prepare_beamline_for_scintillator_images(
