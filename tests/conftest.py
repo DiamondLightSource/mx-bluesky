@@ -18,7 +18,6 @@ import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import aithre, i03
-from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
@@ -30,7 +29,14 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
 )
-from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+    EnumFilterAttenuator,
+)
+from dodal.devices.attenuator.filter_selections import (
+    I24FilterOneSelections,
+    I24FilterTwoSelections,
+)
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
 from dodal.devices.beamsize.beamsize import BeamsizeBase
@@ -54,7 +60,7 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
@@ -62,7 +68,6 @@ from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-from ophyd.sim import NullStatus
 from ophyd_async.core import (
     AsyncStatus,
     Device,
@@ -93,6 +98,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.rotation import RotationScan
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import (
     ALL_LOGGERS,
@@ -113,7 +119,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-from mx_bluesky.hyperion.parameters.rotation import RotationScan
 
 pytest_plugins = ["tests.expeye_helpers"]
 
@@ -221,12 +226,6 @@ mock_paths = [
     ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
     ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
 ]
-mock_attributes_table = {
-    "i03": mock_paths,
-    "i10": mock_paths,
-    "i04": mock_paths,
-    "i24": mock_paths,
-}
 
 
 @dataclass(frozen=True)
@@ -397,16 +396,11 @@ def hyperion_fgs_params(tmp_path):
 
 
 @pytest.fixture
-def done_status():
-    return NullStatus()
-
-
-@pytest.fixture
-def eiger(done_status):
+def eiger():
     eiger = i03.eiger.build(mock=True)
-    eiger.stage = MagicMock(return_value=done_status)
-    eiger.do_arm.set = MagicMock(return_value=done_status)
-    eiger.unstage = MagicMock(return_value=done_status)
+    eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    eiger.do_arm.set = MagicMock(side_effect=lambda _: completed_status())
+    eiger.unstage = MagicMock(side_effect=lambda: completed_status())
     return eiger
 
 
@@ -427,14 +421,7 @@ def aithre_gonio():
 
 @pytest.fixture
 def zebra():
-    zebra = i03.zebra.build(connect_immediately=True, mock=True)
-
-    def mock_side(demand: ArmDemand):
-        set_mock_value(zebra.pc.arm.armed, demand.value)
-        return NullStatus()
-
-    zebra.pc.arm.set = MagicMock(side_effect=mock_side)
-    return zebra
+    return i03.zebra.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -514,8 +501,8 @@ def oav(test_config_files):
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
-    oav.snapshot.trigger = MagicMock(return_value=NullStatus())
-    oav.grid_snapshot.trigger = MagicMock(return_value=NullStatus())
+    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
     yield oav
 
 
@@ -616,11 +603,10 @@ def beamstop_phase1(
 
 @pytest.fixture
 def xbpm_feedback(
-    done_status,
     baton: Baton,  # Ensure baton is cached with mock configuration
 ):
     xbpm = i03.xbpm_feedback.build(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(return_value=done_status)
+    xbpm.trigger = MagicMock(side_effect=lambda: completed_status())
     yield xbpm
     beamline_utils.clear_devices()
 
@@ -670,9 +656,9 @@ def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
-        vc.set = MagicMock(return_value=NullStatus())
+        vc.set = MagicMock(side_effect=lambda _: completed_status())
     for vc in voltages.horizontal_voltages.values():
-        vc.set = MagicMock(return_value=NullStatus())
+        vc.set = MagicMock(side_effect=lambda _: completed_status())
     yield voltages
     beamline_utils.clear_devices()
 
@@ -717,7 +703,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=3,
             scatterguard_y=4,
-            radius=100,
+            diameter=100,
         ),
         ApertureValue.MEDIUM: AperturePosition(
             aperture_x=5,
@@ -725,7 +711,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=8,
             scatterguard_y=9,
-            radius=50,
+            diameter=50,
         ),
         ApertureValue.SMALL: AperturePosition(
             aperture_x=10,
@@ -733,7 +719,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=13,
             scatterguard_y=14,
-            radius=20,
+            diameter=20,
         ),
         ApertureValue.OUT_OF_BEAM: AperturePosition(
             aperture_x=15,
@@ -741,7 +727,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=0,
+            diameter=0,
         ),
         ApertureValue.PARKED: AperturePosition(
             aperture_x=20,
@@ -749,7 +735,7 @@ async def aperture_scatterguard():
             aperture_z=0,
             scatterguard_x=36,
             scatterguard_y=56,
-            radius=0,
+            diameter=0,
         ),
     }
     with (
@@ -801,7 +787,7 @@ def fake_create_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
 ):
-    mock_omega_sets = MagicMock(return_value=NullStatus())
+    mock_omega_sets = MagicMock(side_effect=lambda _: completed_status())
 
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets
@@ -841,7 +827,7 @@ def fake_create_rotation_devices(
     beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(return_value=NullStatus())
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
@@ -866,11 +852,26 @@ def fake_create_rotation_devices(
 
 
 @pytest.fixture
-def zocalo(done_status):
+def zocalo():
     zoc = i03.zocalo.build(connect_immediately=True, mock=True)
-    zoc.stage = MagicMock(return_value=done_status)
-    zoc.unstage = MagicMock(return_value=done_status)
+    zoc.stage = MagicMock(side_effect=lambda: completed_status())
+    zoc.unstage = MagicMock(side_effect=lambda: completed_status())
     return zoc
+
+
+@pytest.fixture
+async def enum_attenuator() -> EnumFilterAttenuator:
+    with init_devices(mock=True):
+        attenuator = EnumFilterAttenuator(
+            "", filter_selection=(I24FilterOneSelections, I24FilterTwoSelections)
+        )
+
+    @AsyncStatus.wrap
+    async def fake_attenuator_set(val):
+        set_mock_value(attenuator.actual_transmission, val)
+
+    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+    return attenuator
 
 
 @pytest.fixture
@@ -957,7 +958,6 @@ def panda_fast_grid_scan():
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
     hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -994,7 +994,7 @@ async def hyperion_flyscan_xrc_composite(
         beamsize=beamsize,
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
@@ -1182,23 +1182,19 @@ def fat_pin_edges():
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
 
 
-def find_a_pin(pin_tip_detection):
-    def set_good_position():
-        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
-        set_mock_value(pin_tip_detection.triggered_tip, numpy.array([x, y]))
-        set_mock_value(pin_tip_detection.triggered_top_edge, top_edge_array)
-        set_mock_value(pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
-        return NullStatus()
-
-    return set_good_position
-
-
 @pytest.fixture
 def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
+    @AsyncStatus.wrap
+    async def set_good_position():
+        x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+        set_mock_value(ophyd_pin_tip_detection.triggered_tip, numpy.array([x, y]))
+        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)
+        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+
     with patch.object(
         ophyd_pin_tip_detection,
         "trigger",
-        side_effect=find_a_pin(ophyd_pin_tip_detection),
+        side_effect=set_good_position,
     ):
         yield ophyd_pin_tip_detection
 
@@ -1408,13 +1404,14 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-scatterguard-x": 18,
                 "aperture_scatterguard-scatterguard-y": 19,
                 "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-                "aperture_scatterguard-radius": 50,
+                "aperture_scatterguard-diameter": 50,
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
                 "beamsize-x_um": 50.0,
                 "beamsize-y_um": 20.0,
                 "eiger_cam_roi_mode": False,
+                "eiger-ispyb_detector_id": 78,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
             "seq_num": 1,
@@ -1522,7 +1519,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-scatterguard-x": 18,
                 "aperture_scatterguard-scatterguard-y": 19,
                 "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-                "aperture_scatterguard-radius": 50,
+                "aperture_scatterguard-diameter": 50,
                 "attenuator-actual_transmission": 1,
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
@@ -1530,6 +1527,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "beamsize-x_um": 50.0,
                 "beamsize-y_um": 20.0,
                 "eiger_cam_roi_mode": True,
+                "eiger-ispyb_detector_id": 78,
             },
             "timestamps": {
                 "det1": 1666604299.8220396,
@@ -1732,12 +1730,6 @@ def mock_config_server():
         side_effect=_fake_config_server_read,
     ):
         yield
-
-
-def mock_beamline_module_filepaths(bl_name, bl_module):
-    if mock_attributes := mock_attributes_table.get(bl_name):
-        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
-        bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
 
 
 @pytest.fixture(autouse=True)

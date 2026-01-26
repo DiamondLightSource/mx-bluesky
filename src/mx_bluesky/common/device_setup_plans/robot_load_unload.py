@@ -5,7 +5,7 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
-from dodal.devices.robot import BartRobot
+from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.plan_stubs.motor_utils import MoveTooLargeError, home_and_reset_wrapper
 
@@ -14,27 +14,6 @@ from mx_bluesky.common.parameters.constants import (
     HardwareConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.utils.log import LOGGER
-
-SLEEP_PER_CHECK = 0.1
-
-
-def wait_for_smargon_not_disabled(smargon: Smargon, timeout=60):
-    """Waits for the smargon disabled flag to go low. The robot hardware is responsible
-    for setting this to low when it is safe to move. It does this through a physical
-    connection between the robot and the smargon.
-    """
-    LOGGER.info("Waiting for smargon enabled")
-    times_to_check = int(timeout / SLEEP_PER_CHECK)
-    for _ in range(times_to_check):
-        smargon_disabled = yield from bps.rd(smargon.disabled)
-        if not smargon_disabled:
-            LOGGER.info("Smargon now enabled")
-            return
-        yield from bps.sleep(SLEEP_PER_CHECK)
-    raise TimeoutError(
-        "Timed out waiting for smargon to become enabled after robot load"
-    )
 
 
 def _raise_exception_if_moved_out_of_cryojet(exception):
@@ -117,8 +96,7 @@ def robot_unload(
         yield from bps.save()
 
         def _unload():
-            yield from bps.abs_set(robot, None, wait=True)
-            yield from wait_for_smargon_not_disabled(smargon)
+            yield from bps.abs_set(robot, SAMPLE_LOCATION_EMPTY, wait=True)
 
         gonio_finished = yield from do_plan_while_lower_gonio_at_home(
             _unload(), lower_gonio

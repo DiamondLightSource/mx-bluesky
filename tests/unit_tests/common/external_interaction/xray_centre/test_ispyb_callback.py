@@ -41,7 +41,6 @@ from ..callbacks.ispyb.test_gridscan_ispyb_store_3d import (
 
 EXPECTED_DATA_COLLECTION_3D_XY = {
     "comments": "MX-Bluesky: Xray centring 1 -",
-    "detectorId": 78,
     "detectorDistance": 100.0,
     "exposureTime": 0.1,
     "imageDirectory": "{tmp_data}/",
@@ -194,6 +193,7 @@ class TestXrayCentreISPyBCallback:
             "beamSizeAtSampleX": 0.05,
             "beamSizeAtSampleY": 0.02,
             "detectorMode": "ROI",
+            "detectorId": 78,
         }
         assert update_dc_requests[0].dcid == TEST_DATA_COLLECTION_IDS[0]
         assert update_dc_requests[1].dcid == TEST_DATA_COLLECTION_IDS[1]

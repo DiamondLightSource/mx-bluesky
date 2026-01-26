@@ -23,7 +23,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_utils import get_ispyb_config
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.constants import USE_NUMTRACKER, DocDescriptorNames
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     format_doc_for_log,
@@ -86,6 +86,17 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_start(self, doc: RunStart):
         self._oav_snapshot_event_idx = 0
+
+        if self.params and self.params.visit == USE_NUMTRACKER:
+            try:
+                visit = doc.get("instrument_session")
+                assert isinstance(visit, str)
+                self.params.visit = visit
+            except Exception as e:
+                raise ValueError(
+                    f"Error trying to retrieve instrument session from document {doc}"
+                ) from e
+
         return self.tag_doc(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
@@ -124,7 +135,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
         assert isinstance(synchrotron_mode, SynchrotronMode)
-
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
@@ -159,6 +169,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             beamsize_at_sampley=beamsize_y_mm,
             flux=doc["data"]["flux-flux_reading"],
             detector_mode="ROI" if doc["data"]["eiger_cam_roi_mode"] else "FULL",
+            ispyb_detector_id=doc["data"]["eiger-ispyb_detector_id"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
