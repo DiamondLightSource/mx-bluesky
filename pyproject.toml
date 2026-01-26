@@ -25,7 +25,7 @@ dependencies = [
     "matplotlib",
     "nexgen >= 0.11.0",
     "numpy >= 2.3.5",
-    "opencv-python",                   # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
+    "opencv-python",                  # Needed for I24 ssx moveonclick. To be changed to headless once this is moved to separate ui.
     "opentelemetry-distro",
     "opentelemetry-exporter-otlp",
     "pydantic",
@@ -40,7 +40,6 @@ dependencies = [
     "matplotlib",
     "cachetools",
     "bluesky-stomp >= 0.2.0",
-    "mysql-connector-python == 9.5.0", # see https://github.com/DiamondLightSource/mx-bluesky/issues/1568
 
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
@@ -236,7 +235,7 @@ commands = [
         ], extend = true },
     ],
 ]
-set_env = { DODAL_TEST_MODE = "true"}
+set_env = { DODAL_TEST_MODE = "true" }
 
 
 # Runs the system tests locally
@@ -254,10 +253,10 @@ commands = [
 ]
 
 [tool.tox.env.localsystemtests.set_env]
-    DOCKER = "podman"
-    DODAL_TEST_MODE = "true"
-    ISPYB_CONFIG_PATH = "{toxinidir}/tests/test_data/ispyb-test-credentials.cfg"
-    ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
+DOCKER = "podman"
+DODAL_TEST_MODE = "true"
+ISPYB_CONFIG_PATH = "{toxinidir}/tests/test_data/ispyb-test-credentials.cfg"
+ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
 
 [tool.tox.env.docs]
 description = "Run docs build with clean environment"
