@@ -26,6 +26,13 @@ repos:
         entry: ruff format --force-exclude
         types: [python]
         require_serial: true
+      
+      - id: type-checking
+        name: type-checking with pyright
+        language: system
+        entry: tox -e type-checking
+        types: [python]
+        require_serial: true
 
       - id: import-contracts
         name: Ensure import directionality
