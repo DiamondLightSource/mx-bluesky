@@ -49,6 +49,7 @@
             ],
             "python.testing.unittestEnabled": false,
             "python.testing.pytestEnabled": true,
+            "python.defaultInterpreterPath": "/venv/bin/python",
             "editor.formatOnSave": true,
             "editor.codeActionsOnSave": {
                 "source.organizeImports": "explicit"
@@ -65,7 +66,7 @@
                 "editor.defaultFormatter": "charliermarsh.ruff"
             },
             "terminal.integrated.gpuAcceleration": "off",
-            "python.analysis.typeCheckingMode": "standard"
+            "python.analysis.typeCheckingMode": "basic"
         }
     },
     // Create the config folder for the bash-config feature and uv cache
@@ -96,5 +97,5 @@
         "source=/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/,target=/dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/,type=bind,consistency=cached"
     ],
     // After the container is created, recreate the venv then make pre-commit first run faster
-    "postCreateCommand": "uv venv --clear && uv sync && pre-commit install --install-hooks && ln -s /dls_sw/apps/dials/latest/latest/modules/dlstbx/src/dlstbx/ /venv/lib/python3.12/site-packages/dlstbx"
+    "postCreateCommand": "uv venv --clear && uv sync && pre-commit install --install-hooks"
 }
