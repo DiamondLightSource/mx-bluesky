@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans import (
+from mx_bluesky.beamlines.i24.web_gui_plans.oav_plans import (
     Direction,
     FocusDirection,
     MoveSize,
@@ -24,7 +24,7 @@ from mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans import (
 )
 def test_move_block_on_arrow_click(direction, expected_value, pmac, run_engine):
     with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans.bps.abs_set",
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
     ) as mock_abs_set:
         run_engine(move_block_on_arrow_click(Direction(direction), pmac))
         if direction in ["left", "right"]:
@@ -50,7 +50,7 @@ def test_move_window_on_arrow_click(
     direction, move_size, expected_value, pmac, run_engine
 ):
     with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans.bps.abs_set",
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
     ) as mock_abs_set:
         run_engine(
             move_window_on_arrow_click(Direction(direction), MoveSize(move_size), pmac)
@@ -78,7 +78,7 @@ def test_move_nudge_on_arrow_click(
     direction, move_size, expected_value, pmac, run_engine
 ):
     with patch(
-        "mx_bluesky.beamlines.i24.serial.web_gui_plans.oav_plans.bps.abs_set",
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
     ) as mock_abs_set:
         run_engine(
             move_nudge_on_arrow_click(Direction(direction), MoveSize(move_size), pmac)
