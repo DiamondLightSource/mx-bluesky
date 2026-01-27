@@ -14,4 +14,11 @@ RUN apt update -y && \
 
 RUN uv pip install --no-cache-dir --no-compile mx-bluesky
 
+# Create and set permissions for uv venv, root cache
+# and user cache. Allows Blueapi's setup-scratch
+# to change dependencies without permission errors
+RUN mkdir -p /app/.venv /root/.cache/uv /home/app/.cache/uv \
+    && chmod -R 777 /app/.venv /root/.cache/uv /home/app/.cache/uv
+
+
 USER ubuntu
