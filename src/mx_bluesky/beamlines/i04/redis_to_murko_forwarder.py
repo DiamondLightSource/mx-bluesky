@@ -169,6 +169,7 @@ class RedisListener:
     def _get_and_handle_message(self):
         message = self.pubsub.get_message(timeout=self.TIMEOUT_S)
         if message and message["type"] == "message":
+            assert message["data"] is not None
             data = json.loads(message["data"])
             LOGGER.info(f"Received from redis: {data}")
             if data == FORWARDING_COMPLETE_MESSAGE:

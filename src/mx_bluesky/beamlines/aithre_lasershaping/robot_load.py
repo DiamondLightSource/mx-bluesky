@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -39,7 +40,7 @@ def robot_load_and_snapshot(
         sample_id=sample_id,
         sample_puck=sample_puck,
         sample_pin=sample_pin,
-        snapshot_directory=snapshot_directory,
+        snapshot_directory=Path(snapshot_directory),
         visit=visit,
         beamline="BL23I",
     )
@@ -67,7 +68,7 @@ def robot_unload(
         sample_id=sample_id,
         sample_puck=sample_puck,
         sample_pin=sample_pin,
-        snapshot_directory=snapshot_directory,
+        snapshot_directory=Path(snapshot_directory),
         visit=visit,
         beamline="BL23I",
     )

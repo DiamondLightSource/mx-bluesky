@@ -40,6 +40,7 @@ class InProcessRunner(PlanRunner):
     def decode_and_execute(
         self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
     ) -> MsgGenerator:
+        current_visit = current_visit or "NO_VISIT"
         for parameters in parameter_list:
             LOGGER.info(
                 f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
