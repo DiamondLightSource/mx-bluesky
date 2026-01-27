@@ -41,6 +41,9 @@ def pre_centring_setup_oav(
     """
     yield from setup_general_oav_params(oav, parameters)
     yield from setup_pin_tip_detection_params(
-        pin_tip_detection_device, parameters, PlanGroupCheckpointConstants.READY_FOR_OAV
+        pin_tip_detection_device,
+        parameters,
+        PlanGroupCheckpointConstants.READY_FOR_OAV,
+        wait=False,
     )
     yield from bps.wait(PlanGroupCheckpointConstants.READY_FOR_OAV)
