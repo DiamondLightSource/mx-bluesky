@@ -30,7 +30,7 @@ repos:
       - id: type-checking
         name: type-checking with pyright
         language: system
-        entry: tox -e type-checking
+        entry: pyright
         types: [python]
         require_serial: true
 
