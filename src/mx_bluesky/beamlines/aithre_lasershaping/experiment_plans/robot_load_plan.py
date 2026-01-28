@@ -166,7 +166,7 @@ def robot_load_and_snapshots_plan(
                 ],
             },
         ),
-        PlanNameConstants.ROBOT_LOAD_AND_SNAPSHOTS,
+        PlanNameConstants.ROBOT_LOAD,
     )
 
 
