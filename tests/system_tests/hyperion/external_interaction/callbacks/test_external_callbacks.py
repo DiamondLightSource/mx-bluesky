@@ -138,8 +138,8 @@ def bluesky_context_with_stomp(run_engine: RunEngine):
     context = BlueskyContext(configuration=config, run_engine=run_engine)
     stomp_client = StompClient.for_broker(
         broker=Broker(
-            host=config.stomp.url.host,
-            port=config.stomp.url.port,
+            host=config.stomp.url.host,  # type: ignore
+            port=config.stomp.url.port,  # type: ignore
             auth=config.stomp.auth,
         )
     )

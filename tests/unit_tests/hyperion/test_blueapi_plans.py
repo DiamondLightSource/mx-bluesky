@@ -13,7 +13,7 @@ from .conftest import raw_params_from_file
 @pytest.fixture
 def bluesky_context(run_engine: RunEngine):
     config = ApplicationConfig(
-        **{
+        **{  # type: ignore
             "env": {
                 "sources": [
                     {

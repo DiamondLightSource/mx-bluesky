@@ -286,15 +286,15 @@ def test_if_redis_connection_fails_then_there_is_no_error(
     mock_check_redis_connection.return_value = False
     callback = MurkoCallback("", "")
     doc = {}
-    callback.start(doc)
-    callback.event(doc)
-    callback.stop(doc)
+    callback.start(doc)  # type: ignore
+    callback.event(doc)  # type: ignore
+    callback.stop(doc)  # type: ignore
 
 
 def test_warning_is_logged_if_redis_connection_fails(caplog):
     callback = MurkoCallback("", "")
     doc = {}
-    callback.start(doc)
+    callback.start(doc)  # type: ignore
     log_message = caplog.records[-1]
     assert log_message.levelname == "WARNING"
     assert "Failed to connect to redis: " in log_message.message

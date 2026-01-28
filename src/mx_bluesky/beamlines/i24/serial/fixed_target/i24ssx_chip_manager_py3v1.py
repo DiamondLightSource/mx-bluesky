@@ -175,7 +175,7 @@ def read_parameters(
     SSX_LOGGER.info(pformat(params_dict))
 
     yield from bps.null()
-    return FixedTargetParameters(**params_dict)
+    return FixedTargetParameters(**params_dict)  # type: ignore
 
 
 def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):

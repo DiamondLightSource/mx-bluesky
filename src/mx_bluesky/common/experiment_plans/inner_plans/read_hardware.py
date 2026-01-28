@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import bluesky.plan_stubs as bps
 from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -20,7 +22,7 @@ from mx_bluesky.common.utils.log import LOGGER
 
 
 def read_hardware_plan(
-    signals: list[Readable],
+    signals: Sequence[Readable],
     event_name: str,
 ):
     LOGGER.info(f"Reading status of beamline for event, {event_name}")
@@ -79,5 +81,6 @@ def standard_read_hardware_during_collection(
         detector.ispyb_detector_id,
     ]
     yield from read_hardware_plan(
-        signals_to_read_during_collection, DocDescriptorNames.HARDWARE_READ_DURING
+        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
+        DocDescriptorNames.HARDWARE_READ_DURING,
     )

@@ -36,4 +36,4 @@ def dummy_params_with_pp():
         "laser_dwell_s": 0.02,
         "laser_delay_s": 0.05,
     }
-    return FixedTargetParameters(**params)
+    return FixedTargetParameters(**params)  # type: ignore

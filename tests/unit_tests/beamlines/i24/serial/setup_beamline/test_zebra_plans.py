@@ -4,6 +4,7 @@ from dodal.devices.zebra.zebra import (
     Zebra,
 )
 
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     arm_zebra,
     disarm_zebra,
@@ -63,7 +64,7 @@ async def test_setup_zebra_for_extruder_pp_eiger_collection(zebra: Zebra, run_en
     # With eiger
     run_engine(
         setup_zebra_for_extruder_with_pump_probe_plan(
-            zebra, "eiger", *inputs_list, wait=True
+            zebra, DetectorName.EIGER, *inputs_list, wait=True
         )
     )
     assert await zebra.output.out_pvs[1].get_value() == zebra.mapping.sources.AND4

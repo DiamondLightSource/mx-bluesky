@@ -8,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from numpy.testing import assert_allclose
 from ophyd_async.core import SignalR
+from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     READING_DUMP_FILENAME,
@@ -98,7 +99,9 @@ async def test_assertion_error_if_no_jf_path_found(
 
 
 def _do_metadata_writing_read(
-    signals: list[SignalR], params: SingleRotationScan, writer: JsonMetadataWriter
+    signals: list[SignalR | Motor],
+    params: SingleRotationScan,
+    writer: JsonMetadataWriter,
 ):
     @bpp.subs_decorator([writer])
     @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)

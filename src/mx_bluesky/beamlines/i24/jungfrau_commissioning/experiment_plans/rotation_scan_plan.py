@@ -41,7 +41,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     USE_NUMTRACKER,
     PlanGroupCheckpointConstants,
@@ -85,7 +85,7 @@ def _get_internal_rotation_params(
     return SingleRotationScan(
         sample_id=entry_params.sample_id,
         visit=USE_NUMTRACKER,  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1527
-        parameter_model_version=PARAMETER_VERSION,
+        parameter_model_version=get_param_version(),
         file_name=entry_params.filename,
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,
