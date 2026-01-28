@@ -51,7 +51,7 @@ def dummy_params():
         "num_images": 10,
         "pump_status": False,
     }
-    return ExtruderParameters(**params)
+    return ExtruderParameters(**params)  # type: ignore
 
 
 @pytest.fixture

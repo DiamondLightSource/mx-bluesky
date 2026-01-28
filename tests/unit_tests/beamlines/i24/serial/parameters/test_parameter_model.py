@@ -60,7 +60,7 @@ def test_chip_params_with_no_mapping_for_oxford_chip():
         "checker_pattern": False,
         "chip_map": [],
     }
-    params = FixedTargetParameters(**oxford_chip)
+    params = FixedTargetParameters(**oxford_chip)  # type: ignore
     assert params.total_num_images == 25600
 
 
@@ -85,11 +85,11 @@ def test_chip_params_with_no_mapping_for_custom_chip():
         "detector_name": "eiger",
         "transmission": 1.0,
         "num_exposures": 2,
-        "chip": ChipDescription(**custom_defaults),
+        "chip": ChipDescription(**custom_defaults),  # type: ignore
         "map_type": 0,
         "pump_repeat": 0,
         "checker_pattern": False,
         "chip_map": [],
     }
-    params = FixedTargetParameters(**custom_chip)
+    params = FixedTargetParameters(**custom_chip)  # type: ignore
     assert params.total_num_images == 30

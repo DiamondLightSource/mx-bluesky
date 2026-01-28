@@ -247,8 +247,8 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
             mock_pin_tip_detection,
             tip_offset,
             oav_config,
-            robot_load_params.sample_puck,
-            robot_load_params.sample_pin,
+            robot_load_params.sample_puck or 0,
+            robot_load_params.sample_pin or 0,
             robot_load_params.sample_id,
             robot_load_params.visit,
         )
@@ -272,8 +272,8 @@ def test_when_robot_unload_plan_called_correct_plan_called(
             aithre_robot_load_composite.robot,
             aithre_robot_load_composite.gonio,
             aithre_robot_load_composite.oav,
-            robot_load_params.sample_puck,
-            robot_load_params.sample_pin,
+            robot_load_params.sample_puck or 0,
+            robot_load_params.sample_pin or 0,
             robot_load_params.sample_id,
             robot_load_params.visit,
         )

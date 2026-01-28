@@ -1194,8 +1194,8 @@ def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
     async def set_good_position():
         x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
         set_mock_value(ophyd_pin_tip_detection.triggered_tip, numpy.array([x, y]))
-        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)
-        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)  # type: ignore
+        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)  # type: ignore
 
     with patch.object(
         ophyd_pin_tip_detection,

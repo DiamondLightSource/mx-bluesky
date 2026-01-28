@@ -127,7 +127,7 @@ def test_robot_load_then_centre_params():
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
     }
     params["detector_distance_mm"] = 200
-    test_params = RobotLoadThenCentre(**params)
+    test_params = RobotLoadThenCentre(**params)  # type:ignore
     assert test_params.detector_params
 
 
