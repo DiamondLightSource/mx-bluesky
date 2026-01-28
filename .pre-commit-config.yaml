@@ -33,8 +33,6 @@ repos:
         entry: pyright
         types: [python]
         require_serial: true
-        ci:
-          skip: true
 
       - id: import-contracts
         name: Ensure import directionality
