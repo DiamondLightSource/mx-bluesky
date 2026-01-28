@@ -40,6 +40,7 @@ dependencies = [
     "matplotlib",
     "cachetools",
     "bluesky-stomp >= 0.2.0",
+    "mysql-connector-python == 9.5.0",  # Can unpin once https://github.com/DiamondLightSource/ispyb-api/pull/244 is merged and released
 
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
