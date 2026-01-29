@@ -422,9 +422,6 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.change_aperture_then_move_to_xtal"
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan"
 )
 @patch(
@@ -441,7 +438,6 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     mock_run_gridscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_pin_tip_centre_plan: MagicMock,
-    mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_grid_detection_callback: MagicMock,
     test_grid_params,
     transmission_frac: float,

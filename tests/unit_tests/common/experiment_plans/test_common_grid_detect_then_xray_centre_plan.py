@@ -122,10 +122,6 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
-    autospec=True,
-)
-@patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
@@ -141,7 +137,6 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
     mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect: MagicMock,
     mock_flyscan: MagicMock,
-    mock_change_aperture_and_move: MagicMock,
     mock_create_params: MagicMock,
     mock_grid_detect_callback: MagicMock,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,

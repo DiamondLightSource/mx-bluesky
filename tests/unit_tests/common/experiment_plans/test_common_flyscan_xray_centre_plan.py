@@ -40,6 +40,9 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    GridscanNexusFileCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
@@ -311,7 +314,10 @@ class TestFlyscanXrayCentrePlan:
         mock_abs_set,
         fake_fgs_composite: FlyScanEssentialDevices,
         test_fgs_params: SpecifiedThreeDGridScan,
-        run_engine_with_subs_snapshots_already_taken: ReWithSubs,
+        run_engine_with_subs_snapshots_already_taken: tuple[
+            RunEngine,
+            tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
+        ],
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         test_fgs_params.x_steps = 9
@@ -555,7 +561,10 @@ class TestFlyscanXrayCentrePlan:
     def test_when_gridscan_succeeds_and_results_fetched_ispyb_comment_appended_to(
         self,
         run_gridscan: MagicMock,
-        run_engine_with_subs: ReWithSubs,
+        run_engine_with_subs: tuple[
+            RunEngine,
+            tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
+        ],
         test_fgs_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
