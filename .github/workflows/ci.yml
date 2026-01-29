@@ -5,11 +5,10 @@ on:
     branches:
       - main
     tags:
-      - '*'
+      - "*"
   pull_request:
 
 jobs:
-
   require-label:
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/_label.yml
@@ -18,6 +17,7 @@ jobs:
     uses: ./.github/workflows/_tox.yml
     with:
       tox: pre-commit,type-checking
+      skip_hooks: local-install-dodal
 
   test:
     strategy:
@@ -64,14 +64,14 @@ jobs:
 
   dist:
     uses: ./.github/workflows/_dist.yml
-  
+
   pypi:
     needs: [dist, test]
     if: github.ref_type == 'tag'
     uses: ./.github/workflows/_pypi.yml
     permissions:
       id-token: write
-  
+
   release:
     needs: [dist, test, docs]
     if: github.ref_type == 'tag'

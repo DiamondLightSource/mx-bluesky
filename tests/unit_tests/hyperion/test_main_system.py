@@ -52,7 +52,7 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 from mx_bluesky.hyperion.plan_runner import PlanRunner
 from mx_bluesky.hyperion.runner import GDARunner
 
-from ...conftest import mock_beamline_module_filepaths, raw_params_from_file
+from ...conftest import raw_params_from_file
 from .conftest import AGAMEMNON_WAIT_INSTRUCTION
 
 FGS_ENDPOINT = "/pin_tip_centre_then_xray_centre/"
@@ -525,17 +525,7 @@ def test_exception_during_parameter_decode_generates_nicely_formatted_log_messag
 
 
 @pytest.mark.parametrize("dev_mode", [True, False])
-@patch(
-    "dodal.devices.i03.undulator_dcm.get_beamline_parameters",
-    return_value={"DCM_Perp_Offset_FIXED": 111},
-)
-def test_when_context_created_then_contains_expected_number_of_plans(
-    get_beamline_parameters, dev_mode
-):
-    from dodal.beamlines import i03
-
-    mock_beamline_module_filepaths("i03", i03)
-
+def test_when_context_created_then_contains_expected_number_of_plans(dev_mode):
     with patch.dict(
         os.environ,
         {"BEAMLINE": "i03"},

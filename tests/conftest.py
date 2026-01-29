@@ -18,7 +18,6 @@ import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import aithre, i03
-from dodal.common.beamlines import beamline_parameters as bp
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
@@ -227,12 +226,6 @@ mock_paths = [
     ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
     ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
 ]
-mock_attributes_table = {
-    "i03": mock_paths,
-    "i10": mock_paths,
-    "i04": mock_paths,
-    "i24": mock_paths,
-}
 
 
 @dataclass(frozen=True)
@@ -716,7 +709,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=3,
             scatterguard_y=4,
-            radius=100,
+            diameter=100,
         ),
         ApertureValue.MEDIUM: AperturePosition(
             aperture_x=5,
@@ -724,7 +717,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=8,
             scatterguard_y=9,
-            radius=50,
+            diameter=50,
         ),
         ApertureValue.SMALL: AperturePosition(
             aperture_x=10,
@@ -732,7 +725,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=13,
             scatterguard_y=14,
-            radius=20,
+            diameter=20,
         ),
         ApertureValue.OUT_OF_BEAM: AperturePosition(
             aperture_x=15,
@@ -740,7 +733,7 @@ async def aperture_scatterguard():
             aperture_z=2,
             scatterguard_x=18,
             scatterguard_y=19,
-            radius=0,
+            diameter=0,
         ),
         ApertureValue.PARKED: AperturePosition(
             aperture_x=20,
@@ -748,7 +741,7 @@ async def aperture_scatterguard():
             aperture_z=0,
             scatterguard_x=36,
             scatterguard_y=56,
-            radius=0,
+            diameter=0,
         ),
     }
     with (
@@ -1417,7 +1410,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-scatterguard-x": 18,
                 "aperture_scatterguard-scatterguard-y": 19,
                 "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-                "aperture_scatterguard-radius": 50,
+                "aperture_scatterguard-diameter": 50,
                 "attenuator-actual_transmission": 0.98,
                 "flux-flux_reading": 9.81,
                 "dcm-energy_in_keV": 11.105,
@@ -1532,7 +1525,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "aperture_scatterguard-scatterguard-x": 18,
                 "aperture_scatterguard-scatterguard-y": 19,
                 "aperture_scatterguard-selected_aperture": ApertureValue.MEDIUM,
-                "aperture_scatterguard-radius": 50,
+                "aperture_scatterguard-diameter": 50,
                 "attenuator-actual_transmission": 1,
                 "flux-flux_reading": 10,
                 "dcm-energy_in_keV": 11.105,
@@ -1743,12 +1736,6 @@ def mock_config_server():
         side_effect=_fake_config_server_read,
     ):
         yield
-
-
-def mock_beamline_module_filepaths(bl_name, bl_module):
-    if mock_attributes := mock_attributes_table.get(bl_name):
-        [bl_module.__setattr__(attr[0], attr[1]) for attr in mock_attributes]
-        bp.BEAMLINE_PARAMETER_PATHS[bl_name] = "tests/test_data/i04_beamlineParameters"
 
 
 @pytest.fixture(autouse=True)

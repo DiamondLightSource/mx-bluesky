@@ -90,6 +90,7 @@ dev = [
     "tox-uv",
     "types-mock",
     "types-requests",
+    "sphinxcontrib.mermaid", # To build dodal docs
 ]
 
 [project.scripts]
@@ -225,24 +226,20 @@ description = "Run tests with coverage"
 commands = [
     [
         "pytest",
+        "--junit-xml=systemtests_output.xml",
         "-m",
         "system_test",
-        "tests/system_test",
+        "tests/system_tests",
         "--timeout=60",
         { replace = "posargs", default = [
         ], extend = true },
     ],
 ]
+set_env = { DODAL_TEST_MODE = "true" }
 
 
 # Runs the system tests locally
 [tool.tox.env.localsystemtests]
-setenv = [
-    "DOCKER=podman",
-    "DODAL_TEST_MODE=true",
-    "ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg",
-    "ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml",
-]
 commands = [
     [
         "pytest",
@@ -255,8 +252,23 @@ commands = [
     ],
 ]
 
+[tool.tox.env.localsystemtests.set_env]
+DOCKER = "podman"
+DODAL_TEST_MODE = "true"
+ISPYB_CONFIG_PATH = "{toxinidir}/tests/test_data/ispyb-test-credentials.cfg"
+ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
+
 [tool.tox.env.docs]
 description = "Run docs build with clean environment"
+env_dir = ".venv"
+skip_install = true
+commands_pre = [
+    [
+        "python", 
+        "{toxinidir}/utility_scripts/generate_plantuml.py", 
+        "docs/developer/hyperion/reference/param_hierarchy.puml"
+    ]
+]
 commands = [
     [
         "sphinx-build",
@@ -278,7 +290,7 @@ commands = [
         "sphinx-autobuild",
         "--show-traceback",
         "--watch",
-        "README.md",
+        "README.rst",
         "docs",
         "build/html",
         { replace = "posargs", default = [
