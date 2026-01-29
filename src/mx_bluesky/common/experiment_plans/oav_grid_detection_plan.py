@@ -104,7 +104,7 @@ def grid_detection_plan(
     for angle in (yield from optimum_grid_detect_angles(smargon)):
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
-        # See #673 for improvements
+        # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements
         yield from bps.sleep(HardwareConstants.OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from catch_exception_and_warn(
