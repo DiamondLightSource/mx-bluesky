@@ -334,7 +334,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     return_value=iter(
         [
             Msg(
@@ -357,7 +357,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
     mock_rotation_scan: MagicMock,
     mock_full_robot_load_plan: MagicMock,
-    mock_pin_centre_then_xray_centre_plan: MagicMock,
+    mock_pin_centre_then_gridscan_plan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -405,7 +405,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[1]
     assert isinstance(robot_load_energy_change_composite, RobotLoadThenCentreComposite)
     assert isinstance(robot_load_energy_change_params, RobotLoadAndEnergyChange)
-    mock_pin_centre_then_xray_centre_plan.assert_called_once()
+    mock_pin_centre_then_gridscan_plan.assert_called_once()
     mock_rotation_scan.assert_called_once()
     rotation_scan_composite = mock_rotation_scan.mock_calls[0].args[0]
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
@@ -519,7 +519,7 @@ def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.RotationScan.model_validate"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.do_plan_while_lower_gonio_at_home",
@@ -591,7 +591,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         return_value=iter(
             [
@@ -688,7 +688,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         return_value=iter(
             [
@@ -772,7 +772,7 @@ def _rotation_at(
     new=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -889,7 +889,7 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -942,7 +942,7 @@ def test_load_centre_collect_full_plan_assigns_sample_ids_to_rotations_according
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -1043,6 +1043,10 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     MagicMock(),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
 )
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,

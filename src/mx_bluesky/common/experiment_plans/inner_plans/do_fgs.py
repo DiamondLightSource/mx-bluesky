@@ -41,9 +41,8 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
         30.0,
     )
 
-    # Make sure ZocaloResults queue is clear and ready to accept our new data. Zocalo MUST
-    # have been staged using ZOCALO_STAGE_GROUP prior to this
-    LOGGER.info("Waiting for Zocalo device queue to have been cleared...")
+    # If using ZocaloResults device, make sure ZocaloResults queue is clear and
+    # ready to accept our new data. Zocalo MUST have been staged using ZOCALO_STAGE_GROUP prior to this
     yield from bps.wait(ZOCALO_STAGE_GROUP)
 
     # Triggers Zocalo if run_engine is subscribed to ZocaloCallback

@@ -11,7 +11,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
-import mx_bluesky.common.xrc_result as flyscan_result
+import mx_bluesky.common.utils.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
@@ -19,7 +19,7 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler
+from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
     robot_load_then_xray_centre,

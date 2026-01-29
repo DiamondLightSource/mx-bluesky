@@ -9,6 +9,7 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
+from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from ophyd_async.core import completed_status, set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
@@ -149,9 +150,9 @@ class TestFlyscanXrayCentrePlan:
         hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
+        zocalo: ZocaloResults,
     ):
         hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
-        zocalo = hyperion_flyscan_xrc_composite.zocalo
         sim_run_engine.add_read_handler_for(
             zocalo.centre_of_mass, [np.array([6.0, 6.0, 6.0])]
         )

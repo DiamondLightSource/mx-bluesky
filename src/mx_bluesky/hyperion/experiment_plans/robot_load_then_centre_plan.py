@@ -44,7 +44,7 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    pin_centre_then_flyscan_plan,
+    pin_centre_then_xray_centre_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -113,7 +113,7 @@ def _flyscan_plan_from_robot_load_params(
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    yield from pin_centre_then_flyscan_plan(
+    yield from pin_centre_then_xray_centre_plan(
         cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
         oav_config_file,
