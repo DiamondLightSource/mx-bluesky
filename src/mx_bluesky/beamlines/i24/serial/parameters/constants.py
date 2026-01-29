@@ -25,7 +25,7 @@ BEAM_CENTER_LUT_FILES = {
 OAV_CONFIG_FILES = {
     "zoom_params_file": "/dls_sw/i24/software/gda_versions/gda_9_36/config/xml/jCameraManZoomLevels.xml",
     "oav_config_json": "/dls_sw/i24/software/daq_configuration/json/OAVCentring.json",
-    "display_config": "/dls_sw/i24/software/gda_versions/var/display.configuration",
+    "display_config": "/dls_sw/i24/software/daq_configuration/display.configuration",
 }
 OAV1_CAM = "http://bl24i-di-serv-01.diamond.ac.uk:8080/OAV1.mjpg.mjpg"
 
