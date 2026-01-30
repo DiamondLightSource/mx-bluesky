@@ -4,13 +4,13 @@ from pydantic import BaseModel, model_validator
 
 from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
-    WithCentreSelection,
     WithSample,
     WithVisit,
 )
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
+from mx_bluesky.hyperion.blueapi_plans.mixins import WithCentreSelection
 from mx_bluesky.hyperion.parameters.robot_load import (
     RobotLoadThenCentre,
 )
