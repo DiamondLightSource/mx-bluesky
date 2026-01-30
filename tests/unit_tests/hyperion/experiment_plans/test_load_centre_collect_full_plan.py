@@ -18,9 +18,6 @@ from dodal.devices.zebra.zebra import RotationDirection
 from ophyd_async.core import completed_status, set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.components import (
-    TopNByMaxCountForEachSampleSelection,
-)
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     RotationScanPerSweep,
@@ -28,6 +25,9 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
+)
+from mx_bluesky.hyperion.blueapi_plans.mixins import (
+    TopNByMaxCountForEachSampleSelection,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,

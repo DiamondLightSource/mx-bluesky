@@ -12,9 +12,6 @@ from mx_bluesky.common.external_interaction.alerting import (
     AlertService,
     get_alerting_service,
 )
-from mx_bluesky.common.parameters.components import (
-    get_param_version,
-)
 from mx_bluesky.common.utils.context import (
     find_device_in_context,
 )
@@ -87,14 +84,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         """
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
-            runner.decode_and_execute(
-                None,
-                [
-                    UDCDefaultState.model_validate(
-                        {"parameter_model_version": get_param_version()}
-                    )
-                ],
-            ),
+            runner.decode_and_execute(None, [UDCDefaultState()]),
             except_plan=trap_default_state_exception,
             auto_raise=False,
         )
@@ -107,14 +97,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
                 baton, runner, current_visit
             )
         if current_visit:
-            yield from runner.decode_and_execute(
-                current_visit,
-                [
-                    UDCCleanup.model_validate(
-                        {"parameter_model_version": get_param_version()}
-                    )
-                ],
-            )
+            yield from runner.decode_and_execute(current_visit, [UDCCleanup()])
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
