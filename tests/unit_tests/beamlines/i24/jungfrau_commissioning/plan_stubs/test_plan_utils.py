@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import (
     TriggerInfo,
     completed_status,
