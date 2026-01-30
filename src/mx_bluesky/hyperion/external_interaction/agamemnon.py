@@ -253,6 +253,7 @@ def _populate_parameters_from_agamemnon(
                     "name": "TopNByMaxCount",
                     "n": pin_type.expected_number_of_crystals,
                 },
+                **with_energy_params,
                 "robot_load_then_centre": {
                     "storage_directory": str(visit_directory) + "/xraycentring",
                     "file_name": file_name,
@@ -262,7 +263,6 @@ def _populate_parameters_from_agamemnon(
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
                     "exposure_time_s": GridscanParamConstants.EXPOSURE_TIME_S,
-                    **with_energy_params,
                 },
                 "multi_rotation_scan": {
                     "comment": collection["comment"],
@@ -285,7 +285,6 @@ def _populate_parameters_from_agamemnon(
                             "rotation_direction": "Positive",
                         }
                     ],
-                    **with_energy_params,
                 },
             }
         )
