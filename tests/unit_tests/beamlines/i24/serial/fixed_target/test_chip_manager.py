@@ -3,9 +3,9 @@ from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
 import pytest
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.pmac import PMAC
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from ophyd_async.core import get_mock_put
 

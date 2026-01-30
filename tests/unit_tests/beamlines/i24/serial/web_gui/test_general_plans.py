@@ -5,7 +5,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
-from dodal.devices.i24.dual_backlight import BacklightPositions
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (

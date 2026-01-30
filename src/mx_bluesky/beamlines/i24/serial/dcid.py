@@ -8,9 +8,9 @@ from functools import lru_cache
 import bluesky.plan_stubs as bps
 import requests
 from bluesky.utils import MsgGenerator
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER

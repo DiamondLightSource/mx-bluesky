@@ -4,7 +4,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.i03 import BeamstopPositions
+from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.robot import SampleLocation
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (

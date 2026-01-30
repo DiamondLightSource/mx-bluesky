@@ -5,7 +5,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,

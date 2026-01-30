@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.beamlines.i24.aperture import AperturePositions
+from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.aperture import AperturePositions
-from dodal.devices.i24.beamstop import BeamstopPositions
-from dodal.devices.i24.dual_backlight import BacklightPositions
 from ophyd_async.core import completed_status, set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (

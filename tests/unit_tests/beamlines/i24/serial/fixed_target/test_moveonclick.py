@@ -2,7 +2,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import cv2 as cv
 import pytest
-from dodal.devices.i24.pmac import PMAC
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
 from ophyd_async.core import get_mock_put
 

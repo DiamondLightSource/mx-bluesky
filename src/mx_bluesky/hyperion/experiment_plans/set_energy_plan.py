@@ -9,9 +9,9 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 

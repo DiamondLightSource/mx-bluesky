@@ -1,4 +1,4 @@
-from dodal.devices.i02_1.fast_grid_scan import ZebraGridScanParamsTwoD
+from dodal.devices.beamlines.i02_1.fast_grid_scan import ZebraGridScanParamsTwoD
 from scanspec.specs import Product
 
 from mx_bluesky.common.parameters.components import SplitScan, WithOptionalEnergyChange

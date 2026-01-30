@@ -8,8 +8,11 @@ from typing import TypedDict
 
 import numpy as np
 import zmq
-from dodal.devices.i04.constants import RedisConstants
-from dodal.devices.i04.murko_results import RESULTS_COMPLETE_MESSAGE, MurkoResult
+from dodal.devices.beamlines.i04.constants import RedisConstants
+from dodal.devices.beamlines.i04.murko_results import (
+    RESULTS_COMPLETE_MESSAGE,
+    MurkoResult,
+)
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis

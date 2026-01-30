@@ -13,9 +13,9 @@ import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
-from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
-from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.pmac import CS_STR, PMAC, EncReset, LaserSettings
+from dodal.devices.beamlines.i24.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions, DualBacklight
+from dodal.devices.beamlines.i24.pmac import CS_STR, PMAC, EncReset, LaserSettings
 from dodal.devices.motors import YZStage
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
