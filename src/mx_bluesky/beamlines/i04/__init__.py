@@ -1,7 +1,7 @@
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     i04_default_grid_detect_and_xray_centre,
 )
-from mx_bluesky.beamlines.i04.expose_bluesky_plan_stubs import move_device, read_device
+from mx_bluesky.beamlines.i04.expose_bluesky_plan_stubs import do_plan_stup_on_device
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     find_beam_centre_at_current_zoom_and_transmission,
     find_beam_centres,
@@ -25,6 +25,5 @@ __all__ = [
     "find_beam_centres",
     "find_beam_centre_at_current_zoom_and_transmission",
     "optimise_transmission_for_current_zoom",
-    "move_device",
-    "read_device",
+    "do_plan_stup_on_device",
 ]
