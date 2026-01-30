@@ -23,7 +23,7 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion._plan_runner_params import Wait
-from mx_bluesky.hyperion.blueapi_plans.parameters import LoadCentreCollectParams
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)

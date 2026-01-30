@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from functools import partial
 
 from mx_bluesky.common.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.blueapi_plans.mixins import (
+from mx_bluesky.hyperion.blueapi.mixins import (
     MultiXtalSelection,
     TopNByMaxCountForEachSampleSelection,
     TopNByMaxCountSelection,

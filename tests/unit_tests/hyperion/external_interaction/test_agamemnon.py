@@ -9,7 +9,7 @@ from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion._plan_runner_params import Wait
-from mx_bluesky.hyperion.blueapi_plans.parameters import (
+from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
     load_centre_collect_to_internal,
 )

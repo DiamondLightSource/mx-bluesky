@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
-from mx_bluesky.hyperion.blueapi_plans.parameters import LoadCentreCollectParams
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 
 

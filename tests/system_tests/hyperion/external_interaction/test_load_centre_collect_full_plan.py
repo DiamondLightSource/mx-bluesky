@@ -37,7 +37,7 @@ from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
 )
-from mx_bluesky.hyperion.blueapi_plans.mixins import (
+from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (

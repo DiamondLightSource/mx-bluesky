@@ -1,4 +1,6 @@
-"""The big dumb blueapi parameter model for LoadCentreCollect."""
+"""
+This module contains the parameter models exported via the hyperion-blueapi REST interface.
+"""
 
 from pydantic import BaseModel
 from pydantic.config import ConfigDict
@@ -6,7 +8,7 @@ from pydantic.config import ConfigDict
 from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
-from mx_bluesky.hyperion.blueapi_plans.mixins import WithCentreSelection
+from mx_bluesky.hyperion.blueapi.mixins import WithCentreSelection
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 

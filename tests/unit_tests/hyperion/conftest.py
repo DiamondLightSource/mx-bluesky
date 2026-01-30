@@ -16,7 +16,7 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
 from mx_bluesky.hyperion._plan_runner_params import Wait
-from mx_bluesky.hyperion.blueapi_plans.parameters import LoadCentreCollectParams
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
