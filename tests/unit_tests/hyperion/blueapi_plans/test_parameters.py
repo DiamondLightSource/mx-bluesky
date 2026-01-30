@@ -1,5 +1,5 @@
 from mx_bluesky.common.parameters.components import get_param_version
-from mx_bluesky.hyperion.blueapi_plans.parameters import (
+from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
     load_centre_collect_to_internal,
 )
