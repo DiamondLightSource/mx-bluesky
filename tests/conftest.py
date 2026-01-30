@@ -9,14 +9,15 @@ from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, TypeVar
 from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import numpy
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
-from bluesky.utils import Msg
+from bluesky.utils import Msg, MsgGenerator
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -1180,6 +1181,14 @@ def fat_pin_edges():
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
     bottom_edge_array += 60
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+T = TypeVar("T")
+
+
+def fake_generator(return_val: T) -> MsgGenerator[T]:
+    yield from bps.null()
+    return return_val
 
 
 @pytest.fixture

@@ -23,7 +23,7 @@ from ophyd_async.core import InOut as core_INOUT
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
 from mx_bluesky.common.utils.log import LOGGER
 
-initial_wait_group = "Wait for scint to move in"
+OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT = "Wait for scint to move in"
 
 
 def take_oav_image_with_scintillator_in(
@@ -59,15 +59,17 @@ def take_oav_image_with_scintillator_in(
         scintillator,
         xbpm_feedback,
         shutter,
-        initial_wait_group,
+        OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     )
-    yield from bps.abs_set(attenuator, transmission, group=initial_wait_group)
+    yield from bps.abs_set(
+        attenuator, transmission, group=OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT
+    )
 
     if image_name is None:
         image_name = f"{time.time_ns()}ATT{transmission * 100}"
     LOGGER.info(f"Using image name {image_name}")
-    LOGGER.info("Waiting for initial_wait_group...")
-    yield from bps.wait(initial_wait_group)
+    LOGGER.info("Waiting for prepare beamline plan to complete...")
+    yield from bps.wait(OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT)
 
     LOGGER.info("Opening shutter...")
 
@@ -108,10 +110,8 @@ def _prepare_beamline_for_scintillator_images(
     yield from bps.abs_set(backlight, core_INOUT.OUT, group=group)
 
     yield from bps.abs_set(scintillator.selected_pos, InOut.IN, group=group)
-
-    yield from bps.abs_set(
-        shutter.control_mode, ZebraShutterControl.MANUAL, group=group
-    )
+    # Not waiting for control mode to be set before opening shutter can result in timeout error
+    yield from bps.abs_set(shutter.control_mode, ZebraShutterControl.MANUAL, wait=True)
     yield from bps.abs_set(shutter, ZebraShutterState.OPEN, group=group)
 
 
@@ -288,8 +288,10 @@ def find_beam_centres(
         scintillator,
         xbpm_feedback,
         shutter,
-        initial_wait_group,
+        OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     )
+    LOGGER.info("Waiting for prepare beamline plan to complete...")
+    yield from bps.wait(OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT)
 
     for centring_device in zoom_controller.beam_centres.values():
         zoom_name = yield from bps.rd(centring_device.level_name)

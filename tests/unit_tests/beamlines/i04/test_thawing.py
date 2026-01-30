@@ -1,6 +1,6 @@
 import json
 from functools import partial
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine

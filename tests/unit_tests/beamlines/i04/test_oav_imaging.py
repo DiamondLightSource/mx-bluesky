@@ -27,6 +27,7 @@ from ophyd_async.core import (
 )
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
+    OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     _prepare_beamline_for_scintillator_images,
     find_beam_centres,
     optimise_transmission_with_oav,
@@ -34,6 +35,7 @@ from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     take_oav_image_with_scintillator_in,
 )
 from mx_bluesky.common.utils.exceptions import BeamlineStateError
+from tests.conftest import fake_generator
 
 
 async def test_check_exception_raised_if_pin_mounted(
@@ -112,6 +114,23 @@ def test_prepare_beamline_for_scint_images(
         lambda msg: msg.command == "set"
         and msg.obj.name == "scintillator-selected_pos"
         and msg.args[0] == InOut.IN
+        and msg.kwargs["group"] == test_group,
+    )
+
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "sample_shutter-control_mode"
+        and msg.args[0] == ZebraShutterControl.MANUAL,
+    )
+    messages = assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "wait"
+    )
+    assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "sample_shutter"
+        and msg.args[0] == ZebraShutterState.OPEN
         and msg.kwargs["group"] == test_group,
     )
 
@@ -872,3 +891,27 @@ async def test_find_beam_centres_respects_custom_optimise_list(
 
     assert mock_optimise.call_count == 2
     assert levels_where_optimised == ["2.0x", "3.0x"]
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._get_all_zoom_levels",
+    lambda _: fake_generator(("1.0x", "7.5x")),
+)
+def test_find_beam_centres_prepares_beamline_and_waits(
+    sim_run_engine: RunEngineSimulator, find_beam_centre_devices: dict
+):
+    messages = sim_run_engine.simulate_plan(
+        find_beam_centres(**find_beam_centre_devices)
+    )
+    assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "sample_shutter"
+        and msg.args[0] == ZebraShutterState.OPEN
+        and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
+    )
+    assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "wait"
+        and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
+    )
