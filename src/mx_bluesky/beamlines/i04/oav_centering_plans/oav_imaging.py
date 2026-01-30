@@ -327,3 +327,48 @@ def find_beam_centres(
             )
 
     LOGGER.info("Find beam centre plan completed!")
+
+
+def find_beam_centre_at_current_zoom_and_transmission(
+    robot: BartRobot = inject("robot"),
+    beamstop: Beamstop = inject("beamstop"),
+    backlight: Backlight = inject("backlight"),
+    scintillator: Scintillator = inject("scintillator"),
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
+    max_pixel: MaxPixel = inject("max_pixel"),
+    centre_ellipse: CentreEllipseMethod = inject("beam_centre"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+    zoom_controller: ZoomControllerWithBeamCentres = inject("zoom_controller"),
+    shutter: ZebraShutter = inject("sample_shutter"),
+):
+    """Finds the beam centre at the current zoom level. This"""
+    current_zoom_level = yield from bps.rd(zoom_controller)
+    find_beam_centres(
+        zoom_levels_to_centre=(current_zoom_level,),
+        zoom_levels_to_optimise_transmission=(),
+        robot=robot,
+        beamstop=beamstop,
+        backlight=backlight,
+        scintillator=scintillator,
+        xbpm_feedback=xbpm_feedback,
+        max_pixel=max_pixel,
+        centre_ellipse=centre_ellipse,
+        attenuator=attenuator,
+        zoom_controller=zoom_controller,
+        shutter=shutter,
+    )
+
+
+def optimise_transmission_for_current_zoom(
+    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
+    max_pixel: MaxPixel = inject("max_pixel"),
+    attenuator: BinaryFilterAttenuator = inject("attenuator"),
+):
+    yield from optimise_transmission_with_oav(
+        100,
+        0,
+        max_pixel=max_pixel,
+        attenuator=attenuator,
+        xbpm_feedback=xbpm_feedback,
+    )
+    LOGGER.info("Done!")
