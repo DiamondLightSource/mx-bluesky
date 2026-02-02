@@ -48,7 +48,8 @@ NAME_TO_PLAN_MAP: dict[PLAN_NAME, Callable[..., MsgGenerator]] = {
 }
 
 
-def do_plan_stup_on_device(
+def do_plan_stup(
+    plan: PLAN_NAME,
     device: str,
     value: Any = None,
     smargon: Smargon = inject("smargon"),
@@ -118,7 +119,7 @@ def do_plan_stup_on_device(
         "beamsize": beamsize,
         "beam_centre": beam_centre,
     }
-    yield from bps.mv(devices[device], value)
+    yield from NAME_TO_PLAN_MAP[plan](devices[device], value)
     LOGGER.info("Done!")
 
 
