@@ -144,6 +144,8 @@ def _max_pixel_at_transmission(
     xbpm_feedback: XBPMFeedback,
     transmission: float,
 ):
+    # Potential controls issue on XBPM device means it can mark
+    # itself as stable before it really is
     yield from bps.trigger(xbpm_feedback, wait=True)
     yield from bps.mv(attenuator, transmission)
     yield from bps.trigger(max_pixel, wait=True)
@@ -313,9 +315,11 @@ def find_beam_centres(
             centre_y = yield from bps.rd(centre_ellipse.center_y_val)
             centre_x = round(centre_x)
             centre_y = round(centre_y)
-            LOGGER.info(f"Writing centre values ({centre_x}, {centre_y}) to OAV PVs")
+            LOGGER.info(
+                f"Writing centre values ({centre_x}, {centre_y}) to OAV PVs at zoom level {zoom_name}"
+            )
             yield from bps.mv(
                 centring_device.x_centre, centre_x, centring_device.y_centre, centre_y
             )
 
-    LOGGER.info("Done!")
+    LOGGER.info("Find beam centre plan completed!")
