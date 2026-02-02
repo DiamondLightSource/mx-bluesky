@@ -29,6 +29,7 @@ from ophyd_async.core import (
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     _prepare_beamline_for_scintillator_images,
+    find_beam_centre_at_current_zoom_and_transmission,
     find_beam_centres,
     optimise_transmission_with_oav,
     take_and_save_oav_image,
@@ -915,3 +916,80 @@ def test_find_beam_centres_prepares_beamline_and_waits(
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     )
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.find_beam_centres",
+)
+def test_find_beam_centre_at_current_zoom_and_transmission_calls_find_beam_centres(
+    mock_find_beam_centres: MagicMock,
+    find_beam_centre_devices: dict,
+    run_engine: RunEngine,
+):
+    zoom_controller: ZoomControllerWithBeamCentres = find_beam_centre_devices[
+        "zoom_controller"
+    ]
+    set_mock_value(zoom_controller.level, "2.0x")
+    run_engine(
+        find_beam_centre_at_current_zoom_and_transmission(**find_beam_centre_devices)
+    )
+
+    mock_find_beam_centres.assert_called_once_with(
+        zoom_levels_to_centre=("2.0x",),
+        zoom_levels_to_optimise_transmission=(),
+        **find_beam_centre_devices,
+    )
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images",
+    new=MagicMock(),
+)
+async def test_find_beam_centre_at_current_zoom_and_transmission_only_finds_centre_for_current_zoom_level(
+    find_beam_centre_devices: dict, run_engine: RunEngine
+):
+    current_zoom_level = "3.0x"
+    zoom_controller: ZoomControllerWithBeamCentres = find_beam_centre_devices[
+        "zoom_controller"
+    ]
+    set_mock_value(zoom_controller.level, current_zoom_level)
+    run_engine(
+        find_beam_centre_at_current_zoom_and_transmission(**find_beam_centre_devices)
+    )
+
+    get_mock_put(zoom_controller.level).assert_called_once_with(
+        current_zoom_level, wait=True
+    )
+    total_mv_calls = 0
+    for centring_device in zoom_controller.beam_centres.values():
+        zoom_level = await centring_device.level_name.get_value()
+        expected_mv_calls = 1 if zoom_level == current_zoom_level else 0
+        assert get_mock_put(centring_device.x_centre).call_count == expected_mv_calls
+        assert get_mock_put(centring_device.y_centre).call_count == expected_mv_calls
+        total_mv_calls += expected_mv_calls
+    assert total_mv_calls == 1
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.optimise_transmission_with_oav"
+)
+def test_find_beam_centre_at_current_zoom_and_transmission_does_not_optimise(
+    mock_optimise: MagicMock, find_beam_centre_devices: dict, run_engine: RunEngine
+):
+    zoom_controller: ZoomControllerWithBeamCentres = find_beam_centre_devices[
+        "zoom_controller"
+    ]
+    set_mock_value(zoom_controller.level, "1.0x")
+    run_engine(
+        find_beam_centre_at_current_zoom_and_transmission(**find_beam_centre_devices)
+    )
+
+    assert mock_optimise.call_count == 0
