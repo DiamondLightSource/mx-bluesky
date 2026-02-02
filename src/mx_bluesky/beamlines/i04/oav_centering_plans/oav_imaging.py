@@ -342,8 +342,8 @@ def find_beam_centre_at_current_zoom_and_transmission(
     shutter: ZebraShutter = inject("sample_shutter"),
 ):
     """Finds the beam centre at the current zoom level. This"""
-    current_zoom_level = yield from bps.rd(zoom_controller)
-    find_beam_centres(
+    current_zoom_level = yield from bps.rd(zoom_controller.level)
+    yield from find_beam_centres(
         zoom_levels_to_centre=(current_zoom_level,),
         zoom_levels_to_optimise_transmission=(),
         robot=robot,
