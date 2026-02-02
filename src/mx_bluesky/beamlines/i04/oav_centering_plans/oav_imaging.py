@@ -268,6 +268,10 @@ def find_beam_centres(
     Finds beam centres at the zoom levels given by zoom_levels_to_centre, first
     optimising transmission if the zoom level is in zoom_levels_to_optimise_transmission.
 
+    Note that the previous beam centre values are used to draw an ROI box around the
+    OAV image when finding updated beam centre. If the previous values are very wrong,
+    this plan may fail or give inaccurate results.
+
     zoom_levels_to_centre: The levels to do centring at, by default runs at all known
                            zoom levels.
     zoom_levels_to_optimise_transmission: The levels to optimise transmission at,
