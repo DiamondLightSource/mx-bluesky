@@ -1,11 +1,18 @@
+from dodal.plan_stubs.wrapped import (
+    move,
+    move_relative,
+    set_absolute,
+    set_relative,
+    sleep,
+    wait,
+)
+
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     i04_default_grid_detect_and_xray_centre,
 )
-from mx_bluesky.beamlines.i04.expose_plan_stubs import move, read
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
-    find_beam_centre_at_current_zoom_and_transmission,
+    find_and_set_beam_centre_at_current_zoom_and_transmission,
     find_beam_centres,
-    optimise_transmission_for_current_zoom,
     optimise_transmission_with_oav,
     take_oav_image_with_scintillator_in,
 )
@@ -23,8 +30,11 @@ __all__ = [
     "take_oav_image_with_scintillator_in",
     "optimise_transmission_with_oav",
     "find_beam_centres",
-    "find_beam_centre_at_current_zoom_and_transmission",
-    "optimise_transmission_for_current_zoom",
+    "find_and_set_beam_centre_at_current_zoom_and_transmission",
     "move",
-    "read",
+    "move_relative",
+    "set_relative",
+    "set_absolute",
+    "sleep",
+    "wait",
 ]

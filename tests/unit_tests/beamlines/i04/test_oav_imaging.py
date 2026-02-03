@@ -29,7 +29,7 @@ from ophyd_async.core import (
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     _prepare_beamline_for_scintillator_images,
-    find_beam_centre_at_current_zoom_and_transmission,
+    find_and_set_beam_centre_at_current_zoom_and_transmission,
     find_beam_centres,
     optimise_transmission_with_oav,
     take_and_save_oav_image,
@@ -935,7 +935,9 @@ def test_find_beam_centre_at_current_zoom_and_transmission_calls_find_beam_centr
     ]
     set_mock_value(zoom_controller.level, "2.0x")
     run_engine(
-        find_beam_centre_at_current_zoom_and_transmission(**find_beam_centre_devices)
+        find_and_set_beam_centre_at_current_zoom_and_transmission(
+            **find_beam_centre_devices
+        )
     )
 
     mock_find_beam_centres.assert_called_once_with(
@@ -958,7 +960,9 @@ async def test_find_beam_centre_at_current_zoom_and_transmission_only_finds_cent
     ]
     set_mock_value(zoom_controller.level, current_zoom_level)
     run_engine(
-        find_beam_centre_at_current_zoom_and_transmission(**find_beam_centre_devices)
+        find_and_set_beam_centre_at_current_zoom_and_transmission(
+            **find_beam_centre_devices
+        )
     )
 
     get_mock_put(zoom_controller.level).assert_called_once_with(
@@ -989,7 +993,9 @@ def test_find_beam_centre_at_current_zoom_and_transmission_does_not_optimise(
     ]
     set_mock_value(zoom_controller.level, "1.0x")
     run_engine(
-        find_beam_centre_at_current_zoom_and_transmission(**find_beam_centre_devices)
+        find_and_set_beam_centre_at_current_zoom_and_transmission(
+            **find_beam_centre_devices
+        )
     )
 
     assert mock_optimise.call_count == 0

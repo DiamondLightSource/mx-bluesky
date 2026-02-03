@@ -329,7 +329,7 @@ def find_beam_centres(
     LOGGER.info("Find beam centre plan completed!")
 
 
-def find_beam_centre_at_current_zoom_and_transmission(
+def find_and_set_beam_centre_at_current_zoom_and_transmission(
     robot: BartRobot = inject("robot"),
     beamstop: Beamstop = inject("beamstop"),
     backlight: Backlight = inject("backlight"),
@@ -341,7 +341,7 @@ def find_beam_centre_at_current_zoom_and_transmission(
     zoom_controller: ZoomControllerWithBeamCentres = inject("zoom_controller"),
     shutter: ZebraShutter = inject("sample_shutter"),
 ):
-    """Finds the beam centre at the current zoom level. This"""
+    """Finds the beam centre at the current zoom level."""
     current_zoom_level = yield from bps.rd(zoom_controller.level)
     yield from find_beam_centres(
         zoom_levels_to_centre=(current_zoom_level,),
@@ -357,18 +357,3 @@ def find_beam_centre_at_current_zoom_and_transmission(
         zoom_controller=zoom_controller,
         shutter=shutter,
     )
-
-
-def optimise_transmission_for_current_zoom(
-    xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
-    max_pixel: MaxPixel = inject("max_pixel"),
-    attenuator: BinaryFilterAttenuator = inject("attenuator"),
-):
-    yield from optimise_transmission_with_oav(
-        100,
-        0,
-        max_pixel=max_pixel,
-        attenuator=attenuator,
-        xbpm_feedback=xbpm_feedback,
-    )
-    LOGGER.info("Done!")
