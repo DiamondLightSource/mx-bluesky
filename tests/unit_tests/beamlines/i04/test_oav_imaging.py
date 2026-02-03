@@ -629,7 +629,7 @@ def test_optimise_transmission_raises_value_error_when_full_beam_brightness_is_z
 @pytest.fixture()
 async def centre_ellipse() -> CentreEllipseMethod:
     async with init_devices(mock=True):
-        centre_ellipse = CentreEllipseMethod("", "centre_ellipse")
+        centre_ellipse = CentreEllipseMethod("", name="centre_ellipse")
 
     centre_ellipse.trigger = MagicMock(return_value=completed_status())
     return centre_ellipse
@@ -694,7 +694,7 @@ def test_given_levels_to_centre_that_dont_exist_when_find_beam_centres_exception
     with pytest.raises(ValueError):
         run_engine(
             find_beam_centres(
-                zoom_levels_to_centre=("bad_zoom"), **find_beam_centre_devices
+                zoom_levels_to_centre=("bad_zoom",), **find_beam_centre_devices
             )
         )
 
@@ -706,7 +706,7 @@ def test_given_levels_to_optimise_that_dont_exist_when_find_beam_centres_excepti
     with pytest.raises(ValueError):
         run_engine(
             find_beam_centres(
-                zoom_levels_to_optimise_transmission=("bad_zoom"),
+                zoom_levels_to_optimise_transmission=("bad_zoom",),
                 **find_beam_centre_devices,
             )
         )
@@ -802,7 +802,7 @@ async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_set
 
     run_engine(
         find_beam_centres(
-            zoom_levels_to_centre=["1.0x", "7.5x"], **find_beam_centre_devices
+            zoom_levels_to_centre=("1.0x", "7.5x"), **find_beam_centre_devices
         )
     )
 
@@ -884,7 +884,7 @@ async def test_find_beam_centres_respects_custom_optimise_list(
 
     run_engine(
         find_beam_centres(
-            zoom_levels_to_optimise_transmission=["2.0x", "3.0x"],
+            zoom_levels_to_optimise_transmission=("2.0x", "3.0x"),
             **find_beam_centre_devices,
         )
     )
