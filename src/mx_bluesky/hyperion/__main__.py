@@ -59,7 +59,10 @@ def compose_start_args(
         raise PlanNotFoundError(f"Experiment plan '{plan_name}' not found in registry.")
 
     experiment_internal_param_type = experiment_registry_entry.get("param_type")
-    plan = context.plan_functions[plan_name]
+    plan = context.plan_functions.get(plan_name)
+    assert plan is not None, (
+        f"Can't find plan '{plan_name}' in context plan functions: {tuple(context.plan_functions.keys())}"
+    )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
         parameters = update_params_from_agamemnon(parameters)

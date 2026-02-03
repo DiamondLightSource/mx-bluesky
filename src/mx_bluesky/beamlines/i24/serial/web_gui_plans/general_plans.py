@@ -128,7 +128,7 @@ def gui_run_chip_collection(
     n_shots: int,
     chip_type: str,
     map_type: str,
-    chip_format: list[int],  # for Lite Oxford it's the chipmap
+    chip_format: list[int | float],  # for Lite Oxford it's the chipmap
     checker_pattern: bool,
     pump_probe: str,
     laser_dwell: float,
@@ -203,7 +203,7 @@ def gui_run_chip_collection(
         transmission=transmission,
         chip=chip_params,
         map_type=mapping,
-        chip_map=chip_map,
+        chip_map=chip_map,  # type: ignore
         pump_repeat=PumpProbeSetting[pump_probe],  # pump_repeat,
         laser_dwell_s=laser_dwell,
         laser_delay_s=laser_delay,

@@ -145,14 +145,14 @@ class BadFeatureSetting(FeatureSettings):
 def test_warning_on_missing_features_in_file(mock_log_warn: MagicMock):
     server = MXConfigClient(BadFeatureSettingSources, BadFeatureSetting)
 
-    expected_features_dict = {
-        "USE_GPU_RESULTS": True,
-        "USE_PANDA_FOR_GRIDSCAN": False,
-        "SET_STUB_OFFSETS": False,
-        "PANDA_RUNUP_DISTANCE_MM": 0.16,
-        "MISSING_FEATURE": False,
-    }
-    assert server.get_feature_flags() == BadFeatureSetting(**expected_features_dict)  # type:ignore
+    expected_features_dict = BadFeatureSetting(
+        USE_GPU_RESULTS=True,
+        USE_PANDA_FOR_GRIDSCAN=False,
+        SET_STUB_OFFSETS=False,
+        PANDA_RUNUP_DISTANCE_MM=0.16,
+        MISSING_FEATURE=False,
+    )
+    assert server.get_feature_flags() == expected_features_dict
     assert (
         "MISSING_FEATURE" in mock_log_warn.call_args_list[0][0][0]
     )  # call -> tuple -> contents

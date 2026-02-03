@@ -37,6 +37,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
+    DetectorName,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import (
     caget,
@@ -169,7 +170,7 @@ def read_parameters(detector_stage: YZStage, attenuator: ReadOnlyAttenuator):
         filename=filename,
         exposure_time_s=float(caget(pv.ioc13_gp5)),
         detector_distance_mm=float(caget(pv.ioc13_gp7)),
-        detector_name=str(det_type),  # type: ignore
+        detector_name=DetectorName(str(det_type)),
         transmission=transmission,
         num_images=int(caget(pv.ioc13_gp4)),
         pump_status=pump_status,
