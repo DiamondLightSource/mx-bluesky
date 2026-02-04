@@ -4,9 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv]
 # Restrict lockfile to a sane subset of platforms
-environments = [
-    "sys_platform == 'linux' and platform_machine == 'x86_64'"
-]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
 [project]
 name = "mx-bluesky"
@@ -56,7 +54,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.14.0",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal == 1.69.0",
 ]
 
 
@@ -270,10 +268,10 @@ env_dir = ".venv"
 skip_install = true
 commands_pre = [
     [
-        "python", 
-        "{toxinidir}/utility_scripts/generate_plantuml.py", 
-        "docs/developer/hyperion/reference/param_hierarchy.puml"
-    ]
+        "python",
+        "{toxinidir}/utility_scripts/generate_plantuml.py",
+        "docs/developer/hyperion/reference/param_hierarchy.puml",
+    ],
 ]
 commands = [
     [
