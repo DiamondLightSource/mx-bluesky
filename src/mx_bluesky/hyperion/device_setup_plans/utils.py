@@ -1,8 +1,8 @@
 from bluesky import plan_stubs as bps
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.detector import (
     DetectorParams,
 )
-from dodal.devices.i03.dcm import DCM
 
 
 def fill_in_energy_if_not_supplied(dcm: DCM, detector_params: DetectorParams):
