@@ -4,8 +4,8 @@ from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
 import pytest
 from bluesky.utils import FailedStatus
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import HutchShutter
-from dodal.devices.i24.pmac import PMAC
 from dodal.devices.zebra.zebra import Zebra
 from ophyd_async.core import (
     callback_on_mock_put,
@@ -367,7 +367,7 @@ async def test_kick_off_and_complete_collection(pmac, dummy_params_with_pp, run_
     assert res.exit_status == "success"
 
 
-@patch("dodal.devices.i24.pmac.DEFAULT_TIMEOUT", 0.1)
+@patch("dodal.devices.beamlines.i24.pmac.DEFAULT_TIMEOUT", 0.1)
 async def test_kickoff_and_complete_fails_if_scan_status_pv_does_not_change(
     pmac, dummy_params_without_pp, run_engine
 ):

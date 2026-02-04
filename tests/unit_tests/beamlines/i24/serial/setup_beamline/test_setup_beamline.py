@@ -1,10 +1,10 @@
 from unittest.mock import patch
 
 import pytest
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.aperture import Aperture
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.motors import YZStage
 from ophyd_async.core import set_mock_value
 

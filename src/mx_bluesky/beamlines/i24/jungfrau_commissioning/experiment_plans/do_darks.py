@@ -2,7 +2,7 @@ import bluesky.preprocessors as bpp
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
