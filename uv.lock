@@ -804,7 +804,7 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "1.69.0"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -827,9 +827,9 @@ dependencies = [
     { name = "scanspec", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "zocalo", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/20/98438b7b9bf9b81ae7b1454b090020e86977fde5796d236596838c98d166/dls_dodal-1.69.0.tar.gz", hash = "sha256:5181bf4e0fd9a818fec169ba060a8865cc53e5c28b5ead15824271a529c18682", size = 1587248, upload-time = "2026-01-19T14:50:52.909Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/55/bf/21598dcb19839a465fe0c1e592afa8e2b392178df16b2f7ea3230357aafb/dls_dodal-2.0.0.tar.gz", hash = "sha256:8acc075b7a0bf7c767ec330f3c8d7ba0f71921672ca7a8af18766c30f6d3071c", size = 1612683, upload-time = "2026-02-04T15:53:31.595Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/39/f781c83cfae7a62a5009dbe1cc656000097575c93ef23271d2096cf9aefe/dls_dodal-1.69.0-py3-none-any.whl", hash = "sha256:99d0aa3c4b9e94ec981e3690babaeb0b6a389183cddf5cf0544073944ae1e9a3", size = 345661, upload-time = "2026-01-19T14:50:51.65Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/e6/22a9957c11d8e0fbdbd432ab8d22906b065e2aa385d615a969424b58f946/dls_dodal-2.0.0-py3-none-any.whl", hash = "sha256:a3523ec1649d63c90657af4fa0e10dcc6ced5c02fa0826dbf748e007b0fe9ebc", size = 366008, upload-time = "2026-02-04T15:53:29.939Z" },
 ]
 
 [[package]]
@@ -2113,7 +2113,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.0.0rc2" },
     { name = "deepdiff" },
-    { name = "dls-dodal", specifier = "==1.69.0" },
+    { name = "dls-dodal", specifier = "==2.0.0" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
