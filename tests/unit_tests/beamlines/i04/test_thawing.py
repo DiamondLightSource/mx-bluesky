@@ -7,7 +7,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
 from dodal.beamlines import i04
-from dodal.devices.i04.murko_results import MurkoResultsDevice
+from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
@@ -79,7 +79,7 @@ def thawer() -> Thawer:
 
 
 @pytest.fixture
-@patch("dodal.devices.i04.murko_results.StrictRedis")
+@patch("dodal.devices.beamlines.i04.murko_results.StrictRedis")
 async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
     murko_results = MurkoResultsDevice(name="murko_results")
     murko_results.trigger = MagicMock(side_effect=completed_status)
