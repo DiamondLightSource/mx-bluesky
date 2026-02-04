@@ -158,6 +158,10 @@ def test_udc_default_state_runs_in_real_run_engine(
     run_engine(move_to_udc_default_state(default_devices))
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.udc_default_state._unload_sample_if_present",
+    MagicMock(return_value=iter([Msg("robot_unload")])),
+)
 def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
@@ -168,13 +172,14 @@ def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
         msgs,
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == pre_beamstop_group,
     )
+    assert msgs[1].command == "robot_unload"
     assert (
-        msgs[1].command == "set"
-        and msgs[1].obj is default_devices.beamstop.selected_pos
-        and msgs[1].args[0] == BeamstopPositions.DATA_COLLECTION
+        msgs[2].command == "set"
+        and msgs[2].obj is default_devices.beamstop.selected_pos
+        and msgs[2].args[0] == BeamstopPositions.DATA_COLLECTION
     )
     assert (
-        msgs[2].command == "wait" and msgs[2].kwargs["group"] == msgs[1].kwargs["group"]
+        msgs[3].command == "wait" and msgs[3].kwargs["group"] == msgs[2].kwargs["group"]
     )
 
 
