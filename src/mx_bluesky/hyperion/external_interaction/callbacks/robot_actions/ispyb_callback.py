@@ -52,6 +52,7 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 f"ISPyB robot load callback received: {doc}"
             )
             metadata = doc.get("metadata")
+            assert isinstance(metadata, dict)
             self._sample_id = metadata.get("sample_id")
             if not isinstance(self._sample_id, int):
                 ISPYB_ZOCALO_CALLBACK_LOGGER.info(
@@ -59,7 +60,6 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 )
             else:
                 self.run_uid = doc.get("uid")
-                assert isinstance(metadata, dict)
                 proposal, session = get_proposal_and_session_from_visit_string(
                     metadata["visit"]
                 )
