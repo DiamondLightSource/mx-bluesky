@@ -4,11 +4,11 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
 from bluesky.utils import MsgGenerator
+from dodal.devices.beamlines.i24.aperture import AperturePositions
+from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.aperture import AperturePositions
-from dodal.devices.i24.beamstop import BeamstopPositions
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
-from dodal.devices.i24.dual_backlight import BacklightPositions
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from ophyd_async.fastcs.jungfrau import (
