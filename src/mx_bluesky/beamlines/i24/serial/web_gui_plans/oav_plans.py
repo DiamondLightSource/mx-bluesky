@@ -3,7 +3,7 @@ from enum import Enum
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.i24.pmac import PMAC
+from dodal.devices.beamlines.i24.pmac import PMAC
 
 
 class MoveSize(Enum):

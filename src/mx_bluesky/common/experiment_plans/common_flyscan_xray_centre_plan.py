@@ -154,7 +154,7 @@ def common_flyscan_xray_centre(
 
     This plan will also push data to ispyb when used with the ispyb_activation_decorator.
 
-    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, transmission_and_xbpm_feedback_for_collection_decorator
+    There are a few other useful decorators to use with this plan, see: verify_undulator_gap_before_run_decorator, common/preprocessors/preprocessors.py
     """
 
     def _overall_tidy():
@@ -210,7 +210,7 @@ def _fetch_xrc_results_from_zocalo(
 
     LOGGER.info("Getting X-ray center Zocalo results...")
 
-    yield from bps.trigger(zocalo_results)
+    yield from bps.trigger(zocalo_results, wait=True)
     LOGGER.info("Zocalo triggered and read, interpreting results.")
     xrc_results = yield from get_full_processing_results(zocalo_results)
     LOGGER.info(f"Got xray centres, top 5: {xrc_results[:5]}")

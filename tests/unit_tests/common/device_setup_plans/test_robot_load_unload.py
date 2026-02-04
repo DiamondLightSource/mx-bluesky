@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -9,7 +9,7 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.core import completed_status, get_mock_put, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     prepare_for_robot_load,
@@ -38,10 +38,9 @@ def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], b
 async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     aperture_scatterguard: ApertureScatterguard,
     smargon: Smargon,
-    done_status,
     run_engine: RunEngine,
 ):
-    smargon.stub_offsets.set = MagicMock(return_value=done_status)
+    smargon.stub_offsets.set = MagicMock(side_effect=lambda _: completed_status())
     get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
 
     set_mock_value(smargon.x.user_setpoint, 10)
@@ -98,12 +97,7 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
     )
 
 
-@patch(
-    "mx_bluesky.common.device_setup_plans.robot_load_unload.wait_for_smargon_not_disabled",
-    return_value=iter([Msg(command="wait_for_smargon")]),
-)
 async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and_put_back_after(
-    patch_smargon_not_disabled: MagicMock,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
@@ -139,10 +133,6 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
         lambda msg: msg.command == "set"
         and msg.obj is robot
         and msg.args[0] == SAMPLE_LOCATION_EMPTY,
-    )
-
-    msgs = assert_message_and_return_remaining(
-        msgs, lambda msg: msg.command == "wait_for_smargon"
     )
 
     msgs = assert_messages_any_order(
@@ -215,11 +205,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     mock_expeye.end_robot_action.assert_called_once_with(action_id, "success", "OK")
 
 
-@patch(
-    "mx_bluesky.common.device_setup_plans.robot_load_unload.wait_for_smargon_not_disabled"
-)
 def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
-    mock_wait_for_smargon: MagicMock,
     run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
@@ -231,7 +217,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
     run_engine.subscribe(callback)
-    mock_wait_for_smargon.side_effect = TestError("Bad Error")
+    robot.set = MagicMock(side_effect=TestError("Bad Error"))
 
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id

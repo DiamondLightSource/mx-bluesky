@@ -9,15 +9,15 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky import plan_stubs as bps
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_wrapper,
+    pause_xbpm_feedback_during_collection_at_desired_transmission_wrapper,
 )
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
 
@@ -74,7 +74,7 @@ def set_energy_plan(
     )
 
     if energy_ev:
-        yield from transmission_and_xbpm_feedback_for_collection_wrapper(
+        yield from pause_xbpm_feedback_during_collection_at_desired_transmission_wrapper(
             _set_energy_plan(energy_ev / 1000, composite),
             composite_for_wrapper,
             DESIRED_TRANSMISSION_FRACTION,

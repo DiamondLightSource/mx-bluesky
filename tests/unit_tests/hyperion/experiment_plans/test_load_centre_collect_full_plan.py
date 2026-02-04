@@ -15,12 +15,15 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra.zebra import RotationDirection
-from ophyd.sim import NullStatus
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import completed_status, set_mock_value
 from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.components import (
     TopNByMaxCountForEachSampleSelection,
+)
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+    RotationScanPerSweep,
 )
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
@@ -39,10 +42,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
-from mx_bluesky.hyperion.parameters.rotation import (
-    RotationScan,
-    RotationScanPerSweep,
-)
 
 from ....conftest import pin_tip_edge_data, raw_params_from_file
 from .conftest import (
@@ -105,7 +104,7 @@ def composite(
 
     composite = LoadCentreCollectComposite(baton=baton, **(rlaec_args | rotation_args))
     composite.pin_tip_detection = pin_tip_detection_with_found_pin
-    composite.undulator_dcm.set = MagicMock(return_value=NullStatus())
+    composite.undulator_dcm.set = MagicMock(side_effect=lambda _: completed_status())
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()

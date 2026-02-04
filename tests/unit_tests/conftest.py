@@ -2,7 +2,7 @@ import asyncio
 import pprint
 import sys
 from functools import partial
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -12,13 +12,13 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -28,11 +28,14 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
+from event_model import RunStart
 from event_model.documents import Event
 from ophyd_async.core import (
     AsyncStatus,
-    AutoIncrementingPathProvider,
-    StaticFilenameProvider,
+    AutoMaxIncrementingPathProvider,
+    PathInfo,
+    PathProvider,
+    completed_status,
     init_devices,
     set_mock_value,
 )
@@ -147,12 +150,6 @@ BASIC_PRE_SETUP_DOC = {
 
 BASIC_POST_SETUP_DOC = {
     "aperture_scatterguard-selected_aperture": ApertureValue.OUT_OF_BEAM,
-    "aperture_scatterguard-radius": None,
-    "aperture_scatterguard-aperture-x": 15,
-    "aperture_scatterguard-aperture-y": 16,
-    "aperture_scatterguard-aperture-z": 2,
-    "aperture_scatterguard-scatterguard-x": 18,
-    "aperture_scatterguard-scatterguard-y": 19,
     "attenuator-actual_transmission": 0,
     "flux-flux_reading": 10,
     "dcm-energy_in_keV": 11.105,
@@ -197,8 +194,10 @@ def use_beamline_t01():
 
         with (
             patch.dict(sys.modules, {"dodal.beamlines.t01": tests.unit_tests.t01}),
-            patch("mx_bluesky.hyperion.baton_handler.move_to_udc_default_state"),
-            patch("mx_bluesky.hyperion.baton_handler.device_composite_from_context"),
+            patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state"),
+            patch(
+                "mx_bluesky.hyperion.in_process_runner.device_composite_from_context"
+            ),
         ):
             yield tests.unit_tests.t01
 
@@ -327,7 +326,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     test_fgs_params: SpecifiedThreeDGridScan,
-    done_status,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -344,7 +342,7 @@ async def fake_fgs_composite(
         zocalo=zocalo,
     )
 
-    fake_composite.eiger.stage = MagicMock(return_value=done_status)
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
@@ -462,14 +460,41 @@ async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
     return composite
 
 
+class _BasePathProvider(PathProvider):
+    """Minimal adaption of BlueAPI's PathProvider.
+
+    To use this PathProvider in a test, a run must be open
+    with 'detector_file_template' attached as metadata. This is done
+    automatically when using BlueAPI
+
+    For longer term plans to test plans with BlueAPI in CI,
+    see https://github.com/DiamondLightSource/blueapi/issues/1206"""
+
+    def __init__(self, tmp_path: Path) -> None:
+        self.path = tmp_path
+        self._docs: list[RunStart] = []
+
+    def run_start(self, name: str, start_document: RunStart) -> None:
+        if name == "start":
+            self._docs.append(start_document)
+
+    def __call__(self, device_name: str | None = None) -> PathInfo:
+        template = self._docs[-1].get("detector_file_template")
+        if not template:
+            raise ValueError("detector_file_template must be set in metadata")
+        sub_path = template.format_map(self._docs[-1] | {"device_name": device_name})
+        return PathInfo(directory_path=self.path, filename=sub_path)
+
+
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
     with init_devices(mock=True):
-        name = StaticFilenameProvider("jf_out")
-        path = AutoIncrementingPathProvider(name, PurePath(tmp_path))
+        base_provider = _BasePathProvider(tmp_path)
+        path = AutoMaxIncrementingPathProvider(base_provider)
         detector = CommissioningJungfrau("", "", path)
     set_mock_value(detector._writer.writer_ready, 1)
+    run_engine.subscribe(base_provider.run_start, "start")
 
     return detector
 

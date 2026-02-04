@@ -6,16 +6,20 @@ import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.focus_mirrors import (
+    FocusMirrorsMode,
+    HFocusMode,
+    VFocusMode,
+)
 from dodal.devices.hutch_shutter import (
     HUTCH_SAFE_FOR_OPERATIONS,
     HutchShutter,
     ShutterDemand,
     ShutterState,
 )
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
 from dodal.devices.zebra.zebra import Zebra
 from dodal.utils import AnyDeviceFactory
 from ophyd_async.core import callback_on_mock_put, set_mock_value
@@ -86,13 +90,13 @@ def fake_generator(value):
 
 
 @pytest.fixture
-def zebra(run_engine) -> Zebra:
-    return i24.zebra(connect_immediately=True, mock=True)
+def zebra() -> Zebra:
+    return i24.zebra.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def shutter(run_engine) -> HutchShutter:
-    shutter = i24.shutter(connect_immediately=True, mock=True)
+def shutter() -> HutchShutter:
+    shutter = i24.shutter.build(connect_immediately=True, mock=True)
     set_mock_value(shutter.interlock.status, HUTCH_SAFE_FOR_OPERATIONS)
 
     def set_status(value: ShutterDemand, *args, **kwargs):
@@ -104,53 +108,59 @@ def shutter(run_engine) -> HutchShutter:
 
 
 @pytest.fixture
-def detector_stage(run_engine):
-    return i24.detector_motion(connect_immediately=True, mock=True)
+def detector_stage():
+    return i24.detector_motion.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def aperture(run_engine):
-    return i24.aperture(connect_immediately=True, mock=True)
+def aperture():
+    return i24.aperture.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def backlight(run_engine) -> DualBacklight:
-    return i24.backlight(connect_immediately=True, mock=True)
+def backlight() -> DualBacklight:
+    return i24.backlight.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def beamstop(run_engine):
-    return i24.beamstop(connect_immediately=True, mock=True)
+def beamstop():
+    return i24.beamstop.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def pmac(run_engine):
-    return i24.pmac(connect_immediately=True, mock=True)
+def pmac():
+    return i24.pmac.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def dcm(run_engine) -> DCM:
-    return i24.dcm(connect_immediately=True, mock=True)
+def dcm() -> DCM:
+    return i24.dcm.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
-def eiger_beam_center(run_engine) -> DetectorBeamCenter:
-    bc: DetectorBeamCenter = i24.eiger_beam_center(connect_immediately=True, mock=True)
+def eiger_beam_center() -> DetectorBeamCenter:
+    bc: DetectorBeamCenter = i24.eiger_beam_center.build(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(bc.beam_x, 1605)
     set_mock_value(bc.beam_y, 1702)
     return bc
 
 
 @pytest.fixture
-def mirrors(run_engine) -> FocusMirrorsMode:
-    mirrors: FocusMirrorsMode = i24.focus_mirrors(connect_immediately=True, mock=True)
+def mirrors() -> FocusMirrorsMode:
+    mirrors: FocusMirrorsMode = i24.focus_mirrors.build(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
     set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
     return mirrors
 
 
 @pytest.fixture
-def attenuator(run_engine) -> ReadOnlyAttenuator:
-    attenuator: ReadOnlyAttenuator = i24.attenuator(connect_immediately=True, mock=True)
+def attenuator() -> ReadOnlyAttenuator:
+    attenuator: ReadOnlyAttenuator = i24.attenuator.build(
+        connect_immediately=True, mock=True
+    )
     set_mock_value(attenuator.actual_transmission, 1.0)
     return attenuator

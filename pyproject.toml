@@ -2,6 +2,12 @@
 requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
 
+[tool.uv]
+# Restrict lockfile to a sane subset of platforms
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'"
+]
+
 [project]
 name = "mx-bluesky"
 classifiers = [
@@ -39,6 +45,8 @@ dependencies = [
     "deepdiff",
     "matplotlib",
     "cachetools",
+    "bluesky-stomp >= 0.2.0",
+
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
@@ -57,7 +65,7 @@ license.file = "LICENSE"
 readme = "README.rst"
 requires-python = ">=3.11"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "black",
     "build",
@@ -70,7 +78,6 @@ dev = [
     "ipython",
     "mypy",
     "myst-parser",
-    "pipdeptree",
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
@@ -86,10 +93,10 @@ dev = [
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
-    "tox-direct",
-    "tox",
+    "tox-uv",
     "types-mock",
     "types-requests",
+    "sphinxcontrib.mermaid", # To build dodal docs
 ]
 
 [project.scripts]
@@ -106,7 +113,6 @@ GitHub = "https://github.com/DiamondLightSource/mx-bluesky"
 [[project.authors]] # Further authors may be added by duplicating this section
 email = "dominic.oram@diamond.ac.uk"
 name = "Dominic Oram"
-
 
 [tool.setuptools_scm]
 version_file = "src/mx_bluesky/_version.py"
@@ -169,51 +175,134 @@ data_file = "/tmp/mx_bluesky.coverage"
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
 
-# tox must currently be configured via an embedded ini string
-# See: https://github.com/tox-dev/tox/issues/999
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-skipsdist=True
+skipsdist = true
+# envs to runs automatically with tox -p
+env_list = ["pre-commit", "type-checking", "tests", "docs"]
 
-[testenv]
-# Don't create a virtualenv for the command, requires tox-direct plugin
-direct = True
-passenv = *
-allowlist_externals =
-    pytest
-    pre-commit
-    pyright
-    sphinx-build
-    sphinx-autobuild
+[tool.tox.env_run_base]
+# Pass all environment variables to the test environments
+passenv = ["*"]
 
-[testenv:{pre-commit,type-checking,tests,docs}]
-commands =
-    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: pyright src tests {posargs}
-    tests: pytest {posargs}
-    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-commands_pre =
-    docs: /usr/bin/bash -c "{toxinidir}/utility_scripts/generate_plantuml.py > \
-        docs/developer/hyperion/reference/param_hierarchy.puml"
+[tool.tox.env.pre-commit]
+description = "Run pre-commit on all files"
+commands = [
+    [
+        "pre-commit",
+        "run",
+        "--all-files",
+        "--show-diff-on-failure",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
 
-# Runs the system tests in CI
-[testenv:systemtests]
-setenv =
-    DODAL_TEST_MODE=true
-commands =
-    pytest --junit-xml=systemtests_output.xml -m system_test --timeout=60 tests/system_tests
+[tool.tox.env.type-checking]
+description = "Run pyright"
+commands = [
+    [
+        "pyright",
+        "--pythonpath",
+        "{env:VIRTUAL_ENV}/bin/python",
+        "src",
+        "tests",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.tests]
+description = "Run tests with coverage"
+commands = [
+    [
+        "pytest",
+        "--cov=mx_bluesky",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+
+[tool.tox.env.systemtests]
+description = "Run tests with coverage"
+commands = [
+    [
+        "pytest",
+        "--junit-xml=systemtests_output.xml",
+        "-m",
+        "system_test",
+        "tests/system_tests",
+        "--timeout=60",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+set_env = { DODAL_TEST_MODE = "true" }
+
 
 # Runs the system tests locally
-[testenv:localsystemtests]
-setenv =
-    DOCKER=podman
-    DODAL_TEST_MODE=true
-    ISPYB_CONFIG_PATH={toxinidir}/tests/test_data/ispyb-test-credentials.cfg
-    ZOCALO_CONFIG={toxinidir}/tests/test_data/zocalo-test-configuration.yaml
-commands =
-    pytest -m system_test --timeout=60 tests/system_tests {posargs}
-"""
+[tool.tox.env.localsystemtests]
+commands = [
+    [
+        "pytest",
+        "-m",
+        "system_test",
+        "--timeout=60",
+        "tests/system_tests",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.localsystemtests.set_env]
+DOCKER = "podman"
+DODAL_TEST_MODE = "true"
+ISPYB_CONFIG_PATH = "{toxinidir}/tests/test_data/ispyb-test-credentials.cfg"
+ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
+
+[tool.tox.env.docs]
+description = "Run docs build with clean environment"
+env_dir = ".venv"
+skip_install = true
+commands_pre = [
+    [
+        "python", 
+        "{toxinidir}/utility_scripts/generate_plantuml.py", 
+        "docs/developer/hyperion/reference/param_hierarchy.puml"
+    ]
+]
+commands = [
+    [
+        "sphinx-build",
+        "--fresh-env",
+        "--show-traceback",
+        "--fail-on-warning",
+        "--keep-going",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs-autobuild]
+description = "Run docs with autobuild on change"
+commands = [
+    [
+        "sphinx-autobuild",
+        "--show-traceback",
+        "--watch",
+        "README.rst",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
 
 [tool.ruff]
 src = ["src", "tests"]

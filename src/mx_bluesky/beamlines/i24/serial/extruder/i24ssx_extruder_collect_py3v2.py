@@ -15,13 +15,13 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.beamlines.i24.aperture import Aperture
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
@@ -113,7 +113,7 @@ def laser_check(
     """
     SSX_LOGGER.debug(f"Laser check: {mode}")
 
-    laser_ttl = zebra.mapping.outputs.TTL_PILATUS  # Update with dodal changes
+    laser_ttl = zebra.mapping.outputs.TTL_JUNGFRAU
 
     if mode == "laseron":
         yield from bps.abs_set(

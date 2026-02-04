@@ -16,8 +16,8 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import InOut
+from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -25,7 +25,6 @@ from dodal.devices.thawer import OnOff
 from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
-from ophyd.status import Status
 from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
@@ -40,7 +39,13 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+    SingleRotationScan,
+)
+from mx_bluesky.common.utils.exceptions import (
+    ISPyBDepositionNotMadeError,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
@@ -59,7 +64,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
     DocumentCapturer,
@@ -171,7 +175,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.I03Constants.OMEGA_FLIP",
+    "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
     new=False,
 )
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
@@ -924,7 +928,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     run_engine: RunEngine,
 ):
     with patch(
-        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
         new=omega_flip,
     ):
         for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
@@ -1452,9 +1456,6 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
     oav_parameters_for_rotation: OAVParameters,
 ):
     eiger = fake_create_rotation_devices.eiger
-    eiger.stage = MagicMock(return_value=Status(done=True, success=True))
-    eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
-    eiger.do_arm.set = MagicMock(return_value=Status(done=True, success=True))
 
     _run_multi_rotation_plan(
         run_engine,
@@ -1464,10 +1465,10 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
         oav_parameters_for_rotation,
     )
     # Stage will arm the eiger synchonously
-    eiger.stage.assert_not_called()
+    eiger.stage.assert_not_called()  # type:ignore
 
-    eiger.do_arm.set.assert_called_once()
-    eiger.unstage.assert_called_once()
+    eiger.do_arm.set.assert_called_once()  # type:ignore
+    eiger.unstage.assert_called_once()  # type:ignore
 
 
 @patch(
@@ -1493,8 +1494,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     )
     eiger = fake_create_rotation_devices.eiger
     parent_mock = MagicMock()
-    parent_mock.eiger_unstage = MagicMock(return_value=Status(done=True, success=True))
-    eiger.unstage = parent_mock.eiger_unstage
+    parent_mock.eiger_unstage = eiger.unstage
     _, ispyb_callback = create_rotation_callbacks()
     zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)

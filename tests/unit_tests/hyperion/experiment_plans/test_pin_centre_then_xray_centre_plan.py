@@ -6,10 +6,11 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
+from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
+from dodal.devices.xbpm_feedback import Pause
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     _fire_xray_centre_result_event,
@@ -38,6 +39,25 @@ def test_pin_centre_then_xray_centre_params(tmp_path):
         tmp_path,
     )
     return PinTipCentreThenXrayCentre(**params)
+
+
+@pytest.fixture
+def test_grid_params():
+    return {
+        "transmission_frac": 1.0,
+        "exposure_time_s": 0,
+        "x_start_um": 0,
+        "y_start_um": 0,
+        "y2_start_um": 0,
+        "z_start_um": 0,
+        "z2_start_um": 0,
+        "x_steps": 10,
+        "y_steps": 10,
+        "z_steps": 10,
+        "x_step_size_um": 0.1,
+        "y_step_size_um": 0.1,
+        "z_step_size_um": 0.1,
+    }
 
 
 @patch(
@@ -134,26 +154,13 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_grid_detect: MagicMock,
     mock_pin_tip_centre: MagicMock,
     mock_grid_callback: MagicMock,
+    test_grid_params: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
     sim_run_engine: RunEngineSimulator,
 ):
-    mock_grid_callback.return_value.get_grid_parameters.return_value = {
-        "transmission_frac": 1.0,
-        "exposure_time_s": 0,
-        "x_start_um": 0,
-        "y_start_um": 0,
-        "y2_start_um": 0,
-        "z_start_um": 0,
-        "z2_start_um": 0,
-        "x_steps": 10,
-        "y_steps": 10,
-        "z_steps": 10,
-        "x_step_size_um": 0.1,
-        "y_step_size_um": 0.1,
-        "z_step_size_um": 0.1,
-    }
+    mock_grid_callback.return_value.get_grid_parameters.return_value = test_grid_params
 
     sim_run_engine.add_handler_for_callback_subscribes()
 
@@ -390,4 +397,82 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "pin_centre_flyscan_plan"
+    )
+
+
+@pytest.mark.parametrize("transmission_frac", [1, 0.5, 0.25])
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.change_aperture_then_move_to_xtal"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.XRayCentreEventHandler"
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan"
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan"
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.run_gridscan"
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan._fetch_xrc_results_from_zocalo"
+)
+def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_paused_and_both_reverted(
+    mock_fetch_zocalo_results: MagicMock,
+    mock_run_gridscan: MagicMock,
+    mock_grid_detection_plan: MagicMock,
+    mock_pin_tip_centre_plan: MagicMock,
+    mock_events_handler: MagicMock,
+    mock_change_aperture_then_move_to_xtal: MagicMock,
+    mock_grid_detection_callback: MagicMock,
+    test_grid_params,
+    transmission_frac: float,
+    sim_run_engine: RunEngineSimulator,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+):
+    mock_grid_detection_callback.return_value.get_grid_parameters.return_value = (
+        test_grid_params
+    )
+
+    flyscan_event_handler = MagicMock()
+    flyscan_event_handler.xray_centre_results = "dummy"
+    mock_events_handler.return_value = flyscan_event_handler
+
+    test_pin_centre_then_xray_centre_params.transmission_frac = transmission_frac
+
+    msgs = sim_run_engine.simulate_plan(
+        pin_tip_centre_then_xray_centre(
+            hyperion_grid_detect_xrc_devices,
+            test_pin_centre_then_xray_centre_params,
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "xbpm_feedback-pause_feedback"
+        and msg.args[0] == Pause.PAUSE,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == transmission_frac,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "xbpm_feedback-pause_feedback"
+        and msg.args[0] == Pause.RUN,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "set"
+        and msg.obj.name == "attenuator"
+        and msg.args[0] == 1.0,
     )
