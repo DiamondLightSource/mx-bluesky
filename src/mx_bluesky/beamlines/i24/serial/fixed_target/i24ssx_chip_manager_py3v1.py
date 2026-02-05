@@ -152,8 +152,8 @@ def read_parameters(
 
     transmission = yield from bps.rd(attenuator.actual_transmission)
 
-    params_dict = FixedTargetParameters(
-        visit=_read_visit_directory_from_file(),  # noqa
+    params = FixedTargetParameters(
+        visit=_read_visit_directory_from_file(),
         directory=caget(pv.me14e_filepath),
         filename=filename,
         exposure_time_s=float(caget(pv.me14e_exptime)),
@@ -172,10 +172,10 @@ def read_parameters(
     )
 
     SSX_LOGGER.info("Parameters for I24 serial collection: \n")
-    SSX_LOGGER.info(pformat(params_dict))
+    SSX_LOGGER.info(pformat(params))
 
     yield from bps.null()
-    return FixedTargetParameters(**params_dict)  # type: ignore
+    return params
 
 
 def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):
