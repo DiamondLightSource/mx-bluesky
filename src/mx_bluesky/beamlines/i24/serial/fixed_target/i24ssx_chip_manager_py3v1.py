@@ -22,6 +22,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     ChipType,
     Fiducials,
     MappingType,
+    PumpProbeSetting,
 )
 from mx_bluesky.beamlines.i24.serial.log import (
     SSX_LOGGER,
@@ -38,6 +39,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     LITEMAP_PATH,
     PARAM_FILE_PATH_FT,
     PVAR_FILE_PATH,
+    DetectorName,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_detector import (
@@ -138,7 +140,7 @@ def read_parameters(
     filename = caget(pv.me14e_chip_name)
     det_type = yield from get_detector_type(detector_stage)
     chip_params = get_chip_format(ChipType(int(caget(CHIPTYPE_PV))))
-    map_type = int(caget(MAPTYPE_PV))
+    map_type = MappingType(int(caget(MAPTYPE_PV)))
     if map_type == MappingType.Lite and chip_params.chip_type in [
         ChipType.Oxford,
         ChipType.OxfordInner,
@@ -146,36 +148,34 @@ def read_parameters(
         chip_map = get_chip_map()
     else:
         chip_map = []
-    pump_repeat = int(caget(PUMP_REPEAT_PV))
+    pump_repeat = PumpProbeSetting(int(caget(PUMP_REPEAT_PV)))
 
     transmission = yield from bps.rd(attenuator.actual_transmission)
 
-    params_dict = {
-        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": caget(pv.me14e_filepath),
-        "filename": filename,
-        "exposure_time_s": caget(pv.me14e_exptime),
-        "detector_distance_mm": caget(pv.me14e_dcdetdist),
-        "detector_name": str(det_type),
-        "num_exposures": int(caget(NUM_EXPOSURES_PV)),
-        "transmission": transmission,
-        "chip": chip_params.model_dump(),
-        "map_type": map_type,
-        "pump_repeat": pump_repeat,
-        "checker_pattern": _is_checker_pattern(),
-        "chip_map": chip_map,
-        "laser_dwell_s": float(caget(pv.ioc13_gp103)) if pump_repeat != 0 else 0.0,
-        "laser_delay_s": float(caget(pv.ioc13_gp110)) if pump_repeat != 0 else 0.0,
-        "pre_pump_exposure_s": float(caget(pv.ioc13_gp109))
-        if pump_repeat != 0
-        else None,
-    }
+    params = FixedTargetParameters(
+        visit=_read_visit_directory_from_file(),
+        directory=caget(pv.me14e_filepath),
+        filename=filename,
+        exposure_time_s=float(caget(pv.me14e_exptime)),
+        detector_distance_mm=float(caget(pv.me14e_dcdetdist)),
+        detector_name=DetectorName(str(det_type)),
+        num_exposures=int(caget(NUM_EXPOSURES_PV)),
+        transmission=transmission,
+        chip=chip_params,
+        map_type=map_type,
+        pump_repeat=pump_repeat,
+        checker_pattern=_is_checker_pattern(),
+        chip_map=chip_map,
+        laser_dwell_s=float(caget(pv.ioc13_gp103)) if pump_repeat != 0 else 0.0,
+        laser_delay_s=float(caget(pv.ioc13_gp110)) if pump_repeat != 0 else 0.0,
+        pre_pump_exposure_s=float(caget(pv.ioc13_gp109)) if pump_repeat != 0 else None,
+    )
 
     SSX_LOGGER.info("Parameters for I24 serial collection: \n")
-    SSX_LOGGER.info(pformat(params_dict))
+    SSX_LOGGER.info(pformat(params))
 
     yield from bps.null()
-    return FixedTargetParameters(**params_dict)
+    return params
 
 
 def scrape_pvar_file(fid: str, pvar_dir: Path = PVAR_FILE_PATH):

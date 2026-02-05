@@ -21,6 +21,7 @@ from dodal.devices.zebra.zebra import (
 )
 
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 
 # Detector specific outs
 TTL_EIGER = 1
@@ -158,7 +159,7 @@ def set_logic_gates_for_porto_triggering(
 
 def setup_zebra_for_extruder_with_pump_probe_plan(
     zebra: Zebra,
-    det_type: str,
+    det_type: DetectorName,
     exp_time: float,
     num_images: int,
     pump_exp: float | None,
