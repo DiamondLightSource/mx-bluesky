@@ -9,20 +9,19 @@ from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any, TypeVar
+from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import numpy
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
-from bluesky.utils import Msg
+from bluesky.utils import Msg, MsgGenerator
 from daq_config_server.models import ConfigModel
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
-from dodal.common.beamlines.beamline_parameters import (
-    get_beamline_parameters,
-)
+from dodal.common.beamlines.beamline_parameters import get_beamline_parameters
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
@@ -40,15 +39,15 @@ from dodal.devices.attenuator.filter_selections import (
 )
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
+from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i03.beamsize import Beamsize
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop, BeamstopPositions
-from dodal.devices.i03.beamsize import Beamsize
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -498,13 +497,7 @@ def oav(test_config_files):
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
-    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
-    # Equivalent to previously set values for microns and beam centre
     set_mock_value(oav.zoom_controller.level, "5.0x")
-
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
@@ -1187,6 +1180,14 @@ def fat_pin_edges():
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
     bottom_edge_array += 60
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
+
+
+T = TypeVar("T")
+
+
+def fake_generator(return_val: T) -> MsgGenerator[T]:
+    yield from bps.null()
+    return return_val
 
 
 @pytest.fixture

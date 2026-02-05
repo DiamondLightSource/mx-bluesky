@@ -2,6 +2,12 @@
 requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
 
+[tool.uv]
+# Restrict lockfile to a sane subset of platforms
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'"
+]
+
 [project]
 name = "mx-bluesky"
 classifiers = [
@@ -260,6 +266,15 @@ ZOCALO_CONFIG = "{toxinidir}/tests/test_data/zocalo-test-configuration.yaml"
 
 [tool.tox.env.docs]
 description = "Run docs build with clean environment"
+env_dir = ".venv"
+skip_install = true
+commands_pre = [
+    [
+        "python", 
+        "{toxinidir}/utility_scripts/generate_plantuml.py", 
+        "docs/developer/hyperion/reference/param_hierarchy.puml"
+    ]
+]
 commands = [
     [
         "sphinx-build",
