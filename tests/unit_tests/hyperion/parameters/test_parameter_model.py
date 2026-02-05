@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (

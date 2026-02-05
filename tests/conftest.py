@@ -25,11 +25,6 @@ from dodal.common.beamlines.beamline_parameters import (
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
-from dodal.devices.aperturescatterguard import (
-    AperturePosition,
-    ApertureScatterguard,
-    ApertureValue,
-)
 from dodal.devices.attenuator.attenuator import (
     BinaryFilterAttenuator,
     EnumFilterAttenuator,
@@ -49,12 +44,18 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    AperturePosition,
+    ApertureScatterguard,
+    ApertureScatterguardConfiguration,
+    ApertureValue,
+)
+from dodal.devices.mx_phase1.scintillator import Scintillator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -547,11 +548,12 @@ def robot():
 
 
 @pytest.fixture
-def scintillator(aperture_scatterguard):
+def scintillator(aperture_scatterguard, beamstop_phase1):
     with init_devices(mock=True):
         scintillator = Scintillator(
             "",
             aperture_scatterguard=Reference(aperture_scatterguard),
+            beamstop=Reference(beamstop_phase1),
             beamline_parameters=MagicMock(),
             name="scintillator",
         )
@@ -697,52 +699,56 @@ def sample_shutter() -> Generator[ZebraShutter, Any, Any]:
 
 @pytest.fixture
 async def aperture_scatterguard():
-    positions = {
-        ApertureValue.LARGE: AperturePosition(
-            aperture_x=0,
-            aperture_y=1,
-            aperture_z=2,
-            scatterguard_x=3,
-            scatterguard_y=4,
-            diameter=100,
-        ),
-        ApertureValue.MEDIUM: AperturePosition(
-            aperture_x=5,
-            aperture_y=6,
-            aperture_z=2,
-            scatterguard_x=8,
-            scatterguard_y=9,
-            diameter=50,
-        ),
-        ApertureValue.SMALL: AperturePosition(
-            aperture_x=10,
-            aperture_y=11,
-            aperture_z=2,
-            scatterguard_x=13,
-            scatterguard_y=14,
-            diameter=20,
-        ),
-        ApertureValue.OUT_OF_BEAM: AperturePosition(
-            aperture_x=15,
-            aperture_y=16,
-            aperture_z=2,
-            scatterguard_x=18,
-            scatterguard_y=19,
-            diameter=0,
-        ),
-        ApertureValue.PARKED: AperturePosition(
-            aperture_x=20,
-            aperture_y=25,
-            aperture_z=0,
-            scatterguard_x=36,
-            scatterguard_y=56,
-            diameter=0,
-        ),
-    }
+    config = ApertureScatterguardConfiguration(
+        aperture_positions={
+            ApertureValue.LARGE: AperturePosition(
+                aperture_x=0,
+                aperture_y=1,
+                aperture_z=2,
+                scatterguard_x=3,
+                scatterguard_y=4,
+                diameter=100,
+            ),
+            ApertureValue.MEDIUM: AperturePosition(
+                aperture_x=5,
+                aperture_y=6,
+                aperture_z=2,
+                scatterguard_x=8,
+                scatterguard_y=9,
+                diameter=50,
+            ),
+            ApertureValue.SMALL: AperturePosition(
+                aperture_x=10,
+                aperture_y=11,
+                aperture_z=2,
+                scatterguard_x=13,
+                scatterguard_y=14,
+                diameter=20,
+            ),
+            ApertureValue.OUT_OF_BEAM: AperturePosition(
+                aperture_x=15,
+                aperture_y=16,
+                aperture_z=2,
+                scatterguard_x=18,
+                scatterguard_y=19,
+                diameter=0,
+            ),
+            ApertureValue.PARKED: AperturePosition(
+                aperture_x=20,
+                aperture_y=25,
+                aperture_z=0,
+                scatterguard_x=36,
+                scatterguard_y=56,
+                diameter=0,
+            ),
+        },
+        scintillator_move_aperture_x=-1.0,
+        scintillator_move_scatterguard_x=-1.5,
+    )
     with (
         patch(
-            "dodal.beamlines.i03.load_positions_from_beamline_parameters",
-            return_value=positions,
+            "dodal.beamlines.i03.load_configuration",
+            return_value=config,
         ),
         patch(
             "dodal.beamlines.i03.AperturePosition.tolerances_from_gda_params",

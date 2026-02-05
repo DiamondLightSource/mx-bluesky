@@ -5,11 +5,11 @@ import pytest
 from bluesky import Msg, RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.beamlines.beamline_parameters import GDABeamlineParameters
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.ipin import IPinGain
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
-from dodal.devices.scintillator import InOut
+from dodal.devices.mx_phase1.scintillator import InOut
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from ophyd_async.core import set_mock_value, set_mock_values
 

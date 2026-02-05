@@ -5,9 +5,9 @@ from unittest.mock import patch
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.areadetector.plugins.cam import ColorMode
 from dodal.devices.backlight import Backlight
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureScatterguard
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon

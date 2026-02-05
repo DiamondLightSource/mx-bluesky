@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.0.1.dev1+gfbc62313b"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#fbc62313b4cdb4802b2dc0e8ce8b19af4909be4f" }
+version = "1.69.1.dev55+ga2e9c3f7d"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=mx-bluesky_1354_scintillator_safe_move#a2e9c3f7da2f27adba6a9d12ef96efc483580cdc" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2108,7 +2108,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.0.0rc2" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=mx-bluesky_1354_scintillator_safe_move" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },

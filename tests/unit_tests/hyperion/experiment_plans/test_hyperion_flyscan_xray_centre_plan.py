@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import (
+from dodal.devices.mx_phase1.aperturescatterguard import (
     ApertureValue,
 )
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
@@ -115,8 +115,8 @@ class TestFlyscanXrayCentrePlan:
             )
 
         aperture_scatterguard = hyperion_flyscan_xrc_composite.aperture_scatterguard
-        large = aperture_scatterguard._loaded_positions[ApertureValue.LARGE]
-        medium = aperture_scatterguard._loaded_positions[ApertureValue.MEDIUM]
+        large = aperture_scatterguard._config.aperture_positions[ApertureValue.LARGE]
+        medium = aperture_scatterguard._config.aperture_positions[ApertureValue.MEDIUM]
         ap_call_large = call(large, ApertureValue.LARGE)
         ap_call_medium = call(medium, ApertureValue.MEDIUM)
 

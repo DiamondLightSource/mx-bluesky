@@ -1,7 +1,10 @@
 import numpy
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    ApertureScatterguard,
+    ApertureValue,
+)
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
