@@ -70,7 +70,7 @@ def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenera
     LOGGER.info("Turning off Eiger dev/shm streaming")
     # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     yield from bps.abs_set(
-        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore
+        xrc_composite.eiger.odin.fan.dev_shm_enable,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
         0,
         group=group,
     )
@@ -82,8 +82,8 @@ def construct_beamline_specific_fast_gridscan_features(
     tidy_plan: Callable[..., MsgGenerator],
     set_flyscan_params_plan: Callable[..., MsgGenerator],
     fgs_motors: FastGridScanCommon,
-    signals_to_read_pre_flyscan: list[Readable],
-    signals_to_read_during_collection: list[Readable],
+    signals_to_read_pre_flyscan: Sequence[Readable],
+    signals_to_read_during_collection: Sequence[Readable],
     get_xrc_results_from_zocalo: bool = False,
 ) -> BeamlineSpecificFGSFeatures:
     """Construct the class needed to do beamline-specific parts of the XRC FGS

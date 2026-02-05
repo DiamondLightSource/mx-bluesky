@@ -63,7 +63,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
@@ -315,7 +315,7 @@ def construct_i04_specific_features(
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
-        signals_to_read_during_collection,
+        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
         get_xrc_results_from_zocalo=True,
     )
 
@@ -350,5 +350,5 @@ def _get_grid_common_params(
         storage_directory=parameters.storage_directory,
         transmission_frac=transmission_frac,
         exposure_time_s=exposure_time_s,
-        parameter_model_version=PARAMETER_VERSION,
+        parameter_model_version=get_param_version(),
     )

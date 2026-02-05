@@ -164,7 +164,7 @@ def _start_moving_detector_if_needed(
     devices: BeamstopCheckDevices,
     detector_min_z_mm: float,
     detector_max_z_mm: float,
-    group: str = None,
+    group: str | None = None,
 ):
     detector_current_z = yield from bps.rd(devices.detector_motion.z)
     target_z = max(min(detector_current_z, detector_max_z_mm), detector_min_z_mm)
