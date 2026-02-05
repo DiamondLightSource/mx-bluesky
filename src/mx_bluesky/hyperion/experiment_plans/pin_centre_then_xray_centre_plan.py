@@ -33,6 +33,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
@@ -129,8 +130,11 @@ def pin_centre_then_xray_centre_plan(
             )
 
         yield from _grid_detect_plan()
+        assert isinstance(
+            grid_detect_params.specified_grid_params, SpecifiedThreeDGridScan
+        ), "Specified grid params couldn't be found after grid detection"
         yield from get_results_then_change_aperture_and_move_to_xtal(
-            composite, grid_detect_params.specified_grid_params(), flyscan_event_handler
+            composite, grid_detect_params.specified_grid_params, flyscan_event_handler
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_gridscan_and_xrc(), parameters)
