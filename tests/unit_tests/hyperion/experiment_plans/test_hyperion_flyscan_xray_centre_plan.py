@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import (
+from dodal.devices.mx_phase1.aperturescatterguard import (
     ApertureValue,
 )
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID

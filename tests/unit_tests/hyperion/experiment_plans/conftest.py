@@ -6,6 +6,7 @@ import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.core import AsyncStatus, completed_status, set_mock_value

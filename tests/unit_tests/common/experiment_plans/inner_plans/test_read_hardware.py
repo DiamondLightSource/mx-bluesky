@@ -8,13 +8,13 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import eiger
-from dodal.devices.aperturescatterguard import (
-    ApertureScatterguard,
-)
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    ApertureScatterguard,
+)
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon

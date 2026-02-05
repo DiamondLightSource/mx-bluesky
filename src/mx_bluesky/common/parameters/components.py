@@ -7,11 +7,11 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal, Self, SupportsInt, cast
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
 )
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from pydantic import (
     BaseModel,
     ConfigDict,

@@ -3,13 +3,13 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Generic, TypeVar
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     GridScanParamsCommon,
     ZebraGridScanParamsThreeD,
 )
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from dodal.utils import get_beamline_name
 from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath

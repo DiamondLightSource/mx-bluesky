@@ -6,8 +6,8 @@ from itertools import accumulate
 from typing import Annotated, Any, Self
 
 from annotated_types import Len
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import DetectorParams
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from dodal.devices.zebra.zebra import (
     RotationDirection,
 )

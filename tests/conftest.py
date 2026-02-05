@@ -25,12 +25,6 @@ from dodal.common.beamlines.beamline_parameters import (
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
-from dodal.devices.aperturescatterguard import (
-    AperturePosition,
-    ApertureScatterguard,
-    ApertureScatterguardConfiguration,
-    ApertureValue,
-)
 from dodal.devices.attenuator.attenuator import (
     BinaryFilterAttenuator,
     EnumFilterAttenuator,
@@ -50,12 +44,18 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    AperturePosition,
+    ApertureScatterguard,
+    ApertureScatterguardConfiguration,
+    ApertureValue,
+)
+from dodal.devices.mx_phase1.scintillator import Scintillator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer

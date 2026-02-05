@@ -10,7 +10,6 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamsize.beamsize import BeamsizeBase
@@ -19,6 +18,10 @@ from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    ApertureScatterguard,
+    ApertureValue,
+)
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection

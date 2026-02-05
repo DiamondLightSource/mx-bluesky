@@ -14,10 +14,13 @@ import pytest
 from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector.detector_motion import ShutterState
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    ApertureScatterguard,
+    ApertureValue,
+)
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import SynchrotronMode

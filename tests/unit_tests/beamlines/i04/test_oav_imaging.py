@@ -9,9 +9,9 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beam_centre import CentreEllipseMethod
 from dodal.devices.beamlines.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.mx_phase1.scintillator import InOut, Scintillator
 from dodal.devices.oav.oav_detector import OAV, ZoomControllerWithBeamCentres
 from dodal.devices.robot import BartRobot, PinMounted
-from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,

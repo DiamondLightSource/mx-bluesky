@@ -5,7 +5,6 @@ import pytest
 from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
     CryoStreamGantry,
@@ -17,9 +16,10 @@ from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
+from dodal.devices.mx_phase1.scintillator import InOut, Scintillator
 from dodal.devices.robot import BartRobot, PinMounted
-from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 from ophyd_async.core import Device, Signal, init_devices, set_mock_value
 from ophyd_async.epics.motor import Motor

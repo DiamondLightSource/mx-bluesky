@@ -1,9 +1,9 @@
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.motors import XYZStage
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureScatterguard
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 

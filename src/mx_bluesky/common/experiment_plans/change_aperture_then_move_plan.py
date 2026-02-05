@@ -1,6 +1,9 @@
 import bluesky.plan_stubs as bps
 import numpy
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.mx_phase1.aperturescatterguard import (
+    ApertureScatterguard,
+    ApertureValue,
+)
 from dodal.devices.smargon import Smargon, StubPosition
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z

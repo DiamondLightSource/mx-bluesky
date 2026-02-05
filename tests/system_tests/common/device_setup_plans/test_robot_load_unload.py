@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 from bluesky.run_engine import RunEngine
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.motors import XYZStage
+from dodal.devices.mx_phase1.aperturescatterguard import ApertureScatterguard
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from ophyd_async.core import set_mock_value
