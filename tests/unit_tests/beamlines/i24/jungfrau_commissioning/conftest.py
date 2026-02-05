@@ -1,12 +1,12 @@
 import pytest
 from dodal.beamlines.i24 import VerticalGoniometer
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
+from dodal.devices.beamlines.i24.aperture import Aperture
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.hutch_shutter import HutchShutter
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import DualBacklight
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback

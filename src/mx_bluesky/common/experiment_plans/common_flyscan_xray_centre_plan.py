@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 
 import bluesky.plan_stubs as bps
@@ -54,7 +54,7 @@ def tidy_eiger(eiger: EigerDetector) -> MsgGenerator:
     LOGGER.info("Turning off Eiger dev/shm streaming")
     # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     yield from bps.abs_set(
-        eiger.odin.fan.dev_shm_enable,  # type: ignore
+        eiger.odin.fan.dev_shm_enable,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
         0,
         wait=True,
     )
@@ -65,8 +65,8 @@ def construct_beamline_specific_fast_gridscan_features(
     tidy_plan: Callable[..., MsgGenerator],
     set_flyscan_params_plan: Callable[..., MsgGenerator],
     fgs_motors: FastGridScanCommon,
-    signals_to_read_pre_flyscan: list[Readable],
-    signals_to_read_during_collection: list[Readable],
+    signals_to_read_pre_flyscan: Sequence[Readable],
+    signals_to_read_during_collection: Sequence[Readable],
 ) -> BeamlineSpecificFGSFeatures:
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 

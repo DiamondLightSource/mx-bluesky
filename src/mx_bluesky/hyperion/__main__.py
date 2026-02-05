@@ -8,6 +8,7 @@ from traceback import format_exception
 
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext
+from dodal.common import PlanGenerator
 from flask import Flask, request
 from flask_restful import Api, Resource
 
@@ -15,6 +16,7 @@ from mx_bluesky.common.external_interaction import alerting
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
+from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Actions, Status
 from mx_bluesky.common.utils.log import (
     LOGGER,
@@ -49,13 +51,18 @@ from mx_bluesky.hyperion.supervisor import SupervisorRunner
 from mx_bluesky.hyperion.utils.context import setup_context
 
 
-def compose_start_args(context: BlueskyContext, plan_name: str):
+def compose_start_args(
+    context: BlueskyContext, plan_name: str
+) -> tuple[PlanGenerator, MxBlueskyParameters, str]:
     experiment_registry_entry = PLAN_REGISTRY.get(plan_name)
     if experiment_registry_entry is None:
         raise PlanNotFoundError(f"Experiment plan '{plan_name}' not found in registry.")
 
     experiment_internal_param_type = experiment_registry_entry.get("param_type")
     plan = context.plan_functions.get(plan_name)
+    assert plan is not None, (
+        f"Can't find plan '{plan_name}' in context plan functions: {tuple(context.plan_functions.keys())}"
+    )
     try:
         parameters = experiment_internal_param_type(**json.loads(request.data))
         parameters = update_params_from_agamemnon(parameters)

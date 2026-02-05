@@ -9,6 +9,8 @@ from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i04.beamsize import Beamsize
+from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -17,8 +19,6 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
-from dodal.devices.i04.beamsize import Beamsize
-from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -69,7 +69,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
@@ -228,6 +228,9 @@ def i04_default_grid_detect_and_xray_centre(
 
         try:
             yield from grid_detect_then_xray_centre_with_callbacks()
+            assert isinstance(
+                grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
+            ), "Specified grid params couldn't be found after grid detection"
             yield from get_results_then_change_aperture_and_move_to_xtal(
                 composite,
                 grid_common_params.specified_grid_params,
@@ -329,7 +332,7 @@ def construct_i04_specific_features(
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
-        signals_to_read_during_collection,
+        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
 
 
@@ -363,5 +366,5 @@ def _get_grid_common_params(
         storage_directory=parameters.storage_directory,
         transmission_frac=transmission_frac,
         exposure_time_s=exposure_time_s,
-        parameter_model_version=PARAMETER_VERSION,
+        parameter_model_version=get_param_version(),
     )

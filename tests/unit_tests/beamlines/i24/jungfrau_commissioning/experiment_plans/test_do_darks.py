@@ -7,7 +7,7 @@ from bluesky import FailedStatus
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
