@@ -57,7 +57,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.14.0",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@3771af83b33ff032d8f1aa69ee2256271a8fa238",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@mx-bluesky_1354_scintillator_safe_move",
 ]
 
 
