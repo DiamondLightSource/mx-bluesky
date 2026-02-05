@@ -742,8 +742,8 @@ async def aperture_scatterguard():
                 diameter=0,
             ),
         },
-        scintillator_move_miniap_x=-1.0,
-        scintillator_move_sg_x=-1.5,
+        scintillator_move_aperture_x=-1.0,
+        scintillator_move_scatterguard_x=-1.5,
     )
     with (
         patch(
