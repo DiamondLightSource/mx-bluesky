@@ -18,7 +18,7 @@ from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.mx_phase1.aperturescatterguard import ApertureValue
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.mx_phase1.scintillator import InOut as ScinInOut
-from dodal.devices.mx_phase1.scintillator import Scintillator
+from dodal.devices.mx_phase1.scintillator import Scintillator, move_scintillator_safely
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.smargon import Smargon
@@ -79,7 +79,7 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
             devices.hutch_shutter, ShutterDemand.OPEN, group=_GROUP_PRE_BEAMSTOP_CHECK
         )
 
-    yield from bps.abs_set(devices.scintillator.selected_pos, ScinInOut.OUT, wait=True)
+    yield from move_scintillator_safely(devices.scintillator, ScinInOut.OUT)
 
     yield from bps.abs_set(
         devices.fluorescence_det_motion.pos,
