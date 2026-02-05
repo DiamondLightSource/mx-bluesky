@@ -696,7 +696,7 @@ def test_given_levels_to_centre_that_dont_exist_when_find_beam_centres_exception
     with pytest.raises(ValueError):
         run_engine(
             find_beam_centres(
-                zoom_levels_to_centre=("bad_zoom"), composite=find_beam_centre_devices
+                zoom_levels_to_centre=("bad_zoom",), composite=find_beam_centre_devices
             )
         )
 
@@ -708,7 +708,7 @@ def test_given_levels_to_optimise_that_dont_exist_when_find_beam_centres_excepti
     with pytest.raises(ValueError):
         run_engine(
             find_beam_centres(
-                zoom_levels_to_optimise_transmission=("bad_zoom"),
+                zoom_levels_to_optimise_transmission=("bad_zoom",),
                 composite=find_beam_centre_devices,
             )
         )
@@ -804,13 +804,13 @@ async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_set
 
     run_engine(
         find_beam_centres(
-            zoom_levels_to_centre=["1.0x", "7.5x"], composite=find_beam_centre_devices
+            zoom_levels_to_centre=("1.0x", "7.5x"), composite=find_beam_centre_devices
         )
     )
 
     assert get_mock_put(zoom_controller_with_centres.level).call_count == 2
     assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
-        call(level, wait=True) for level in ["1.0x", "7.5x"]
+        call(level, wait=True) for level in ("1.0x", "7.5x")
     ]
 
     centres = list(zoom_controller_with_centres.beam_centres.values())
@@ -886,13 +886,13 @@ async def test_find_beam_centres_respects_custom_optimise_list(
 
     run_engine(
         find_beam_centres(
-            zoom_levels_to_optimise_transmission=["2.0x", "3.0x"],
+            zoom_levels_to_optimise_transmission=("2.0x", "3.0x"),
             composite=find_beam_centre_devices,
         )
     )
 
     assert mock_optimise.call_count == 2
-    assert levels_where_optimised == ["2.0x", "3.0x"]
+    assert levels_where_optimised == ("2.0x", "3.0x")
 
 
 @patch(
