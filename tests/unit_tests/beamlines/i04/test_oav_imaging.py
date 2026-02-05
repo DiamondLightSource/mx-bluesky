@@ -892,7 +892,7 @@ async def test_find_beam_centres_respects_custom_optimise_list(
     )
 
     assert mock_optimise.call_count == 2
-    assert levels_where_optimised == ("2.0x", "3.0x")
+    assert levels_where_optimised == ["2.0x", "3.0x"]
 
 
 @patch(
