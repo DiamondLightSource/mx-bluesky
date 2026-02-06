@@ -288,7 +288,7 @@ def grid_detect_then_xray_centre_composite(
         backlight=backlight,
         beamstop=beamstop_phase1,
         panda_fast_grid_scan=panda_fast_grid_scan,
-        smargon=smargon,
+        gonio=smargon,
         undulator=undulator_for_system_test,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
@@ -364,7 +364,7 @@ def fgs_composite_for_fake_zocalo(
     hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(
         side_effect=lambda: completed_status()
     )  # type: ignore
-    hyperion_flyscan_xrc_composite.smargon.stub_offsets.set = MagicMock(
+    hyperion_flyscan_xrc_composite.gonio.stub_offsets.set = MagicMock(
         side_effect=lambda _: completed_status()
     )  # type: ignore
     callback_on_mock_put(

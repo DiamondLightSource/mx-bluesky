@@ -44,7 +44,6 @@ from ophyd_async.fastcs.panda import HDFPanda
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -69,6 +68,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
+    FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
@@ -337,7 +337,7 @@ async def fake_fgs_composite(
     fake_composite = FlyScanEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger.build(mock=True),
-        smargon=smargon,
+        gonio=smargon,
         synchrotron=synchrotron,
         zocalo=zocalo,
     )
@@ -366,7 +366,7 @@ async def fake_fgs_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
+    set_mock_value(fake_composite.gonio.x.max_velocity, 10)
 
     return fake_composite
 
@@ -439,7 +439,7 @@ async def grid_detect_xrc_devices(
         flux=flux,
         oav=oav,
         pin_tip_detection=ophyd_pin_tip_detection,
-        smargon=smargon,
+        gonio=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         undulator=undulator,

@@ -81,7 +81,7 @@ def grid_detection_plan(
         box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = composite.oav
-    smargon: Smargon = composite.smargon
+    smargon: Smargon = composite.gonio
     pin_tip_detection: PinTipDetection = composite.pin_tip_detection
 
     LOGGER.info("OAV Centring: Starting grid detection centring")

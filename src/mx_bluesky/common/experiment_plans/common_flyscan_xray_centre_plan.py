@@ -34,7 +34,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.device_composites import AnyFlyScanComposite
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
@@ -58,7 +58,7 @@ class BeamlineSpecificFGSFeatures:
     get_xrc_results_from_zocalo: bool
 
 
-def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
+def generic_tidy(xrc_composite: AnyFlyScanComposite, wait=True) -> MsgGenerator:
     """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
     LOGGER.info("Tidying up Zocalo")
@@ -132,14 +132,14 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices,
+    composite: AnyFlyScanComposite,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
     Args:
-        composite (FlyScanEssentialDevices): Devices required to perform this plan.
+        composite (AnyFlyScanComposite): Devices required to perform this plan.
 
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
 
@@ -174,7 +174,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices,
+            fgs_composite: AnyFlyScanComposite,
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
@@ -259,13 +259,13 @@ def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreRes
 @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
 @bpp.run_decorator(md={"subplan_name": PlanNameConstants.GRIDSCAN_MAIN})
 def run_gridscan(
-    fgs_composite: FlyScanEssentialDevices,
+    fgs_composite: AnyFlyScanComposite,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
+        yield from bps.abs_set(fgs_composite.gonio.omega, 0)
 
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from beamline_specific.read_pre_flyscan_plan()

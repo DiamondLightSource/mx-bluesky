@@ -106,7 +106,7 @@ def grid_detect_then_xray_centre(
 
     yield from change_aperture_then_move_to_xtal(
         flyscan_event_handler.xray_centre_results[0],
-        composite.smargon,
+        composite.gonio,
         composite.aperture_scatterguard,
     )
 
@@ -124,7 +124,7 @@ def detect_grid_and_do_gridscan(
     grid_params_callback = GridDetectionCallback()
 
     yield from setup_beamline_for_oav(
-        composite.smargon,
+        composite.gonio,
         composite.backlight,
         composite.aperture_scatterguard,
         wait=True,
@@ -139,7 +139,7 @@ def detect_grid_and_do_gridscan(
         grid_detect_composite = OavGridDetectionComposite(
             backlight=composite.backlight,
             oav=composite.oav,
-            smargon=composite.smargon,
+            gonio=composite.gonio,
             pin_tip_detection=composite.pin_tip_detection,
         )
 

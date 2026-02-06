@@ -188,7 +188,7 @@ def i04_default_grid_detect_and_xray_centre(
 
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
-                composite.smargon,
+                composite.gonio,
                 composite.backlight,
                 composite.aperture_scatterguard,
                 composite.detector_motion,
@@ -279,7 +279,7 @@ def construct_i04_specific_features(
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,
         xrc_composite.s4_slit_gaps,
-        xrc_composite.smargon,
+        xrc_composite.gonio,
         xrc_composite.dcm.energy_in_keV,
     ]
 
