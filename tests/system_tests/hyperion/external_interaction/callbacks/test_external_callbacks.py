@@ -136,6 +136,7 @@ def bluesky_context_with_stomp(run_engine: RunEngine):
     loader.use_values_from_yaml(Path("tests/test_data/stomp_callback_test_config.yaml"))
     config = loader.load()
     context = BlueskyContext(configuration=config, run_engine=run_engine)
+    assert config.stomp.url.host is not None and config.stomp.url.port is not None
     stomp_client = StompClient.for_broker(
         broker=Broker(
             host=config.stomp.url.host,

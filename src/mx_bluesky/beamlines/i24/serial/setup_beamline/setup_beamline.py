@@ -1,12 +1,12 @@
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
+from dodal.devices.beamlines.i24.aperture import Aperture, AperturePositions
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
-from dodal.devices.i24.aperture import Aperture, AperturePositions
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.beamstop import Beamstop, BeamstopPositions
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.motors import YZStage
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,

@@ -15,13 +15,13 @@ import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.beamlines.i24.aperture import Aperture
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
@@ -37,6 +37,7 @@ from mx_bluesky.beamlines.i24.serial.log import (
 from mx_bluesky.beamlines.i24.serial.parameters import ExtruderParameters
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
+    DetectorName,
 )
 from mx_bluesky.beamlines.i24.serial.setup_beamline import (
     caget,
@@ -163,24 +164,24 @@ def read_parameters(detector_stage: YZStage, attenuator: ReadOnlyAttenuator):
     pump_exp = float(caget(pv.ioc13_gp9)) if pump_status else 0.0
     pump_delay = float(caget(pv.ioc13_gp10)) if pump_status else 0.0
 
-    params_dict = {
-        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": caget(pv.ioc13_gp2),
-        "filename": filename,
-        "exposure_time_s": float(caget(pv.ioc13_gp5)),
-        "detector_distance_mm": float(caget(pv.ioc13_gp7)),
-        "detector_name": str(det_type),
-        "transmission": transmission,
-        "num_images": int(caget(pv.ioc13_gp4)),
-        "pump_status": pump_status,
-        "laser_dwell_s": pump_exp,
-        "laser_delay_s": pump_delay,
-    }
+    params = ExtruderParameters(
+        visit=_read_visit_directory_from_file(),
+        directory=caget(pv.ioc13_gp2),
+        filename=filename,
+        exposure_time_s=float(caget(pv.ioc13_gp5)),
+        detector_distance_mm=float(caget(pv.ioc13_gp7)),
+        detector_name=DetectorName(str(det_type)),
+        transmission=transmission,
+        num_images=int(caget(pv.ioc13_gp4)),
+        pump_status=pump_status,
+        laser_dwell_s=pump_exp,
+        laser_delay_s=pump_delay,
+    )
 
     SSX_LOGGER.info("Parameters \n")
-    SSX_LOGGER.info(pformat(params_dict))
+    SSX_LOGGER.info(pformat(params))
     yield from bps.null()
-    return ExtruderParameters(**params_dict)
+    return params
 
 
 @log_on_entry

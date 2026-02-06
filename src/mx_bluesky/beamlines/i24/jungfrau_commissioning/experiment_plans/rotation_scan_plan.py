@@ -4,11 +4,11 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
 from bluesky.utils import MsgGenerator
+from dodal.devices.beamlines.i24.aperture import AperturePositions
+from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.aperture import AperturePositions
-from dodal.devices.i24.beamstop import BeamstopPositions
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
-from dodal.devices.i24.dual_backlight import BacklightPositions
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from ophyd_async.fastcs.jungfrau import (
@@ -41,7 +41,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     USE_NUMTRACKER,
     PlanGroupCheckpointConstants,
@@ -85,7 +85,7 @@ def _get_internal_rotation_params(
     return SingleRotationScan(
         sample_id=entry_params.sample_id,
         visit=USE_NUMTRACKER,  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1527
-        parameter_model_version=PARAMETER_VERSION,
+        parameter_model_version=get_param_version(),
         file_name=entry_params.filename,
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,

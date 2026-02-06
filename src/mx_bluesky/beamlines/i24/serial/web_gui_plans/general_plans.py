@@ -8,14 +8,14 @@ from bluesky.utils import MsgGenerator
 from dodal.beamlines import i24
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
+from dodal.devices.beamlines.i24.aperture import Aperture
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions, DualBacklight
+from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import HutchShutter
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import BacklightPositions, DualBacklight
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
@@ -46,6 +46,7 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     FixedTargetParameters,
     get_chip_format,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     ExtruderParameters,
 )
@@ -191,26 +192,24 @@ def gui_run_chip_collection(
     # NOTE. For now setting attenuation here in place of the edms doing a caput
     yield from bps.abs_set(attenuator, transmission, wait=True)
 
-    params = {
-        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": sub_dir,
-        "filename": chip_name,
-        "exposure_time_s": exp_time,
-        "detector_distance_mm": det_dist,
-        "detector_name": "eiger",
-        "num_exposures": n_shots,
-        "transmission": transmission,
-        "chip": chip_params,
-        "map_type": mapping,
-        "chip_map": chip_map,
-        "pump_repeat": PumpProbeSetting[pump_probe],  # pump_repeat,
-        "laser_dwell_s": laser_dwell,
-        "laser_delay_s": laser_delay,
-        "checker_pattern": checker_pattern,
-        "pre_pump_exposure_s": pre_pump,
-    }
-
-    parameters = FixedTargetParameters(**params)
+    parameters = FixedTargetParameters(
+        visit=_read_visit_directory_from_file(),
+        directory=sub_dir,
+        filename=chip_name,
+        exposure_time_s=exp_time,
+        detector_distance_mm=det_dist,
+        detector_name=DetectorName.EIGER,
+        num_exposures=n_shots,
+        transmission=transmission,
+        chip=chip_params,
+        map_type=mapping,
+        chip_map=chip_map,  # type: ignore
+        pump_repeat=PumpProbeSetting[pump_probe],  # pump_repeat,
+        laser_dwell_s=laser_dwell,
+        laser_delay_s=laser_delay,
+        checker_pattern=checker_pattern,
+        pre_pump_exposure_s=pre_pump,
+    )
 
     # Create collection directory
     parameters.collection_directory.mkdir(parents=True, exist_ok=True)
@@ -281,20 +280,19 @@ def gui_run_extruder_collection(
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")
 
-    params = {
-        "visit": _read_visit_directory_from_file().as_posix(),  # noqa
-        "directory": sub_dir,
-        "filename": file_name,
-        "exposure_time_s": exp_time,
-        "detector_distance_mm": det_dist,
-        "detector_name": "eiger",
-        "transmission": transmission,
-        "num_images": num_images,
-        "pump_status": pump_probe,
-        "laser_dwell_s": laser_dwell,
-        "laser_delay_s": laser_delay,
-    }
-    parameters = ExtruderParameters(**params)
+    parameters = ExtruderParameters(
+        visit=_read_visit_directory_from_file(),
+        directory=sub_dir,
+        filename=file_name,
+        exposure_time_s=exp_time,
+        detector_distance_mm=det_dist,
+        detector_name=DetectorName.EIGER,
+        transmission=transmission,
+        num_images=num_images,
+        pump_status=pump_probe,
+        laser_dwell_s=laser_dwell,
+        laser_delay_s=laser_delay,
+    )
     # Create collection directory
     parameters.collection_directory.mkdir(parents=True, exist_ok=True)
     # DCID - not generated yet
