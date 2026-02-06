@@ -10,6 +10,7 @@ from dodal.devices.robot import SampleLocation
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
     HyperionGridDetectThenXRayCentreComposite,
 )
@@ -34,6 +35,19 @@ def robot_load_then_centre_params(tmp_path):
         tmp_path,
     )
     return RobotLoadThenCentre(**params)
+
+
+@pytest.fixture
+def robot_load_then_centre_params_with_patched_create_params(
+    robot_load_then_centre_params: RobotLoadThenCentre,
+    test_fgs_params: SpecifiedThreeDGridScan,
+):
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.create_parameters_for_grid_detection"
+    ) as mock_create_params:
+        robot_load_then_centre_params.set_specified_grid_params(test_fgs_params)
+        mock_create_params.return_value = robot_load_then_centre_params
+        yield
 
 
 @pytest.fixture
@@ -481,8 +495,9 @@ def test_box_size_passed_through_to_gridscan(
     robot_load_then_centre_params: RobotLoadThenCentre,
     grid_detection_callback_with_detected_grid: MagicMock,
     run_engine: RunEngine,
+    test_fgs_params: SpecifiedThreeDGridScan,
+    robot_load_then_centre_params_with_patched_create_params,
 ):
-    robot_load_then_centre_params.box_size_um = 25
     run_engine(
         robot_load_then_xray_centre(
             robot_load_composite,
@@ -490,7 +505,7 @@ def test_box_size_passed_through_to_gridscan(
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == 25
+    assert detect_grid_call.args[1].box_size_um == test_fgs_params.box_size_um
 
 
 async def test_multiple_devices(dcm, undulator, undulator_dcm):

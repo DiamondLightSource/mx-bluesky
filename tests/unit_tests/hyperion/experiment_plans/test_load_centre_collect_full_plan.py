@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from mx_bluesky.common.parameters.components import (
     TopNByMaxCountForEachSampleSelection,
 )
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     RotationScanPerSweep,
@@ -83,6 +84,23 @@ POS_MED = {
         ([0.05, 0.02, 0.03], 5),
     ]
 ]
+
+
+@pytest.fixture
+def load_centre_collect_params_with_patched_create_params(
+    load_centre_collect_params: LoadCentreCollect,
+    test_fgs_params: SpecifiedThreeDGridScan,
+):
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.create_parameters_for_grid_detection"
+    ) as mock_create_params:
+        load_centre_collect_params.robot_load_then_centre.set_specified_grid_params(
+            test_fgs_params
+        )
+        mock_create_params.return_value = (
+            load_centre_collect_params.robot_load_then_centre
+        )
+        yield
 
 
 @pytest.fixture
@@ -1054,16 +1072,16 @@ def test_box_size_passed_through_to_gridscan(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     run_engine: RunEngine,
+    test_fgs_params: SpecifiedThreeDGridScan,
+    load_centre_collect_params_with_patched_create_params,
 ):
-    load_centre_collect_params.robot_load_then_centre.box_size_um = 25
-
     run_engine(
         load_centre_collect_full(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == 25
+    assert detect_grid_call.args[1].box_size_um == test_fgs_params.box_size_um
 
 
 @patch(
