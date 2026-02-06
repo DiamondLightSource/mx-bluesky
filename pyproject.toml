@@ -269,7 +269,7 @@ env_dir = ".venv"
 skip_install = true
 commands_pre = [
     [
-        "python", 
+        "{python_env}",
         "{toxinidir}/utility_scripts/generate_plantuml.py", 
         "docs/developer/hyperion/reference/param_hierarchy.puml"
     ]

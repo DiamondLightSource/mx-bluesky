@@ -5,7 +5,7 @@
 STOP=0
 START=1
 IN_DEV=false
-MODE=gda
+MODE=udc
 
 CONFIG_DIR=`dirname $0`/src/mx_bluesky/hyperion
 BLUEAPI_CONFIG=$CONFIG_DIR/blueapi_config.yaml
@@ -58,8 +58,8 @@ Options:
                           options.
   --no-start              Used to specify that the script should be run without starting the server.
   --dev                   Enable dev mode to run from a local workspace on a development machine.
-  --udc                   Start hyperion in UDC mode instead of taking commands from GDA
-  --blueapi               Start hyperion in blueapi mode instead of taking commands from GDA
+  --udc                   Start hyperion in UDC mode taking instructions from agamemnon in a monolithic process
+  --blueapi               Start hyperion in blueapi mode taking instructions from the supervisor
   --supervisor            Start hyperion in supervisor mode, taking commands from Agamemnon and feeding them to
                           an instance running in blueapi mode.
   --help                  This help
