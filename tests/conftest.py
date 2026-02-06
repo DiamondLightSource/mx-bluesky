@@ -416,8 +416,7 @@ def smargon() -> Generator[Smargon, None, None]:
 
 @pytest.fixture
 def aithre_gonio():
-    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
-    return aithre_gonio
+    return aithre.goniometer.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
