@@ -45,9 +45,10 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridCommon,
+    SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
-from tests.conftest import TEST_RESULT_LARGE, simulate_xrc_result
+from tests.conftest import TEST_RESULT_LARGE, fake_generator, simulate_xrc_result
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteError,
 )
@@ -191,6 +192,7 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     udc: bool,
+    give_grid_common_specific_grid,
 ):
     run_engine(
         i04_grid_detect_then_xrc_default_params(
@@ -369,6 +371,7 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
     run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     transfocator: Transfocator,
+    give_grid_common_specific_grid,
 ):
     initial_beamsize = 5.6
     set_mock_value(transfocator.current_vertical_size_rbv, initial_beamsize)
@@ -423,9 +426,24 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z, wait=True)])
 
 
+@pytest.fixture()
+def give_grid_common_specific_grid(test_fgs_params: SpecifiedThreeDGridScan):
+    # Using this fixture means grid common always comes with its specific grid params
+    class GridCommonWithSpecificGrid(GridCommon):
+        @property
+        def specified_grid_params(self):
+            return test_fgs_params
+
+    with patch(
+        "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.GridCommon",
+        GridCommonWithSpecificGrid,
+    ):
+        yield
+
+
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
-    autospec=True,
+    new=MagicMock(),
 )
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.grid_detect_then_xray_centre",
@@ -452,9 +470,11 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
     mock_create_gridscan_callbacks: MagicMock,
     mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect_then_xray_centre: MagicMock,
-    mock_get_ready_for_oav_and_close_shutter: MagicMock,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     run_engine: RunEngine,
+    test_full_grid_scan_params: GridCommon,
+    test_fgs_params: SpecifiedThreeDGridScan,
+    give_grid_common_specific_grid,
 ):
     expected_trans_frac = 1
     expected_exposure_time = 0.004
@@ -511,6 +531,7 @@ def test_get_grid_common_params(
 def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
     sim_run_engine: RunEngineSimulator,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    give_grid_common_specific_grid,
 ):
     msgs = sim_run_engine.simulate_plan(i04_grid_detect_then_xrc_default_params())
 
@@ -525,3 +546,42 @@ def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
         msgs,
         predicate=lambda msg: msg.command == "unstage" and msg.obj.name == "zocalo",
     )
+
+
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_wrapper",
+    lambda plan, _: plan,
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
+    lambda *_: fake_generator(),
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
+    lambda *_: fake_generator(),
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
+)
+@patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal"
+)
+def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
+    mock_change_aperture_then_move_to_xtal: MagicMock,
+    mock_create_flyscan_params: MagicMock,
+    test_fgs_params: SpecifiedThreeDGridScan,
+    run_engine: RunEngine,
+    i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+):
+    mock_create_flyscan_params.return_value = test_fgs_params
+    run_engine(
+        i04_grid_detect_then_xrc_default_params(
+            udc=False,
+        )
+    )
+    mock_change_aperture_then_move_to_xtal.assert_called_once()
+    assert mock_change_aperture_then_move_to_xtal.call_args[0][1] == test_fgs_params
