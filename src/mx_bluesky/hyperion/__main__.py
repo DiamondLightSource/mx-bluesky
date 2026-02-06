@@ -49,9 +49,6 @@ def main():
         case HyperionMode.UDC:
             context = setup_context(dev_mode=args.dev_mode)
             plan_runner = InProcessRunner(context, args.dev_mode)
-            create_server_for_udc(plan_runner, HyperionConstants.HYPERION_PORT)
-            _register_sigterm_handler(plan_runner)
-            run_forever(plan_runner)
         case HyperionMode.SUPERVISOR:
             if not args.client_config:
                 raise RuntimeError(
@@ -66,9 +63,9 @@ def main():
             supervisor_config = _load_config_from_yaml(Path(args.supervisor_config))
             context = BlueskyContext(configuration=supervisor_config)
             plan_runner = SupervisorRunner(context, client_config, args.dev_mode)
-            create_server_for_udc(plan_runner, HyperionConstants.SUPERVISOR_PORT)
-            _register_sigterm_handler(plan_runner)
-            run_forever(plan_runner)
+    create_server_for_udc(plan_runner, HyperionConstants.SUPERVISOR_PORT)
+    _register_sigterm_handler(plan_runner)
+    run_forever(plan_runner)
 
 
 def _load_config_from_yaml(config_path: Path):
