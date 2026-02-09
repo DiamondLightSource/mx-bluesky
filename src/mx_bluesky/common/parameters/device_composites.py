@@ -46,9 +46,6 @@ class FlyScanEssentialDevices(Generic[MotorType]):
     gonio: MotorType
 
 
-AnyFlyScanComposite = FlyScanEssentialDevices[GonioWithOmega]
-
-
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class OavGridDetectionComposite:
     """All devices which are directly or indirectly required by this plan"""

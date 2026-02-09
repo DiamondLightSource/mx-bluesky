@@ -34,7 +34,10 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import AnyFlyScanComposite
+from mx_bluesky.common.parameters.device_composites import (
+    FlyScanEssentialDevices,
+    MotorType,
+)
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
@@ -58,7 +61,7 @@ class BeamlineSpecificFGSFeatures:
     get_xrc_results_from_zocalo: bool
 
 
-def generic_tidy(xrc_composite: AnyFlyScanComposite, wait=True) -> MsgGenerator:
+def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
     """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
     LOGGER.info("Tidying up Zocalo")
@@ -132,14 +135,14 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: AnyFlyScanComposite,
+    composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
     Args:
-        composite (AnyFlyScanComposite): Devices required to perform this plan.
+        composite (FlyScanEssentialDevices): Devices required to perform this plan.
 
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
 
@@ -174,7 +177,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: AnyFlyScanComposite,
+            fgs_composite: FlyScanEssentialDevices,
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
@@ -257,7 +260,7 @@ def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreRes
 
 
 def run_gridscan(
-    fgs_composite: AnyFlyScanComposite,
+    fgs_composite: FlyScanEssentialDevices[MotorType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
