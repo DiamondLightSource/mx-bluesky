@@ -1185,7 +1185,7 @@ def fat_pin_edges():
 T = TypeVar("T")
 
 
-def fake_generator(return_val: T) -> MsgGenerator[T]:
+def fake_generator(return_val: T = None) -> MsgGenerator[T]:
     yield from bps.null()
     return return_val
 
