@@ -172,5 +172,5 @@ def robot_load_and_change_energy_plan(
                 ],
             },
         ),
-        CONST.PLAN.ROBOT_LOAD_AND_SNAPSHOTS,
+        CONST.PLAN.ROBOT_LOAD,
     )

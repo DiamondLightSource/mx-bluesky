@@ -56,28 +56,28 @@ class OavConstants:
 
 @dataclass(frozen=True)
 class PlanNameConstants:
+    """
+    See https://diamondlightsource.github.io/mx-bluesky/main/developer/general/explanations/callback_and_run_logic.html
+    for how these are used.
+    """
+
+    # UDC plan
     LOAD_CENTRE_COLLECT = "load_centre_collect"
     # Robot subplans
     ROBOT_LOAD = "robot_load"
     ROBOT_UNLOAD = "robot_unload"
-    # Gridscan
+    # Gridscan and xrc subplans
     GRID_DETECT_AND_DO_GRIDSCAN = "grid_detect_and_do_gridscan"
-    GRID_DETECT_INNER = "grid_detect"
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
-    GRIDSCAN_AND_MOVE = "run_gridscan_and_move"
-    GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
-    # IspyB callback activation
-    ISPYB_ACTIVATION = "ispyb_activation"
-    ROBOT_LOAD_AND_SNAPSHOTS = "robot_load_and_snapshots"
+    FLYSCAN_RESULTS = "xray_centre_results"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
-    FLYSCAN_RESULTS = "xray_centre_results"
+
     SET_ENERGY = "set_energy"
-    UNNAMED_RUN = "unnamed_run"
 
 
 @dataclass(frozen=True)

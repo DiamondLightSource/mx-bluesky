@@ -256,8 +256,6 @@ def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreRes
     )
 
 
-@bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
-@bpp.run_decorator(md={"subplan_name": PlanNameConstants.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: AnyFlyScanComposite,
     parameters: SpecifiedThreeDGridScan,
