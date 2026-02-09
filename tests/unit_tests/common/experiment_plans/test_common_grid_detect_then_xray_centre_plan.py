@@ -350,7 +350,7 @@ def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
     assert_message_and_return_remaining(
         msgs_from_simulated_grid_detect_then_xray_centre,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon"
+        and msg.obj.name == "gonio"
         and msg.args[0]
         == CombinedMove(
             x=FLYSCAN_RESULT_MED.centre_of_mass_mm[0],

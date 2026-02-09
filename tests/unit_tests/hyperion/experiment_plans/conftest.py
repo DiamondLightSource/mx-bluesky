@@ -244,7 +244,7 @@ def robot_load_and_energy_change_composite(
         aperture_scatterguard,
         backlight,
     )
-    composite.smargon.stub_offsets.set = MagicMock(
+    composite.gonio.stub_offsets.set = MagicMock(
         side_effect=lambda _: completed_status()
     )
     composite.aperture_scatterguard.set = MagicMock(

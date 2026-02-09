@@ -108,24 +108,12 @@ def composite(
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-x-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-y-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-z-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-x-high_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-y-high_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-z-high_limit_travel"
-    )
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-x-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-y-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-z-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-x-high_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-y-high_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-z-high_limit_travel")
     sim_run_engine.add_read_handler_for(
         composite.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
@@ -382,19 +370,19 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-x"
+    #     and msg.obj.name == "gonio-x"
     #     and msg.args[0] == 0.1,
     # )
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-y"
+    #     and msg.obj.name == "gonio-y"
     #     and msg.args[0] == 0.2,
     # )
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-z"
+    #     and msg.obj.name == "gonio-z"
     #     and msg.args[0] == 0.3,
     # )
     msgs = assert_message_and_return_remaining(
@@ -1078,9 +1066,9 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
 ):
-    sim_run_engine.add_read_handler_for(composite.smargon.x, 1.1)
-    sim_run_engine.add_read_handler_for(composite.smargon.y, 2.2)
-    sim_run_engine.add_read_handler_for(composite.smargon.z, 3.3)
+    sim_run_engine.add_read_handler_for(composite.gonio.x, 1.1)
+    sim_run_engine.add_read_handler_for(composite.gonio.y, 2.2)
+    sim_run_engine.add_read_handler_for(composite.gonio.z, 3.3)
 
     sim_run_engine.simulate_plan(
         load_centre_collect_full(

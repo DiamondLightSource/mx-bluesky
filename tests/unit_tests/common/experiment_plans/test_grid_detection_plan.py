@@ -372,10 +372,10 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
             "oav-x_direction": -1,
             "oav-y_direction": -1,
             "oav-z_direction": 1,
-            "smargon-x": 100,
-            "smargon-y": 234,
-            "smargon-z": 467,
-            "smargon-omega": 45,
+            "gonio-x": 100,
+            "gonio-y": 234,
+            "gonio-z": 467,
+            "gonio-omega": 45,
         }
     }
 

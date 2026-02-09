@@ -143,9 +143,9 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps-xgap": 0,
     "s4_slit_gaps-ygap": 0,
-    "smargon-x": 10.0,
-    "smargon-y": 20.0,
-    "smargon-z": 30.0,
+    "gonio-x": 10.0,
+    "gonio-y": 20.0,
+    "gonio-z": 30.0,
 }
 
 BASIC_POST_SETUP_DOC = {

@@ -373,7 +373,7 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "gonio"
     )
 
 
@@ -563,7 +563,7 @@ def test_rotation_scan_resets_omega_waits_for_sample_env_complete_after_snapshot
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-omega"
+        and msg.obj.name == "gonio-omega"
         and msg.args[0] == params.omega_start_deg
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
@@ -664,7 +664,7 @@ def _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
                 msg
                 for msg in msgs
                 if msg.command == "set"
-                and msg.obj.name == "smargon-omega"
+                and msg.obj.name == "gonio-omega"
                 and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
             ]
         )
@@ -1079,7 +1079,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         assert_message_and_return_remaining(
             msgs_within_arming,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "smargon-omega"
+            and msg.obj.name == "gonio-omega"
             and msg.args
             == (
                 (scan.scan_width_deg + motion_values.shutter_opening_deg)
@@ -1154,7 +1154,7 @@ def test_full_multi_rotation_plan_docs_emitted(
             events,
             [
                 ["eiger_odin_file_writer_id"],
-                ["undulator-current_gap", "synchrotron-synchrotron_mode", "smargon-x"],
+                ["undulator-current_gap", "synchrotron-synchrotron_mode", "gonio-x"],
                 [
                     "attenuator-actual_transmission",
                     "flux-flux_reading",

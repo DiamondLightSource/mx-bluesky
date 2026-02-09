@@ -35,7 +35,7 @@ class GonioWithOmega(Protocol):
     omega: Motor
 
 
-MotorType = TypeVar("MotorType", bound=GonioWithOmega, covariant=True)
+MotorType = TypeVar("MotorType", bound=GonioWithOmega)
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
