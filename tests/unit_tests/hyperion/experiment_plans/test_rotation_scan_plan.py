@@ -686,7 +686,7 @@ def _add_sim_handlers_for_normal_operation(
         "synchrotron-top_up_start_countdown",
     )
     sim_run_engine.add_handler(
-        "read", lambda msg: {"smargon-omega": {"value": -1}}, "smargon-omega"
+        "read", lambda msg: {"gonio-omega": {"value": -1}}, "gonio-omega"
     )
 
 

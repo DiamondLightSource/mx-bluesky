@@ -133,7 +133,7 @@ def i04_default_grid_detect_and_xray_centre(
     eiger: EigerDetector = inject("eiger"),
     synchrotron: Synchrotron = inject("synchrotron"),
     zocalo: ZocaloResults = inject("zocalo"),
-    smargon: Smargon = inject("smargon"),
+    smargon: Smargon = inject("gonio"),
     detector_motion: DetectorMotion = inject("detector_motion"),
     transfocator: Transfocator = inject("transfocator"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
