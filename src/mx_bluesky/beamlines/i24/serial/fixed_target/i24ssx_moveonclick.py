@@ -9,7 +9,7 @@ import bluesky.plan_stubs as bps
 import cv2 as cv
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i24
-from dodal.devices.i24.pmac import PMAC
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
 
 from mx_bluesky.beamlines.i24.serial.fixed_target import (
@@ -222,6 +222,6 @@ def start_viewer(oav: OAV, pmac: PMAC, run_engine: RunEngine, oav1: str = OAV1_C
 if __name__ == "__main__":
     run_engine = RunEngine(call_returns_result=True)
     # Get devices out of dodal
-    oav: OAV = i24.oav(connect_immediately=True)
-    pmac: PMAC = i24.pmac(connect_immediately=True)
+    oav: OAV = i24.oav.build(connect_immediately=True)
+    pmac: PMAC = i24.pmac.build(connect_immediately=True)
     start_viewer(oav, pmac, run_engine)

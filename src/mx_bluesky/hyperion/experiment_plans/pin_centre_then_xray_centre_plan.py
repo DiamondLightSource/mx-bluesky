@@ -30,7 +30,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
+    pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -106,7 +106,7 @@ def pin_centre_then_flyscan_plan(
         grid_detect_params = create_parameters_for_grid_detection(parameters)
         oav_params = OAVParameters("xrayCentring", oav_config_file)
 
-        @transmission_and_xbpm_feedback_for_collection_decorator(
+        @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
             composite,
             parameters.transmission_frac,
             PlanNameConstants.GRIDSCAN_OUTER,

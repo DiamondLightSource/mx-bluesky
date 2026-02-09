@@ -10,13 +10,15 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.rotation import (
+    SingleRotationScan,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
     OddYStepsError,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.hyperion.parameters.rotation import SingleRotationScan
 
 from ....conftest import raw_params_from_file
 
@@ -125,7 +127,7 @@ def test_robot_load_then_centre_params():
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
     }
     params["detector_distance_mm"] = 200
-    test_params = RobotLoadThenCentre(**params)
+    test_params = RobotLoadThenCentre(**params)  # type:ignore
     assert test_params.detector_params
 
 

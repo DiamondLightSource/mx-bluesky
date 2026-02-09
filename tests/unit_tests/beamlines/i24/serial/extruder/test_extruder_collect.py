@@ -1,8 +1,11 @@
+from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
-from ophyd_async.core import get_mock_put
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from ophyd.sim import NullStatus
+from ophyd_async.core import get_mock_put, init_devices, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     collection_complete_plan,
@@ -15,25 +18,42 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 impo
     tidy_up_at_collection_end_plan,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
 from ..conftest import TEST_LUT, fake_generator
 
 
 @pytest.fixture
+def zebra():
+    with init_devices(mock=True):
+        i24_zebra = Zebra(
+            prefix="",
+            mapping=I24_ZEBRA_MAPPING,
+        )
+
+    def mock_side(demand: ArmDemand):
+        set_mock_value(i24_zebra.pc.arm.armed, demand.value)
+        return NullStatus()
+
+    i24_zebra.pc.arm.set = MagicMock(side_effect=mock_side)
+    return i24_zebra
+
+
+@pytest.fixture
 def dummy_params():
-    params = {
-        "visit": "/tmp/dls/i24/extruder/foo",
-        "directory": "bar",
-        "filename": "protein",
-        "exposure_time_s": 0.1,
-        "detector_distance_mm": 100,
-        "detector_name": "eiger",
-        "transmission": 1.0,
-        "num_images": 10,
-        "pump_status": False,
-    }
-    return ExtruderParameters(**params)
+    params = ExtruderParameters(
+        visit=Path("/tmp/dls/i24/extruder/foo"),
+        directory="bar",
+        filename="protein",
+        exposure_time_s=0.1,
+        detector_distance_mm=100,
+        detector_name=DetectorName("eiger"),
+        transmission=1.0,
+        num_images=10,
+        pump_status=False,
+    )
+    return params
 
 
 @pytest.fixture

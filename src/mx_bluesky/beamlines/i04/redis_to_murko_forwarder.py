@@ -8,8 +8,11 @@ from typing import TypedDict
 
 import numpy as np
 import zmq
-from dodal.devices.i04.constants import RedisConstants
-from dodal.devices.i04.murko_results import RESULTS_COMPLETE_MESSAGE, MurkoResult
+from dodal.devices.beamlines.i04.constants import RedisConstants
+from dodal.devices.beamlines.i04.murko_results import (
+    RESULTS_COMPLETE_MESSAGE,
+    MurkoResult,
+)
 from numpy.typing import NDArray
 from PIL import Image
 from redis import StrictRedis
@@ -169,6 +172,7 @@ class RedisListener:
     def _get_and_handle_message(self):
         message = self.pubsub.get_message(timeout=self.TIMEOUT_S)
         if message and message["type"] == "message":
+            assert message["data"] is not None
             data = json.loads(message["data"])
             LOGGER.info(f"Received from redis: {data}")
             if data == FORWARDING_COMPLETE_MESSAGE:

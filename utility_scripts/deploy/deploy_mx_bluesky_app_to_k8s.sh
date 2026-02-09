@@ -156,11 +156,11 @@ ensure_version_py() {
   if [[ ! -d $PROJECTDIR/.venv ]]; then
     echo "Creating _version.py"
     echo "Virtual environment not found - creating"
-    module load python/3.11
-    python -m venv $PROJECTDIR/.venv
-    . $PROJECTDIR/.venv/bin/activate
+    module load python/3.11 && module load uv
+    uv venv $PROJECTDIR/.venv
+    source $PROJECTDIR/.venv/bin/activate
   fi
-  pip install setuptools_scm
+  uv pip install setuptools_scm
 }
 
 app_version() {

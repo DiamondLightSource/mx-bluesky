@@ -17,7 +17,7 @@ from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     unpause_xbpm_feedback_and_set_transmission_to_1,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
-    transmission_and_xbpm_feedback_for_collection_decorator,
+    pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from tests.conftest import XBPMAndTransmissionWrapperComposite
 
@@ -41,7 +41,9 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
         return_value={"value": {"value": energy_in_kev}}
     )
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(composite, 0.1)
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
+        composite, 0.1
+    )
     @verify_undulator_gap_before_run_decorator(composite)
     @bpp.run_decorator()
     def my_collection_plan():
@@ -69,7 +71,7 @@ async def test_given_xpbm_checks_pass_when_plan_run_with_decorator_then_run_as_e
 ):
     expected_transmission = 0.3
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
         composite, expected_transmission
     )
     @bpp.run_decorator()
@@ -92,7 +94,9 @@ async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not
 ):
     mock = MagicMock()
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(composite, 0.1)
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
+        composite, 0.1
+    )
     @bpp.run_decorator()
     def my_collection_plan():
         mock()
@@ -118,7 +122,9 @@ async def test_given_xpbm_checks_pass_and_plan_fails_when_plan_run_with_decorato
     class MyError(Exception):
         pass
 
-    @transmission_and_xbpm_feedback_for_collection_decorator(composite, 0.1)
+    @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
+        composite, 0.1
+    )
     @bpp.run_decorator()
     def my_collection_plan():
         yield from bps.null()

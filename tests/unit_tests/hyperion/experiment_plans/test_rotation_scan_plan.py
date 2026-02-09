@@ -16,8 +16,8 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import InOut
+from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.i03 import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -39,7 +39,13 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
+from mx_bluesky.common.parameters.rotation import (
+    RotationScan,
+    SingleRotationScan,
+)
+from mx_bluesky.common.utils.exceptions import (
+    ISPyBDepositionNotMadeError,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
@@ -58,7 +64,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.rotation import RotationScan, SingleRotationScan
 
 from ....conftest import (
     DocumentCapturer,
@@ -170,7 +175,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.I03Constants.OMEGA_FLIP",
+    "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
     new=False,
 )
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
@@ -923,7 +928,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     run_engine: RunEngine,
 ):
     with patch(
-        "mx_bluesky.hyperion.parameters.constants.I03Constants.OMEGA_FLIP",
+        "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
         new=omega_flip,
     ):
         for scan in test_rotation_params.rotation_scans:  # Should be 1 scan
