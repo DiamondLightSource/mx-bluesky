@@ -3,9 +3,11 @@ from __future__ import annotations
 from functools import partial
 from threading import Event
 from time import sleep
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
+from bluesky.callbacks import CallbackBase
+from bluesky_stomp.models import Broker
 from dodal.log import LOGGER as DODAL_LOGGER
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
@@ -15,10 +17,10 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGG
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     PING_TIMEOUT_S,
     main,
+    ping_watchdog_while_alive,
     run_watchdog,
     setup_callbacks,
     setup_logging,
-    wait_for_threads_forever,
 )
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs
 from mx_bluesky.hyperion.parameters.constants import HyperionConstants
@@ -94,9 +96,10 @@ def test_wait_for_threads_forever_calls_time_sleep(mock_sleep: MagicMock):
     thread_that_stops_after_one_call = MagicMock()
     thread_that_stops_after_one_call.is_alive.side_effect = [True, False]
 
-    mock_threads = [thread_that_stops_after_one_call, MagicMock()]
+    mock_context_manager = MagicMock()
+    mock_context_manager.is_alive.side_effect = [True, False]
 
-    wait_for_threads_forever(mock_threads)
+    ping_watchdog_while_alive(thread_that_stops_after_one_call, mock_context_manager)
     assert mock_sleep.call_count == 1
 
 
@@ -137,3 +140,52 @@ def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicM
     callback_args = mock_callback_runner.mock_calls[0].args[0]
     assert callback_args.dev_mode
     assert callback_args.watchdog_port == 1234
+
+
+@patch(
+    "sys.argv",
+    new=[
+        "hyperion-callbacks",
+        "--watchdog-port",
+        "1234",
+        "--stomp-config",
+        "tests/test_data/stomp_callback_test_config.yaml",
+    ],
+)
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompDispatcher")
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompClient")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks",
+    return_value=[Mock(spec=CallbackBase)],
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.LIVENESS_POLL_SECONDS",
+    0.1,
+)
+def test_launch_with_stomp_launches_stomp_backend(
+    mock_setup_callbacks: MagicMock,
+    mock_client_cls: MagicMock,
+    mock_dispatcher_cls: MagicMock,
+):
+    stomp_client = mock_client_cls.for_broker.return_value
+    dispatcher = mock_dispatcher_cls.return_value
+    stomp_client.is_connected.side_effect = [True, False]
+
+    parent = MagicMock()
+    parent.attach_mock(stomp_client, "stomp_client")
+    parent.attach_mock(dispatcher, "dispatcher")
+    main(dev_mode=True)
+
+    mock_client_cls.for_broker.assert_called_once_with(
+        broker=Broker(host="localhost", port=61613, auth=None)
+    )
+    mock_dispatcher_cls.assert_called_once_with(stomp_client)
+    parent.assert_has_calls(
+        [
+            call.dispatcher.subscribe(mock_setup_callbacks.return_value[0]),
+            call.dispatcher.__enter__(),
+            call.stomp_client.is_connected(),
+            call.stomp_client.is_connected(),
+            call.dispatcher.__exit__(None, None, None),
+        ]
+    )

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from dodal.devices.i04.murko_results import (
+from dodal.devices.beamlines.i04.murko_results import (
     RESULTS_COMPLETE_MESSAGE,
     MurkoMetadata,
     MurkoResult,

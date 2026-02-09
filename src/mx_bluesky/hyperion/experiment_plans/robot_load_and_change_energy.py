@@ -13,9 +13,9 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight, InOut
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -27,7 +27,6 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
     prepare_for_robot_load,
-    wait_for_smargon_not_disabled,
 )
 from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     SetEnergyComposite,
@@ -94,8 +93,6 @@ def do_robot_load(
     yield from set_energy_plan(demand_energy_ev, cast(SetEnergyComposite, composite))
 
     yield from bps.wait("robot_load")
-
-    yield from wait_for_smargon_not_disabled(composite.smargon)
 
     yield from bps.mv(composite.thawer, OnOff.ON)
 

@@ -7,7 +7,7 @@ from bluesky import FailedStatus
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
@@ -57,11 +57,7 @@ def fake_complete(_, group=None):
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.bps.complete",
     new=MagicMock(side_effect=fake_complete),
 )
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path"
-)
 async def test_full_do_pedestal_darks(
-    mock_override_path: MagicMock,
     jungfrau: CommissioningJungfrau,
     run_engine: RunEngine,
 ):
@@ -78,7 +74,7 @@ async def test_full_do_pedestal_darks(
         yield from bps.monitor(jungfrau.drv.acquisition_type, name="AT")
         yield from bps.monitor(jungfrau.drv.pedestal_mode_state, name="PM")
         yield from bps.monitor(jungfrau.drv.gain_mode, name="GM")
-        yield from do_pedestal_darks(0.001, 2, 2, jungfrau, test_path)
+        yield from do_pedestal_darks(0.001, 2, 2, test_path, jungfrau=jungfrau)
 
     jungfrau._controller.arm = AsyncMock()
     assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
@@ -111,16 +107,11 @@ async def test_full_do_pedestal_darks(
         GainMode.FIX_G2,
         GainMode.DYNAMIC,
     ]
-    mock_override_path.assert_called_once_with(jungfrau, test_path)
 
 
 class FakeError(Exception): ...
 
 
-@patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path",
-    new=MagicMock(),
-)
 async def test_pedestals_unstage_and_wait_on_exception(
     jungfrau: CommissioningJungfrau,
     run_engine: RunEngine,
@@ -129,7 +120,7 @@ async def test_pedestals_unstage_and_wait_on_exception(
     jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
 
     with pytest.raises(FakeError):
-        run_engine(do_pedestal_darks(0.001, 2, 2, jungfrau))
+        run_engine(do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau))
 
     assert jungfrau.unstage.call_count == 1
     assert [c == call(jungfrau, wait=True) for c in jungfrau.unstage.call_args_list]
@@ -142,7 +133,9 @@ async def test_pedestals_unstage_and_wait_on_exception(
 async def test_do_pedestals_waits_on_stage_before_prepare(
     jungfrau: CommissioningJungfrau, sim_run_engine: RunEngineSimulator
 ):
-    msgs = sim_run_engine.simulate_plan(do_pedestal_darks(0.001, 2, 2, jungfrau))
+    msgs = sim_run_engine.simulate_plan(
+        do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau)
+    )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "stage" and msg.obj == jungfrau
     )
@@ -159,7 +152,7 @@ def test_do_darks_stops_if_exception_after_stage(
     jungfrau.drv.acquisition_stop.trigger = mock_stop
 
     with pytest.raises(FailedStatus):
-        run_engine(do_pedestal_darks(0, 2, 2, jungfrau))
+        run_engine(do_pedestal_darks(0, 2, 2, jungfrau=jungfrau))
     assert mock_stop.await_count == 2  # once when staging, once on exception
     assert [c == call(jungfrau, wait=True) for c in mock_stop.call_args_list]
 
@@ -181,16 +174,10 @@ def test_do_non_pedestal_darks_unstages_jf_on_exception(
 
 
 @patch(
-    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.override_file_path",
-    new=MagicMock(),
-)
-@patch("bluesky.plan_stubs.mv")
-@patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.do_darks.fly_jungfrau"
 )
 def test_do_non_pedestal_darks_triggers_correct_plans(
     mock_fly_jf: MagicMock,
-    mock_move: MagicMock,
     run_engine: RunEngine,
     jungfrau: CommissioningJungfrau,
 ):
@@ -199,7 +186,6 @@ def test_do_non_pedestal_darks_triggers_correct_plans(
     jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
     jungfrau.stage = MagicMock(side_effect=lambda: completed_status())
     parent_mock.attach_mock(mock_fly_jf, "mock_fly_jf")
-    parent_mock.attach_mock(mock_move, "mock_move")
     parent_mock.attach_mock(jungfrau.unstage, "jungfrau_unstage")
     parent_mock.attach_mock(jungfrau.stage, "jungfrau_stage")
     expected_trigger_info = create_jungfrau_internal_triggering_info(1000, 0.001)
@@ -207,10 +193,10 @@ def test_do_non_pedestal_darks_triggers_correct_plans(
 
     assert parent_mock.method_calls == [
         call.jungfrau_stage(),
-        call.mock_move(jungfrau.drv.gain_mode, gain_mode),
         call.mock_fly_jf(
             jungfrau,
             expected_trigger_info,
+            gain_mode,
             wait=True,
             log_on_percentage_prefix=f"Jungfrau {gain_mode} gain mode darks triggers received",
         ),

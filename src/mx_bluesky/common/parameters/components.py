@@ -25,6 +25,7 @@ from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
     TEST_MODE,
+    USE_NUMTRACKER,
     DetectorParamConstants,
     GridscanParamConstants,
 )
@@ -156,8 +157,8 @@ class WithVisit(BaseModel):
     det_dist_to_beam_converter_path: str = Field(
         default=DetectorParamConstants.BEAM_XY_LUT_PATH
     )
-    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
     detector_distance_mm: float | None = Field(default=None, gt=0)
+    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
 
 
 class DiffractionExperiment(
@@ -180,12 +181,17 @@ class DiffractionExperiment(
     @model_validator(mode="before")
     @classmethod
     def validate_directories(cls, values):
-        os.makedirs(values["storage_directory"], exist_ok=True)
+        # Plans using numtracker currently won't work with snapshot directories:
+        # see https://github.com/DiamondLightSource/mx-bluesky/issues/1527
+        if values["storage_directory"] != USE_NUMTRACKER:
+            os.makedirs(values["storage_directory"], exist_ok=True)
 
-        values["snapshot_directory"] = values.get(
-            "snapshot_directory",
-            Path(values["storage_directory"], "snapshots").as_posix(),
-        )
+            values["snapshot_directory"] = values.get(
+                "snapshot_directory",
+                Path(values["storage_directory"], "snapshots").as_posix(),
+            )
+        else:
+            values["snapshot_directory"] = Path("/tmp")
         return values
 
     @property
