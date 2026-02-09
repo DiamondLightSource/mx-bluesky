@@ -20,7 +20,7 @@ The xray centring code generally has three parts; detect the grid to flyscan ove
 1. ``CONST.PLAN.GRID_DETECT_AND_DO_GRIDSCAN`` is the outer run. When this starts it will deposit the initial ispyb information (but more is added as the collection continues)
 2. ``CONST.PLAN.GRIDSCAN_OUTER`` is started after we have done the grid detection but before we do the work for setting up the gridscan. It is used to set transmission (and optionally feedback as per the selected preprocessors) and to initialise nexus writing (the final nexus file is only written when all the relevant data is read from the beamline)
 3. ``CONST.PLAN.DO_FGS`` is the internal run that is opened just before the actual gridscan motion happens. The start of this will create the data to send to zocalo, zocalo is then triggered once all the (zocalo triggered by the hardware read)
-4. ``CONST.PLAN.FLYSCAN_RESULTS`` is used to emit the results of the flyscan, that are then picked up by a `XRayCentreEventHandler` so that we can use them later in the plan.
+4. ``CONST.PLAN.FLYSCAN_RESULTS`` is used to emit the results of the flyscan, that are then picked up by a ``XRayCentreEventHandler`` so that we can use them later in the plan.
 
 
 Rotation Scans
@@ -34,4 +34,4 @@ It does this by starting 1+2*N different runs:
 2. ``CONST.PLAN.ROTATION_OUTER``: Emitted N times, inside a ``CONST.PLAN.ROTATION_MULTI`` run. This is used to create the initial ispyb deposition and create the nexus writer (but not actually write the file)
 3. ``CONST.PLAN.ROTATION_MAIN``: Emitted N times, inside ``CONST.PLAN.ROTATION_OUTER`` run. Used to finish writing to ispyb (i.e. write success/failure) and to send collection information to zocalo.
 
-There is also a ``CONST.PLAN.ROTATION_MULTI_OUTER``, which is used when the rotation scan is run independently (i.e. outside of a bigger `load_centre_collect`). This is needed as we need to activate the `BeamDrawingCallback` for this case.
+There is also a ``CONST.PLAN.ROTATION_MULTI_OUTER``, which is used when the rotation scan is run independently (i.e. outside of a bigger ``load_centre_collect``). This is needed as we need to activate the ``BeamDrawingCallback`` for this case.
