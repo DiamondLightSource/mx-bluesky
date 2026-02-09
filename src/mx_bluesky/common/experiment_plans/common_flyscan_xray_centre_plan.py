@@ -36,7 +36,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
-    MotorType,
+    MotorWithOmegaType,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
@@ -62,7 +62,7 @@ class BeamlineSpecificFGSFeatures:
 
 
 def generic_tidy(
-    xrc_composite: FlyScanEssentialDevices[MotorType], wait=True
+    xrc_composite: FlyScanEssentialDevices[MotorWithOmegaType], wait=True
 ) -> MsgGenerator:
     """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
@@ -137,7 +137,7 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices[MotorType],
+    composite: FlyScanEssentialDevices[MotorWithOmegaType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
@@ -179,7 +179,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices[MotorType],
+            fgs_composite: FlyScanEssentialDevices[MotorWithOmegaType],
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
@@ -262,7 +262,7 @@ def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreRes
 
 
 def run_gridscan(
-    fgs_composite: FlyScanEssentialDevices[MotorType],
+    fgs_composite: FlyScanEssentialDevices[MotorWithOmegaType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
