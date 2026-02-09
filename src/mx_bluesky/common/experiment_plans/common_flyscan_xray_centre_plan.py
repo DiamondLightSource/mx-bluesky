@@ -61,7 +61,9 @@ class BeamlineSpecificFGSFeatures:
     get_xrc_results_from_zocalo: bool
 
 
-def generic_tidy(xrc_composite: FlyScanEssentialDevices, wait=True) -> MsgGenerator:
+def generic_tidy(
+    xrc_composite: FlyScanEssentialDevices[MotorType], wait=True
+) -> MsgGenerator:
     """Tidy Zocalo and turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
 
     LOGGER.info("Tidying up Zocalo")
@@ -135,7 +137,7 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices,
+    composite: FlyScanEssentialDevices[MotorType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
@@ -177,7 +179,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices,
+            fgs_composite: FlyScanEssentialDevices[MotorType],
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
