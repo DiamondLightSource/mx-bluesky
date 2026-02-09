@@ -4,10 +4,34 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.smargon import Smargon, StubPosition
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    fetch_xrc_results_from_zocalo,
+)
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
+from mx_bluesky.common.parameters.device_composites import (
+    GridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
-from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler, XRayCentreResult
+
+
+def get_results_then_change_aperture_and_move_to_xtal(
+    composite: GridDetectThenXRayCentreComposite,
+    parameters: SpecifiedThreeDGridScan,
+    flyscan_event_handler: XRayCentreEventHandler,
+):
+    yield from fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
+    flyscan_results = flyscan_event_handler.xray_centre_results
+    assert flyscan_results, (
+        "Flyscan result event not received or no crystal found and exception not raised"
+    )
+    yield from change_aperture_then_move_to_xtal(
+        flyscan_results[0],
+        composite.gonio,
+        composite.aperture_scatterguard,
+    )
 
 
 def change_aperture_then_move_to_xtal(
@@ -23,7 +47,7 @@ def change_aperture_then_move_to_xtal(
     bounding_box_size = numpy.abs(
         best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
     )
-    yield from set_aperture_for_bbox_mm(
+    yield from _set_aperture_for_bbox_mm(
         aperture_scatterguard,
         bounding_box_size,
     )
@@ -41,7 +65,7 @@ def change_aperture_then_move_to_xtal(
         yield from bps.mv(smargon.stub_offsets, StubPosition.CURRENT_AS_CENTER)
 
 
-def set_aperture_for_bbox_mm(
+def _set_aperture_for_bbox_mm(
     aperture_device: ApertureScatterguard,
     bbox_size_mm: list[float] | numpy.ndarray,
     group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,

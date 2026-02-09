@@ -42,7 +42,6 @@ MotorWithOmegaType = TypeVar("MotorWithOmegaType", bound=GonioWithOmega)
 class FlyScanEssentialDevices(Generic[MotorWithOmegaType]):
     eiger: EigerDetector
     synchrotron: Synchrotron
-    zocalo: ZocaloResults
     gonio: MotorWithOmegaType
 
 
@@ -62,6 +61,7 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
 
     aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
+    zocalo: ZocaloResults
     backlight: Backlight
     beamstop: Beamstop
     beamsize: BeamsizeBase

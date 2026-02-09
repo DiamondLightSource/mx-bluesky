@@ -11,17 +11,18 @@ from dodal.devices.backlight import InOut
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.smargon import CombinedMove
 from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    _fire_xray_centre_result_event,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     ConstructBeamlineSpecificFeatures,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    _fire_xray_centre_result_event,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
@@ -121,10 +122,6 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     autospec=True,
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal",
-    autospec=True,
-)
-@patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
     autospec=True,
 )
@@ -136,16 +133,10 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.setup_beamline_for_oav",
     autospec=True,
 )
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.XRayCentreEventHandler",
-    autospec=True,
-)
 def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
-    mock_event_handler: MagicMock,
     mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect: MagicMock,
     mock_flyscan: MagicMock,
-    mock_change_aperture_and_move: MagicMock,
     mock_create_params: MagicMock,
     mock_grid_detect_callback: MagicMock,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
@@ -154,7 +145,6 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
     test_config_files: dict,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
-    mock_event_handler.return_value.xray_centre_results = ["dummy"]
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
@@ -344,22 +334,6 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
     )
 
 
-def test_grid_detect_then_xray_centre_centres_on_the_first_flyscan_result(
-    msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
-):
-    assert_message_and_return_remaining(
-        msgs_from_simulated_grid_detect_then_xray_centre,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio"
-        and msg.args[0]
-        == CombinedMove(
-            x=FLYSCAN_RESULT_MED.centre_of_mass_mm[0],
-            y=FLYSCAN_RESULT_MED.centre_of_mass_mm[1],
-            z=FLYSCAN_RESULT_MED.centre_of_mass_mm[2],
-        ),
-    )
-
-
 def test_grid_detect_then_xray_centre_activates_ispyb_callback(
     msgs_from_simulated_grid_detect_then_xray_centre: list[Msg],
 ):
@@ -399,15 +373,7 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.XRayCentreEventHandler"
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.change_aperture_then_move_to_xtal"
-)
 def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
-    mock_change_aperture_then_move_to_xtal: MagicMock,
-    mock_events_handler: MagicMock,
     mock_grid_detect_then_xray_centre: MagicMock,
     sim_run_engine: RunEngineSimulator,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
@@ -415,10 +381,6 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     test_config_files: dict,
 ):
-    flyscan_event_handler = MagicMock()
-    flyscan_event_handler.xray_centre_results = "dummy"
-    mock_events_handler.return_value = flyscan_event_handler
-
     mock_grid_detect_then_xray_centre.return_value = iter(
         [Msg("grid_detect_then_xray_centre")]
     )
