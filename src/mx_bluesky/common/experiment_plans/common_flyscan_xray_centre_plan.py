@@ -169,8 +169,6 @@ def common_flyscan_xray_centre(
     yield from _decorated_flyscan()
 
 
-@bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_MAIN)
-@bpp.run_decorator(md={"subplan_name": PlanNameConstants.GRIDSCAN_MAIN})
 def run_gridscan(
     fgs_composite: FlyScanEssentialDevices,
     parameters: SpecifiedThreeDGridScan,

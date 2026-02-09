@@ -3,6 +3,7 @@ from functools import partial
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine, RunEngineResult
@@ -437,7 +438,9 @@ class TestFlyscanXrayCentrePlan:
 
         with pytest.raises(CompleteError):
             run_engine(
-                run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+                bpp.run_wrapper(
+                    run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
+                )
             )
 
         fake_fgs_composite.eiger.disable_roi_mode.assert_called()
