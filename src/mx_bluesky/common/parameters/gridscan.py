@@ -107,17 +107,30 @@ class GridCommon(
         )
 
 
-class SpecifiedGrid(GridCommon, XyzStarts, WithScan, Generic[GridScanParamType]):
+class SpecifiedGrids(GridCommon, XyzStarts, WithScan, Generic[GridScanParamType]):
     """A specified grid is one which has defined values for the start position,
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
 
-    grid1_omega_deg: float = Field(default=GridscanParamConstants.OMEGA_1)
-    x_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
-    y_step_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
-    x_steps: int = Field(gt=0)
-    y_steps: int = Field(gt=0)
+    omega_deg_per_grid: list[float] = Field(
+        default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+    )
+    x_step_sizes_um: list[float] = Field(
+        default=[
+            GridscanParamConstants.BOX_WIDTH_UM,
+            GridscanParamConstants.BOX_WIDTH_UM,
+        ]
+    )
+    y_step_sizes_um: list[float] = Field(
+        default=[
+            GridscanParamConstants.BOX_WIDTH_UM,
+            GridscanParamConstants.BOX_WIDTH_UM,
+        ]
+    )
+    x_steps: list[int] = Field(gt=0)
+    y_steps: list[int] = Field(gt=0)
     _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
+    # TODO validate that all the "per grid" things are the same length. _num_grids property can just print out length of this
 
     @property
     @abstractmethod
@@ -126,22 +139,38 @@ class SpecifiedGrid(GridCommon, XyzStarts, WithScan, Generic[GridScanParamType])
     def do_set_stub_offsets(self, value: bool):
         self._set_stub_offsets = value
 
+    def _num_grids(self):
+        return len(self.x_steps)
+
     @property
-    def grid_1_spec(self):
-        x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
-        y1_end = self.y_start_um + self.y_step_size_um * (self.y_steps - 1)
-        grid_1_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
-        grid_1_y = Line("sam_y", self.y_start_um, y1_end, self.y_steps)
-        grid_1_z = Static("sam_z", self.z_start_um)
-        return grid_1_y.zip(grid_1_z) * ~grid_1_x
+    def grid_specs(self) -> list[Product[str]]:
+        _grid_specs = []
+        for idx in range(self._num_grids()):
+            x_end = self.x_starts_um[idx] + self.x_step_sizes_um[idx] * (
+                self.x_step_sizes_um[idx] - 1
+            )
+            y_end = self.y_starts_um[idx] + self.y_step_sizes_um[idx] * (
+                self.y_step_sizes_um[idx] - 1
+            )
+            grid_x = Line("sam_x", self.x_starts_um[idx], x_end, self.x_steps[idx])
+            grid_y = Line("sam_y", self.y_starts_um[idx], y_end, self.y_steps[idx])
+            grid_z = Static("sam_z", self.z_starts_um[idx])
+            _grid_specs.append(grid_y.zip(grid_z) * ~grid_x)
+        return _grid_specs
 
     @property
     def scan_indices(self) -> list[int]:
         """The first index of each gridscan, useful for writing nexus files/VDS"""
-        return [
-            0,
-            len(ScanPath(self.grid_1_spec.calculate()).consume().midpoints["sam_x"]),
-        ]
+        _scan_indices = [0]
+        for idx in range(self._num_grids()):
+            _scan_indices.append(
+                len(
+                    ScanPath(self.grid_specs[idx].calculate())
+                    .consume()
+                    .midpoints["sam_x"]
+                )
+            )
+        return _scan_indices
 
     @property
     @abstractmethod

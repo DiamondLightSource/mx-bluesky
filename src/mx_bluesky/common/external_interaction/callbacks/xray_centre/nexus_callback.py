@@ -12,14 +12,14 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
-    SpecifiedThreeDGridScan,
+    SpecifiedGrid,
 )
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
 
-T = TypeVar("T", bound="SpecifiedThreeDGridScan")
+T = TypeVar("T", bound="SpecifiedGrid")
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
@@ -39,14 +39,13 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, param_type: type[T]) -> None:
+    def __init__(self, param_type: type[T], num_writers: int) -> None:
         super().__init__(NEXUS_LOGGER)
         self.param_type = param_type
         self.run_start_uid: str | None = None
-        self.nexus_writer_1: NexusWriter | None = None
-        self.nexus_writer_2: NexusWriter | None = None
-        self.descriptors: dict[str, EventDescriptor] = {}
+        self.num_writers: int = num_writers
         self.log = NEXUS_LOGGER
+        self.writers: list[NexusWriter] = []
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.GRIDSCAN_OUTER:
@@ -62,6 +61,10 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
             data_shape_1 = (grid_n_img_1, d_size.width, d_size.height)
             data_shape_2 = (grid_n_img_2, d_size.width, d_size.height)
             run_number_2 = parameters.detector_params.run_number + 1
+
+            for writer in range(self.num_writers):
+                self._writers.append(NexusWriter)
+
             self.nexus_writer_1 = NexusWriter(
                 parameters, data_shape_1, parameters.scan_points_first_grid
             )

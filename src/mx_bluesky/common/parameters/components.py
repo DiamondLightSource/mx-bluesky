@@ -96,6 +96,10 @@ class IspybExperimentType(StrEnum):
     GRIDSCAN_3D = "Mesh3D"
 
 
+class WithNexusWriter(BaseModel):
+    indices_per_writer: tuple[int]
+
+
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
         extra="allow",
@@ -269,28 +273,28 @@ class WithCentreSelection(BaseModel):
 
 
 class OptionalXyzStarts(BaseModel):
-    x_start_um: float | None = None
-    y_start_um: float | None = None
-    z_start_um: float | None = None
+    x_starts_um: list[float | None] | None = None
+    y_starts_um: list[float | None]
+    z_starts_um: list[float | None]
 
 
 class XyzStarts(BaseModel):
-    x_start_um: float
-    y_start_um: float
-    z_start_um: float
+    x_starts_um: list[float]
+    y_starts_um: list[float]
+    z_starts_um: list[float]
 
-    def _start_for_axis(self, axis: XyzAxis) -> float:
+    def _start_for_axis(self, axis: XyzAxis, grid: int) -> float:
         match axis:
             case XyzAxis.X:
-                return self.x_start_um
+                return self.x_starts_um[grid]
             case XyzAxis.Y:
-                return self.y_start_um
+                return self.y_starts_um[grid]
             case XyzAxis.Z:
-                return self.z_start_um
+                return self.z_starts_um[grid]
 
 
 class OptionalGonioAngleStarts(BaseModel):
-    omega_start_deg: float | None = None
-    phi_start_deg: float | None = None
-    chi_start_deg: float | None = None
-    kappa_start_deg: float | None = None
+    omega_starts_deg: list[float | None]
+    phi_starts_deg: list[float | None]
+    chi_starts_deg: list[float | None]
+    kappa_starts_deg: list[float | None]
