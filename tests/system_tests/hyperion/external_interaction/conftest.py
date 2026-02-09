@@ -449,7 +449,7 @@ def composite_for_rotation_scan(
         detector_motion=detector_motion,
         eiger=eiger,
         flux=flux,
-        smargon=smargon,
+        gonio=smargon,
         undulator=undulator_for_system_test,
         aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,

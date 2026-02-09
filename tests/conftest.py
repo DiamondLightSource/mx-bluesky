@@ -837,7 +837,7 @@ def fake_create_rotation_devices(
         detector_motion=detector_motion,
         eiger=eiger,
         flux=flux,
-        smargon=smargon,
+        gonio=smargon,
         undulator=undulator,
         aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,

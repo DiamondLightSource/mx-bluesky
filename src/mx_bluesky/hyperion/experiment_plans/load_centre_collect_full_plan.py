@@ -161,9 +161,9 @@ def _samples_and_locations_to_collect(
     else:
         # If the xray centring hasn't found a result but has not thrown an error it
         # means that we do not need to recentre and can collect where we are
-        initial_x_mm = yield from bps.rd(composite.smargon.x.user_readback)
-        initial_y_mm = yield from bps.rd(composite.smargon.y.user_readback)
-        initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
+        initial_x_mm = yield from bps.rd(composite.gonio.x.user_readback)
+        initial_y_mm = yield from bps.rd(composite.gonio.y.user_readback)
+        initial_z_mm = yield from bps.rd(composite.gonio.z.user_readback)
 
         return [
             (

@@ -191,7 +191,7 @@ def robot_load_composite(
         flux=flux,
         oav=oav,
         pin_tip_detection=pin_tip_detection_with_found_pin,
-        smargon=smargon,
+        gonio=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         undulator=undulator,
