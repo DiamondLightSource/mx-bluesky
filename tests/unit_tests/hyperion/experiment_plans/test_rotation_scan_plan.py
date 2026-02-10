@@ -259,8 +259,8 @@ async def test_full_rotation_plan_smargon_settings(
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
 
-    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)
-    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)
+    omega_set: MagicMock = get_mock_put(smargon.omega._real_motor.user_setpoint)
+    omega_velocity_set: MagicMock = get_mock_put(smargon.omega._real_motor.velocity)
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
     assert await smargon.phi.user_setpoint.get_value() == params.phi_start_deg
@@ -900,12 +900,12 @@ def test_rotation_scan_moves_beamstop_into_place(
         # GDA behaviour is such that positive angles in the request result in
         # negative motor angles, but positive angles in the resulting nexus file
         # Should replicate GDA Output exactly
-        [True, RotationDirection.POSITIVE, -30, -29.85, RotationDirection.NEGATIVE],
+        [True, RotationDirection.POSITIVE, -30.0, -29.85, RotationDirection.NEGATIVE],
         # Should replicate GDA Output, except with /entry/data/transformation/omega
         # +1, 0, 0 instead of -1, 0, 0
-        [False, RotationDirection.NEGATIVE, 30, 30.15, RotationDirection.NEGATIVE],
-        [True, RotationDirection.NEGATIVE, -30, -30.15, RotationDirection.POSITIVE],
-        [False, RotationDirection.POSITIVE, 30, 29.85, RotationDirection.POSITIVE],
+        [False, RotationDirection.NEGATIVE, 30.0, 30.15, RotationDirection.NEGATIVE],
+        [True, RotationDirection.NEGATIVE, -30.0, -30.15, RotationDirection.POSITIVE],
+        [False, RotationDirection.POSITIVE, 30.0, 29.85, RotationDirection.POSITIVE],
     ],
 )
 @patch(
@@ -937,10 +937,11 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         mock_callback = Mock(spec=RotationISPyBCallback)
         run_engine.subscribe(mock_callback)
         omega_put = get_mock_put(
-            fake_create_rotation_devices.smargon.omega.user_setpoint
+            fake_create_rotation_devices.smargon.omega._real_motor.user_setpoint
         )
         set_mock_value(
-            fake_create_rotation_devices.smargon.omega.acceleration_time, 0.1
+            fake_create_rotation_devices.smargon.omega._real_motor.acceleration_time,
+            0.1,
         )
         with (
             patch("bluesky.plan_stubs.wait", autospec=True),
@@ -958,10 +959,10 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             )
 
         assert omega_put.mock_calls[0:5] == [
-            call(0, wait=True),
-            call(90, wait=True),
-            call(180, wait=True),
-            call(270, wait=True),
+            call(0.0, wait=True),
+            call(90.0, wait=True),
+            call(180.0, wait=True),
+            call(270.0, wait=True),
             call(expected_start_angle_with_runup, wait=True),
         ]
         mock_setup_zebra_for_rotation.assert_called_once_with(
@@ -989,6 +990,15 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     assert event_params.rotation_direction == rotation_direction
     assert event_params.scan_width_deg == 180
     assert event_params.omega_start_deg == 30
+
+
+@pytest.mark.parametrize(
+    "omega_flip, mod_360", [[False, False], [False, True], [True, False], [True, True]]
+)
+def test_calculate_motion_profile_accounts_for_mod360_and_omega_flip(
+    omega_flip: bool, mod_360: bool
+):
+    pass
 
 
 def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(

@@ -177,7 +177,7 @@ def robot_load_composite(
     set_mock_value(dcm.energy_in_keV.user_readback, 11.105)
     smargon.stub_offsets.set = MagicMock(side_effect=lambda _: completed_status())
     aperture_scatterguard.set = MagicMock(side_effect=lambda _: completed_status())
-    set_mock_value(smargon.omega.max_velocity, 131)
+    set_mock_value(smargon.omega._real_motor.max_velocity, 131)
     return RobotLoadThenCentreComposite(
         xbpm_feedback=xbpm_feedback,
         attenuator=attenuator,

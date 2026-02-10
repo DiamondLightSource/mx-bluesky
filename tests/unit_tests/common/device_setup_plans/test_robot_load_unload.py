@@ -45,13 +45,13 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
     set_mock_value(smargon.x.user_setpoint, 10)
     set_mock_value(smargon.z.user_setpoint, 5)
-    set_mock_value(smargon.omega.user_setpoint, 90)
+    set_mock_value(smargon.omega._real_motor.user_setpoint, 90)
 
     run_engine(prepare_for_robot_load(aperture_scatterguard, smargon))
 
     assert await smargon.x.user_setpoint.get_value() == 0
     assert await smargon.z.user_setpoint.get_value() == 0
-    assert await smargon.omega.user_setpoint.get_value() == 0
+    assert await smargon.omega._real_motor.user_setpoint.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     get_mock_put(aperture_scatterguard.selected_aperture).assert_called_once_with(
