@@ -427,7 +427,7 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     test_config_files: dict[str, str],
     run_engine: RunEngine,
 ):
-    set_mock_value(smargon.omega.user_readback, 0)
+    set_mock_value(smargon.omega._real_motor.user_readback, 0)
     mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
     composite = PinTipCentringComposite(
         oav=oav,
@@ -472,7 +472,7 @@ def test_warning_raised_if_pin_tip_goes_out_of_view_after_rotation(
     test_config_files: dict[str, str],
     run_engine: RunEngine,
 ):
-    set_mock_value(smargon.omega.user_readback, 0)
+    set_mock_value(smargon.omega._real_motor.user_readback, 0)
     mock_ophyd_pin_tip_detection = MagicMock(spec=PinTipDetection)
     composite = PinTipCentringComposite(
         oav=oav,

@@ -826,7 +826,7 @@ def fake_create_rotation_devices(
     thawer: Thawer,
     beamsize: BeamsizeBase,
 ):
-    set_mock_value(smargon.omega.max_velocity, 131)
+    set_mock_value(smargon.omega._real_motor.max_velocity, 131)
     undulator.set = MagicMock(side_effect=lambda _: completed_status())
     return RotationScanComposite(
         attenuator=attenuator,

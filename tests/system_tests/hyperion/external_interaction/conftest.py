@@ -436,7 +436,7 @@ def composite_for_rotation_scan(
     thawer: Thawer,
     beamsize: BeamsizeBase,
 ):
-    set_mock_value(smargon.omega.max_velocity, 131)
+    set_mock_value(smargon.omega._real_motor.max_velocity, 131)
     oav_for_system_test.zoom_controller.level.describe = AsyncMock(
         return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}
     )

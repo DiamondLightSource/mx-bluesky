@@ -324,7 +324,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     composite, _ = fake_devices
 
     # This will cause the grid detect plan to take data at -90 first
-    set_mock_value(composite.gonio.omega.user_readback, -90)
+    set_mock_value(composite.gonio.omega._real_motor.user_readback, -90)
     composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         side_effect=[X_Z_EDGE_DATA, X_Y_EDGE_DATA]
     )

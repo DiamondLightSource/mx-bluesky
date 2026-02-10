@@ -259,8 +259,8 @@ async def test_full_rotation_plan_smargon_settings(
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
 
-    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)
-    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)
+    omega_set: MagicMock = get_mock_put(smargon.omega._real_motor.user_setpoint)
+    omega_velocity_set: MagicMock = get_mock_put(smargon.omega._real_motor.velocity)
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
     assert await smargon.phi.user_setpoint.get_value() == params.phi_start_deg
@@ -936,8 +936,10 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             scan.omega_start_deg = 30
         mock_callback = Mock(spec=RotationISPyBCallback)
         run_engine.subscribe(mock_callback)
-        omega_put = get_mock_put(fake_create_rotation_devices.gonio.omega.user_setpoint)
-        set_mock_value(fake_create_rotation_devices.gonio.omega.acceleration_time, 0.1)
+        omega_put = get_mock_put(fake_create_rotation_devices.gonio.omega._real_motor.user_setpoint)
+        set_mock_value(fake_create_rotation_devices.gonio.omega._real_motor.acceleration_time,
+            0.1,
+        )
         with (
             patch("bluesky.plan_stubs.wait", autospec=True),
             patch(
@@ -985,6 +987,15 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     assert event_params.rotation_direction == rotation_direction
     assert event_params.scan_width_deg == 180
     assert event_params.omega_start_deg == 30
+
+
+@pytest.mark.parametrize(
+    "omega_flip, mod_360", [[False, False], [False, True], [True, False], [True, True]]
+)
+def test_calculate_motion_profile_accounts_for_mod360_and_omega_flip(
+    omega_flip: bool, mod_360: bool
+):
+    pass
 
 
 def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(

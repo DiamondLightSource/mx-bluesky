@@ -68,7 +68,7 @@ async def smargon() -> Smargon:
     smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="gonio")
     await smargon.connect(mock=True)
 
-    set_mock_value(smargon.omega.user_readback, 0.0)
+    set_mock_value(smargon.omega._real_motor.user_readback, 0.0)
 
     return smargon
 
@@ -115,12 +115,14 @@ def _do_thaw_and_confirm_cleanup(
     move_mock: MagicMock, smargon: Smargon, thawer: Thawer, do_thaw_func
 ):
     smargon.omega.set = move_mock
-    set_mock_value(smargon.omega.velocity, initial_velocity := 10)
+    set_mock_value(smargon.omega._real_motor.velocity, initial_velocity := 10)
     smargon.omega.set = move_mock
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer._control).call_args_list[-1]
     assert last_thawer_call == call(OnOff.OFF, wait=ANY)
-    last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
+    last_velocity_call = get_mock_put(
+        smargon.omega._real_motor.velocity
+    ).call_args_list[-1]
     assert last_velocity_call == call(initial_velocity, wait=ANY)
 
 
@@ -167,7 +169,9 @@ def test_given_different_rotations_and_times_then_velocity_correct(
     run_engine: RunEngine,
 ):
     run_engine(thaw(time, rotation, thawer=thawer, smargon=smargon))
-    first_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[0]
+    first_velocity_call = get_mock_put(
+        smargon.omega._real_motor.velocity
+    ).call_args_list[0]
     assert first_velocity_call == call(expected_speed, wait=ANY)
 
 
@@ -187,9 +191,9 @@ def test_given_different_rotations_then_motor_moved_relative(
     expected_end: float,
     run_engine: RunEngine,
 ):
-    set_mock_value(smargon.omega.user_setpoint, start_pos)
+    set_mock_value(smargon.omega._real_motor.user_setpoint, start_pos)
     run_engine(thaw(10, rotation, thawer=thawer, smargon=smargon))
-    assert get_mock_put(smargon.omega.user_setpoint).call_args_list == [
+    assert get_mock_put(smargon.omega._real_motor.user_setpoint).call_args_list == [
         call(expected_end, wait=ANY),
         call(start_pos, wait=ANY),
     ]
@@ -615,7 +619,7 @@ def test_plans_carry_on_thaw_if_redis_connection_check_fails(
     ):
         run_engine(plan)
 
-        omega_put = get_mock_put(smargon.omega.user_setpoint)
+        omega_put = get_mock_put(smargon.omega._real_motor.user_setpoint)
 
         assert omega_put.call_args_list == [
             call(360.0, wait=True),
