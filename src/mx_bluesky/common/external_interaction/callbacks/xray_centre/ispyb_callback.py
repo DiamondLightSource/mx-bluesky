@@ -71,7 +71,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
                 "mx_bluesky_parameters": parameters.model_dump_json(),
             },
         ),
-        PlanNameConstants.ISPYB_ACTIVATION,
+        PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
     )
 
 
@@ -187,7 +187,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.params, "ISPyB handler didn't receive parameters!"
         assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
-        omega = doc["data"]["smargon-omega"]
+        omega = doc["data"]["gonio-omega"]
         grid_plane = _smargon_omega_to_xyxz_plane(omega)
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"Generating dc info for gridplane {grid_plane}, omega {omega}"
@@ -255,13 +255,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return [scan_data_info]
 
     def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
-        if (omega_start := doc.get("smargon-omega")) is not None:
+        if (omega_start := doc.get("gonio-omega")) is not None:
             omega_in_gda_space = -omega_start
             data_collection_info.omega_start = omega_in_gda_space
             data_collection_info.axis_start = omega_in_gda_space
             data_collection_info.axis_end = omega_in_gda_space
             data_collection_info.axis_range = 0
-        if (chi_start := doc.get("smargon-chi")) is not None:
+        if (chi_start := doc.get("gonio-chi")) is not None:
             data_collection_info.chi_start = chi_start
 
     def populate_info_for_update(

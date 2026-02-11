@@ -4,6 +4,7 @@ import json
 
 import bluesky.preprocessors as bpp
 from blueapi.core import BlueskyContext
+from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -13,10 +14,13 @@ from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
+    get_results_then_change_aperture_and_move_to_xtal,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    zocalo_stage_decorator,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     setup_beamline_for_oav,
@@ -29,12 +33,13 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler
+from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -72,7 +77,7 @@ def create_parameters_for_grid_detection(
     return grid_detect_and_xray_centre
 
 
-def pin_centre_then_flyscan_plan(
+def pin_centre_then_xray_centre_plan(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
@@ -81,17 +86,21 @@ def pin_centre_then_flyscan_plan(
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
-        gonio=composite.smargon,
+        gonio=composite.gonio,
         pin_tip_detection=composite.pin_tip_detection,
     )
 
-    def _pin_centre_then_flyscan_plan():
+    flyscan_event_handler = XRayCentreEventHandler()
+
+    @zocalo_stage_decorator(composite.zocalo)
+    @subs_decorator(flyscan_event_handler)
+    def _pin_centre_then_gridscan_and_xrc():
         yield from setup_beamline_for_oav(
-            composite.smargon, composite.backlight, composite.aperture_scatterguard
+            composite.gonio, composite.backlight, composite.aperture_scatterguard
         )
 
         yield from move_phi_chi_omega(
-            composite.smargon,
+            composite.gonio,
             parameters.phi_start_deg,
             parameters.chi_start_deg,
             group=CONST.WAIT.READY_FOR_OAV,
@@ -121,8 +130,14 @@ def pin_centre_then_flyscan_plan(
             )
 
         yield from _grid_detect_plan()
+        assert isinstance(
+            grid_detect_params.specified_grid_params, SpecifiedThreeDGridScan
+        ), "Specified grid params couldn't be found after grid detection"
+        yield from get_results_then_change_aperture_and_move_to_xtal(
+            composite, grid_detect_params.specified_grid_params, flyscan_event_handler
+        )
 
-    yield from ispyb_activation_wrapper(_pin_centre_then_flyscan_plan(), parameters)
+    yield from ispyb_activation_wrapper(_pin_centre_then_gridscan_and_xrc(), parameters)
 
 
 def pin_tip_centre_then_xray_centre(
@@ -138,21 +153,14 @@ def pin_tip_centre_then_xray_centre(
     flyscan_event_handler = XRayCentreEventHandler()
 
     @bpp.subs_decorator(flyscan_event_handler)
-    def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
+    def _pin_centre_flyscan_then_xrc() -> MsgGenerator:
         yield from start_preparing_data_collection_then_do_plan(
             composite.beamstop,
             eiger,
             composite.detector_motion,
             parameters.detector_params.detector_distance,
-            pin_centre_then_flyscan_plan(composite, parameters, oav_config_file),
+            pin_centre_then_xray_centre_plan(composite, parameters, oav_config_file),
             group=CONST.WAIT.GRID_READY_FOR_DC,
         )
 
-    yield from pin_centre_flyscan_then_fetch_results()
-    flyscan_results = flyscan_event_handler.xray_centre_results
-    assert flyscan_results, (
-        "Flyscan result event not received or no crystal found and exception not raised"
-    )
-    yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0], composite.smargon, composite.aperture_scatterguard
-    )
+    yield from _pin_centre_flyscan_then_xrc()

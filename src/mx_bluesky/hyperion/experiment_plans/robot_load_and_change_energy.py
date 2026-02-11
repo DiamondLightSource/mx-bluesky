@@ -52,7 +52,7 @@ class RobotLoadAndEnergyChangeComposite:
     lower_gonio: XYZStage
     thawer: Thawer
     oav: OAV
-    smargon: Smargon
+    gonio: Smargon
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
 
@@ -153,9 +153,7 @@ def robot_load_and_change_energy_plan(
 
     sample_location = SampleLocation(params.sample_puck, params.sample_pin)
 
-    yield from prepare_for_robot_load(
-        composite.aperture_scatterguard, composite.smargon
-    )
+    yield from prepare_for_robot_load(composite.aperture_scatterguard, composite.gonio)
 
     yield from bpp.set_run_key_wrapper(
         bpp.run_wrapper(
@@ -174,5 +172,5 @@ def robot_load_and_change_energy_plan(
                 ],
             },
         ),
-        CONST.PLAN.ROBOT_LOAD_AND_SNAPSHOTS,
+        CONST.PLAN.ROBOT_LOAD,
     )
