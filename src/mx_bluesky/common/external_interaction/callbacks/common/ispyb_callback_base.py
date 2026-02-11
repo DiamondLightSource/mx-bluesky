@@ -145,9 +145,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             doc, self.params.detector_params, hwscan_data_collection_info
         )
         hwscan_position_info = DataCollectionPositionInfo(
-            pos_x=float(doc["data"]["smargon-x"]),
-            pos_y=float(doc["data"]["smargon-y"]),
-            pos_z=float(doc["data"]["smargon-z"]),
+            pos_x=float(doc["data"]["gonio-x"]),
+            pos_y=float(doc["data"]["gonio-y"]),
+            pos_z=float(doc["data"]["gonio-z"]),
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, hwscan_position_info, self.params

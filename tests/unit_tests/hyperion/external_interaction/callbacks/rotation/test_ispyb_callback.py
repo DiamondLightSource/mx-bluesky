@@ -121,9 +121,9 @@ def test_hardware_read_events(
     create_position_request = mock_ispyb_conn.dc_calls_for(POSITION_RE)[0]
     assert create_position_request.dcid == TEST_DATA_COLLECTION_IDS[0]
     assert create_position_request.body == {
-        "posX": expected_data["smargon-x"],
-        "posY": expected_data["smargon-y"],
-        "posZ": expected_data["smargon-z"],
+        "posX": expected_data["gonio-x"],
+        "posY": expected_data["gonio-y"],
+        "posZ": expected_data["gonio-z"],
     }
 
 
