@@ -11,3 +11,8 @@ def murko_callback() -> MurkoCallback:
     callback.redis_client = MagicMock()
     callback.redis_connected = True
     return callback
+
+
+@pytest.fixture()
+def patch_beamline_env_variable(monkeypatch):
+    monkeypatch.setenv("BEAMLINE", "i04")

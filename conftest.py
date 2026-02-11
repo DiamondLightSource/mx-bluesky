@@ -7,7 +7,10 @@ import pytest
 environ["HYPERION_TEST_MODE"] = "true"
 
 
-pytest_plugins = ["dodal.testing.fixtures.run_engine"]
+pytest_plugins = [
+    "dodal.testing.fixtures.run_engine",
+    "dodal.testing.fixtures.config_server",
+]
 
 
 def pytest_addoption(parser):
