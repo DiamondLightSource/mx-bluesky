@@ -26,13 +26,13 @@ def test_rotation_params(tmp_path):
     param_dict["scan_width_deg"] = 360.0
     params = SingleRotationScan(**param_dict)
     params.x_start_um = 0
-    params.y_starts_um = [0, 0]
+    params.y_start_um = 0
     params.exposure_time_s = 0.004
     return params
 
 
 @pytest.fixture(params=[1050])
-def test_fgs_params(request, tmp_path):
+def test_three_d_grid_params(request, tmp_path):
     assert request.param % 25 == 0, "Please use a multiple of 25 images"
     params = HyperionSpecifiedThreeDGridScan(**default_raw_gridscan_params(tmp_path))
     params.demand_energy_ev = convert_angstrom_to_ev(1.0)

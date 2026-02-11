@@ -163,9 +163,9 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     def grid_specs(self) -> list[Product[str]]:
         _grid_specs = []
         for idx in range(self.num_grids):
-            x_end = self.x_start_um + self.x_step_size_um * (self.x_step_size_um - 1)
+            x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
             y_end = self.y_starts_um[idx] + self.y_step_sizes_um[idx] * (
-                self.y_step_sizes_um[idx] - 1
+                self.y_steps[idx] - 1
             )
             grid_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
             grid_y = Line("sam_y", self.y_starts_um[idx], y_end, self.y_steps[idx])
@@ -177,7 +177,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     def scan_indices(self) -> list[int]:
         """The first index of each gridscan, useful for writing nexus files/VDS"""
         _scan_indices = [0]
-        for idx in range(self.num_grids):
+        for idx in range(1, self.num_grids):
             _scan_indices.append(
                 len(
                     ScanPath(self.grid_specs[idx].calculate())

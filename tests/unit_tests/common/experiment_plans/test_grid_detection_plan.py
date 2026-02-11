@@ -300,16 +300,15 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     my_grid_params = cb.get_grid_parameters()
 
     assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
-    assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
-    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
+    assert (
+        my_grid_params["y_starts_um"]
+        == [pytest.approx(-539.84 - (box_size_um / 2))] * 2
+    )
+    assert my_grid_params["z_starts_um"] == [pytest.approx(-524.04)] * 2
     assert my_grid_params["x_step_size_um"] == box_size_um
-    assert my_grid_params["y_step_size_um"] == box_size_um
-    assert my_grid_params["z_step_size_um"] == box_size_um
+    assert my_grid_params["y_step_sizes_um"] == [box_size_um] * 2
     assert my_grid_params["x_steps"] == pytest.approx(9)
-    assert my_grid_params["y_steps"] == pytest.approx(2)
-    assert my_grid_params["z_steps"] == pytest.approx(3)
+    assert my_grid_params["y_steps"] == [pytest.approx(2), pytest.approx(3)]
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 
@@ -348,16 +347,15 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     my_grid_params = cb.get_grid_parameters()
 
     assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
-    assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
-    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
+    assert (
+        my_grid_params["y_starts_um"]
+        == [pytest.approx(-539.84 - (box_size_um / 2))] * 2
+    )
+    assert my_grid_params["z_starts_um"] == [pytest.approx(-524.04)] * 2
     assert my_grid_params["x_step_size_um"] == box_size_um
-    assert my_grid_params["y_step_size_um"] == box_size_um
-    assert my_grid_params["z_step_size_um"] == box_size_um
+    assert my_grid_params["y_step_sizes_um"] == [box_size_um] * 2
     assert my_grid_params["x_steps"] == pytest.approx(9)
-    assert my_grid_params["y_steps"] == pytest.approx(2)
-    assert my_grid_params["z_steps"] == pytest.approx(3)
+    assert my_grid_params["y_steps"] == [pytest.approx(2), pytest.approx(3)]
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 

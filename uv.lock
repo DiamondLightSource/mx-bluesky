@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.0.1.dev12+gfa22fd0ab"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#fa22fd0ab55aa63445da1d6462ec02c82cd64611" }
+version = "2.0.1.dev15+gee97fc144"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#ee97fc1440fc588efe2ccb68885626406d4014fb" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },

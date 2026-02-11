@@ -16,7 +16,7 @@
     "x_steps": 40,
     "y_steps": [
         20,
-        30
+        10
     ],
     "x_step_size_um": 100,
     "y_step_sizes_um": [
