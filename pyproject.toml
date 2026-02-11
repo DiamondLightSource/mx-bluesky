@@ -193,6 +193,8 @@ commands = [
         ], extend = true },
     ],
 ]
+# Skip the uv.lock update when pre-commit is run in CI
+set-env = { SKIP = "uv-sync" }
 
 [tool.tox.env.type-checking]
 description = "Run pyright"
