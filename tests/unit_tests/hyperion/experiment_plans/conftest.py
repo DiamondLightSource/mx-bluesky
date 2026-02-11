@@ -78,7 +78,7 @@ def sim_run_engine_for_rotation(sim_run_engine):
         "synchrotron-top_up_start_countdown",
     )
     sim_run_engine.add_handler(
-        "read", lambda msg: {"values": {"value": -1}}, "smargon_omega"
+        "read", lambda msg: {"values": {"value": -1}}, "gonio_omega"
     )
     return sim_run_engine
 
@@ -191,7 +191,7 @@ def robot_load_composite(
         flux=flux,
         oav=oav,
         pin_tip_detection=pin_tip_detection_with_found_pin,
-        smargon=smargon,
+        gonio=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         undulator=undulator,
@@ -244,7 +244,7 @@ def robot_load_and_energy_change_composite(
         aperture_scatterguard,
         backlight,
     )
-    composite.smargon.stub_offsets.set = MagicMock(
+    composite.gonio.stub_offsets.set = MagicMock(
         side_effect=lambda _: completed_status()
     )
     composite.aperture_scatterguard.set = MagicMock(

@@ -75,7 +75,7 @@ async def default_devices(
             hutch_shutter=hutch_shutter,
             robot=robot,
             scintillator=scintillator,
-            smargon=smargon,
+            gonio=smargon,
             oav=oav,
             **beamstop_check_devices.__dict__,
         )

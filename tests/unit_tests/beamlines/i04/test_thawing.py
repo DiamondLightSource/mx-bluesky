@@ -65,7 +65,7 @@ async def oav_roi() -> OAV:
 
 @pytest.fixture
 async def smargon() -> Smargon:
-    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
+    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="gonio")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
@@ -249,7 +249,7 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     oav_updates = [
         e for e in event_params if "oav_to_redis_forwarder-uuid" in e["data"].keys()
     ]
-    smargon_updates = [e for e in event_params if "smargon-omega" in e["data"].keys()]
+    smargon_updates = [e for e in event_params if "gonio-omega" in e["data"].keys()]
     assert len(oav_updates) > 0
     assert len(smargon_updates) > 0
 
@@ -307,7 +307,7 @@ def _test_plan_will_switch_murko_source_half_way_through_thaw(
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set" and msg.obj.name == "smargon-omega",
+            lambda msg: msg.command == "set" and msg.obj.name == "gonio-omega",
         )
         msgs = assert_message_and_return_remaining(
             msgs,
