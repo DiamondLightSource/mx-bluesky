@@ -13,6 +13,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    grid_detect_then_xray_centre,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
@@ -39,9 +42,6 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
-)
-from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
-    grid_detect_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,

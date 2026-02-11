@@ -22,7 +22,6 @@ from mx_bluesky.common.utils.context import (
 from mx_bluesky.hyperion.__main__ import (
     initialise_globals,
     main,
-    setup_context,
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.parameters.cli import (
@@ -85,23 +84,6 @@ def beamline_i03():
         ),
     ):
         yield
-
-
-@pytest.mark.parametrize("dev_mode", [True, False])
-def test_when_context_created_then_contains_expected_number_of_plans(dev_mode):
-    with patch(
-        "mx_bluesky.hyperion.utils.context.BlueskyContext.with_device_manager",
-        return_value=({}, {}),
-    ) as mock_with_device_manager:
-        context = setup_context(dev_mode=dev_mode)
-        mock_with_device_manager.assert_called_once_with(ANY, mock=dev_mode)
-    plan_names = context.plans.keys()
-
-    # assert "rotation_scan" in plan_names
-    # May want to add back in if we change name of multi_rotation_scan to rotation_scan
-    assert "hyperion_grid_detect_then_xray_centre" in plan_names
-    assert "rotation_scan" in plan_names
-    assert "pin_tip_centre_then_xray_centre" in plan_names
 
 
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
