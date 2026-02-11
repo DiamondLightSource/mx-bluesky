@@ -88,9 +88,7 @@ class GridCommon(
             "Detector distance must be filled before generating DetectorParams"
         )
         return DetectorParams(
-            detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[
-                get_beamline_name("dev")
-            ],
+            detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
             expected_energy_ev=self.demand_energy_ev,
             exposure_time_s=self.exposure_time_s,
             directory=self.storage_directory,

@@ -35,7 +35,7 @@ class AlertOnContainerChange(PlanReactiveCallback):
         ):
             current_container = int(doc["data"]["robot-current_puck"])
             if self._new_container != current_container:
-                beamline = get_beamline_name("")
+                beamline = get_beamline_name()
                 get_alerting_service().raise_alert(
                     f"UDC moved on to puck {self._new_container} on {beamline}",
                     f"Hyperion finished container {current_container} and moved on to {self._new_container}",
