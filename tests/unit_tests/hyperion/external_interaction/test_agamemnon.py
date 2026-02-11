@@ -2,6 +2,7 @@ import json
 from collections.abc import Generator
 from math import isclose
 from pathlib import PosixPath
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -426,7 +427,8 @@ def test_create_parameters_from_agamemnon_contains_expected_rotation_data(
     agamemnon_response,
 ):
     hyperion_params_list = [
-        load_centre_collect_to_internal(p) for p in create_parameters_from_agamemnon()
+        load_centre_collect_to_internal(cast(LoadCentreCollectParams, p))
+        for p in create_parameters_from_agamemnon()
     ]  # type: ignore
     assert len(hyperion_params_list) == 2
     for hyperion_params in hyperion_params_list:
