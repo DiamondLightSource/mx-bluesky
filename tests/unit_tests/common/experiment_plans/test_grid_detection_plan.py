@@ -193,10 +193,14 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     gridscan_params = grid_param_cb.get_grid_parameters()
 
     assert gridscan_params["x_start_um"] == pytest.approx(-804, abs=1)
-    assert gridscan_params["y_start_um"] == pytest.approx(
-        -550 - ((box_size_y_pixels / 2) * microns_per_pixel_y), abs=1
+    assert (
+        gridscan_params["y_starts_um"]
+        == [
+            pytest.approx(-550 - ((box_size_y_pixels / 2) * microns_per_pixel_y), abs=1)
+        ]
+        * 2
     )
-    assert gridscan_params["z_start_um"] == pytest.approx(-534, abs=1)
+    assert gridscan_params["z_starts_um"] == [pytest.approx(-534, abs=1)] * 2
 
 
 @patch(

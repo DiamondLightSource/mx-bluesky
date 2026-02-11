@@ -30,7 +30,7 @@ from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 
-PARAMETER_VERSION = Version.parse("5.3.0")
+PARAMETER_VERSION = Version.parse("6.0.0")
 
 
 def get_param_version() -> SemanticVersion:

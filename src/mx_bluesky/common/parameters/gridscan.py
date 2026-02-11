@@ -138,7 +138,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     # In a 3D grid scan, n_steps[0] and n_steps[1] refers to Y and Z respectively.
     # We do an omega rotation between scanning across N dimensions to make N different axes
     y_step_sizes_um: list[PositiveFloat] = Field(
-        default=[GridscanParamConstants.BOX_WIDTH_UM]
+        default=[GridscanParamConstants.BOX_WIDTH_UM] * 2
     )
     x_steps: PositiveInt  # Currently this must be the same for each grid for panda scan
     y_steps: list[PositiveInt]
