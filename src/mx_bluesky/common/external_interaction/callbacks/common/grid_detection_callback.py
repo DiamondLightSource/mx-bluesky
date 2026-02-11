@@ -30,16 +30,12 @@ class GridParamUpdate(TypedDict):
     """
 
     x_start_um: float
-    y_start_um: float
-    y2_start_um: float
-    z_start_um: float
-    z2_start_um: float
+    y_start_um: list[float]
+    z_start_um: list[float]
     x_steps: int
-    y_steps: int
-    z_steps: int
+    y_steps: list[int]
     x_step_size_um: float
-    y_step_size_um: float
-    z_step_size_um: float
+    y_step_size_um: list[float]
 
 
 class XYZParams(TypedDict, Generic[T]):
@@ -121,14 +117,10 @@ class GridDetectionCallback(CallbackBase):
     def get_grid_parameters(self) -> GridParamUpdate:
         return {
             "x_start_um": self.start_positions_um["x"],
-            "y_start_um": self.start_positions_um["y"],
-            "y2_start_um": self.start_positions_um["y"],
-            "z_start_um": self.start_positions_um["z"],
-            "z2_start_um": self.start_positions_um["z"],
+            "y_start_um": [self.start_positions_um["y"], self.start_positions_um["y"]],
+            "z_start_um": [self.start_positions_um["z"], self.start_positions_um["z"]],
             "x_steps": self.box_numbers["x"],
-            "y_steps": self.box_numbers["y"],
-            "z_steps": self.box_numbers["z"],
+            "y_steps": [self.box_numbers["y"], self.box_numbers["z"]],
             "x_step_size_um": self.x_step_size_um,
-            "y_step_size_um": self.y_step_size_um,
-            "z_step_size_um": self.z_step_size_um,
+            "y_step_size_um": [self.y_step_size_um, self.z_step_size_um],
         }

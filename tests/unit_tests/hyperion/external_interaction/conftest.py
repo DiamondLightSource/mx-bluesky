@@ -26,8 +26,7 @@ def test_rotation_params(tmp_path):
     param_dict["scan_width_deg"] = 360.0
     params = SingleRotationScan(**param_dict)
     params.x_start_um = 0
-    params.y_start_um = 0
-    params.z_start_um = 0
+    params.y_starts_um = [0, 0]
     params.exposure_time_s = 0.004
     return params
 
@@ -41,8 +40,8 @@ def test_fgs_params(request, tmp_path):
     first_scan_img = (request.param // 10) * 6
     second_scan_img = (request.param // 10) * 4
     params.x_steps = 5
-    params.y_steps = first_scan_img // 5
-    params.z_steps = second_scan_img // 5
+    params.y_steps[0] = first_scan_img // 5
+    params.y_steps[1] = second_scan_img // 5
     params.storage_directory = (
         os.path.dirname(os.path.realpath(__file__)) + "/test_data"
     )

@@ -30,7 +30,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import WarningError
 
 from ...conftest import assert_event
@@ -208,13 +208,13 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    cb = GridscanISPyBCallback(param_type=GridCommon)
+    cb = GridscanISPyBCallback(param_type=GenericGrid)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     run_engine.subscribe(cb)
 
@@ -222,7 +222,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         run_engine(
             ispyb_activation_wrapper(
                 do_grid_and_edge_detect(composite, params, tmp_path),
-                test_fgs_params,
+                test_three_d_grid_params,
             )
         )
 
@@ -277,7 +277,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
@@ -288,7 +288,8 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 
     run_engine(
         ispyb_activation_wrapper(
-            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+            do_grid_and_edge_detect(composite, params, tmp_path),
+            test_three_d_grid_params,
         )
     )
 
@@ -317,7 +318,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
@@ -335,7 +336,8 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
 
     run_engine(
         ispyb_activation_wrapper(
-            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+            do_grid_and_edge_detect(composite, params, tmp_path),
+            test_three_d_grid_params,
         )
     )
 

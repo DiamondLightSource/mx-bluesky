@@ -42,7 +42,7 @@ from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.log import LOGGER
 
 TFlyScanEssentialDevices = TypeVar(
@@ -55,7 +55,7 @@ TSpecifiedThreeDGridScan = TypeVar(
 
 def grid_detect_then_xray_centre(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridCommon,
+    parameters: GenericGrid,
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
@@ -96,7 +96,7 @@ def grid_detect_then_xray_centre(
 # This function should be private but is currently called by Hyperion, see https://github.com/DiamondLightSource/mx-bluesky/issues/1148
 def detect_grid_and_do_gridscan(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: GridCommon,
+    parameters: GenericGrid,
     oav_params: OAVParameters,
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
@@ -180,7 +180,7 @@ class ConstructBeamlineSpecificFeatures(
 
 
 def create_parameters_for_flyscan_xray_centre(
-    parameters: GridCommon,
+    parameters: GenericGrid,
     grid_parameters: GridParamUpdate,
     xrc_params_type: type[SpecifiedThreeDGridScan],
 ) -> SpecifiedThreeDGridScan:

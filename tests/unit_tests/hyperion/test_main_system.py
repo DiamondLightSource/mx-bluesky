@@ -385,7 +385,8 @@ def test_start_with_json_file_with_extras_gives_error(
     test_env.mock_run_engine.run_engine_takes_time = False
 
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
+        "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
+        tmp_path,
     )
     params["extra_param"] = "test"
     response = test_env.client.put(START_ENDPOINT, json=params)

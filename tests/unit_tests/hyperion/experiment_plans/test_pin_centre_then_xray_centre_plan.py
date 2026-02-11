@@ -72,14 +72,14 @@ def test_pin_centre_then_xray_centre_params(
 
 @pytest.fixture
 def pin_centre_then_xray_centre_params_with_patched_create_params(
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
     with patch(
         "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.create_parameters_for_grid_detection"
     ) as mock_create_params:
         test_pin_centre_then_xray_centre_params.set_specified_grid_params(
-            test_fgs_params
+            test_three_d_grid_params
         )
         mock_create_params.return_value = test_pin_centre_then_xray_centre_params
         yield test_pin_centre_then_xray_centre_params
@@ -569,11 +569,11 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     mock_create_flyscan_params: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     test_config_files,
     run_engine: RunEngine,
 ):
-    mock_create_flyscan_params.return_value = test_fgs_params
+    mock_create_flyscan_params.return_value = test_three_d_grid_params
     run_engine(
         pin_centre_then_xray_centre_plan(
             hyperion_grid_detect_xrc_devices,
@@ -582,4 +582,7 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
         )
     )
     mock_change_aperture_then_move_to_xtal.assert_called_once()
-    assert mock_change_aperture_then_move_to_xtal.call_args[0][1] == test_fgs_params
+    assert (
+        mock_change_aperture_then_move_to_xtal.call_args[0][1]
+        == test_three_d_grid_params
+    )

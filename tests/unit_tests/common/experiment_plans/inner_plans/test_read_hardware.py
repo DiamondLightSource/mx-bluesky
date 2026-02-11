@@ -30,12 +30,12 @@ from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 
 @pytest.fixture
-def ispyb_plan(test_fgs_params: SpecifiedThreeDGridScan):
+def ispyb_plan(test_three_d_grid_params: SpecifiedThreeDGridScan):
     @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": test_fgs_params.model_dump_json(),
+            "mx_bluesky_parameters": test_three_d_grid_params.model_dump_json(),
         }
     )
     def standalone_read_hardware_for_ispyb(*args):

@@ -45,16 +45,14 @@ def create_nexus_writer(parameters: HyperionSpecifiedThreeDGridScan, writer_num)
         if writer_num == 1
         else parameters.num_images - parameters.scan_indices[1]
     )
-    points = (
-        parameters.scan_points_first_grid
-        if writer_num == 1
-        else parameters.scan_points_second_grid
-    )
+    points = parameters.scan_points[0] if writer_num == 1 else parameters.scan_points[1]
     data_shape = (n_img, d_size.width, d_size.height)
     run_number = parameters.detector_params.run_number + writer_num - 1
     vds_start = 0 if writer_num == 1 else parameters.scan_indices[1]
     omega_start = (
-        parameters.grid1_omega_deg if writer_num == 1 else parameters.grid2_omega_deg
+        parameters.omega_starts_deg[0]
+        if writer_num == 1
+        else parameters.omega_starts_deg[1]
     )
     nexus_writer = NexusWriter(
         parameters,
@@ -84,8 +82,8 @@ def create_nexus_writers(parameters: HyperionSpecifiedThreeDGridScan):
 
 
 @pytest.fixture
-def dummy_nexus_writers(test_fgs_params: HyperionSpecifiedThreeDGridScan):
-    with create_nexus_writers(test_fgs_params) as (
+def dummy_nexus_writers(test_three_d_grid_params: HyperionSpecifiedThreeDGridScan):
+    with create_nexus_writers(test_three_d_grid_params) as (
         nexus_writer_1,
         nexus_writer_2,
     ):
@@ -94,13 +92,13 @@ def dummy_nexus_writers(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 
 @pytest.fixture
 def dummy_nexus_writers_with_more_images(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
 ):
     x, y, z = 45, 35, 25
-    test_fgs_params.x_steps = x
-    test_fgs_params.y_steps = y
-    test_fgs_params.z_steps = z
-    with create_nexus_writers(test_fgs_params) as (
+    test_three_d_grid_params.x_steps = x
+    test_three_d_grid_params.y_steps[0] = y
+    test_three_d_grid_params.y_steps[1] = z
+    with create_nexus_writers(test_three_d_grid_params) as (
         nexus_writer_1,
         nexus_writer_2,
     ):
@@ -108,14 +106,16 @@ def dummy_nexus_writers_with_more_images(
 
 
 @pytest.fixture
-def single_dummy_file(test_fgs_params: HyperionSpecifiedThreeDGridScan):
-    test_fgs_params.use_roi_mode = True
-    d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
-    data_shape = (test_fgs_params.scan_indices[1], d_size.width, d_size.height)
+def single_dummy_file(test_three_d_grid_params: HyperionSpecifiedThreeDGridScan):
+    test_three_d_grid_params.use_roi_mode = True
+    d_size = (
+        test_three_d_grid_params.detector_params.detector_size_constants.det_size_pixels
+    )
+    data_shape = (test_three_d_grid_params.scan_indices[1], d_size.width, d_size.height)
     nexus_writer = NexusWriter(
-        test_fgs_params,
+        test_three_d_grid_params,
         data_shape,
-        scan_points=test_fgs_params.scan_points_first_grid,
+        scan_points=test_three_d_grid_params.scan_points[0],
         run_number=1,
     )
     yield nexus_writer
@@ -125,12 +125,12 @@ def single_dummy_file(test_fgs_params: HyperionSpecifiedThreeDGridScan):
 
 
 @pytest.mark.parametrize(
-    "test_fgs_params, expected_num_of_files",
+    "test_three_d_grid_params, expected_num_of_files",
     [(2550, 3), (4000, 4), (8975, 9)],
-    indirect=["test_fgs_params"],
+    indirect=["test_three_d_grid_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
     expected_num_of_files: Literal[3, 4, 9],
     single_dummy_file: NexusWriter,
 ):
@@ -148,11 +148,13 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: ZebraGridScanParamsThreeD = test_fgs_params.fast_gridscan_params
+    grid_scan_params: ZebraGridScanParamsThreeD = (
+        test_three_d_grid_params.fast_gridscan_params
+    )
     nexus_writer_1.create_nexus_file(np.uint16)
 
     for filename in [nexus_writer_1.nexus_file, nexus_writer_1.master_file]:
@@ -324,11 +326,12 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan, single_dummy_file: NexusWriter
+    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    single_dummy_file: NexusWriter,
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
-        expected_file_name_prefix = test_fgs_params.file_name + "_1"
+        expected_file_name_prefix = test_three_d_grid_params.file_name + "_1"
         assert file_name.startswith(expected_file_name_prefix)
 
 
@@ -344,11 +347,15 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file: Nexus
 
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_nexus_writer_writes_beamline_name_correctly(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
 ):
-    d_size = test_fgs_params.detector_params.detector_size_constants.det_size_pixels
-    data_shape = (test_fgs_params.num_images, d_size.width, d_size.height)
-    nexus_writer = NexusWriter(test_fgs_params, data_shape, test_fgs_params.scan_points)
+    d_size = (
+        test_three_d_grid_params.detector_params.detector_size_constants.det_size_pixels
+    )
+    data_shape = (test_three_d_grid_params.num_images, d_size.width, d_size.height)
+    nexus_writer = NexusWriter(
+        test_three_d_grid_params, data_shape, test_three_d_grid_params.scan_points[0]
+    )
     assert nexus_writer.source.beamline == "i03"
 
 
@@ -414,10 +421,10 @@ def test_given_some_datafiles_outside_of_virtual_dataset_range_then_they_are_not
 
 
 def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_files_still_written(
-    test_fgs_params: HyperionSpecifiedThreeDGridScan,
+    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
 ):
-    test_fgs_params.file_name = "non_existant_file"
-    with create_nexus_writers(test_fgs_params) as (
+    test_three_d_grid_params.file_name = "non_existant_file"
+    with create_nexus_writers(test_three_d_grid_params) as (
         nexus_writer_1,
         nexus_writer_2,
     ):

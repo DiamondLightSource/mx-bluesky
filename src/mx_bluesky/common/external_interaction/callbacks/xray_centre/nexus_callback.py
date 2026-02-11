@@ -12,21 +12,21 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
-    SpecifiedGrid,
+    SpecifiedGrids,
 )
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
 
-T = TypeVar("T", bound="SpecifiedGrid")
+T = TypeVar("T", bound="SpecifiedGrids")
 
 
 class GridscanNexusFileCallback(PlanReactiveCallback):
     """Callback class to handle the creation of Nexus files based on experiment \
     parameters. Initialises on receiving a 'start' document for the \
     'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
-    as metadata under the 'hyperion_internal_parameters' key. Actually writes the \
+    as metadata under the 'mx_bluesky_parameters' key. Actually writes the \
     nexus files on updates the timestamps on receiving the 'ispyb_reading_hardware' event \
     document, and finalises the files on getting a 'stop' document for the whole run.
 
@@ -39,13 +39,13 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, param_type: type[T], num_writers: int) -> None:
+    def __init__(self, param_type: type[T]) -> None:
         super().__init__(NEXUS_LOGGER)
         self.param_type = param_type
         self.run_start_uid: str | None = None
-        self.num_writers: int = num_writers
+        self.descriptors: dict[str, EventDescriptor] = {}
         self.log = NEXUS_LOGGER
-        self.writers: list[NexusWriter] = []
+        self._writers: list[NexusWriter] = []
 
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.GRIDSCAN_OUTER:
@@ -55,27 +55,25 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                 f"Nexus writer received start document with experiment parameters {mx_bluesky_parameters}"
             )
             parameters = self.param_type.model_validate_json(mx_bluesky_parameters)
+            num_writers = parameters.num_grids
+
             d_size = parameters.detector_params.detector_size_constants.det_size_pixels
-            grid_n_img_1 = parameters.scan_indices[1]
-            grid_n_img_2 = parameters.num_images - grid_n_img_1
-            data_shape_1 = (grid_n_img_1, d_size.width, d_size.height)
-            data_shape_2 = (grid_n_img_2, d_size.width, d_size.height)
-            run_number_2 = parameters.detector_params.run_number + 1
+            for idx in range(0, num_writers - 1):
+                images_in_grid = parameters.scan_indices[idx + 1]
+                data_shape = (images_in_grid, d_size.width, d_size.height)
+                run_number = parameters.detector_params.run_number + idx
 
-            for writer in range(self.num_writers):
-                self._writers.append(NexusWriter)
+                self._writers.append(
+                    NexusWriter(
+                        parameters,
+                        data_shape,
+                        parameters.scan_points[idx],
+                        run_number=run_number,
+                        vds_start_index=parameters.scan_indices[idx],
+                        omega_start_deg=parameters.omega_starts_deg[idx],
+                    )
+                )
 
-            self.nexus_writer_1 = NexusWriter(
-                parameters, data_shape_1, parameters.scan_points_first_grid
-            )
-            self.nexus_writer_2 = NexusWriter(
-                parameters,
-                data_shape_2,
-                parameters.scan_points_second_grid,
-                run_number=run_number_2,
-                vds_start_index=parameters.scan_indices[1],
-                omega_start_deg=90,
-            )
             self.run_start_uid = doc.get("uid")
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
@@ -86,7 +84,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         assert event_descriptor is not None
         if event_descriptor.get("name") == DocDescriptorNames.HARDWARE_READ_DURING:
             data = doc["data"]
-            for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
+            for nexus_writer in self._writers:
                 assert nexus_writer, "Nexus callback did not receive start doc"
                 (
                     nexus_writer.beam,

@@ -177,6 +177,7 @@ def _x_coordinate(sample_and_location: tuple[int, np.ndarray]) -> float:
     return sample_and_location[1][0]  # type: ignore
 
 
+# todo rotation scan params shouldnt be tied to our grid scan params
 def rotation_scan_generator(
     is_alternating: bool,
 ) -> Generator[
@@ -186,10 +187,12 @@ def rotation_scan_generator(
     next_rotation_direction = scan_template.rotation_direction
     while True:
         scan = scan_template.model_copy()
+        if not scan.y_starts_um:
+            scan.y_starts_um = [0, 0]
         (
             scan.x_start_um,
-            scan.y_start_um,
-            scan.z_start_um,
+            scan.y_starts_um[0],
+            scan.y_starts_um[1],
         ) = location
         scan.sample_id = sample_id
         if is_alternating:

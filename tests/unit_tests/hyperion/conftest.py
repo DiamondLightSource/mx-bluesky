@@ -101,15 +101,6 @@ def test_multi_rotation_params(tmp_path):
     )
 
 
-@pytest.fixture
-def test_fgs_params(tmp_path):
-    return HyperionSpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
-        )
-    )
-
-
 @pytest.fixture(params=[False, True])
 def test_omega_flip(request):
     with patch(
@@ -126,7 +117,7 @@ def fgs_params_use_panda(tmp_path):
         new="tests/test_data/test_domain_properties_with_panda",
     ):
         params = raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json",
+            "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
             tmp_path,
         )
         yield HyperionSpecifiedThreeDGridScan(**params)

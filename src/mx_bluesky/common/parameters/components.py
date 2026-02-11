@@ -212,11 +212,15 @@ class WithScan(BaseModel):
 
     @property
     @abstractmethod
-    def scan_points(self) -> AxesPoints: ...
+    def scan_points(self) -> list[AxesPoints]: ...
+
+    """Per grid"""
 
     @property
     @abstractmethod
     def num_images(self) -> int: ...
+
+    """Must be same for each grid"""
 
 
 class WithPandaGridScan(BaseModel):
@@ -273,20 +277,22 @@ class WithCentreSelection(BaseModel):
 
 
 class OptionalXyzStarts(BaseModel):
-    x_starts_um: list[float | None] | None = None
-    y_starts_um: list[float | None]
-    z_starts_um: list[float | None]
+    x_start_um: float = (
+        0  # todo link to issue about X params needing to be the same for each grid
+    )
+    y_starts_um: list[float | None] | None = None
+    z_starts_um: list[float | None] | None = None
 
 
 class XyzStarts(BaseModel):
-    x_starts_um: list[float]
+    x_start_um: float
     y_starts_um: list[float]
     z_starts_um: list[float]
 
     def _start_for_axis(self, axis: XyzAxis, grid: int) -> float:
         match axis:
             case XyzAxis.X:
-                return self.x_starts_um[grid]
+                return self.x_start_um
             case XyzAxis.Y:
                 return self.y_starts_um[grid]
             case XyzAxis.Z:
@@ -294,7 +300,9 @@ class XyzStarts(BaseModel):
 
 
 class OptionalGonioAngleStarts(BaseModel):
-    omega_starts_deg: list[float | None]
-    phi_starts_deg: list[float | None]
-    chi_starts_deg: list[float | None]
-    kappa_starts_deg: list[float | None]
+    # Gridscans have different omega starts
+    omega_starts_deg: list[float] = [0, 90]
+
+    phi_start_deg: float | None = None
+    chi_start_deg: float | None = None
+    kappa_start_deg: float | None = None
