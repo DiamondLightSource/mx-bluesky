@@ -126,7 +126,7 @@ class TestFlyscanXrayCentrePlan:
         run_engine.subscribe(ispyb_callback)
 
         error = None
-        with patch.object(fake_fgs_composite.smargon.omega, "set") as mock_set:
+        with patch.object(fake_fgs_composite.gonio.omega, "set") as mock_set:
             error = AssertionError("Test Exception")
             mock_set.side_effect = FailedStatus(error)
             with pytest.raises(FailedStatus):
@@ -160,9 +160,9 @@ class TestFlyscanXrayCentrePlan:
                 np.array([1, 2, 3])
             )
         )
-        run_engine(move_x_y_z(fake_fgs_composite.smargon, *motor_position))
+        run_engine(move_x_y_z(fake_fgs_composite.gonio, *motor_position))
         bps_abs_set.assert_called_with(
-            fake_fgs_composite.smargon,
+            fake_fgs_composite.gonio,
             CombinedMove(x=motor_position[0], y=motor_position[1], z=motor_position[2]),
             group="move_x_y_z",
         )

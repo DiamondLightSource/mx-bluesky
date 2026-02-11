@@ -35,7 +35,7 @@ def oav_snapshot_params(tmp_path):
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class CompositeImpl(OavSnapshotComposite):
-    smargon: Smargon
+    gonio: Smargon
     oav: OAV
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
@@ -44,7 +44,7 @@ class CompositeImpl(OavSnapshotComposite):
 @pytest.fixture
 def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
     return CompositeImpl(
-        smargon=smargon,
+        gonio=smargon,
         oav=oav,
         aperture_scatterguard=aperture_scatterguard,
         backlight=backlight,
@@ -118,7 +118,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "smargon-omega"
+            and msg.obj.name == "gonio-omega"
             and msg.args[0] == expected["omega"]
             and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
@@ -176,7 +176,7 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
     assert not [
         msg
         for msg in msgs
-        if msg.command == "set" and msg.obj is oav_snapshot_composite.smargon.omega
+        if msg.command == "set" and msg.obj is oav_snapshot_composite.gonio.omega
     ]
     expected_snapshot_directory = str(oav_snapshot_params.snapshot_directory)
     msgs = assert_message_and_return_remaining(
@@ -201,7 +201,7 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "read"
-            and msg.obj is oav_snapshot_composite.smargon,
+            and msg.obj is oav_snapshot_composite.gonio,
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"

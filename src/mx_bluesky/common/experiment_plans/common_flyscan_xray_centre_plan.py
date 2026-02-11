@@ -26,7 +26,10 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.device_composites import (
+    FlyScanEssentialDevices,
+    GonioWithOmegaType,
+)
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
     SampleError,
@@ -110,7 +113,7 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices,
+    composite: FlyScanEssentialDevices[GonioWithOmegaType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
@@ -152,7 +155,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices,
+            fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
@@ -170,13 +173,13 @@ def common_flyscan_xray_centre(
 
 
 def run_gridscan(
-    fgs_composite: FlyScanEssentialDevices,
+    fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(fgs_composite.smargon.omega, 0)
+        yield from bps.abs_set(fgs_composite.gonio.omega, 0)
 
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from beamline_specific.read_pre_flyscan_plan()

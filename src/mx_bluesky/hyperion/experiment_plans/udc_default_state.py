@@ -49,7 +49,7 @@ class UDCDefaultDevices(BeamstopCheckDevices):
     hutch_shutter: HutchShutter
     robot: BartRobot
     scintillator: Scintillator
-    smargon: Smargon
+    gonio: Smargon
     oav: OAV
 
 
