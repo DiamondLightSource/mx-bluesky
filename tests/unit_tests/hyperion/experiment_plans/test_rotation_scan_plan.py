@@ -50,7 +50,7 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationMotionProfile,
     RotationScanComposite,
     calculate_motion_profile,
-    rotation_scan,
+    rotation_scan_internal,
     rotation_scan_plan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
@@ -110,7 +110,7 @@ def run_full_rotation_plan(
         fake_read,
     ):
         run_engine(
-            rotation_scan(
+            rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -222,7 +222,9 @@ def test_rotation_scan(
 ):
     composite = fake_create_rotation_devices
     run_engine(
-        rotation_scan(composite, test_rotation_params, oav_parameters_for_rotation)
+        rotation_scan_internal(
+            composite, test_rotation_params, oav_parameters_for_rotation
+        )
     )
     composite.eiger.do_arm.set.assert_called()  # type: ignore
     composite.eiger.unstage.assert_called()  # type: ignore
@@ -342,7 +344,7 @@ def test_cleanup_happens(
         # check that failure is handled in composite plan
         with pytest.raises(MyTestError) as exc:
             run_engine(
-                rotation_scan(
+                rotation_scan_internal(
                     fake_create_rotation_devices,
                     test_rotation_params,
                     oav_parameters_for_rotation,
@@ -387,7 +389,7 @@ def rotation_scan_simulated_messages(
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
 
     return sim_run_engine.simulate_plan(
-        rotation_scan(
+        rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
             oav_parameters_for_rotation,
@@ -646,7 +648,7 @@ def _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
 
     msgs = sim_run_engine.simulate_plan(
-        rotation_scan(
+        rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
             oav_parameters_for_rotation,
@@ -698,7 +700,7 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
 ):
     _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
     msgs = sim_run_engine.simulate_plan(
-        rotation_scan(
+        rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
             oav_parameters_for_rotation,
@@ -741,13 +743,6 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
     composite = fake_create_rotation_devices
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: (
-            msg.command == "open_run"
-            and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
-        ),
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "eiger_do_arm"
         and msg.args[0] == 1
@@ -815,7 +810,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
         ),
     ):
         run_engine(
-            rotation_scan(
+            rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -854,7 +849,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
         ),
     ):
         run_engine(
-            rotation_scan(
+            rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -874,7 +869,7 @@ def test_rotation_scan_moves_beamstop_into_place(
     ) as mock_rotation_scan_plan:
         mock_rotation_scan_plan.return_value = iter([Msg("rotation_scan_plan")])
         msgs = sim_run_engine.simulate_plan(
-            rotation_scan(
+            rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
                 oav_parameters_for_rotation,
@@ -950,7 +945,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             ),
         ):
             run_engine(
-                rotation_scan(
+                rotation_scan_internal(
                     fake_create_rotation_devices,
                     test_rotation_params,
                     oav_parameters_for_rotation,
@@ -1035,7 +1030,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         fake_create_rotation_devices.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        rotation_scan(
+        rotation_scan_internal(
             fake_create_rotation_devices,
             test_multi_rotation_params,
             oav_parameters_for_rotation,
@@ -1102,7 +1097,7 @@ def _run_multi_rotation_plan(
     for cb in callbacks:
         run_engine.subscribe(cb)
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        run_engine(rotation_scan(devices, params, oav_params))
+        run_engine(rotation_scan_internal(devices, params, oav_params))
 
 
 @patch(
@@ -1128,7 +1123,7 @@ def test_full_multi_rotation_plan_docs_emitted(
 
     assert (
         outer_plan_start_doc := DocumentCapturer.assert_doc(
-            docs, "start", matches_fields=({"plan_name": "rotation_scan"})
+            docs, "start", matches_fields=({"plan_name": "rotation_scan_internal"})
         )
     )
     outer_uid = outer_plan_start_doc[1]["uid"]
@@ -1671,7 +1666,7 @@ def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_
     oav_parameters_for_rotation: OAVParameters,
 ):
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        rotation_scan(
+        rotation_scan_internal(
             fake_create_rotation_devices,
             test_multi_rotation_params,
             oav_parameters_for_rotation,
@@ -1702,7 +1697,7 @@ def test_multi_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     oav_parameters_for_rotation: OAVParameters,
 ):
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        rotation_scan(
+        rotation_scan_internal(
             fake_create_rotation_devices,
             test_multi_rotation_params,
             oav_parameters_for_rotation,

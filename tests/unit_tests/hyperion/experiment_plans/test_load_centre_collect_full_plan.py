@@ -1115,3 +1115,34 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
     assert rotation_scans[0].x_start_um == 1100
     assert rotation_scans[0].y_start_um == 2200
     assert rotation_scans[0].z_start_um == 3300
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
+    MagicMock(return_value=iter([])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.robot_load_then_xray_centre",
+    MagicMock(return_value=iter([Msg(command="robot_load_then_xray_centre")])),
+)
+def test_load_centre_collect_full_activates_beam_drawing_callback(
+    sim_run_engine: RunEngineSimulator,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "open_run"
+            and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "robot_load_then_xray_centre"
+    )
