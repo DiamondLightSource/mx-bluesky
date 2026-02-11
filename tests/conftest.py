@@ -40,15 +40,15 @@ from dodal.devices.attenuator.filter_selections import (
 )
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
+from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i03.beamsize import Beamsize
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop, BeamstopPositions
-from dodal.devices.i03.beamsize import Beamsize
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -416,8 +416,7 @@ def smargon() -> Generator[Smargon, None, None]:
 
 @pytest.fixture
 def aithre_gonio():
-    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
-    return aithre_gonio
+    return aithre.goniometer.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -1186,7 +1185,7 @@ def fat_pin_edges():
 T = TypeVar("T")
 
 
-def fake_generator(return_val: T) -> MsgGenerator[T]:
+def fake_generator(return_val: T = None) -> MsgGenerator[T]:
     yield from bps.null()
     return return_val
 
@@ -1197,8 +1196,8 @@ def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
     async def set_good_position():
         x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
         set_mock_value(ophyd_pin_tip_detection.triggered_tip, numpy.array([x, y]))
-        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)
-        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)  # type: ignore
+        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)  # type: ignore
 
     with patch.object(
         ophyd_pin_tip_detection,
@@ -1362,7 +1361,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
-            "plan_name": "test",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
             "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
         }
@@ -1448,7 +1446,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
             "subplan_name": PlanNameConstants.DO_FGS,
             "omega_to_scan_spec": {
                 GridscanPlane.OMEGA_XY: specs[0],

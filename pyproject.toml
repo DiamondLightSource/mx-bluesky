@@ -46,6 +46,7 @@ dependencies = [
     "matplotlib",
     "cachetools",
     "bluesky-stomp >= 0.2.0",
+    "mysql-connector-python == 9.5.0",  # Can unpin once https://github.com/DiamondLightSource/ispyb-api/pull/244 is merged and released
 
     #
     # These dependencies may be issued as pre-release versions and should have a pin constraint
@@ -81,8 +82,7 @@ dev = [
     "plantweb",
     "pre-commit",
     "pydata-sphinx-theme>=0.12",
-    # Pin to previous pyright until https://github.com/microsoft/pyright/issues/11060 is fixed
-    "pyright==1.1.406",
+    "pyright>=1.1.408",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-random-order",
@@ -129,7 +129,6 @@ reportMissingTypeArgument = false
 reportPrivateUsage = false
 reportUnknownVariableType = false
 reportUnusedVariable = false
-reportArgumentType = false
 reportMatchNotExhaustive = false
 
 

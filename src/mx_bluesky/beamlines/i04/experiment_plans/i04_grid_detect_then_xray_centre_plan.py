@@ -9,6 +9,8 @@ from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i04.beamsize import Beamsize
+from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -17,8 +19,6 @@ from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
-from dodal.devices.i04.beamsize import Beamsize
-from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -43,12 +43,18 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
+from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
+    get_results_then_change_aperture_and_move_to_xtal,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    zocalo_stage_decorator,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     setup_beamline_for_oav,
@@ -63,7 +69,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
@@ -85,6 +91,7 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import (
     fix_transmission_and_exposure_time_for_current_wavelength,
 )
+from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 
@@ -154,10 +161,10 @@ def i04_default_grid_detect_and_xray_centre(
     composite = GridDetectThenXRayCentreComposite(
         eiger,
         synchrotron,
-        zocalo,
         smargon,
         aperture_scatterguard,
         attenuator,
+        zocalo,
         backlight,
         beamstop,
         beamsize,
@@ -194,12 +201,14 @@ def i04_default_grid_detect_and_xray_centre(
                 composite.detector_motion,
             )
 
+    @zocalo_stage_decorator(composite.zocalo)
     @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
         # These callbacks let us talk to ISPyB and Nexgen. They aren't included in the common plan because
         # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
         # https://github.com/DiamondLightSource/mx-bluesky/issues/1117
-        callbacks = create_gridscan_callbacks()
+        flyscan_event_handler = XRayCentreEventHandler()
+        callbacks = *create_gridscan_callbacks(), flyscan_event_handler
 
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
@@ -219,6 +228,14 @@ def i04_default_grid_detect_and_xray_centre(
 
         try:
             yield from grid_detect_then_xray_centre_with_callbacks()
+            assert isinstance(
+                grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
+            ), "Specified grid params couldn't be found after grid detection"
+            yield from get_results_then_change_aperture_and_move_to_xtal(
+                composite,
+                grid_common_params.specified_grid_params,
+                flyscan_event_handler,
+            )
         except CrystalNotFoundError:
             yield from bps.mv(
                 smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
@@ -315,8 +332,7 @@ def construct_i04_specific_features(
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
-        signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
+        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
 
 
@@ -350,5 +366,5 @@ def _get_grid_common_params(
         storage_directory=parameters.storage_directory,
         transmission_frac=transmission_frac,
         exposure_time_s=exposure_time_s,
-        parameter_model_version=PARAMETER_VERSION,
+        parameter_model_version=get_param_version(),
     )

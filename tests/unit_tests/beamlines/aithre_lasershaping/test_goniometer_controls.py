@@ -3,9 +3,8 @@ import math
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.beamlines import aithre
 from dodal.devices.aithre_lasershaping.goniometer import Goniometer
-from ophyd_async.core import init_devices, set_mock_value
+from ophyd_async.core import set_mock_value
 from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.aithre_lasershaping import (
@@ -17,17 +16,10 @@ from mx_bluesky.beamlines.aithre_lasershaping import (
 from mx_bluesky.beamlines.aithre_lasershaping.goniometer_controls import JogDirection
 
 
-@pytest.fixture
-def goniometer() -> Goniometer:
-    with init_devices(mock=True):
-        gonio = aithre.goniometer(connect_immediately=True, mock=True)
-    return gonio
-
-
 def test_goniometer_relative_rotation(
-    sim_run_engine: RunEngineSimulator, goniometer: Goniometer
+    sim_run_engine: RunEngineSimulator, aithre_gonio: Goniometer
 ):
-    msgs = sim_run_engine.simulate_plan(rotate_goniometer_relative(15, goniometer))
+    msgs = sim_run_engine.simulate_plan(rotate_goniometer_relative(15, aithre_gonio))
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
@@ -37,9 +29,9 @@ def test_goniometer_relative_rotation(
 
 
 def test_change_goniometer_turn_speed(
-    sim_run_engine: RunEngineSimulator, goniometer: Goniometer
+    sim_run_engine: RunEngineSimulator, aithre_gonio: Goniometer
 ):
-    msgs = sim_run_engine.simulate_plan(change_goniometer_turn_speed(40, goniometer))
+    msgs = sim_run_engine.simulate_plan(change_goniometer_turn_speed(40, aithre_gonio))
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
@@ -52,16 +44,16 @@ def test_change_goniometer_turn_speed(
     "initial_position, expected_set_value", [(-1, 3600), (0, 3600), (3600, -3600)]
 )
 async def test_go_to_furthest_maximum_real_run_engine(
-    goniometer: Goniometer,
+    aithre_gonio: Goniometer,
     initial_position: float,
     expected_set_value: float,
     run_engine: RunEngine,
 ):
-    set_mock_value(goniometer.omega.user_readback, initial_position)
+    set_mock_value(aithre_gonio.omega.user_readback, initial_position)
 
-    run_engine(go_to_furthest_maximum(goniometer))
+    run_engine(go_to_furthest_maximum(aithre_gonio))
 
-    assert await goniometer.omega.user_setpoint.get_value() == expected_set_value
+    assert await aithre_gonio.omega.user_setpoint.get_value() == expected_set_value
 
 
 @pytest.mark.parametrize(
@@ -72,34 +64,34 @@ async def test_go_to_furthest_maximum_real_run_engine(
     ],
 )
 async def test_jog_sample_x_z(
-    run_engine: RunEngine, goniometer: Goniometer, directions, axis
+    run_engine: RunEngine, aithre_gonio: Goniometer, directions, axis
 ):
-    goniometer_axis: Motor = getattr(goniometer, axis)
+    goniometer_axis: Motor = getattr(aithre_gonio, axis)
 
-    run_engine(jog_sample(directions[0], 0.05, goniometer))
+    run_engine(jog_sample(directions[0], 0.05, aithre_gonio))
     assert await goniometer_axis.user_readback.get_value() == 0.05
 
-    run_engine(jog_sample(directions[1], 0.05, goniometer))
+    run_engine(jog_sample(directions[1], 0.05, aithre_gonio))
     assert await goniometer_axis.user_readback.get_value() == 0
 
 
-async def test_jog_sample_up_down(run_engine: RunEngine, goniometer: Goniometer):
-    set_mock_value(goniometer.omega.user_readback, 60)
+async def test_jog_sample_up_down(run_engine: RunEngine, aithre_gonio: Goniometer):
+    set_mock_value(aithre_gonio.omega.user_readback, 60)
 
-    run_engine(jog_sample(JogDirection.UP, 1, goniometer))
-    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0.5)
-    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
+    run_engine(jog_sample(JogDirection.UP, 1, aithre_gonio))
+    assert await aithre_gonio.sampz.user_readback.get_value() == pytest.approx(0.5)
+    assert await aithre_gonio.sampy.user_readback.get_value() == pytest.approx(
         math.sqrt(3) / 2
     )
 
-    run_engine(jog_sample(JogDirection.UP, 1, goniometer))
-    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(1)
-    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
+    run_engine(jog_sample(JogDirection.UP, 1, aithre_gonio))
+    assert await aithre_gonio.sampz.user_readback.get_value() == pytest.approx(1)
+    assert await aithre_gonio.sampy.user_readback.get_value() == pytest.approx(
         math.sqrt(3)
     )
 
-    run_engine(jog_sample(JogDirection.DOWN, 1, goniometer))
-    assert await goniometer.sampz.user_readback.get_value() == pytest.approx(0.5)
-    assert await goniometer.sampy.user_readback.get_value() == pytest.approx(
+    run_engine(jog_sample(JogDirection.DOWN, 1, aithre_gonio))
+    assert await aithre_gonio.sampz.user_readback.get_value() == pytest.approx(0.5)
+    assert await aithre_gonio.sampy.user_readback.get_value() == pytest.approx(
         math.sqrt(3) / 2
     )

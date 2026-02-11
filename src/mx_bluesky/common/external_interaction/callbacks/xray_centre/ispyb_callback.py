@@ -71,7 +71,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
                 "mx_bluesky_parameters": parameters.model_dump_json(),
             },
         ),
-        PlanNameConstants.ISPYB_ACTIVATION,
+        PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
     )
 
 

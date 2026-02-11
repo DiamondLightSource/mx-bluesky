@@ -6,12 +6,12 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
-from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -260,6 +260,10 @@ def rotation_scan(
     parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
+    """This is intended to be the external API for doing the rotation scan on its own
+    rather than part of a larger UDC-like collection. In the UDC case the
+    BeamDrawingCallback will already be activated."""
+
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
     @bpp.run_decorator(
         md={

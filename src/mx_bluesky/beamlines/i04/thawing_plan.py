@@ -3,8 +3,8 @@ import bluesky.preprocessors as bpp
 from bluesky.preprocessors import contingency_decorator, run_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.i04.constants import RedisConstants
-from dodal.devices.i04.murko_results import MurkoResultsDevice
+from dodal.devices.beamlines.i04.constants import RedisConstants
+from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon

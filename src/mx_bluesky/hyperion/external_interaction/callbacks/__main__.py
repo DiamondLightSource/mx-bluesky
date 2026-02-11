@@ -257,11 +257,14 @@ class StompDispatcherContextMgr(DispatcherContextMgr):
     def __init__(self, args: CallbackArgs, callbacks: list[CallbackBase]):
         super().__init__()
         loader = ConfigLoader(ApplicationConfig)
+        assert args.stomp_config is not None
         loader.use_values_from_yaml(args.stomp_config)
         config = loader.load()
         log_info(
             f"Stomp client configured on {config.stomp.url.host}:{config.stomp.url.port}"
         )
+        assert config.stomp.url.host is not None
+        assert config.stomp.url.port is not None
         self._stomp_client = StompClient.for_broker(
             broker=Broker(
                 host=config.stomp.url.host,

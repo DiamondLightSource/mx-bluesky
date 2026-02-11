@@ -10,15 +10,15 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03 import Beamstop
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -44,7 +44,7 @@ from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    pin_centre_then_flyscan_plan,
+    pin_centre_then_xray_centre_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -113,7 +113,7 @@ def _flyscan_plan_from_robot_load_params(
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    yield from pin_centre_then_flyscan_plan(
+    yield from pin_centre_then_xray_centre_plan(
         cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
         oav_config_file,

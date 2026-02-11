@@ -6,8 +6,8 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.i04.beam_centre import CentreEllipseMethod
-from dodal.devices.i04.max_pixel import MaxPixel
+from dodal.devices.beamlines.i04.beam_centre import CentreEllipseMethod
+from dodal.devices.beamlines.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV, ZoomControllerWithBeamCentres
 from dodal.devices.robot import BartRobot, PinMounted
@@ -28,7 +28,9 @@ from ophyd_async.core import (
 
 from mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging import (
     OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
+    FindBeamCentresComposite,
     _prepare_beamline_for_scintillator_images,
+    find_and_set_beam_centre_at_current_zoom_and_transmission,
     find_beam_centres,
     optimise_transmission_with_oav,
     take_and_save_oav_image,
@@ -629,7 +631,7 @@ def test_optimise_transmission_raises_value_error_when_full_beam_brightness_is_z
 @pytest.fixture()
 async def centre_ellipse() -> CentreEllipseMethod:
     async with init_devices(mock=True):
-        centre_ellipse = CentreEllipseMethod("", "centre_ellipse")
+        centre_ellipse = CentreEllipseMethod("", name="centre_ellipse")
 
     centre_ellipse.trigger = MagicMock(return_value=completed_status())
     return centre_ellipse
@@ -673,41 +675,41 @@ def find_beam_centre_devices(
     zoom_controller_with_centres: ZoomControllerWithBeamCentres,
     sample_shutter: ZebraShutter,
 ):
-    return {
-        "robot": robot,
-        "beamstop": beamstop_phase1,
-        "backlight": backlight,
-        "scintillator": scintillator,
-        "xbpm_feedback": xbpm_feedback,
-        "max_pixel": max_pixel,
-        "centre_ellipse": centre_ellipse,
-        "attenuator": attenuator,
-        "zoom_controller": zoom_controller_with_centres,
-        "shutter": sample_shutter,
-    }
+    return FindBeamCentresComposite(
+        robot=robot,
+        beamstop=beamstop_phase1,
+        backlight=backlight,
+        scintillator=scintillator,
+        xbpm_feedback=xbpm_feedback,
+        max_pixel=max_pixel,
+        centre_ellipse=centre_ellipse,
+        attenuator=attenuator,
+        zoom_controller=zoom_controller_with_centres,
+        shutter=sample_shutter,
+    )
 
 
 def test_given_levels_to_centre_that_dont_exist_when_find_beam_centres_exception_raised(
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
     with pytest.raises(ValueError):
         run_engine(
             find_beam_centres(
-                zoom_levels_to_centre=("bad_zoom"), **find_beam_centre_devices
+                zoom_levels_to_centre=("bad_zoom",), composite=find_beam_centre_devices
             )
         )
 
 
 def test_given_levels_to_optimise_that_dont_exist_when_find_beam_centres_exception_raised(
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
     with pytest.raises(ValueError):
         run_engine(
             find_beam_centres(
-                zoom_levels_to_optimise_transmission=("bad_zoom"),
-                **find_beam_centre_devices,
+                zoom_levels_to_optimise_transmission=("bad_zoom",),
+                composite=find_beam_centre_devices,
             )
         )
 
@@ -721,12 +723,12 @@ def test_given_levels_to_optimise_that_dont_exist_when_find_beam_centres_excepti
 )
 def test_find_beam_centres_starts_by_prepping_scintillator(
     mock_prepare_scintillator: AsyncMock,
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
-    run_engine(find_beam_centres(**find_beam_centre_devices))
+    run_engine(find_beam_centres(composite=find_beam_centre_devices))
     mock_prepare_scintillator.assert_called_once()
-    assert find_beam_centre_devices["centre_ellipse"].trigger.call_count == 4  # type: ignore
+    assert find_beam_centre_devices.centre_ellipse.trigger.call_count == 4  # type: ignore
 
 
 def mock_centre_ellipse_with_given_centres(
@@ -750,21 +752,21 @@ def mock_centre_ellipse_with_given_centres(
     new=MagicMock(),
 )
 async def test_find_beam_centres_iterates_and_sets_centres(
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
     level_names = ["1.0x", "2.0x", "3.0x", "7.5x"]
     new_centres = [(100, 100), (200, 200), (300, 300), (400, 400)]
     expected_centres = new_centres.copy()
 
-    centre_ellipse = find_beam_centre_devices["centre_ellipse"]
+    centre_ellipse = find_beam_centre_devices.centre_ellipse
     zoom_controller_with_centres: ZoomControllerWithBeamCentres = (
-        find_beam_centre_devices["zoom_controller"]
+        find_beam_centre_devices.zoom_controller
     )
 
     mock_centre_ellipse_with_given_centres(centre_ellipse, new_centres)
 
-    run_engine(find_beam_centres(**find_beam_centre_devices))
+    run_engine(find_beam_centres(composite=find_beam_centre_devices))
 
     assert get_mock_put(zoom_controller_with_centres.level).call_count == 4
     assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
@@ -788,27 +790,27 @@ async def test_find_beam_centres_iterates_and_sets_centres(
     new=MagicMock(),
 )
 async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_sets_those_centres(
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
     new_centres = [(100, 100), (200, 200), (300, 300), (400, 400)]
 
-    centre_ellipse = find_beam_centre_devices["centre_ellipse"]
+    centre_ellipse = find_beam_centre_devices.centre_ellipse
     zoom_controller_with_centres: ZoomControllerWithBeamCentres = (
-        find_beam_centre_devices["zoom_controller"]
+        find_beam_centre_devices.zoom_controller
     )
 
     mock_centre_ellipse_with_given_centres(centre_ellipse, new_centres)
 
     run_engine(
         find_beam_centres(
-            zoom_levels_to_centre=["1.0x", "7.5x"], **find_beam_centre_devices
+            zoom_levels_to_centre=("1.0x", "7.5x"), composite=find_beam_centre_devices
         )
     )
 
     assert get_mock_put(zoom_controller_with_centres.level).call_count == 2
     assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
-        call(level, wait=True) for level in ["1.0x", "7.5x"]
+        call(level, wait=True) for level in ("1.0x", "7.5x")
     ]
 
     centres = list(zoom_controller_with_centres.beam_centres.values())
@@ -835,13 +837,13 @@ async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_set
 )
 async def test_find_beam_centres_optimises_on_default_levels_only(
     mock_optimise: MagicMock,
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
     levels_where_optimised = []
 
     zoom_controller_with_centres: ZoomControllerWithBeamCentres = (
-        find_beam_centre_devices["zoom_controller"]
+        find_beam_centre_devices.zoom_controller
     )
 
     def append_current_zoom(*args, **kwargs):
@@ -851,7 +853,7 @@ async def test_find_beam_centres_optimises_on_default_levels_only(
 
     mock_optimise.side_effect = append_current_zoom
 
-    run_engine(find_beam_centres(**find_beam_centre_devices))
+    run_engine(find_beam_centres(composite=find_beam_centre_devices))
 
     assert mock_optimise.call_count == 2
     assert levels_where_optimised == ["1.0x", "7.5x"]
@@ -866,13 +868,13 @@ async def test_find_beam_centres_optimises_on_default_levels_only(
 )
 async def test_find_beam_centres_respects_custom_optimise_list(
     mock_optimise: MagicMock,
-    find_beam_centre_devices: dict,
+    find_beam_centre_devices: FindBeamCentresComposite,
     run_engine: RunEngine,
 ):
     levels_where_optimised = []
 
     zoom_controller_with_centres: ZoomControllerWithBeamCentres = (
-        find_beam_centre_devices["zoom_controller"]
+        find_beam_centre_devices.zoom_controller
     )
 
     def append_current_zoom(*args, **kwargs):
@@ -884,8 +886,8 @@ async def test_find_beam_centres_respects_custom_optimise_list(
 
     run_engine(
         find_beam_centres(
-            zoom_levels_to_optimise_transmission=["2.0x", "3.0x"],
-            **find_beam_centre_devices,
+            zoom_levels_to_optimise_transmission=("2.0x", "3.0x"),
+            composite=find_beam_centre_devices,
         )
     )
 
@@ -898,10 +900,11 @@ async def test_find_beam_centres_respects_custom_optimise_list(
     lambda _: fake_generator(("1.0x", "7.5x")),
 )
 def test_find_beam_centres_prepares_beamline_and_waits(
-    sim_run_engine: RunEngineSimulator, find_beam_centre_devices: dict
+    sim_run_engine: RunEngineSimulator,
+    find_beam_centre_devices: FindBeamCentresComposite,
 ):
     messages = sim_run_engine.simulate_plan(
-        find_beam_centres(**find_beam_centre_devices)
+        find_beam_centres(composite=find_beam_centre_devices)
     )
     assert_message_and_return_remaining(
         messages,
@@ -915,3 +918,90 @@ def test_find_beam_centres_prepares_beamline_and_waits(
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     )
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.find_beam_centres",
+)
+def test_find_beam_centre_at_current_zoom_and_transmission_calls_find_beam_centres(
+    mock_find_beam_centres: MagicMock,
+    find_beam_centre_devices: FindBeamCentresComposite,
+    run_engine: RunEngine,
+):
+    zoom_controller: ZoomControllerWithBeamCentres = (
+        find_beam_centre_devices.zoom_controller
+    )
+
+    set_mock_value(zoom_controller.level, "2.0x")
+    run_engine(
+        find_and_set_beam_centre_at_current_zoom_and_transmission(
+            find_beam_centre_devices
+        )
+    )
+
+    mock_find_beam_centres.assert_called_once_with(
+        zoom_levels_to_centre=("2.0x",),
+        zoom_levels_to_optimise_transmission=(),
+        composite=find_beam_centre_devices,
+    )
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images",
+    new=MagicMock(),
+)
+async def test_find_beam_centre_at_current_zoom_and_transmission_only_finds_centre_for_current_zoom_level(
+    find_beam_centre_devices: FindBeamCentresComposite, run_engine: RunEngine
+):
+    current_zoom_level = "3.0x"
+    zoom_controller: ZoomControllerWithBeamCentres = (
+        find_beam_centre_devices.zoom_controller
+    )
+    set_mock_value(zoom_controller.level, current_zoom_level)
+    run_engine(
+        find_and_set_beam_centre_at_current_zoom_and_transmission(
+            find_beam_centre_devices
+        )
+    )
+
+    get_mock_put(zoom_controller.level).assert_called_once_with(
+        current_zoom_level, wait=True
+    )
+    total_mv_calls = 0
+    for centring_device in zoom_controller.beam_centres.values():
+        zoom_level = await centring_device.level_name.get_value()
+        expected_mv_calls = 1 if zoom_level == current_zoom_level else 0
+        assert get_mock_put(centring_device.x_centre).call_count == expected_mv_calls
+        assert get_mock_put(centring_device.y_centre).call_count == expected_mv_calls
+        total_mv_calls += expected_mv_calls
+    assert total_mv_calls == 1
+
+
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging._prepare_beamline_for_scintillator_images",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i04.oav_centering_plans.oav_imaging.optimise_transmission_with_oav"
+)
+def test_find_beam_centre_at_current_zoom_and_transmission_does_not_optimise(
+    mock_optimise: MagicMock,
+    find_beam_centre_devices: FindBeamCentresComposite,
+    run_engine: RunEngine,
+):
+    zoom_controller: ZoomControllerWithBeamCentres = (
+        find_beam_centre_devices.zoom_controller
+    )
+    set_mock_value(zoom_controller.level, "1.0x")
+
+    run_engine(
+        find_and_set_beam_centre_at_current_zoom_and_transmission(
+            find_beam_centre_devices
+        )
+    )
+
+    assert mock_optimise.call_count == 0

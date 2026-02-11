@@ -22,7 +22,7 @@ from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
-from ophyd_async.core import Signal, init_devices, set_mock_value
+from ophyd_async.core import Device, Signal, init_devices, set_mock_value
 from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
@@ -229,7 +229,7 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
     pre_beamstop_group = "pre_beamstop_check"
     post_beamstop_group = "post_beamstop_check"
 
-    def assert_expected_set(signal: Signal | Motor, value, group):
+    def assert_expected_set(signal: Signal | Motor | Device, value, group):
         return assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"

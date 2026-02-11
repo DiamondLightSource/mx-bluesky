@@ -100,8 +100,7 @@ def construct_hyperion_specific_features(
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
-        signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
+        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
 
 

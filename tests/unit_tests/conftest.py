@@ -1,9 +1,10 @@
 import asyncio
 import pprint
 import sys
+from collections.abc import Generator
 from functools import partial
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,13 +13,13 @@ from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -226,11 +227,14 @@ def mock_subscriptions(test_fgs_params):
         yield (nexus_callback, ispyb_callback)
 
 
+ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback | GridscanISPyBCallback]]
+
+
 @pytest.fixture
 def run_engine_with_subs(
     run_engine: RunEngine,
     mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
-):
+) -> Generator[ReWithSubs, Any, None]:
     for cb in list(mock_subscriptions):
         run_engine.subscribe(cb)
     yield run_engine, mock_subscriptions
@@ -339,7 +343,6 @@ async def fake_fgs_composite(
         eiger=i03.eiger.build(mock=True),
         smargon=smargon,
         synchrotron=synchrotron,
-        zocalo=zocalo,
     )
 
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
@@ -360,12 +363,10 @@ async def fake_fgs_composite(
 
     @AsyncStatus.wrap
     async def mock_complete(result):
-        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
+        await zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
-    fake_composite.zocalo.trigger = MagicMock(
-        side_effect=partial(mock_complete, test_result)
-    )  # type: ignore
-    fake_composite.zocalo.timeout_s = 3
+    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    zocalo.timeout_s = 3
     set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     return fake_composite
@@ -391,7 +392,6 @@ def beamline_specific(
         fgs_motors=zebra_fast_grid_scan,
         read_pre_flyscan_plan=MagicMock(),
         read_during_collection_plan=MagicMock(),
-        get_xrc_results_from_zocalo=False,
     )
 
 
