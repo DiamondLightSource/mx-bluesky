@@ -35,14 +35,14 @@ class GonioWithOmega(Protocol):
     omega: Motor
 
 
-MotorWithOmegaType = TypeVar("MotorWithOmegaType", bound=GonioWithOmega)
+GonioWithOmegaType = TypeVar("GonioWithOmegaType", bound=GonioWithOmega)
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices(Generic[MotorWithOmegaType]):
+class FlyScanEssentialDevices(Generic[GonioWithOmegaType]):
     eiger: EigerDetector
     synchrotron: Synchrotron
-    gonio: MotorWithOmegaType
+    gonio: GonioWithOmegaType
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

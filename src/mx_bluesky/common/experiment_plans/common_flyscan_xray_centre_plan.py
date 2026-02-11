@@ -28,7 +28,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
-    MotorWithOmegaType,
+    GonioWithOmegaType,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import (
@@ -113,7 +113,7 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices[MotorWithOmegaType],
+    composite: FlyScanEssentialDevices[GonioWithOmegaType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
@@ -155,7 +155,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices[MotorWithOmegaType],
+            fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
             params: SpecifiedThreeDGridScan,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
@@ -173,7 +173,7 @@ def common_flyscan_xray_centre(
 
 
 def run_gridscan(
-    fgs_composite: FlyScanEssentialDevices[MotorWithOmegaType],
+    fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
     parameters: SpecifiedThreeDGridScan,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
