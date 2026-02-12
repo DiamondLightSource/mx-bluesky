@@ -22,6 +22,28 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="SpecifiedGrids")
 
 
+def _create_writers_from_params(params: SpecifiedGrids) -> list[NexusWriter]:
+    num_writers = params.num_grids
+    writers = []
+    d_size = params.detector_params.detector_size_constants.det_size_pixels
+    for idx in range(num_writers):
+        images_in_grid = len(params.scan_points[idx]["sam_x"])
+        data_shape = (images_in_grid, d_size.width, d_size.height)
+        run_number = params.detector_params.run_number + idx
+
+        writers.append(
+            NexusWriter(
+                params,
+                data_shape,
+                params.scan_points[idx],
+                run_number=run_number,
+                vds_start_index=params.scan_indices[idx],
+                omega_start_deg=params.omega_starts_deg[idx],
+            )
+        )
+    return writers
+
+
 class GridscanNexusFileCallback(PlanReactiveCallback):
     """Callback class to handle the creation of Nexus files based on experiment \
     parameters. Initialises on receiving a 'start' document for the \
@@ -55,24 +77,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                 f"Nexus writer received start document with experiment parameters {mx_bluesky_parameters}"
             )
             parameters = self.param_type.model_validate_json(mx_bluesky_parameters)
-            num_writers = parameters.num_grids
-
-            d_size = parameters.detector_params.detector_size_constants.det_size_pixels
-            for idx in range(0, num_writers - 1):
-                images_in_grid = parameters.scan_indices[idx + 1]
-                data_shape = (images_in_grid, d_size.width, d_size.height)
-                run_number = parameters.detector_params.run_number + idx
-
-                self._writers.append(
-                    NexusWriter(
-                        parameters,
-                        data_shape,
-                        parameters.scan_points[idx],
-                        run_number=run_number,
-                        vds_start_index=parameters.scan_indices[idx],
-                        omega_start_deg=parameters.omega_starts_deg[idx],
-                    )
-                )
+            self._writers = _create_writers_from_params(parameters)
 
             self.run_start_uid = doc.get("uid")
 
@@ -84,8 +89,8 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
         assert event_descriptor is not None
         if event_descriptor.get("name") == DocDescriptorNames.HARDWARE_READ_DURING:
             data = doc["data"]
+            assert self._writers, "Nexus callback did not receive start doc"
             for nexus_writer in self._writers:
-                assert nexus_writer, "Nexus callback did not receive start doc"
                 (
                     nexus_writer.beam,
                     nexus_writer.attenuator,

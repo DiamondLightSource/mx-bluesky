@@ -16,6 +16,9 @@ from dodal.devices.fast_grid_scan import (
     ZebraGridScanParamsThreeD,
 )
 
+from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+    _create_writers_from_params,
+)
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     AxisDirection,
     create_beam_and_attenuator_parameters,
@@ -38,41 +41,14 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
             assert "end_time_estimated" in entry
 
 
-def create_nexus_writer(parameters: HyperionSpecifiedThreeDGridScan, writer_num):
-    d_size = parameters.detector_params.detector_size_constants.det_size_pixels
-    n_img = (
-        parameters.scan_indices[1]
-        if writer_num == 1
-        else parameters.num_images - parameters.scan_indices[1]
-    )
-    points = parameters.scan_points[0] if writer_num == 1 else parameters.scan_points[1]
-    data_shape = (n_img, d_size.width, d_size.height)
-    run_number = parameters.detector_params.run_number + writer_num - 1
-    vds_start = 0 if writer_num == 1 else parameters.scan_indices[1]
-    omega_start = (
-        parameters.omega_starts_deg[0]
-        if writer_num == 1
-        else parameters.omega_starts_deg[1]
-    )
-    nexus_writer = NexusWriter(
-        parameters,
-        data_shape,
-        scan_points=points,
-        run_number=run_number,
-        vds_start_index=vds_start,
-        omega_start_deg=omega_start,
-    )
-    nexus_writer.beam, nexus_writer.attenuator = create_beam_and_attenuator_parameters(
-        20, TEST_FLUX, 0.5
-    )
-    return nexus_writer
-
-
 @contextmanager
 def create_nexus_writers(parameters: HyperionSpecifiedThreeDGridScan):
-    writers = [create_nexus_writer(parameters, i) for i in [1, 2]]
-    writers[1].start_index = parameters.scan_indices[1]
+    writers = _create_writers_from_params(parameters)
     try:
+        for writer in writers:
+            writer.beam, writer.attenuator = create_beam_and_attenuator_parameters(
+                20, TEST_FLUX, 0.5
+            )
         yield writers
     finally:
         for writer in writers:
