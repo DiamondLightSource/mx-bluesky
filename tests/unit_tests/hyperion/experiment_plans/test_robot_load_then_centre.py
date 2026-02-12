@@ -11,14 +11,14 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_plan import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
     robot_load_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.hyperion.parameters.device_composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
@@ -217,6 +217,34 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
         messages,
         lambda msg: msg.command == "robot_load",
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
+    MagicMock(side_effect=mock_pin_centre_then_gridscan_plan),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
+    MagicMock(side_effect=dummy_robot_load_plan),
+)
+def test_when_plan_run_then_detector_positioned(
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params: RobotLoadThenCentre,
+    sim_run_engine,
+):
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+    )
+    messages = assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "set"
+        and msg.obj is robot_load_composite.detector_motion.z
+        and msg.args[0]
+        == robot_load_then_centre_params.detector_params.detector_distance,
+    )
+    assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
 
 
 def mock_current_sample(sim_run_engine: RunEngineSimulator, sample: SampleLocation):

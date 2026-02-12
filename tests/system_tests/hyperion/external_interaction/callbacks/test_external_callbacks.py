@@ -19,12 +19,15 @@ import pytest
 import zmq
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext, DataEvent, EventPublisher
+from bluesky import preprocessors as bpp
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
+from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker, MessageTopic
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from zmq.utils.monitor import recv_monitor_message
 
@@ -34,6 +37,7 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_decorator,
 )
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -43,7 +47,8 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
     construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    rotation_scan,
+    RotationScanComposite,
+    rotation_scan_internal,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import (
     BLUEAPI_EVENT_TOPIC,
@@ -75,6 +80,26 @@ class DocumentCatcher(CallbackBase):
         self.descriptor = MagicMock()
         self.event = MagicMock()
         self.stop = MagicMock()
+
+
+def rotation_scan(
+    composite: RotationScanComposite,
+    parameters: RotationScan,
+    oav_params: OAVParameters | None = None,
+) -> MsgGenerator:
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
+        md={
+            "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
+        }
+    )
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
+
+    yield from _wrapped_rotation_scan()
 
 
 def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -> None:
