@@ -54,7 +54,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
+    GenericGridWithHyperionDetectorParams,
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
@@ -415,7 +415,7 @@ def test_ispyb_deposition_in_gridscan(
     set_mock_value(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
     )
-    ispyb_callback = GridscanISPyBCallback(GridCommonWithHyperionDetectorParams)
+    ispyb_callback = GridscanISPyBCallback(GenericGridWithHyperionDetectorParams)
     run_engine.subscribe(ispyb_callback)
     run_engine(
         grid_detect_then_xray_centre(

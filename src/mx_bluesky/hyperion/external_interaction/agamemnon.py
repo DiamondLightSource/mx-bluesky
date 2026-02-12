@@ -260,7 +260,7 @@ def _populate_parameters_from_agamemnon(
                     "file_name": file_name,
                     "tip_offset_um": pin_type.full_width / 2,
                     "grid_width_um": pin_type.full_width,
-                    "omega_start_deg": 0.0,
+                    "omega_starts_deg": [0.0, 90.0],
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
                     **with_energy_params,

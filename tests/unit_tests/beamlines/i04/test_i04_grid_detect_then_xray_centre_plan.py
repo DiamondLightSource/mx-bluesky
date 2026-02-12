@@ -38,13 +38,13 @@ from ophyd_async.core import get_mock_put, set_mock_value
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     DEFAULT_XRC_BEAMSIZE_MICRONS,
     I04AutoXrcParams,
-    _get_grid_common_params,
+    _get_generic_grid_params,
     get_ready_for_oav_and_close_shutter,
     i04_default_grid_detect_and_xray_centre,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
-    GridCommon,
+    GenericGrid,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
@@ -121,6 +121,21 @@ def i04_grid_detect_then_xrc_default_params(
         detector_motion=detector_motion,
         transfocator=transfocator,
     )
+
+
+@pytest.fixture()
+def give_grid_common_specific_grid(test_three_d_grid_params: SpecifiedThreeDGridScan):
+    # Using this fixture means grid common always comes with its specific grid params
+    class GenericGridWithSpecificGrid(GenericGrid):
+        @property
+        def specified_grid_params(self):
+            return test_three_d_grid_params
+
+    with patch(
+        "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.GenericGrid",
+        GenericGridWithSpecificGrid,
+    ):
+        yield
 
 
 @patch(
@@ -239,12 +254,12 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
     mock_wait: MagicMock,
     sim_run_engine: RunEngineSimulator,
     zocalo: ZocaloResults,
-    hyperion_fgs_params,
+    test_three_d_grid_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
     desired_transmission = 0.4
     mock_fix_transmission_and_exp_time.return_value = (desired_transmission, 1)
-    mock_create_parameters.return_value = hyperion_fgs_params
+    mock_create_parameters.return_value = test_three_d_grid_params
     simulate_xrc_result(
         sim_run_engine,
         zocalo,
@@ -312,10 +327,10 @@ def test_i04_default_grid_detect_and_xray_centre_does_undulator_check_before_col
     mock_grid_detection_plan: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
     run_engine: RunEngine,
-    hyperion_fgs_params,
+    test_three_d_grid_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
-    mock_create_parameters.return_value = hyperion_fgs_params
+    mock_create_parameters.return_value = test_three_d_grid_params
     mock_run_gridscan.side_effect = CompleteError
     with pytest.raises(CompleteError):
         run_engine(i04_grid_detect_then_xrc_default_params())
@@ -426,21 +441,6 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z, wait=True)])
 
 
-@pytest.fixture()
-def give_grid_common_specific_grid(test_fgs_params: SpecifiedThreeDGridScan):
-    # Using this fixture means grid common always comes with its specific grid params
-    class GridCommonWithSpecificGrid(GridCommon):
-        @property
-        def specified_grid_params(self):
-            return test_fgs_params
-
-    with patch(
-        "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.GridCommon",
-        GridCommonWithSpecificGrid,
-    ):
-        yield
-
-
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     new=MagicMock(),
@@ -472,8 +472,8 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
     mock_grid_detect_then_xray_centre: MagicMock,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     run_engine: RunEngine,
-    test_full_grid_scan_params: GridCommon,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_full_grid_scan_params: GenericGrid,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     give_grid_common_specific_grid,
 ):
     expected_trans_frac = 1
@@ -486,7 +486,7 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
     grid_common_params = mock_grid_detect_then_xray_centre.call_args.kwargs[
         "parameters"
     ]
-    assert isinstance(grid_common_params, GridCommon)
+    assert isinstance(grid_common_params, GenericGrid)
     assert grid_common_params.exposure_time_s == expected_exposure_time
     assert grid_common_params.transmission_frac == expected_trans_frac
 
@@ -494,7 +494,7 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
 @patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.fix_transmission_and_exposure_time_for_current_wavelength",
 )
-def test_get_grid_common_params(
+def test_get_generic_grid_params(
     mock_fix_trans_and_exposure: MagicMock,
     tmp_path,
 ):
@@ -511,7 +511,7 @@ def test_get_grid_common_params(
         detector_distance_mm=264.5,
         storage_directory=str(tmp_path),
     )
-    grid_common_params = _get_grid_common_params(1, entry_params)
+    grid_common_params = _get_generic_grid_params(1, entry_params)
     assert grid_common_params.exposure_time_s == expected_exposure_time
     assert grid_common_params.transmission_frac == expected_trans_frac
 
@@ -573,15 +573,18 @@ def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
 def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     mock_change_aperture_then_move_to_xtal: MagicMock,
     mock_create_flyscan_params: MagicMock,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
-    mock_create_flyscan_params.return_value = test_fgs_params
+    mock_create_flyscan_params.return_value = test_three_d_grid_params
     run_engine(
         i04_grid_detect_then_xrc_default_params(
             udc=False,
         )
     )
     mock_change_aperture_then_move_to_xtal.assert_called_once()
-    assert mock_change_aperture_then_move_to_xtal.call_args[0][1] == test_fgs_params
+    assert (
+        mock_change_aperture_then_move_to_xtal.call_args[0][1]
+        == test_three_d_grid_params
+    )

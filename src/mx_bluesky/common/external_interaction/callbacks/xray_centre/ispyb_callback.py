@@ -38,7 +38,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
@@ -57,7 +57,7 @@ class GridscanPlane(StrEnum):
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
-T = TypeVar("T", bound="GridCommon")
+T = TypeVar("T", bound="GenericGrid")
 ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
 
 

@@ -1,5 +1,5 @@
 {
-    "parameter_model_version": "5.0.0",
+    "parameter_model_version": "6.0.0",
     "demand_energy_ev": 100,
     "comment": "test",
     "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
@@ -14,15 +14,23 @@
     "use_roi_mode": false,
     "transmission_frac": 1.0,
     "x_steps": 40,
-    "y_steps": 20,
-    "z_steps": 10,
+    "y_steps": [
+        20,
+        10
+    ],
     "x_step_size_um": 100,
-    "y_step_size_um": 100,
-    "z_step_size_um": 100,
+    "y_step_sizes_um": [
+        100,
+        100
+    ],
     "x_start_um": 0.0,
-    "y_start_um": 0.0,
-    "y2_start_um": 0.0,
-    "z_start_um": 0.0,
-    "z2_start_um": 0.0,
+    "y_starts_um": [
+        0.0,
+        0.0
+    ],
+    "z_starts_um": [
+        0.0,
+        0.0
+    ],
     "storage_directory": "{tmp_data}/xraycentring/123456/"
 }

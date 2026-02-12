@@ -278,16 +278,13 @@ def grid_detection_callback_with_detected_grid():
             "transmission_frac": 1.0,
             "exposure_time_s": 0,
             "x_start_um": 0,
-            "y_start_um": 0,
-            "y2_start_um": 0,
-            "z_start_um": 0,
-            "z2_start_um": 0,
+            "y_starts_um": [0, 0],
+            "z_starts_um": [0, 0],
             "x_steps": 10,
-            "y_steps": 10,
-            "z_steps": 10,
+            "y_steps": [10, 10],
             "x_step_size_um": 0.1,
-            "y_step_size_um": 0.1,
-            "z_step_size_um": 0.1,
+            "y_step_sizes_um": [0.1, 0.1],
+            "omega_starts_deg": [0, 90],
         }
         yield callback
 
