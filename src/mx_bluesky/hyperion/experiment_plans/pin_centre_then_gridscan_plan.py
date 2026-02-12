@@ -114,7 +114,7 @@ def pin_centre_then_gridscan_plan(
             parameters.transmission_frac,
             PlanNameConstants.GRIDSCAN_OUTER,
         )
-        def _grid_detect_plan():
+        def _grid_detect_and_gridscan_plan():
             yield from detect_grid_and_do_gridscan(
                 composite,
                 grid_detect_params,
@@ -123,7 +123,7 @@ def pin_centre_then_gridscan_plan(
                 construct_hyperion_specific_features,
             )
 
-        yield from _grid_detect_plan()
+        yield from _grid_detect_and_gridscan_plan()
         assert isinstance(
             grid_detect_params.specified_grid_params, SpecifiedThreeDGridScan
         ), "Specified grid params couldn't be found after grid detection"
