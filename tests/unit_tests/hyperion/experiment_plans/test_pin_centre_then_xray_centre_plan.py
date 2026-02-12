@@ -40,25 +40,6 @@ from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_
 
 
 @pytest.fixture
-def test_grid_params():
-    return {
-        "transmission_frac": 1.0,
-        "exposure_time_s": 0,
-        "x_start_um": 0,
-        "y_start_um": 0,
-        "y2_start_um": 0,
-        "z_start_um": 0,
-        "z2_start_um": 0,
-        "x_steps": 10,
-        "y_steps": 10,
-        "z_steps": 10,
-        "x_step_size_um": 0.1,
-        "y_step_size_um": 0.1,
-        "z_step_size_um": 0.1,
-    }
-
-
-@pytest.fixture
 def test_pin_centre_then_xray_centre_params(
     tmp_path,
 ) -> PinTipCentreThenXrayCentre:
@@ -173,9 +154,6 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     autospec=True,
 )
@@ -186,15 +164,12 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_grid_detect: MagicMock,
     mock_pin_tip_centre: MagicMock,
-    mock_grid_callback: MagicMock,
-    test_grid_params: MagicMock,
+    grid_detection_callback_with_detected_grid,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
     sim_run_engine: RunEngineSimulator,
 ):
-    mock_grid_callback.return_value.get_grid_parameters.return_value = test_grid_params
-
     sim_run_engine.add_handler_for_callback_subscribes()
 
     sim_run_engine.add_handler(
@@ -440,9 +415,6 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 
 @pytest.mark.parametrize("transmission_frac", [1, 0.5, 0.25])
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan"
 )
 @patch(
@@ -459,17 +431,12 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     mock_run_gridscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_pin_tip_centre_plan: MagicMock,
-    mock_grid_detection_callback: MagicMock,
-    test_grid_params,
+    grid_detection_callback_with_detected_grid,
     transmission_frac: float,
     sim_run_engine: RunEngineSimulator,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
-    mock_grid_detection_callback.return_value.get_grid_parameters.return_value = (
-        test_grid_params
-    )
-
     test_pin_centre_then_xray_centre_params.transmission_frac = transmission_frac
 
     msgs = sim_run_engine.simulate_plan(

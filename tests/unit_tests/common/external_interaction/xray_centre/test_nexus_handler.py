@@ -45,8 +45,7 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
         param_type=HyperionSpecifiedThreeDGridScan
     )
 
-    assert nexus_handler._writers[0] is None
-    assert nexus_handler._writers[1] is None
+    assert not nexus_handler._writers
 
     nexus_handler.activity_gated_start(
         test_event_data.test_gridscan_outer_start_document
@@ -61,8 +60,8 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
 
     assert nexus_handler._writers[0] is not None
     assert nexus_handler._writers[1] is not None
-    nexus_handler._writers[0].create_nexus_file.assert_called_once()
-    nexus_handler._writers[1].create_nexus_file.assert_called_once()
+    nexus_handler._writers[0].create_nexus_file.assert_called_once()  # type: ignore
+    nexus_handler._writers[1].create_nexus_file.assert_called_once()  # type: ignore
 
 
 @pytest.mark.parametrize(
