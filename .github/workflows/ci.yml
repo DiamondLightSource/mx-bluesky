@@ -17,7 +17,7 @@ jobs:
     uses: ./.github/workflows/_tox.yml
     with:
       tox: pre-commit,type-checking
-      skip_hooks: local-install-dodal,type-checking
+      skip_hooks: local-install-dodal,type-checking,uv-sync
 
   test:
     strategy:

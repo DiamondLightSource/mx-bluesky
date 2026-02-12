@@ -143,7 +143,7 @@ def setup_and_run_rotation_plan_for_tests(
     return {
         "run_engine_with_subs": run_engine,
         "test_rotation_params": test_params,
-        "smargon": fake_create_rotation_devices.smargon,
+        "smargon": fake_create_rotation_devices.gonio,
         "zebra": fake_create_rotation_devices.zebra,
     }
 
@@ -254,7 +254,7 @@ async def test_full_rotation_plan_smargon_settings(
     run_full_rotation_plan: RotationScanComposite,
     test_rotation_params: RotationScan,
 ) -> None:
-    smargon: Smargon = run_full_rotation_plan.smargon
+    smargon: Smargon = run_full_rotation_plan.gonio
     params: SingleRotationScan = next(test_rotation_params.single_rotation_scans)
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
@@ -331,7 +331,7 @@ def test_cleanup_happens(
         side_effect=MyTestError("Experiment fails because this is a test")
     )
 
-    with patch.object(fake_create_rotation_devices.smargon.omega, "set", failing_set):
+    with patch.object(fake_create_rotation_devices.gonio.omega, "set", failing_set):
         # check main subplan part fails
         params = next(test_rotation_params.single_rotation_scans)
         with pytest.raises(MyTestError):
@@ -373,7 +373,7 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "gonio"
     )
 
 
@@ -563,7 +563,7 @@ def test_rotation_scan_resets_omega_waits_for_sample_env_complete_after_snapshot
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon-omega"
+        and msg.obj.name == "gonio-omega"
         and msg.args[0] == params.omega_start_deg
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
@@ -664,7 +664,7 @@ def _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
                 msg
                 for msg in msgs
                 if msg.command == "set"
-                and msg.obj.name == "smargon-omega"
+                and msg.obj.name == "gonio-omega"
                 and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
             ]
         )
@@ -686,7 +686,7 @@ def _add_sim_handlers_for_normal_operation(
         "synchrotron-top_up_start_countdown",
     )
     sim_run_engine.add_handler(
-        "read", lambda msg: {"smargon-omega": {"value": -1}}, "smargon-omega"
+        "read", lambda msg: {"gonio-omega": {"value": -1}}, "gonio-omega"
     )
 
 
@@ -763,7 +763,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj is composite.smargon.omega
+            and msg.obj is composite.gonio.omega
             and msg.args[0] == omega,
         )
         msgs = assert_message_and_return_remaining(
@@ -936,12 +936,8 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             scan.omega_start_deg = 30
         mock_callback = Mock(spec=RotationISPyBCallback)
         run_engine.subscribe(mock_callback)
-        omega_put = get_mock_put(
-            fake_create_rotation_devices.smargon.omega.user_setpoint
-        )
-        set_mock_value(
-            fake_create_rotation_devices.smargon.omega.acceleration_time, 0.1
-        )
+        omega_put = get_mock_put(fake_create_rotation_devices.gonio.omega.user_setpoint)
+        set_mock_value(fake_create_rotation_devices.gonio.omega.acceleration_time, 0.1)
         with (
             patch("bluesky.plan_stubs.wait", autospec=True),
             patch(
@@ -1029,7 +1025,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     sim_run_engine_for_rotation: RunEngineSimulator,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    smargon = fake_create_rotation_devices.smargon
+    smargon = fake_create_rotation_devices.gonio
     omega = smargon.omega
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode, SynchrotronMode.USER
@@ -1083,7 +1079,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         assert_message_and_return_remaining(
             msgs_within_arming,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "smargon-omega"
+            and msg.obj.name == "gonio-omega"
             and msg.args
             == (
                 (scan.scan_width_deg + motion_values.shutter_opening_deg)
@@ -1158,7 +1154,7 @@ def test_full_multi_rotation_plan_docs_emitted(
             events,
             [
                 ["eiger_odin_file_writer_id"],
-                ["undulator-current_gap", "synchrotron-synchrotron_mode", "smargon-x"],
+                ["undulator-current_gap", "synchrotron-synchrotron_mode", "gonio-x"],
                 [
                     "attenuator-actual_transmission",
                     "flux-flux_reading",

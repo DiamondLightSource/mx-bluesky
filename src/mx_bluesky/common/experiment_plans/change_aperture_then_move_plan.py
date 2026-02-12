@@ -28,7 +28,9 @@ def get_results_then_change_aperture_and_move_to_xtal(
         "Flyscan result event not received or no crystal found and exception not raised"
     )
     yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0], composite.smargon, composite.aperture_scatterguard
+        flyscan_results[0],
+        composite.gonio,
+        composite.aperture_scatterguard,
     )
 
 

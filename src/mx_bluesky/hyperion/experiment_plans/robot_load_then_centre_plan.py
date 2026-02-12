@@ -78,7 +78,7 @@ class RobotLoadThenCentreComposite:
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
-    smargon: Smargon
+    gonio: Smargon
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     undulator: UndulatorInKeV
@@ -152,7 +152,7 @@ def robot_load_then_xray_centre(
         yield from pin_already_loaded(composite.robot, sample_location)
     )
 
-    current_chi = yield from bps.rd(composite.smargon.chi)
+    current_chi = yield from bps.rd(composite.gonio.chi)
     LOGGER.info(f"Read back current smargon chi of {current_chi} degrees.")
     doing_chi_change = parameters.chi_start_deg is not None and not isclose(
         current_chi, parameters.chi_start_deg, abs_tol=0.001

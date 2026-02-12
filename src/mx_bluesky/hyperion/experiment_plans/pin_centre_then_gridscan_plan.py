@@ -83,18 +83,18 @@ def pin_centre_then_gridscan_plan(
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
-        gonio=composite.smargon,
+        gonio=composite.gonio,
         pin_tip_detection=composite.pin_tip_detection,
     )
 
     @zocalo_stage_decorator(composite.zocalo)
     def _pin_centre_then_gridscan_and_xrc():
         yield from setup_beamline_for_oav(
-            composite.smargon, composite.backlight, composite.aperture_scatterguard
+            composite.gonio, composite.backlight, composite.aperture_scatterguard
         )
 
         yield from move_phi_chi_omega(
-            composite.smargon,
+            composite.gonio,
             parameters.phi_start_deg,
             parameters.chi_start_deg,
             group=CONST.WAIT.READY_FOR_OAV,
