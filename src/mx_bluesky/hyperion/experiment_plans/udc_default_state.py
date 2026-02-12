@@ -111,7 +111,7 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
 
     yield from _unload_sample_if_present(
         devices.robot,
-        devices.smargon,
+        devices.gonio,
         devices.aperture_scatterguard,
         devices.lower_gonio,
     )
