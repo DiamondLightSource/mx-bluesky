@@ -33,10 +33,12 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.common.parameters.components import TopNByMaxCountForEachSampleSelection
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
+)
+from mx_bluesky.hyperion.blueapi.mixins import (
+    TopNByMaxCountForEachSampleSelection,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
