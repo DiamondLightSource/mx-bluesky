@@ -9,7 +9,7 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     load_centre_collect_full,
 )
-from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
+from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
