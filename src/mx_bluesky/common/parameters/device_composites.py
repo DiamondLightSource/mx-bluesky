@@ -1,3 +1,5 @@
+from typing import Generic, Protocol, TypeVar, runtime_checkable
+
 import pydantic
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
@@ -24,13 +26,23 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
+from ophyd_async.epics.motor import Motor
+
+
+# MX gridscans only uses the gonio to set omega to 0. Other motors are only accessed in the motion program
+@runtime_checkable
+class GonioWithOmega(Protocol):
+    omega: Motor
+
+
+GonioWithOmegaType = TypeVar("GonioWithOmegaType", bound=GonioWithOmega)
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices:
+class FlyScanEssentialDevices(Generic[GonioWithOmegaType]):
     eiger: EigerDetector
     synchrotron: Synchrotron
-    smargon: Smargon
+    gonio: GonioWithOmegaType
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -39,12 +51,12 @@ class OavGridDetectionComposite:
 
     backlight: Backlight
     oav: OAV
-    smargon: Smargon
+    gonio: Smargon
     pin_tip_detection: PinTipDetection
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices):
+class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard

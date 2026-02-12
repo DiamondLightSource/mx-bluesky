@@ -396,7 +396,7 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.obj.name == "smargon"
+        and msg.obj.name == "gonio"
         and msg.args[0] == CombinedMove(phi=expected_phi, chi=expected_chi, omega=None)
         and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
     )
