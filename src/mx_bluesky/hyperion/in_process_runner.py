@@ -117,7 +117,7 @@ def _runner_sleep(parameters: Wait) -> MsgGenerator:
 
 def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
     robot = find_device_in_context(context, "robot", BartRobot)
-    smargon = find_device_in_context(context, "smargon", Smargon)
+    smargon = find_device_in_context(context, "gonio", Smargon)
     aperture_scatterguard = find_device_in_context(
         context, "aperture_scatterguard", ApertureScatterguard
     )

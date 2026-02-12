@@ -21,7 +21,7 @@ OAV_SNAPSHOT_GROUP = "oav_snapshot_group"
 
 
 class OavSnapshotComposite(Protocol):
-    smargon: Smargon
+    gonio: Smargon
     oav: OAV
     aperture_scatterguard: ApertureScatterguard
 
@@ -78,15 +78,13 @@ def _generate_oav_snapshots(composite: OavSnapshotComposite, params: WithSnapsho
     for _ in 0, 270:
         yield from bps.create(DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED)
         yield from bps.read(composite.oav)
-        yield from bps.read(composite.smargon)
+        yield from bps.read(composite.gonio)
         yield from bps.save()
 
 
 def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     """Create new snapshots by triggering the OAV"""
-    yield from bps.abs_set(
-        composite.smargon.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT
-    )
+    yield from bps.abs_set(composite.gonio.omega, omega, group=OAV_SNAPSHOT_SETUP_SHOT)
     filename = _snapshot_filename(omega)
     yield from bps.abs_set(
         composite.oav.snapshot.filename,

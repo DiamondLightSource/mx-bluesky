@@ -77,7 +77,7 @@ async def default_devices(
             lower_gonio=lower_gonio,
             robot=robot,
             scintillator=scintillator,
-            smargon=smargon,
+            gonio=smargon,
             oav=oav,
             **beamstop_check_devices.__dict__,
         )

@@ -52,7 +52,7 @@ class UDCDefaultDevices(BeamstopCheckDevices):
     lower_gonio: XYZStage
     robot: BartRobot
     scintillator: Scintillator
-    smargon: Smargon
+    gonio: Smargon
     oav: OAV
 
 
