@@ -63,7 +63,7 @@ activate RE #ffeeee
     RE -> RE++ : start_preparing_data_collection_then_do_plan
         RE -> eiger ++ : arm the eiger
         RE -> GridscanISPyB ++ : send parameters to grdscan callback
-            RE -> RE ++ #ffdddd : pin_centre_then_xray_centre_plan
+            RE -> RE ++ #ffdddd : pin_centre_then_gridscan_plan
                 RE -> RE: setup_beamline_for_oav
                 RE -> RE: pin_tip_centre_plan
                 ...do pin tip centring...
@@ -121,7 +121,7 @@ snapshots later
                         RE -> zebra : tidy zebra
                     deactivate RE /'common_flyscan_xray_centre'/
                 deactivate RE /' detect_grid_and_do_gridscan'/
-            return /' pin_centre_then_xray_centre_plan'/
+            return /' pin_centre_then_gridscan_plan'/
         deactivate GridscanISPyB
     deactivate RE /' start_preparing_data_collection_then_do_plan '/
 deactivate RE /'robot_load_then_xray_centre'/

@@ -10,7 +10,7 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.hyperion.experiment_plans import (
     hyperion_grid_detect_then_xray_centre_plan,
     load_centre_collect_full_plan,
-    pin_centre_then_xray_centre_plan,
+    pin_centre_then_gridscan_plan,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
@@ -45,7 +45,7 @@ PLAN_REGISTRY: dict[str, ExperimentRegistryEntry] = {
         "param_type": GridScanWithEdgeDetect,
     },
     "pin_tip_centre_then_xray_centre": {
-        "setup": pin_centre_then_xray_centre_plan.create_devices,
+        "setup": pin_centre_then_gridscan_plan.create_devices,
         "param_type": PinTipCentreThenXrayCentre,
     },
     "rotation_scan": {
