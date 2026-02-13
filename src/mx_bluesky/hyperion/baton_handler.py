@@ -6,6 +6,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.baton import Baton
+from dodal.devices.synchrotron import Synchrotron
 
 from mx_bluesky.common.external_interaction.alerting import (
     AlertService,
@@ -85,6 +86,19 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             baton: The baton device
             runner: The runner
         """
+
+        baton = _get_baton(context)
+        synchrotron = _get_synchrotron(context)
+        countdown = yield from bps.rd(synchrotron.machine_user_countdown)
+
+        LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
+
+        if countdown < 600:
+            _raise_udc_completed_alert(get_alerting_service())
+            # Release the baton for orderly exit from the instruction loop
+            yield from _unrequest_baton(baton)
+            raise PlanError("Synchrotron machine countdown too low")
+
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
             runner.decode_and_execute(
@@ -216,6 +230,10 @@ def _is_requesting_baton(baton: Baton) -> MsgGenerator:
 
 def _get_baton(context: BlueskyContext) -> Baton:
     return find_device_in_context(context, "baton", Baton)
+
+
+def _get_synchrotron(context: BlueskyContext) -> Synchrotron:
+    return find_device_in_context(context, "synchrotron", Synchrotron)
 
 
 def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:

@@ -15,6 +15,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.synchrotron import Synchrotron
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.core import get_mock_put, set_mock_value
 
@@ -110,6 +111,7 @@ def bluesky_context(
     lower_gonio,
     baton,
     detector_motion,
+    synchrotron,
     use_beamline_t01,
 ):
     # Baton for real run engine
@@ -125,24 +127,26 @@ def bluesky_context(
             lower_gonio,
             baton,
             detector_motion,
+            synchrotron,
         ]
         for device in devices:
             context.register_device(device)
         return {d.name: d for d in devices}, {}
 
-    context.with_device_manager(
-        get_beamline_based_on_environment_variable().devices,
-        mock=True,
-    )
-
-    baton_with_requested_user(context, HYPERION_USER)
     with patch.object(context, "with_device_manager", mock_load_module):
+        context.with_device_manager(
+            get_beamline_based_on_environment_variable().devices,
+            mock=True,
+        )
+        synchrotron_with_countdown(context)
+        baton_with_requested_user(context, HYPERION_USER)
         yield context
 
 
 @pytest.fixture
 def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
     baton_requested_user = HYPERION_USER
+    countdown = 1200
 
     # Baton for sim run engine
     def get_requested_user(msg):
@@ -153,11 +157,19 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         nonlocal baton_requested_user
         baton_requested_user = msg.args[0]
 
+    def machine_user_countdown_read(msg):
+        return {msg.obj.name: {"value": countdown}}
+
     sim_run_engine.add_handler("locate", get_requested_user, "baton-requested_user")
     sim_run_engine.add_handler(
         "set",
         set_requested_user,  # type: ignore
         "baton-requested_user",
+    )
+    sim_run_engine.add_handler(
+        "read",
+        machine_user_countdown_read,
+        "synchrotron-machine_user_countdown",
     )
 
     msgs = []
@@ -222,6 +234,14 @@ def baton_with_requested_user(
     baton = find_device_in_context(bluesky_context, "baton", Baton)
     set_mock_value(baton.requested_user, user)
     return baton
+
+
+def synchrotron_with_countdown(
+    bluesky_context: BlueskyContext, seconds: int = 1200
+) -> Synchrotron:
+    synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
+    set_mock_value(synchrotron.machine_user_countdown, seconds)
+    return synchrotron
 
 
 @pytest.fixture()
@@ -1032,3 +1052,15 @@ def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
     mock_move_to_udc_default_state.assert_called_once()
     assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER, wait=True)
     assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)
+
+
+def test_baton_handler_fails_if_synchrotron_machine_countdown_below_threshold(
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    dont_patch_clear_devices,
+):
+    synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
+    set_mock_value(synchrotron.machine_user_countdown, 5)
+
+    with pytest.raises(PlanError, match="Synchrotron machine countdown too low"):
+        run_udc_when_requested(bluesky_context, udc_runner)
