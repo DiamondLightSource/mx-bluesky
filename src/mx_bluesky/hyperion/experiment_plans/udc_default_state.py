@@ -5,7 +5,7 @@ from dodal.beamlines.i03 import BL
 from dodal.common.beamlines.beamline_parameters import (
     get_beamline_parameters,
 )
-from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
     CryoStreamGantry,
@@ -17,6 +17,7 @@ from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.motors import XYZStage
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, PinMounted
@@ -25,6 +26,7 @@ from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 
+from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.common.experiment_plans.beamstop_check import (
     BeamstopCheckDevices,
     move_beamstop_in_and_verify_using_diode,
@@ -48,6 +50,7 @@ class UDCDefaultDevices(BeamstopCheckDevices):
     cryostream_gantry: CryoStreamGantry
     fluorescence_det_motion: FluorescenceDetector
     hutch_shutter: HutchShutter
+    lower_gonio: XYZStage
     robot: BartRobot
     scintillator: Scintillator
     gonio: Smargon
@@ -65,8 +68,6 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     yield from _verify_correct_cryostream_selected(devices.cryostream_gantry)
 
     yield from _check_cryostream(devices)
-
-    yield from _verify_no_sample_present(devices.robot)
 
     # Close fast shutter before opening hutch shutter
     yield from bps.abs_set(devices.sample_shutter, ZebraShutterState.CLOSE, wait=True)
@@ -108,6 +109,13 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
 
     # Wait for all of the above to complete
     yield from bps.wait(group=_GROUP_PRE_BEAMSTOP_CHECK, timeout=10)
+
+    yield from _unload_sample_if_present(
+        devices.robot,
+        devices.gonio,
+        devices.aperture_scatterguard,
+        devices.lower_gonio,
+    )
 
     feature_flags: HyperionFeatureSettings = (
         get_hyperion_config_client().get_feature_flags()
@@ -176,11 +184,16 @@ def _verify_correct_cryostream_selected(
         )
 
 
-def _verify_no_sample_present(robot: BartRobot):
+def _unload_sample_if_present(
+    robot: BartRobot,
+    smargon: Smargon,
+    aperture_scatterguard: ApertureScatterguard,
+    lower_gonio: XYZStage,
+):
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
 
     if pin_mounted != PinMounted.NO_PIN_MOUNTED:
-        # Cannot unload this sample because we do not know the correct visit for it
-        raise UnexpectedSampleError(
-            "An unexpected sample was found, please unload the sample manually."
+        LOGGER.info("Pin detected, unloading sample...")
+        yield from robot_unload(
+            robot, smargon, aperture_scatterguard, lower_gonio, None
         )
