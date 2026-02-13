@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.0.1.dev13+g28c3f20f6"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=28c3f20f6108d2769e7995f1008e7d76446fb38b#28c3f20f6108d2769e7995f1008e7d76446fb38b" }
+version = "2.0.1.dev41+g4b4a3f113"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1504_migrate_beamline_parameters_to_config_server#4b4a3f11305a11a3799bc64b2383f6829ba74752" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2106,9 +2106,9 @@ requires-dist = [
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "cachetools" },
     { name = "caproto" },
-    { name = "daq-config-server", specifier = ">=1.0.0rc2" },
+    { name = "daq-config-server", specifier = ">=1.1.2" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=28c3f20f6108d2769e7995f1008e7d76446fb38b" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1504_migrate_beamline_parameters_to_config_server" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },

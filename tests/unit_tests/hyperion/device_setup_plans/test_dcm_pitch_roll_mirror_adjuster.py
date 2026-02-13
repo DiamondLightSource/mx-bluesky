@@ -129,6 +129,7 @@ def test_adjust_mirror_stripe_does_nothing_if_stripe_already_correct(
 
 
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
+    use_beamline_i03,
     undulator_dcm: UndulatorDCM,
     vfm: FocusingMirrorWithStripes,
     mirror_voltages: MirrorVoltages,
