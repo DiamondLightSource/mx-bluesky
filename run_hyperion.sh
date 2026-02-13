@@ -141,6 +141,16 @@ if [[ $START == 1 ]]; then
     echo "$(date) Logging to $LOG_DIR"
     export LOG_DIR
     mkdir -p "$LOG_DIR"
+    if [ -z "$DEBUG_LOG_DIR" ]; then
+        if [ $IN_DEV = true ]; then
+            DEBUG_LOG_DIR=$LOG_DIR
+        else
+            DEBUG_LOG_DIR=/dls/tmp/$BEAMLINE/logs/bluesky
+        fi
+    fi
+    echo "Debug log file set to $DEBUG_LOG_DIR"
+    export DEBUG_LOG_DIR
+    mkdir -p "$DEBUG_LOG_DIR"
     if [ $MODE = "supervisor" ]; then
       start_log_path=$LOG_DIR/supervisor_start_log.log
     else

@@ -17,6 +17,7 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     robot_unload as _robot_unload,
 )
+from mx_bluesky.common.utils.log import setup_hyperion_blueapi_logging
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
@@ -29,6 +30,7 @@ from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     move_to_udc_default_state as _move_to_udc_default_state,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 __all__ = [
@@ -40,6 +42,14 @@ __all__ = [
     "move_to_udc_default_state",
     "robot_unload",
 ]
+
+
+def _init_plan_module():
+    """Initialisation hooks for hyperion-blueapi"""
+    setup_hyperion_blueapi_logging(CONST.LOG_FILE_NAME)
+
+
+_init_plan_module()
 
 
 def load_centre_collect(
