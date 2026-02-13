@@ -1745,9 +1745,3 @@ def mock_alert_service():
         create=True,
     ) as service:
         yield service
-
-
-@pytest.fixture(scope="session", autouse=True)
-def override_hyperion_blueapi_logging_setup():
-    with patch("mx_bluesky.hyperion.blueapi_plans.__init__._init_plan_module"):
-        yield

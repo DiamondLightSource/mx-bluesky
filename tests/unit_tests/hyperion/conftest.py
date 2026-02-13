@@ -44,6 +44,16 @@ AGAMEMNON_WAIT_INSTRUCTION = Wait.model_validate(
 )
 
 
+@pytest.fixture(autouse=True)
+def override_hyperion_blueapi_logging_setup(request):
+    log_path = Path("/tmp/logs/bluesky")
+    with patch(
+        "mx_bluesky.common.utils.log._get_logging_dirs",
+        return_value=(log_path, log_path),
+    ):
+        yield
+
+
 @pytest.fixture(scope="session")
 def executor() -> Generator[Executor, Any, Any]:
     ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix="test thread")

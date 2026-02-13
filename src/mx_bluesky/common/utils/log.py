@@ -135,7 +135,7 @@ def _get_logging_dirs(dev_mode: bool) -> tuple[Path, Path]:
     Logs are written to ./tmp/logs/bluesky if BEAMLINE environment variable is not found
 
     Args:
-        dev_mode (bool): If True, the logs will be written to /tmp/logs/bluesky and environment variables ignored
+        dev_mode (bool): If True, the logs will be written to /tmp/logs/bluesky if the environment variables are not set
     Returns:
         tuple[Path, Path]: Paths to the standard log file and to the debug log file, for the file handlers to write to
     Raises:
