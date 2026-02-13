@@ -11,6 +11,7 @@ from dodal.log import (
     integrate_bluesky_and_ophyd_logging,
     set_up_all_logging_handlers,
     set_up_debug_memory_handler,
+    set_up_info_file_handler,
 )
 from dodal.log import LOGGER as DODAL_LOGGER
 
@@ -72,10 +73,15 @@ def setup_hyperion_blueapi_logging(log_file_name: str):
     Args:
         log_file_name: Base name of the log file.
     """
-    root_logger = logging.getLogger()
+    dodal_logger = DODAL_LOGGER
     logging_path, debug_logging_path = _get_logging_dirs(False)
     set_up_debug_memory_handler(
-        root_logger, debug_logging_path, log_file_name, ERROR_LOG_BUFFER_LINES
+        dodal_logger, debug_logging_path, log_file_name, ERROR_LOG_BUFFER_LINES
+    )
+    set_up_info_file_handler(
+        dodal_logger,
+        logging_path,
+        log_file_name,
     )
 
 

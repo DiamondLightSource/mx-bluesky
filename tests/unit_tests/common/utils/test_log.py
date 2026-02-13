@@ -7,8 +7,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from dodal.log import (
+    ERROR_LOG_BUFFER_LINES,
+    set_up_all_logging_handlers,
+)
 from dodal.log import LOGGER as DODAL_LOGGER
-from dodal.log import set_up_all_logging_handlers
 
 import mx_bluesky.common.utils.log as log
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
@@ -248,3 +251,19 @@ def test_default_logging_setup_integrate_logs_flag(mock_integrate_logs: MagicMoc
         "hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True, integrate_all_logs=False
     )
     mock_integrate_logs.assert_not_called()
+
+
+@patch("mx_bluesky.common.utils.log.set_up_debug_memory_handler")
+@patch("mx_bluesky.common.utils.log.set_up_info_file_handler")
+def test_setup_hyperion_blueapi_logging_configures_debug_and_file_handlers(
+    mock_info_setup: MagicMock,
+    mock_debug_setup: MagicMock,
+    clear_and_mock_loggers,
+    tmp_path: Path,
+):
+    log.setup_hyperion_blueapi_logging("hyperion-test.log")
+    fh_emit, _ = clear_and_mock_loggers
+    mock_info_setup.assert_called_once_with(DODAL_LOGGER, tmp_path, "hyperion-test.log")
+    mock_debug_setup.assert_called_once_with(
+        DODAL_LOGGER, tmp_path, "hyperion-test.log", ERROR_LOG_BUFFER_LINES
+    )
