@@ -23,6 +23,9 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 from ....conftest import raw_params_from_file
 
 
+def always_patch_beamline_env_variable(patch_beamline_env_variable): ...
+
+
 @pytest.fixture
 def load_centre_collect_params_with_panda(tmp_path, request):
     with patch(

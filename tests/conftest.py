@@ -1728,3 +1728,8 @@ def mock_alert_service():
         create=True,
     ) as service:
         yield service
+
+
+@pytest.fixture()
+def patch_beamline_env_variable(monkeypatch):
+    monkeypatch.setenv("BEAMLINE", "dev")
