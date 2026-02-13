@@ -91,10 +91,13 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         synchrotron = _get_synchrotron(context)
         countdown = yield from bps.rd(synchrotron.machine_user_countdown)
 
+        LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
+
         if countdown < 600:
             _raise_udc_completed_alert(get_alerting_service())
             # Release the baton for orderly exit from the instruction loop
             yield from _unrequest_baton(baton)
+            raise PlanError("Synchrotron machine countdown too low")
 
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
