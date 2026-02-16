@@ -168,9 +168,9 @@ def scan_xy_data_info_for_update(
     assert dummy_params is not None
     scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=dummy_params.x_step_size_um,
-        dy_in_mm=dummy_params.y_step_size_um,
+        dy_in_mm=dummy_params.y_step_sizes_um[0],
         steps_x=dummy_params.x_steps,
-        steps_y=dummy_params.y_steps,
+        steps_y=dummy_params.y_steps[0],
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -201,9 +201,9 @@ def scan_data_infos_for_update_3d(
     assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=dummy_params.x_step_size_um,
-        dy_in_mm=dummy_params.z_step_size_um,
+        dy_in_mm=dummy_params.y_step_sizes_um[1],
         steps_x=dummy_params.x_steps,
-        steps_y=dummy_params.z_steps,
+        steps_y=dummy_params.y_steps[1],
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
