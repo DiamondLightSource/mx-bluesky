@@ -70,7 +70,11 @@ def get_empty_grid_parameters() -> GridParamUpdate:
 
 def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert {"sam_x", "sam_y", "sam_z"} == set(test_params.scan_points.keys())
+    assert all(
+        {"sam_x", "sam_y", "sam_z"} == set(scan_point.keys())
+        for scan_point in test_params.scan_points
+    )
+
     assert test_params.scan_indices == [0, 35]
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == GridscanParamConstants.EXPOSURE_TIME_S
@@ -114,7 +118,7 @@ def test_param_version(minimal_3d_gridscan_params, version: str, valid: bool):
 
 def test_robot_load_then_centre_params():
     params = {
-        "parameter_model_version": "5.0.0",
+        "parameter_model_version": "6.0.0",
         "sample_id": 123456,
         "visit": "cm12345",
         "file_name": "file_name",

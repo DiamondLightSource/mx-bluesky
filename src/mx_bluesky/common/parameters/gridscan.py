@@ -177,7 +177,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     def scan_indices(self) -> list[int]:
         """The first index of each gridscan, useful for writing nexus files/VDS"""
         _scan_indices = [0]
-        for idx in range(1, self.num_grids):
+        for idx in range(self.num_grids - 1):
             _scan_indices.append(
                 len(
                     ScanPath(self.grid_specs[idx].calculate())

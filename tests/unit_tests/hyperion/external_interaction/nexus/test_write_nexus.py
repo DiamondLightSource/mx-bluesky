@@ -187,6 +187,7 @@ def test_given_dummy_data_then_datafile_written_correctly(
 
     nexus_writer_2.create_nexus_file(np.uint16)
 
+    # Nexus writer 2 has data for a rotated grid
     for filename in [nexus_writer_2.nexus_file, nexus_writer_2.master_file]:
         with h5py.File(filename, "r") as written_nexus_file:
             assert isinstance(
@@ -195,12 +196,12 @@ def test_given_dummy_data_then_datafile_written_correctly(
             assert_x_data_stride_correct(
                 data_path, grid_scan_params, grid_scan_params.z_steps
             )
-            assert isinstance(sam_z := data_path["sam_z"], h5py.Dataset)
+            assert isinstance(sam_y := data_path["sam_y"], h5py.Dataset)
             assert_varying_axis_stride_correct(
-                sam_z[:], grid_scan_params, grid_scan_params.z_axis
+                sam_y[:], grid_scan_params, grid_scan_params.z_axis
             )
             assert_axis_data_fixed(
-                written_nexus_file, "y", grid_scan_params.y2_start_mm
+                written_nexus_file, "z", grid_scan_params.y2_start_mm
             )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
