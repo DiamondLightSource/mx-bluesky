@@ -155,3 +155,7 @@ def test_unpause_feedback_and_set_transmission_to_1_times_out_if_timeout_specifi
                 timeout_for_stable=0.1,
             )
         )
+
+
+def test_xbpm_feedback_trigger_is_watchable():
+    pass

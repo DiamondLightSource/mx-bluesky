@@ -1,7 +1,9 @@
 import asyncio
 from unittest.mock import patch
 
+import pydantic
 from bluesky import plan_stubs as bps
+from bluesky.preprocessors import run_decorator, set_run_key_decorator
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -11,14 +13,19 @@ from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from ophyd_async.core import AsyncStatus, set_mock_value
-from pydantic import BaseModel
+from dodal.log import LOGGER as DODAL_LOGGER
+from dodal.log import set_up_stream_handler
+from ophyd_async.core import (
+    observe_value,
+    set_mock_value,
+)
 
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
+from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
@@ -56,7 +63,8 @@ def clean_up_udc(
                 yield from bps.sleep(1)
 
 
-class WaitForFeedbackComposite(BaseModel):
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class WaitForFeedbackComposite:
     xbpm_feedback: XBPMFeedback
     attenuator: BinaryFilterAttenuator
 
@@ -64,6 +72,7 @@ class WaitForFeedbackComposite(BaseModel):
 def wait_for_feedback(
     devices: WaitForFeedbackComposite = inject(),
 ) -> MsgGenerator:
+    LOGGER.info("wait_for_feedback plan called...")
     set_mock_value(devices.xbpm_feedback.baton_ref().commissioning, False)  # type: ignore
     set_mock_value(devices.xbpm_feedback.pos_stable, 0)
 
@@ -71,17 +80,28 @@ def wait_for_feedback(
         await asyncio.sleep(2)
         set_mock_value(devices.xbpm_feedback.pos_stable, 1)
 
-    real_trigger = devices.xbpm_feedback.trigger
+    real_observe = observe_value
 
-    @AsyncStatus.wrap
-    async def patched_trigger():
-        await asyncio.gather(become_stable(), real_trigger())
+    async def patched_observe(signal):
+        wait_for_stable = asyncio.create_task(become_stable())
+        async for _ in real_observe(signal):
+            yield _
+        await wait_for_stable
 
     @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
         devices=devices, desired_transmission_fraction=1.0
     )
+    @set_run_key_decorator("wait_for_feedback")
+    @run_decorator()
     def inner_plan() -> MsgGenerator:
-        yield from bps.wait(5)
+        LOGGER.info("Inner plan called...")
+        yield from bps.sleep(5)
+        LOGGER.info("Finished waiting")
 
-    with patch.object(devices.xbpm_feedback, "trigger", side_effect=patched_trigger):
+    with patch(
+        "dodal.devices.xbpm_feedback.observe_value", side_effect=patched_observe
+    ):
         yield from inner_plan()
+
+
+set_up_stream_handler(DODAL_LOGGER)
