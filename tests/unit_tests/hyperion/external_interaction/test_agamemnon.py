@@ -366,7 +366,7 @@ def test_create_parameters_from_agamemnon_contains_expected_data(agamemnon_respo
         assert hyperion_params.sample_id == 6501159
         assert hyperion_params.sample_puck == 5
         assert hyperion_params.sample_pin == 4
-        assert str(hyperion_params.parameter_model_version) == "5.3.0"
+        assert str(hyperion_params.parameter_model_version) == "6.0.0"
         assert hyperion_params.select_centres.n == 1
 
 
