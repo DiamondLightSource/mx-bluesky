@@ -18,6 +18,7 @@ from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.baton import Baton
+from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zebra.zebra import Zebra
 from flask.testing import FlaskClient
 from ophyd_async.core import set_mock_value
@@ -766,7 +767,9 @@ def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown
         plan_runner = mock_create_udc_server.mock_calls[0].args[0]
         context = plan_runner.context
         baton = find_device_in_context(context, "baton", Baton)
+        synchrotron = find_device_in_context(context, "synchrotron", Synchrotron)
         set_mock_value(baton.requested_user, HYPERION_USER)
+        set_mock_value(synchrotron.machine_user_countdown, 1200)
         while len(mock_create_parameters_from_agamemnon.mock_calls) == 0:
             sleep(0.2)
         os.kill(os.getpid(), signal.SIGTERM)
