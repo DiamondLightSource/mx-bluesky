@@ -93,7 +93,7 @@ def kickoff_and_complete_gridscan(
             "omega_to_scan_spec": {
                 # These have to be cast to strings due to a bug in orsjon. See
                 # https://github.com/ijl/orjson/issues/414
-                # TODO this errors if it's a float due to bluesky stuff, do we need the omega angle to be an int?
+                # See https://github.com/DiamondLightSource/mx-bluesky/issues/1631 regarding integer cast
                 str(int(omega_starts_deg[i])): scan_points[i]
                 for i in range(len(omega_starts_deg))
             },

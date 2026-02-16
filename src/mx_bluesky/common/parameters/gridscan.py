@@ -133,17 +133,38 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     )
     x_step_size_um: PositiveFloat = Field(
         default=GridscanParamConstants.BOX_WIDTH_UM
-    )  # Think this needs to be the same for each grid too
+    )  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
 
-    # In a 3D grid scan, n_steps[0] and n_steps[1] refers to Y and Z respectively.
+    # In a 3D grid scan, y_steps[0] and y_steps[1] refers to Y and Z respectively.
     # We do an omega rotation between scanning across N dimensions to make N different axes
     y_step_sizes_um: list[PositiveFloat] = Field(
         default=[GridscanParamConstants.BOX_WIDTH_UM] * 2
     )
-    x_steps: PositiveInt  # Currently this must be the same for each grid for panda scan
+    x_steps: PositiveInt  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
     y_steps: list[PositiveInt]
     _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
-    # TODO validate that all the "per grid" things are the same length. _num_grids property can just print out length of this
+
+    @model_validator(mode="after")
+    def _check_lengths_are_same(self):
+        fields = {
+            "omega_starts_deg": self.omega_starts_deg,
+            "y_step_sizes_um": self.y_step_sizes_um,
+            "y_steps": self.y_steps,
+            "y_starts_um": self.y_starts_um,
+            "z_starts_um": self.z_starts_um,
+        }
+
+        lengths = {name: len(value) for name, value in fields.items()}
+
+        if len(lengths) != len(set(lengths)):
+            details = "\n".join(
+                f"  {name}: length={len(value)}, value={value}"
+                for name, value in fields.items()
+            )
+
+            raise ValueError("Fields must all have the same length:\n" + details)
+
+        return self
 
     @property
     @abstractmethod

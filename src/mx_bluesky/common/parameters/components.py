@@ -277,9 +277,7 @@ class WithCentreSelection(BaseModel):
 
 
 class OptionalXyzStarts(BaseModel):
-    x_start_um: float = (
-        0  # todo link to issue about X params needing to be the same for each grid
-    )
+    x_start_um: float = 0  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
     y_starts_um: list[float | None] | None = None
     z_starts_um: list[float | None] | None = None
 
