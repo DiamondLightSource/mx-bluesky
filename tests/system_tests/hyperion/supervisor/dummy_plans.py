@@ -8,10 +8,10 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 
 from mx_bluesky.common.utils.exceptions import WarningError
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 def publish_event(plan_name: str):
@@ -20,7 +20,7 @@ def publish_event(plan_name: str):
 
 
 def load_centre_collect(
-    parameters: LoadCentreCollect,
+    parameters: LoadCentreCollectParams,
     composite: LoadCentreCollectComposite = inject(),
 ) -> MsgGenerator:
     yield from bps.sleep(1)

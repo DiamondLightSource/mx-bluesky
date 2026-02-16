@@ -19,7 +19,7 @@ from bluesky_stomp.messaging import MessageContext
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
 
@@ -257,7 +257,7 @@ def test_supervisor_raises_plan_error_when_external_callbacks_watchdog_expired(
 def test_supervisor_calls_load_centre_collect(
     supervisor_runner: SupervisorRunner, tmp_path
 ):
-    params = LoadCentreCollect(
+    params = LoadCentreCollectParams(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
             tmp_path,

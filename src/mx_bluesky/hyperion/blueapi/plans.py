@@ -10,6 +10,10 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     robot_unload as _robot_unload,
 )
+from mx_bluesky.hyperion.blueapi.parameters import (
+    LoadCentreCollectParams,
+    load_centre_collect_to_internal,
+)
 from mx_bluesky.hyperion.experiment_plans import (
     load_centre_collect_full as _load_centre_collect_full,
 )
@@ -20,11 +24,11 @@ from mx_bluesky.hyperion.experiment_plans.udc_default_state import UDCDefaultDev
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     move_to_udc_default_state as _move_to_udc_default_state,
 )
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 def load_centre_collect(
-    parameters: LoadCentreCollect, composite: LoadCentreCollectComposite = inject()
+    parameters: LoadCentreCollectParams,
+    composite: LoadCentreCollectComposite = inject(),
 ) -> MsgGenerator:
     """
     Attempt a complete data collection experiment, consisting of the following:
@@ -35,7 +39,9 @@ def load_centre_collect(
     that satisfies the chosen selection function,
     move to that centre and do a collection with the specified parameters.
     """
-    yield from _load_centre_collect_full(composite, parameters)
+    yield from _load_centre_collect_full(
+        composite, load_centre_collect_to_internal(parameters)
+    )
 
 
 def robot_unload(
