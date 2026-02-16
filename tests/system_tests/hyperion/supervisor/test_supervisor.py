@@ -6,11 +6,13 @@ from os import environ, getcwd
 from pathlib import Path
 from threading import Event
 from time import sleep
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from blueapi.client.event_bus import AnyEvent, EventBusClient
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext, DataEvent
+from blueapi.service.model import TaskRequest
 from blueapi.worker import WorkerEvent, WorkerState
 from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
@@ -267,3 +269,41 @@ def test_supervisor_calls_load_centre_collect(
     supervisor_runner.run_engine(
         supervisor_runner.decode_and_execute(TEST_VISIT, [params])
     )
+
+
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.TaskMonitor.DEFAULT_TIMEOUT_S", 2)
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.get_alerting_service")
+def test_supervisor_alerts_repeatedly_when_waiting_for_beam(
+    mock_get_alerting_service: MagicMock,
+    supervisor_runner: SupervisorRunner,
+):
+    mock_alerting_service = mock_get_alerting_service.return_value
+    task_request = TaskRequest(
+        name="wait_for_feedback",
+        params={"time_for_beam_stable": 5, "time_in_plan": 1},
+        instrument_session=TEST_VISIT,
+    )
+    supervisor_runner._run_task_remotely(task_request)
+
+    mock_alerting_service.raise_alert.assert_has_calls(
+        [
+            call(
+                "Hyperion is paused waiting for beam on i03",
+                "Hyperion has been paused waiting for beam for 0 minutes.",
+                {},
+            ),
+            call(
+                "Hyperion is paused waiting for beam on i03",
+                "Hyperion has been paused waiting for beam for 0 minutes.",
+                {},
+            ),
+        ]
+    )
+
+
+def test_supervisor_alerts_with_error_and_aborts_task_when_stuck_not_waiting_for_beam():
+    pass
+
+
+def test_supervisor_no_alerts_when_not_stuck():
+    pass
