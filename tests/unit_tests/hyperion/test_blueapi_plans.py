@@ -34,7 +34,7 @@ def bluesky_context(run_engine: RunEngine):
 
 def test_load_centre_collect(bluesky_context: BlueskyContext, tmp_path: Path):
     params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
         tmp_path,
     )
     _call_blueapi_plan(
