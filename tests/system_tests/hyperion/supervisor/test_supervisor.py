@@ -26,11 +26,11 @@ from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
 
-from ....conftest import raw_params_from_file
-from ....unit_tests.hyperion.external_interaction.callbacks.test_alert_on_container_change import (
+from ....conftest import (
     TEST_CONTAINER,
     TEST_SAMPLE_ID,
     TEST_VISIT,
+    raw_params_from_file,
 )
 from .dummy_plans import WaitForFeedbackParams
 

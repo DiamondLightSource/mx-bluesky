@@ -17,6 +17,17 @@ from mx_bluesky.common.utils.log import LOGGER
 
 
 class TaskMonitor:
+    """
+    Implements a context manager that on entry sets a timer for the BlueAPI Task to be executed within the with-block.
+    The body should register on_blueapi_event as an event handler in the call to blueapi_client.run_task().
+
+    If the timer expires before task completion, we either:
+       * raise an error alert and cancel the task
+       * raise an alert and reset the timer
+    depending on whether received events indicate the task is waiting on a long-running event e.g. waiting for beam,
+    or whether it is unexpectedly stuck.
+    """
+
     DEFAULT_TIMEOUT_S = 600
     # TODO make this configurable
     FEEDBACK_STATUS_NAME = "xbpm_feedback-pos_stable"
