@@ -1,5 +1,7 @@
 """
 This module is the bluesky plan module for use with hyperion-blueapi.
+Importing this module will configure debug and info logging as a side-effect - so this module should not be
+imported directly by other components as it is intended only as the entry-point for BlueAPI.
 """
 
 from mx_bluesky.common.utils.log import setup_hyperion_blueapi_logging
