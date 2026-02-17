@@ -73,7 +73,7 @@ def robot_unload(
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
     lower_gonio: XYZStage,
-    visit: str,
+    visit: str | None,
 ):
     """Unloads the currently mounted pin into the location that it was loaded from. The
     loaded location is stored on the robot and so need not be provided.
