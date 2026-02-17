@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -27,6 +27,17 @@ metadata = {
     "metadata": {
         "visit": VISIT,
         "sample_id": SAMPLE_ID,
+        "sample_puck": SAMPLE_PUCK,
+        "sample_pin": SAMPLE_PIN,
+    },
+    "activate_callbacks": [
+        "RobotLoadISPyBCallback",
+    ],
+}
+
+metadata_unload_no_visit = {
+    "subplan_name": CONST.PLAN.ROBOT_UNLOAD,
+    "metadata": {
         "sample_puck": SAMPLE_PUCK,
         "sample_pin": SAMPLE_PIN,
     },
@@ -127,6 +138,15 @@ def unsuccessful_robot_load_plan():
     raise AssertionError("Test failure")
 
 
+@bpp.run_decorator(md=metadata_unload_no_visit)
+def robot_unload_plan(robot: BartRobot, oav: OAV, webcam: Webcam):
+    yield from bps.create(name=CONST.DESCRIPTORS.ROBOT_UPDATE)
+    yield from bps.read(robot)
+    yield from bps.read(oav.snapshot)
+    yield from bps.read(webcam)
+    yield from bps.save()
+
+
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
     autospec=True,
@@ -195,3 +215,25 @@ def test_robot_load_fails_triggers_bl_sample_status_error(
     mock_sample_handling.return_value.update_sample_status.assert_called_with(
         SAMPLE_ID, BLSampleStatus.ERROR_BEAMLINE
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
+    autospec=True,
+)
+def test_robot_unload_event_without_sample_id_and_visit_is_ignored(
+    mock_expeye: MagicMock,
+    run_engine: RunEngine,
+    robot: BartRobot,
+    oav: OAV,
+    webcam: Webcam,
+):
+    unwrapped = RobotLoadISPyBCallback()
+    callback = Mock(wraps=unwrapped)
+    run_engine.subscribe(callback)
+
+    run_engine(robot_unload_plan(robot, oav, webcam))
+    mock_expeye.return_value.start_robot_action.assert_not_called()
+    mock_expeye.return_value.update_robot_action.assert_not_called()
+    mock_expeye.return_value.end_robot_action.assert_not_called()
+    mock_expeye.return_value.update_sample_status.assert_not_called()

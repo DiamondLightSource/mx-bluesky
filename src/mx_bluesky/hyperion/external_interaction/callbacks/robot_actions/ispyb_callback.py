@@ -51,20 +51,24 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
                 f"ISPyB robot load callback received: {doc}"
             )
-            self.run_uid = doc.get("uid")
             metadata = doc.get("metadata")
             assert isinstance(metadata, dict)
-            self._sample_id = metadata["sample_id"]
-            assert isinstance(self._sample_id, int)
-            proposal, session = get_proposal_and_session_from_visit_string(
-                metadata["visit"]
-            )
-            self.action_id = self.expeye.start_robot_action(
-                "LOAD" if subplan == CONST.PLAN.ROBOT_LOAD else "UNLOAD",
-                proposal,
-                session,
-                self._sample_id,
-            )
+            self._sample_id = metadata.get("sample_id")
+            if not isinstance(self._sample_id, int):
+                ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+                    "No sample ID provided, not recording robot action in ispyb."
+                )
+            else:
+                self.run_uid = doc.get("uid")
+                proposal, session = get_proposal_and_session_from_visit_string(
+                    metadata["visit"]
+                )
+                self.action_id = self.expeye.start_robot_action(
+                    "LOAD" if subplan == CONST.PLAN.ROBOT_LOAD else "UNLOAD",
+                    proposal,
+                    session,
+                    self._sample_id,
+                )
         return super().activity_gated_start(doc)
 
     def activity_gated_descriptor(self, doc: EventDescriptor) -> EventDescriptor | None:
@@ -73,7 +77,11 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event) -> Event | None:
         event_descriptor = self.descriptors.get(doc["descriptor"])
-        if (
+        if self._sample_id is None:
+            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+                "Ignoring robot update event as no sample ID provided."
+            )
+        elif (
             event_descriptor
             and event_descriptor.get("name") == CONST.DESCRIPTORS.ROBOT_UPDATE
         ):

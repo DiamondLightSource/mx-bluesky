@@ -9,13 +9,13 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
+from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from ophyd_async.core import completed_status, set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
     common_flyscan_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
@@ -27,6 +27,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback
 from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
 )
+from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     SmargonSpeedError,
 )
@@ -123,7 +124,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture.assert_has_calls([ap_call_large, ap_call_large, ap_call_medium])
 
         mv_to_centre = call(
-            hyperion_flyscan_xrc_composite.smargon,
+            hyperion_flyscan_xrc_composite.gonio,
             0.05,
             pytest.approx(0.15),
             0.25,
@@ -149,9 +150,9 @@ class TestFlyscanXrayCentrePlan:
         hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
+        zocalo: ZocaloResults,
     ):
         hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
-        zocalo = hyperion_flyscan_xrc_composite.zocalo
         sim_run_engine.add_read_handler_for(
             zocalo.centre_of_mass, [np.array([6.0, 6.0, 6.0])]
         )
@@ -235,7 +236,7 @@ class TestFlyscanXrayCentrePlan:
         tmp_path: Path,
     ):
         sim_run_engine.add_read_handler_for(
-            fgs_composite_with_panda_pcap.smargon.x.max_velocity, 10
+            fgs_composite_with_panda_pcap.gonio.x.max_velocity, 10
         )
         simulate_xrc_result(
             sim_run_engine, fgs_composite_with_panda_pcap.zocalo, TEST_RESULT_LARGE

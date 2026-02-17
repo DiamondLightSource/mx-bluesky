@@ -43,12 +43,18 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
+from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
+    get_results_then_change_aperture_and_move_to_xtal,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
+)
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    zocalo_stage_decorator,
 )
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     setup_beamline_for_oav,
@@ -85,6 +91,7 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import (
     fix_transmission_and_exposure_time_for_current_wavelength,
 )
+from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 
@@ -133,7 +140,7 @@ def i04_default_grid_detect_and_xray_centre(
     eiger: EigerDetector = inject("eiger"),
     synchrotron: Synchrotron = inject("synchrotron"),
     zocalo: ZocaloResults = inject("zocalo"),
-    smargon: Smargon = inject("smargon"),
+    smargon: Smargon = inject("gonio"),
     detector_motion: DetectorMotion = inject("detector_motion"),
     transfocator: Transfocator = inject("transfocator"),
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
@@ -154,10 +161,10 @@ def i04_default_grid_detect_and_xray_centre(
     composite = GridDetectThenXRayCentreComposite(
         eiger,
         synchrotron,
-        zocalo,
         smargon,
         aperture_scatterguard,
         attenuator,
+        zocalo,
         backlight,
         beamstop,
         beamsize,
@@ -188,18 +195,20 @@ def i04_default_grid_detect_and_xray_centre(
 
         if not udc:
             yield from get_ready_for_oav_and_close_shutter(
-                composite.smargon,
+                composite.gonio,
                 composite.backlight,
                 composite.aperture_scatterguard,
                 composite.detector_motion,
             )
 
+    @zocalo_stage_decorator(composite.zocalo)
     @bpp.finalize_decorator(tidy_beamline)
     def _inner_grid_detect_then_xrc():
         # These callbacks let us talk to ISPyB and Nexgen. They aren't included in the common plan because
         # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
         # https://github.com/DiamondLightSource/mx-bluesky/issues/1117
-        callbacks = create_gridscan_callbacks()
+        flyscan_event_handler = XRayCentreEventHandler()
+        callbacks = *create_gridscan_callbacks(), flyscan_event_handler
 
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
@@ -219,6 +228,14 @@ def i04_default_grid_detect_and_xray_centre(
 
         try:
             yield from grid_detect_then_xray_centre_with_callbacks()
+            assert isinstance(
+                grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
+            ), "Specified grid params couldn't be found after grid detection"
+            yield from get_results_then_change_aperture_and_move_to_xtal(
+                composite,
+                grid_common_params.specified_grid_params,
+                flyscan_event_handler,
+            )
         except CrystalNotFoundError:
             yield from bps.mv(
                 smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
@@ -279,7 +296,7 @@ def construct_i04_specific_features(
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,
         xrc_composite.s4_slit_gaps,
-        xrc_composite.smargon,
+        xrc_composite.gonio,
         xrc_composite.dcm.energy_in_keV,
     ]
 
@@ -316,7 +333,6 @@ def construct_i04_specific_features(
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
-        get_xrc_results_from_zocalo=True,
     )
 
 

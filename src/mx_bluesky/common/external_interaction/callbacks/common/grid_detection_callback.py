@@ -68,10 +68,8 @@ class GridDetectionCallback(CallbackBase):
         top_left_y_px = data["oav-grid_snapshot-top_left_y"]
         y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
-        smargon_omega = data["smargon-omega"]
-        current_xyz = np.array(
-            [data["smargon-x"], data["smargon-y"], data["smargon-z"]]
-        )
+        gonio_omega = data["gonio-omega"]
+        current_xyz = np.array([data["gonio-x"], data["gonio-y"], data["gonio-z"]])
 
         centre_of_first_box = (
             x_of_centre_of_first_box_px,
@@ -89,7 +87,7 @@ class GridDetectionCallback(CallbackBase):
 
         position_grid_start_mm = calculate_x_y_z_of_pixel(
             current_xyz,
-            smargon_omega,
+            gonio_omega,
             centre_of_first_box,
             (beam_x, beam_y),
             (microns_per_pixel_x, microns_per_pixel_y),
@@ -98,19 +96,19 @@ class GridDetectionCallback(CallbackBase):
         LOGGER.info(f"Calculated start position {position_grid_start_mm}")
 
         # If data is taken at omega=~0 then it gives us x-y info, at omega=~-90 it is x-z
-        if abs(smargon_omega) < self.OMEGA_TOLERANCE:
+        if abs(gonio_omega) < self.OMEGA_TOLERANCE:
             self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
             self.start_positions_um["y"] = position_grid_start_mm[1] * 1000
             self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
             self.box_numbers["y"] = data["oav-grid_snapshot-num_boxes_y"]
-        elif abs(smargon_omega + 90) < self.OMEGA_TOLERANCE:
+        elif abs(gonio_omega + 90) < self.OMEGA_TOLERANCE:
             self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
             self.start_positions_um["z"] = position_grid_start_mm[2] * 1000
             self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
             self.box_numbers["z"] = data["oav-grid_snapshot-num_boxes_y"]
         else:
             raise ValueError(
-                f"Grid detection only works at omegas of 0 or -90, omega of {smargon_omega} given."
+                f"Grid detection only works at omegas of 0 or -90, omega of {gonio_omega} given."
             )
 
         self.x_step_size_um = box_width_px * microns_per_pixel_x

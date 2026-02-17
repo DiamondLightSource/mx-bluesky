@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from mx_bluesky.common.parameters.components import (
     TopNByMaxCountForEachSampleSelection,
 )
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     RotationScanPerSweep,
@@ -86,6 +87,23 @@ POS_MED = {
 
 
 @pytest.fixture
+def load_centre_collect_params_with_patched_create_params(
+    load_centre_collect_params: LoadCentreCollect,
+    test_fgs_params: SpecifiedThreeDGridScan,
+):
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.create_parameters_for_grid_detection"
+    ) as mock_create_params:
+        load_centre_collect_params.robot_load_then_centre.set_specified_grid_params(
+            test_fgs_params
+        )
+        mock_create_params.return_value = (
+            load_centre_collect_params.robot_load_then_centre
+        )
+        yield
+
+
+@pytest.fixture
 def composite(
     robot_load_composite,
     fake_create_rotation_devices,
@@ -108,24 +126,12 @@ def composite(
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-x-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-y-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-z-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-x-high_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-y-high_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-z-high_limit_travel"
-    )
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-x-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-y-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-z-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-x-high_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-y-high_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-z-high_limit_travel")
     sim_run_engine.add_read_handler_for(
         composite.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
@@ -334,7 +340,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     return_value=iter(
         [
             Msg(
@@ -357,7 +363,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
     mock_rotation_scan: MagicMock,
     mock_full_robot_load_plan: MagicMock,
-    mock_pin_centre_then_xray_centre_plan: MagicMock,
+    mock_pin_centre_then_gridscan_plan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -382,19 +388,19 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-x"
+    #     and msg.obj.name == "gonio-x"
     #     and msg.args[0] == 0.1,
     # )
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-y"
+    #     and msg.obj.name == "gonio-y"
     #     and msg.args[0] == 0.2,
     # )
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-z"
+    #     and msg.obj.name == "gonio-z"
     #     and msg.args[0] == 0.3,
     # )
     msgs = assert_message_and_return_remaining(
@@ -405,7 +411,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[1]
     assert isinstance(robot_load_energy_change_composite, RobotLoadThenCentreComposite)
     assert isinstance(robot_load_energy_change_params, RobotLoadAndEnergyChange)
-    mock_pin_centre_then_xray_centre_plan.assert_called_once()
+    mock_pin_centre_then_gridscan_plan.assert_called_once()
     mock_rotation_scan.assert_called_once()
     rotation_scan_composite = mock_rotation_scan.mock_calls[0].args[0]
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
@@ -519,7 +525,7 @@ def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.RotationScan.model_validate"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.do_plan_while_lower_gonio_at_home",
@@ -591,7 +597,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         return_value=iter(
             [
@@ -688,7 +694,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         return_value=iter(
             [
@@ -772,7 +778,7 @@ def _rotation_at(
     new=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -889,7 +895,7 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -942,7 +948,7 @@ def test_load_centre_collect_full_plan_assigns_sample_ids_to_rotations_according
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -1044,22 +1050,26 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
     MagicMock(),
 )
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.get_results_then_change_aperture_and_move_to_xtal",
+    new=MagicMock(),
+)
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     run_engine: RunEngine,
+    test_fgs_params: SpecifiedThreeDGridScan,
+    load_centre_collect_params_with_patched_create_params,
 ):
-    load_centre_collect_params.robot_load_then_centre.box_size_um = 25
-
     run_engine(
         load_centre_collect_full(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == 25
+    assert detect_grid_call.args[1].box_size_um == test_fgs_params.box_size_um
 
 
 @patch(
@@ -1078,9 +1088,9 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
 ):
-    sim_run_engine.add_read_handler_for(composite.smargon.x, 1.1)
-    sim_run_engine.add_read_handler_for(composite.smargon.y, 2.2)
-    sim_run_engine.add_read_handler_for(composite.smargon.z, 3.3)
+    sim_run_engine.add_read_handler_for(composite.gonio.x, 1.1)
+    sim_run_engine.add_read_handler_for(composite.gonio.y, 2.2)
+    sim_run_engine.add_read_handler_for(composite.gonio.z, 3.3)
 
     sim_run_engine.simulate_plan(
         load_centre_collect_full(

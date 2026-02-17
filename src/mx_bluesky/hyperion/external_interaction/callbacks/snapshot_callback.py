@@ -42,7 +42,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
     """
     Callback that monitors for OAV_ROTATION_SNAPSHOT_TRIGGERED events and
     draws a crosshair at the beam centre, saving the snapshot to a file.
-    The callback assumes an OAV device "oav" and Smargon "smargon"
+    The callback assumes an OAV device "oav" and Smargon "gonio"
     Examples:
         Take a rotation snapshot at the current location
     >>> from bluesky.run_engine import RunEngine
@@ -144,11 +144,11 @@ class BeamDrawingCallback(PlanReactiveCallback):
             ),
             snapshot_path=base_snapshot_path,
             sample_pos_mm=(
-                data.get("smargon-x", 0.0),
-                data.get("smargon-y", 0.0),
-                data.get("smargon-z", 0.0),
+                data.get("gonio-x", 0.0),
+                data.get("gonio-y", 0.0),
+                data.get("gonio-z", 0.0),
             ),
-            omega=round(data.get("smargon-omega", 0.0)),
+            omega=round(data.get("gonio-omega", 0.0)),
         )
 
     def _handle_grid_snapshot(self, doc: Event):
@@ -165,9 +165,9 @@ class BeamDrawingCallback(PlanReactiveCallback):
                 "Insufficient base gridscan snapshots to generate required rotation snapshots"
             )
             current_sample_pos_mm = (
-                data["smargon-x"],
-                data["smargon-y"],
-                data["smargon-z"],
+                data["gonio-x"],
+                data["gonio-y"],
+                data["gonio-z"],
             )
             CALLBACK_LOGGER.info(
                 f"Generating snapshot at {current_sample_pos_mm} from base snapshot {snapshot_info}"
