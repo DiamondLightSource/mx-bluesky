@@ -18,6 +18,7 @@ from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
 from bluesky_stomp.messaging import MessageContext
 
+from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup
@@ -27,8 +28,11 @@ from mx_bluesky.hyperion.supervisor import SupervisorRunner
 
 from ....conftest import raw_params_from_file
 from ....unit_tests.hyperion.external_interaction.callbacks.test_alert_on_container_change import (
+    TEST_CONTAINER,
+    TEST_SAMPLE_ID,
     TEST_VISIT,
 )
+from .dummy_plans import WaitForFeedbackParams
 
 BLUEAPI_SERVER_CONFIG = (
     "tests/system_tests/hyperion/supervisor/system_test_blueapi.yaml"
@@ -91,7 +95,9 @@ def supervisor_runner_no_ping(
     mock_bluesky_context: BlueskyContext,
     client_config: ApplicationConfig,
     mock_blueapi_server,
+    monkeypatch,
 ):
+    monkeypatch.setenv("BEAMLINE", "i03")
     runner = SupervisorRunner(mock_bluesky_context, client_config, True)
     timeout = time.monotonic() + 30
     while time.monotonic() < timeout:
@@ -271,16 +277,23 @@ def test_supervisor_calls_load_centre_collect(
     )
 
 
-@patch("mx_bluesky.hyperion.supervisor._task_monitor.TaskMonitor.DEFAULT_TIMEOUT_S", 2)
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.TaskMonitor.DEFAULT_TIMEOUT_S", 1)
 @patch("mx_bluesky.hyperion.supervisor._task_monitor.get_alerting_service")
 def test_supervisor_alerts_repeatedly_when_waiting_for_beam(
     mock_get_alerting_service: MagicMock,
     supervisor_runner: SupervisorRunner,
 ):
     mock_alerting_service = mock_get_alerting_service.return_value
+    params = WaitForFeedbackParams(
+        time_for_beam_stable=2.5,
+        time_in_plan=0.5,
+        sample_id=TEST_SAMPLE_ID,
+        visit=TEST_VISIT,
+        sample_puck=TEST_CONTAINER,
+    )
     task_request = TaskRequest(
         name="wait_for_feedback",
-        params={"time_for_beam_stable": 5, "time_in_plan": 1},
+        params={"parameters": params},
         instrument_session=TEST_VISIT,
     )
     supervisor_runner._run_task_remotely(task_request)
@@ -288,22 +301,87 @@ def test_supervisor_alerts_repeatedly_when_waiting_for_beam(
     mock_alerting_service.raise_alert.assert_has_calls(
         [
             call(
-                "Hyperion is paused waiting for beam on i03",
+                "Hyperion is paused waiting for beam on i03.",
                 "Hyperion has been paused waiting for beam for 0 minutes.",
-                {},
+                {
+                    Metadata.SAMPLE_ID: TEST_SAMPLE_ID,
+                    Metadata.VISIT: TEST_VISIT,
+                    Metadata.CONTAINER: TEST_CONTAINER,
+                },
             ),
             call(
-                "Hyperion is paused waiting for beam on i03",
+                "Hyperion is paused waiting for beam on i03.",
                 "Hyperion has been paused waiting for beam for 0 minutes.",
-                {},
+                {
+                    Metadata.SAMPLE_ID: TEST_SAMPLE_ID,
+                    Metadata.VISIT: TEST_VISIT,
+                    Metadata.CONTAINER: TEST_CONTAINER,
+                },
             ),
         ]
     )
 
 
-def test_supervisor_alerts_with_error_and_aborts_task_when_stuck_not_waiting_for_beam():
-    pass
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.TaskMonitor.DEFAULT_TIMEOUT_S", 1)
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.get_alerting_service")
+def test_supervisor_alerts_with_error_and_aborts_task_when_stuck_not_waiting_for_beam(
+    mock_get_alerting_service: MagicMock,
+    supervisor_runner: SupervisorRunner,
+):
+    mock_alerting_service = mock_get_alerting_service.return_value
+    params = WaitForFeedbackParams(
+        time_for_beam_stable=0.5,
+        time_in_plan=1.5,
+        sample_id=TEST_SAMPLE_ID,
+        visit=TEST_VISIT,
+        sample_puck=TEST_CONTAINER,
+    )
+
+    task_request = TaskRequest(
+        name="wait_for_feedback",
+        params={"parameters": params},
+        instrument_session=TEST_VISIT,
+    )
+
+    with pytest.raises(PlanError, match="Exception raised during plan execution"):
+        supervisor_runner._run_task_remotely(task_request)
+
+    mock_alerting_service.raise_alert.assert_has_calls(
+        [
+            call(
+                "UDC encountered an error on i03",
+                "Hyperion Supervisor detected that BlueAPI was stuck for 1 seconds.",
+                {
+                    Metadata.SAMPLE_ID: TEST_SAMPLE_ID,
+                    Metadata.VISIT: TEST_VISIT,
+                    Metadata.CONTAINER: TEST_CONTAINER,
+                },
+            ),
+        ]
+    )
 
 
-def test_supervisor_no_alerts_when_not_stuck():
-    pass
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.TaskMonitor.DEFAULT_TIMEOUT_S", 1)
+@patch("mx_bluesky.hyperion.supervisor._task_monitor.get_alerting_service")
+def test_supervisor_no_alerts_when_not_stuck(
+    mock_get_alerting_service: MagicMock,
+    supervisor_runner: SupervisorRunner,
+):
+    mock_alerting_service = mock_get_alerting_service.return_value
+    params = WaitForFeedbackParams(
+        time_for_beam_stable=0.5,
+        time_in_plan=0.5,
+        sample_id=TEST_SAMPLE_ID,
+        visit=TEST_VISIT,
+        sample_puck=TEST_CONTAINER,
+    )
+
+    task_request = TaskRequest(
+        name="wait_for_feedback",
+        params={"parameters": params},
+        instrument_session=TEST_VISIT,
+    )
+
+    supervisor_runner._run_task_remotely(task_request)
+
+    mock_alerting_service.raise_alert.assert_not_called()

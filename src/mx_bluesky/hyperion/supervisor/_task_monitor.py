@@ -7,6 +7,7 @@ from blueapi.client.event_bus import AnyEvent
 from blueapi.service.model import TaskRequest
 from blueapi.worker import ProgressEvent
 from dodal.utils import get_beamline_name
+from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.alerting import (
     Metadata,
@@ -24,17 +25,18 @@ class TaskMonitor:
         self._task_request = task_request
         self._alerting_service = get_alerting_service()
         self._blueapi_client = blueapi_client
-        self._is_waiting_for_beam: bool
+        self._is_waiting_for_beam: bool = False
+        self._timer = None
 
     def __enter__(self) -> Self:
-        self._timer = Timer(self.DEFAULT_TIMEOUT_S, self.on_timeout_expiry)
         self._is_waiting_for_beam = False
         self._start_time = time.monotonic()
-        self._timer.start()
+        self._reset_timer()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._timer.cancel()
+        if self._timer:
+            self._timer.cancel()
 
     def on_blueapi_event(self, event: AnyEvent):
         match event:
@@ -46,7 +48,10 @@ class TaskMonitor:
                 ]
                 if feedback_statuses:
                     feedback_status = feedback_statuses[0]
-                    self._is_waiting_for_beam = not feedback_status.done
+                    waiting_for_beam = feedback_status.current != feedback_status.target
+                    if self._is_waiting_for_beam != waiting_for_beam:
+                        self._reset_timer()
+                        self._is_waiting_for_beam = waiting_for_beam
                     LOGGER.info(
                         f"Hyperion blueapi reports feedback status = {self._is_waiting_for_beam}"
                     )
@@ -57,7 +62,13 @@ class TaskMonitor:
             self._raise_alert_collection_is_stuck()
         else:
             self._raise_alert_collection_is_waiting_for_beam()
-            self._timer.start()
+            self._reset_timer()
+
+    def _reset_timer(self):
+        if self._timer:
+            self._timer.cancel()
+        self._timer = Timer(self.DEFAULT_TIMEOUT_S, self.on_timeout_expiry)
+        self._timer.start()
 
     def _raise_alert_collection_is_stuck(self):
         beamline = get_beamline_name("")
@@ -79,12 +90,19 @@ class TaskMonitor:
 
     def _extract_metadata(self):
         match self._task_request.params:
-            case {"sample_id": sample_id, "visit": visit, "sample_puck": container}:
-                return {
-                    Metadata.SAMPLE_ID: sample_id,
-                    Metadata.VISIT: visit,
-                    Metadata.CONTAINER: container,
-                }
+            case {"parameters": parameters}:
+                if isinstance(parameters, BaseModel):
+                    match parameters.model_dump():
+                        case {
+                            "sample_id": sample_id,
+                            "visit": visit,
+                            "sample_puck": container,
+                        }:
+                            return {
+                                Metadata.SAMPLE_ID: sample_id,
+                                Metadata.VISIT: visit,
+                                Metadata.CONTAINER: container,
+                            }
         return {}
 
     def _cancel_request(self):

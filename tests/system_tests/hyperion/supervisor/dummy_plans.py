@@ -24,8 +24,11 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.common.utils.exceptions import WarningError
-from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.blueapi.parameters import (
+    HyperionParam,
+    LoadCentreCollectParams,
+)
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
@@ -69,9 +72,16 @@ class WaitForFeedbackComposite:
     attenuator: BinaryFilterAttenuator
 
 
+class WaitForFeedbackParams(HyperionParam):
+    time_for_beam_stable: float
+    time_in_plan: float
+    visit: str
+    sample_id: int
+    sample_puck: int
+
+
 def wait_for_feedback(
-    time_for_beam_stable: int,
-    time_in_plan: int,
+    parameters: WaitForFeedbackParams,
     devices: WaitForFeedbackComposite = inject(),
 ) -> MsgGenerator:
     LOGGER.info("wait_for_feedback plan called...")
@@ -79,7 +89,7 @@ def wait_for_feedback(
     set_mock_value(devices.xbpm_feedback.pos_stable, 0)
 
     async def become_stable():
-        await asyncio.sleep(time_for_beam_stable)
+        await asyncio.sleep(parameters.time_for_beam_stable)
         set_mock_value(devices.xbpm_feedback.pos_stable, 1)
 
     real_observe = observe_value
@@ -97,7 +107,7 @@ def wait_for_feedback(
     @run_decorator()
     def inner_plan() -> MsgGenerator:
         LOGGER.info("Inner plan called...")
-        yield from bps.sleep(time_in_plan)
+        yield from bps.sleep(parameters.time_in_plan)
         LOGGER.info("Finished waiting")
 
     with patch(
