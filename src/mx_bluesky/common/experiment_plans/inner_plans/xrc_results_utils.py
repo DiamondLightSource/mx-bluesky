@@ -71,28 +71,19 @@ def fetch_xrc_results_from_zocalo(
 
 def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreResult:
     coms = []
-    if params.num_grids % 2 == 0:
+    assert params.num_grids % 2 == 0, (
         "XRC results in commissioning mode currently only works for an even number of grids"
+    )
 
-        for grid in range(int(params.num_grids / 2)):
-            # For even number of grids, Z steps are actually the even indexed y steps
-            coms.append(
-                [
-                    params.x_steps / 2,
-                    params.y_steps[2 * grid] / 2,
-                    params.y_steps[2 * grid + 1] / 2,
-                ]
-            )
-    else:
-        # For odd number of grids, Z is fixed at the z start position
-        for grid in range(params.num_grids):
-            coms.append(
-                [
-                    params.x_steps / 2,
-                    params.y_steps[grid] / 2,
-                    params.z_starts_um[grid],
-                ]
-            )
+    for grid in range(int(params.num_grids / 2)):
+        # For even number of grids, Z steps are actually the even indexed y steps
+        coms.append(
+            [
+                params.x_steps / 2,
+                params.y_steps[2 * grid] / 2,
+                params.y_steps[2 * grid + 1] / 2,
+            ]
+        )
 
     com = [sum(x) / len(x) for x in zip(*coms, strict=True)]  # Get average
 
