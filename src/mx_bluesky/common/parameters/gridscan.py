@@ -121,6 +121,9 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
 
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/1634 for a better structure for this
+    # class
+
     omega_starts_deg: list[float] = Field(
         default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
     )
