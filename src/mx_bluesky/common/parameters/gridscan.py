@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import weakref
 from abc import abstractmethod
 from typing import Annotated, Generic, TypeVar
 
@@ -232,66 +231,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
         for grid in range(len(self.scan_points)):
             _num_images += len(self.scan_points[grid]["sam_x"])
         return _num_images
-
-    def __getitem__(self, idx: int) -> _SingleGrid:
-        if idx < 0 or idx >= self.num_grids:
-            raise IndexError(idx)
-        return _SingleGrid(self, idx)
-
-
-class _SingleGrid(Generic[GridScanParamType]):
-    """Helper class for plan code to not need to refer to an index constantly."""
-
-    def __init__(self, grids: SpecifiedGrids[GridScanParamType], idx: int):
-        self._grids_ref = weakref.ref(grids)
-        self._idx = idx
-
-    @property
-    def _grids(self) -> SpecifiedGrids[GridScanParamType]:
-        grids = self._grids_ref()
-        if grids is None:
-            raise ReferenceError("Parent SpecifiedGrids object no longer exists")
-        return grids
-
-    @property
-    def idx(self) -> int:
-        return self._idx
-
-    # ---- Per-grid scalar accessors ----
-
-    @property
-    def x_steps(self) -> int:
-        return self._grids.x_steps
-
-    @property
-    def y_steps(self) -> int:
-        return self._grids.y_steps[self._idx]
-
-    @property
-    def x_step_size_um(self) -> float:
-        return self._grids.x_step_size_um
-
-    @property
-    def y_step_size_um(self) -> float:
-        return self._grids.y_step_sizes_um[self._idx]
-
-    @property
-    def omega_start_deg(self) -> float | None:
-        return self._grids.omega_starts_deg[self._idx]
-
-    # ---- Derived scan objects ----
-
-    @property
-    def grid_spec(self) -> Product[str]:
-        return self._grids.grid_specs[self._idx]
-
-    @property
-    def grid_points(self):
-        return ScanPath(self.grid_spec.calculate()).consume().midpoints
-
-    @property
-    def num_images(self) -> int:
-        return len(self.grid_points["sam_x"])
 
 
 class SpecifiedThreeDGridScan(
