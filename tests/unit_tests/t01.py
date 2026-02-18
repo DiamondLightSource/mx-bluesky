@@ -8,6 +8,7 @@ See Also:
 
 from dodal.device_manager import DeviceManager
 from dodal.devices.baton import Baton
+from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.utils import BeamlinePrefix, get_beamline_name
 
@@ -23,6 +24,14 @@ def baton() -> Baton:
     If this is called when already instantiated in i03, it will return the existing object.
     """
     return Baton(f"{PREFIX.beamline_prefix}-CS-BATON-01:")
+
+
+@devices.factory()
+def synchrotron() -> Synchrotron:
+    """Get the i03 Synchrotron device, instantiate it if it hasn't already been.
+    If this is called when already instantiated in i03, it will return the existing object.
+    """
+    return Synchrotron()
 
 
 @devices.factory()
