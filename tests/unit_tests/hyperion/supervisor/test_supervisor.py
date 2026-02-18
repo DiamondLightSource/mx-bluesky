@@ -1,6 +1,6 @@
 from concurrent.futures import Executor
 from threading import Event
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
 from blueapi.client.event_bus import BlueskyStreamingError
@@ -47,21 +47,37 @@ def runner(mock_bluesky_context, blueapi_config):
         yield runner
 
 
-def test_decode_and_execute_load_centre_collect(
+@patch("mx_bluesky.hyperion.supervisor._supervisor.TaskMonitor")
+def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task(
+    mock_task_monitor: MagicMock,
     mock_blueapi_client: MagicMock,
     runner: SupervisorRunner,
     external_load_centre_collect_params,
 ):
+    parent = MagicMock()
+    parent.attach_mock(mock_blueapi_client, "blueapi_client")
+    parent.attach_mock(mock_task_monitor, "TaskMonitor")
+    parent.attach_mock(mock_task_monitor.return_value, "task_monitor")
+
     runner.context.run_engine(
         runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
     )
 
-    mock_blueapi_client.run_task.assert_called_once_with(
-        TaskRequest(
-            name="load_centre_collect",
-            params={"parameters": external_load_centre_collect_params},
-            instrument_session=TEST_VISIT,
-        )
+    expected_task_request = TaskRequest(
+        name="load_centre_collect",
+        params={"parameters": external_load_centre_collect_params},
+        instrument_session=TEST_VISIT,
+    )
+    parent.assert_has_calls(
+        [
+            call.TaskMonitor(mock_blueapi_client, expected_task_request),
+            call.task_monitor.__enter__(),
+            call.blueapi_client.run_task(
+                expected_task_request,
+                on_event=mock_task_monitor.return_value.__enter__.return_value.on_blueapi_event,
+            ),
+            call.task_monitor.__exit__(None, None, None),
+        ]
     )
 
 
@@ -110,7 +126,8 @@ def test_decode_and_execute_default_state(
     mock_blueapi_client.run_task.assert_called_once_with(
         TaskRequest(
             name="move_to_udc_default_state", params={}, instrument_session=TEST_VISIT
-        )
+        ),
+        on_event=ANY,
     )
 
 
@@ -133,7 +150,8 @@ def test_decode_and_execute_udc_cleanup(
             name="clean_up_udc",
             params={"visit": TEST_VISIT},
             instrument_session=TEST_VISIT,
-        )
+        ),
+        on_event=ANY,
     )
 
 
@@ -148,7 +166,7 @@ def test_current_status_set_to_busy_during_execution(
         assert runner.current_status == Status.BUSY
         check_complete.set()
 
-    def wait_for_check(_):
+    def wait_for_check(*args, **kwargs):
         task_executing.set()
         check_complete.wait(1)
 
@@ -230,7 +248,7 @@ def test_shutdown_sends_abort_to_blueapi_client_when_running_then_aborts(
         task_running.wait(1)
         runner.shutdown()
 
-    def mock_run_task(_):
+    def mock_run_task(*args, **kwargs):
         task_running.set()
         remote_abort_requested.wait(1)
         raise BlueskyStreamingError("Simulated abort exception")
