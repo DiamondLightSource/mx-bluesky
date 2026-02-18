@@ -169,7 +169,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
 
     @property
     def num_grids(self):
-        return len(self.y_steps)  # TODO this should probably just be an input
+        return len(self.y_steps)
 
     def __len__(self) -> int:
         return self.num_grids
@@ -302,24 +302,13 @@ class SpecifiedThreeDGridScan(
     """Parameters representing a so-called 3D grid scan, which consists of doing a
     gridscan in X and Y, followed by one in X and Z."""
 
-    # TODO: specified grids just show X and Y. Here we should be using z_steps = specifiedgrid.y_steps[1]
-    # sort this out when dealing with external/internal params
-
-    # TODO validate that grid is length 2 on creation here
-
-    # For 3D scans, number of Z steps and Z step size is the same as y_steps[1] and
-    # y_step_sizes_um[1]. It can be helpful to think of it as both the Z axis and as
-    # the second 2D scan, so we put some validation logic to allow you to use either name.
-    # Maybe should just refer to one name instead of having this validation logic?
-
-    # TODO make a better validator about all the lists being length 2
-
     @model_validator(mode="after")
     def validate_y_and_z_axes(self):
+        _err_str = "must be length 2 for 3D scans"
         if len(self.y_steps) != 2:
-            raise ValueError(f"{self.y_steps=} must be length 2 for 3D scans")
+            raise ValueError(f"{self.y_steps=} {_err_str}")
         if len(self.y_step_sizes_um) != 2:
-            raise ValueError(f"{self.y_step_sizes_um=} must be length 2 for 3D scans")
+            raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
         return self
 
     @property

@@ -45,9 +45,9 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
     # Relative to common grid scan, stub offsets are defined by config server
     @property
     def fast_gridscan_params(self) -> ZebraGridScanParamsThreeD:
-        """Currently, x steps  must be the same for each grid. Validate this somewhere?
-        Same for x and y step sizes. TODO Better is probably to not make it a list at all...
-
+        """During 3D grid scans, there is an omega rotation before the second grid,
+        transforming Y -> Z axes, so use the second element of the Y params to set
+        Z params on the 3D grid scan device.
         """
         return ZebraGridScanParamsThreeD(
             x_steps=self.x_steps,

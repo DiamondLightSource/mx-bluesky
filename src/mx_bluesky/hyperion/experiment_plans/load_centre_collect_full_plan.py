@@ -177,7 +177,6 @@ def _x_coordinate(sample_and_location: tuple[int, np.ndarray]) -> float:
     return sample_and_location[1][0]  # type: ignore
 
 
-# todo rotation scan params shouldnt be tied to our grid scan params
 def rotation_scan_generator(
     is_alternating: bool,
 ) -> Generator[
