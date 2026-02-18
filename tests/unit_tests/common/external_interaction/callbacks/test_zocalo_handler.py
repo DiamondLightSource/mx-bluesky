@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from dodal.devices.zocalo import ZocaloStartInfo
@@ -222,10 +222,31 @@ class TestZocaloHandler:
         "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         autospec=True,
     )
-    def test_handler_raises_on_the_end_of_a_plan_with_no_depositions(
+    def test_handler_raises_on_the_end_of_a_plan_with_no_depositions_and_still_resets_generator(
         self, zocalo_trigger: ZocaloTrigger
     ):
-        zocalo_handler = self._setup_handler()
+        def info_generator():
+            _ = yield
+            info1 = ZocaloStartInfo(
+                ispyb_dcid=1,
+                filename="blah",
+                start_frame_index=0,
+                number_of_frames=10,
+                message_index=1,
+            )
+            yield [info1]
+
+        info_generator_factory = Mock()
+        info_generator_factory.side_effect = info_generator
+
+        zocalo_handler = ZocaloCallback(
+            "test_plan_name", "test_env", info_generator_factory
+        )
+
         zocalo_handler.start(EXPECTED_RUN_START_MESSAGE)  # type: ignore
+        assert info_generator_factory.call_count == 1
+
         with pytest.raises(ISPyBDepositionNotMadeError):
             zocalo_handler.stop(EXPECTED_RUN_END_MESSAGE)  # type: ignore
+
+        assert info_generator_factory.call_count == 2
