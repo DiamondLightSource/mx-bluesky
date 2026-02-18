@@ -31,6 +31,10 @@ from zmq.utils.monitor import recv_monitor_message
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    fetch_xrc_results_from_zocalo,
+    zocalo_stage_decorator,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_decorator,
 )
@@ -233,11 +237,15 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         fgs_composite_for_fake_zocalo, dummy_params
     )
 
+    @zocalo_stage_decorator(fgs_composite_for_fake_zocalo.zocalo)
     @ispyb_activation_decorator(dummy_params)
     def wrapped_xray_centre():
         yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
+        )
+        yield from fetch_xrc_results_from_zocalo(
+            fgs_composite_for_fake_zocalo.zocalo, dummy_params
         )
 
     run_engine(wrapped_xray_centre())
