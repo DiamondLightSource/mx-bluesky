@@ -251,6 +251,9 @@ class SpecifiedThreeDGridScan(
             raise ValueError(f"{self.y_steps=} {_err_str}")
         if len(self.y_step_sizes_um) != 2:
             raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
+        if len(self.omega_starts_deg) != 2:
+            raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
+
         return self
 
     @property
