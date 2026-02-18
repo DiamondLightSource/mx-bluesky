@@ -36,6 +36,6 @@ class SpecifiedTwoDGridScan(
         if len(self.y_step_sizes_um) != 1:
             raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
         if len(self.omega_starts_deg) != 1:
-            raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
+            raise ValueError(f"{self.omega_starts_deg=} {_err_str}")
 
         return self
