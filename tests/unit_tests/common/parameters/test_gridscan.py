@@ -78,6 +78,8 @@ def test_specified_grids_validation_error(
     "y_starts_um, z_starts_um, omega_starts_deg, y_step_sizes_um, y_steps, should_raise",
     [
         ([1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], True),
+        ([1, 1], [1, 1], [1, 1], [1, 1, 1], [1, 1], False),
+        ([1, 1], [1, 1], [1, 1, 1], [1, 1], [1, 1], False),
         ([1, 1], [1, 1], [1, 1], [1, 1], [1, 1], False),
     ],
 )
