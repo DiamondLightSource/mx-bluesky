@@ -24,5 +24,5 @@ class SpecifiedTwoDGridScan(
             z1_start_mm=self.z_starts_um[0] / 1000,
             set_stub_offsets=self._set_stub_offsets,
             transmission_fraction=0.5,
-            dwell_time_ms=self.exposure_time_s,
+            dwell_time_ms=self.exposure_time_s * 1000,
         )
