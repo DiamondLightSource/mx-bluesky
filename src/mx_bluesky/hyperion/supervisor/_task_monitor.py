@@ -29,7 +29,6 @@ class TaskMonitor:
     """
 
     DEFAULT_TIMEOUT_S = 600
-    # TODO make this configurable
     FEEDBACK_STATUS_NAME = "xbpm_feedback-pos_stable"
 
     def __init__(self, blueapi_client: BlueapiClient, task_request: TaskRequest):
