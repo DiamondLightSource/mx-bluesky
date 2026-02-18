@@ -102,11 +102,7 @@ class GenericGrid(
             directory=self.storage_directory,
             prefix=self.file_name,
             detector_distance=self.detector_distance_mm,
-            omega_start=0
-            if not self.omega_starts_deg
-            else self.omega_starts_deg[
-                0
-            ],  # This value is probably a lie after this PR... Could it be stored somewhere else? Should be an experiment param, not detector
+            omega_start=0,  # Metadata we set on detector isn't currently accurate, but also not used downstream
             omega_increment=0,
             num_images_per_trigger=1,
             num_triggers=self.num_images,
@@ -117,9 +113,7 @@ class GenericGrid(
         )
 
 
-PositiveInt = Annotated[
-    int, Field(gt=0)
-]  # todo test this actually validates as expected
+PositiveInt = Annotated[int, Field(gt=0)]
 PositiveFloat = Annotated[float, Field(gt=0)]
 
 
@@ -154,9 +148,9 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
             "z_starts_um": self.z_starts_um,
         }
 
-        lengths = {name: len(value) for name, value in fields.items()}
-
-        if len(lengths) != len(set(lengths)):
+        name_and_length = {name: len(value) for name, value in fields.items()}
+        lengths = name_and_length.values()
+        if len(set(lengths)) != 1:
             details = "\n".join(
                 f"  {name}: length={len(value)}, value={value}"
                 for name, value in fields.items()

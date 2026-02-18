@@ -106,9 +106,6 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.pin_tip_centre_plan",
     autospec=True,
 )
@@ -369,9 +366,6 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 
 
 @pytest.mark.parametrize("transmission_frac", [1, 0.5, 0.25])
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-)
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.pin_tip_centre_plan"
 )
