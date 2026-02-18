@@ -1,14 +1,16 @@
 import bluesky.plan_stubs as bps
 from dodal.devices.zebra.zebra import Zebra
 
+from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
+
 ZEBRA_STATUS_TIMEOUT = 30
 
 
 # Control Eiger from motion controller. Fast shutter is configured in GDA
-def setup_zebra_for_xrc_flyscan(
+def setup_zebra_for_gridscan(
     zebra: Zebra,
     ttl_detector: int | None = None,
-    group="setup_zebra_for_xrc",
+    group=PlanGroupCheckpointConstants.SETUP_ZEBRA_FOR_GRIDSCAN,
     wait=True,
 ):
     """
@@ -27,12 +29,12 @@ def setup_zebra_for_xrc_flyscan(
 def tidy_up_zebra_after_gridscan(
     zebra: Zebra,
     ttl_detector: int | None = None,
-    group="tidy_up_vmxm_zebra_after_gridscan",
+    group=PlanGroupCheckpointConstants.TIDY_ZEBRA_AFTER_GRIDSCAN,
     wait=False,
 ):
+    """Revert zebra to state expected by GDA"""
     ttl_detector = ttl_detector or zebra.mapping.outputs.TTL_EIGER
 
-    """# Revert zebra to state expected by GDA"""
     yield from bps.abs_set(
         zebra.output.out_pvs[ttl_detector],
         zebra.mapping.sources.OR1,

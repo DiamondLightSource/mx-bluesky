@@ -1,25 +1,22 @@
 from functools import partial
 
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
-from dodal.beamlines.i02_1 import SampleMotors, ZebraFastGridScanTwoD
+from dodal.beamlines.i02_1 import ZebraFastGridScanTwoD
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params_plan,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
 
 from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
-    setup_zebra_for_xrc_flyscan,
+    setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.beamlines.i02_1.parameters.gridscan import SpecifiedTwoDGridScan
@@ -115,7 +112,7 @@ def construct_i02_1_specific_features(
 
 
 def _zebra_triggering_setup(fgs_composite: FlyScanXRayCentreComposite, _):
-    yield from setup_zebra_for_xrc_flyscan(fgs_composite.zebra)
+    yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
 
 def _tidy_plan(
@@ -125,42 +122,17 @@ def _tidy_plan(
     yield from tidy_up_zebra_after_gridscan(fgs_composite.zebra)
 
 
-def i02_1_flyscan_xray_centre(
+def i02_1_gridscan_plan(
     parameters: SpecifiedTwoDGridScan,
-    eiger: EigerDetector = inject("eiger"),
-    zebra_fast_grid_scan: ZebraFastGridScanTwoD = inject("ZebraFastGridScanTwoD"),
-    synchrotron: Synchrotron = inject("synchrotron"),
-    zebra: Zebra = inject("zebra"),
-    gonio: SampleMotors = inject("goniometer"),
-    attenuator: ReadOnlyAttenuator = inject("attenuator"),
-    dcm: DoubleCrystalMonochromatorBase = inject("dcm"),
-    flux: Flux = inject("flux"),
-    undulator: BaseUndulator = inject("undulator"),
-    s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps"),
+    composite: FlyScanXRayCentreComposite = inject(""),
 ) -> MsgGenerator:
-    """BlueAPI entry point for XRC grid scans"""
-
-    # Composites have to be made this way until https://github.com/DiamondLightSource/dodal/issues/874
-    # is done and we can properly use composite devices in BlueAPI
-    composite = FlyScanXRayCentreComposite(
-        eiger,
-        synchrotron,
-        gonio,
-        zebra,
-        zebra_fast_grid_scan,
-        dcm,
-        attenuator,
-        flux,
-        undulator,
-        s4_slit_gaps,
-    )
+    """BlueAPI entry point for i02-1 grid scans"""
 
     beamline_specific = construct_i02_1_specific_features(composite, parameters)
     callbacks = create_gridscan_callbacks()
 
     @bpp.subs_decorator(callbacks)
     def decorated_flyscan_plan():
-        yield from bps.null()
         yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)
 
     yield from decorated_flyscan_plan()
