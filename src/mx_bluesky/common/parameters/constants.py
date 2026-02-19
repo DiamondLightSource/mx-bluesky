@@ -144,6 +144,8 @@ class PlanGroupCheckpointConstants:
     READY_FOR_OAV = "ready_for_oav"
     PREPARE_APERTURE = "prepare_aperture"
     SETUP_ZEBRA_FOR_ROTATION = "setup_zebra_for_rotation"
+    SETUP_ZEBRA_FOR_GRIDSCAN = "setup_zebra_for_gridscan"
+    TIDY_ZEBRA_AFTER_GRIDSCAN = "tidy_zebra_after_gridscan"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

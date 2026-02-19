@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Annotated, Generic, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
-from dodal.devices.detector.det_dim_constants import EIGER2_X_9M_SIZE, EIGER2_X_16M_SIZE
+from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     GridScanParamsCommon,
@@ -32,7 +32,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 
 DETECTOR_SIZE_PER_BEAMLINE = {
-    "i02-1": EIGER2_X_9M_SIZE,
+    "i02-1": EIGER2_X_4M_SIZE,
     "dev": EIGER2_X_16M_SIZE,
     "i03": EIGER2_X_16M_SIZE,
     "i04": EIGER2_X_16M_SIZE,
@@ -251,6 +251,9 @@ class SpecifiedThreeDGridScan(
             raise ValueError(f"{self.y_steps=} {_err_str}")
         if len(self.y_step_sizes_um) != 2:
             raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
+        if len(self.omega_starts_deg) != 2:
+            raise ValueError(f"{self.omega_starts_deg=} {_err_str}")
+
         return self
 
     @property
