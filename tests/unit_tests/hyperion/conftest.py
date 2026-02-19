@@ -22,7 +22,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.runner import BaseRunner
+from mx_bluesky.hyperion.plan_runner import PlanRunner
 from tests.conftest import (
     raw_params_from_file,
 )
@@ -150,7 +150,7 @@ def dummy_rotation_data_collection_group_info():
 
 
 def launch_test_in_runner_event_loop(
-    async_func, udc_runner: BaseRunner, executor
+    async_func, udc_runner: PlanRunner, executor
 ) -> Future:
     """Launch the async func in a separate thread because the RunEngine under
     test must run in the main thread and block our test code, and return

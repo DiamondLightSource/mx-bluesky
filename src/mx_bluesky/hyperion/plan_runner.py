@@ -5,12 +5,16 @@ from collections.abc import Sequence
 
 from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
+from bluesky.callbacks.zmq import Publisher
 from bluesky.utils import MsgGenerator
 
+from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
+    LogUidTaggingCallback,
+)
 from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.runner import BaseRunner
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 
 class PlanError(Exception):
@@ -19,12 +23,21 @@ class PlanError(Exception):
     pass
 
 
-class PlanRunner(BaseRunner):
+class PlanRunner:
     EXTERNAL_CALLBACK_POLL_INTERVAL_S = 1
     EXTERNAL_CALLBACK_WATCHDOG_TIMER_S = 60
 
     def __init__(self, context: BlueskyContext, dev_mode: bool):
-        super().__init__(context)
+        self.context: BlueskyContext = context
+        self.run_engine = context.run_engine
+        # These references are necessary to maintain liveness of callbacks because run_engine
+        # only keeps a weakref
+        self._logging_uid_tag_callback = LogUidTaggingCallback()
+        self._publisher = Publisher(f"localhost:{CONST.CALLBACK_0MQ_PROXY_PORTS[0]}")
+
+        self.run_engine.subscribe(self._logging_uid_tag_callback)
+        LOGGER.info("Connecting to external callback ZMQ proxy...")
+        self.run_engine.subscribe(self._publisher)
         self._callbacks_started = False
         self._callback_watchdog_expiry = time.monotonic()
         self.is_dev_mode = dev_mode
@@ -45,6 +58,12 @@ class PlanRunner(BaseRunner):
     @property
     @abstractmethod
     def current_status(self) -> Status:
+        pass
+
+    @abstractmethod
+    def shutdown(self):
+        """Performs orderly prompt shutdown.
+        Aborts the run engine and terminates the loop waiting for messages."""
         pass
 
     def check_external_callbacks_are_alive(self):

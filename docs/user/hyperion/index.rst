@@ -10,13 +10,11 @@ Hyperion is a service for running high throughput unattended data collection (UD
 interface, instead instructions are pulled from Agamemnon which is controlled by information obtained in ISPyB.
 
 The software supports two modes of operation:
-
-* UDC mode (experimental) where Hyperion automatically fetches instructions from Agamemnon.
-* GDA mode (where GDA fetches and decodes the Agamemnon
-  instructions). GDA mode will be removed in a future release.
-
-The mode of operation is determined by configuration using the ``gda.mx.udc.hyperion.enable`` parameter inside 
-GDA properties. See :doc:`configuration<./configuration>` for other properties that control Hyperions behavior. 
+    UDC mode (the default):
+        The software runs in UDC mode where Hyperion automatically fetches instructions from Agamemnon.
+    Blueapi mode (experimental):
+        Hyperion is launched in two processes ``hyperion-supervisor`` and ``hyperion-blueapi``. See
+        :doc:`Hyperion-BlueAPI<../../developer/hyperion/hyperion-blueapi>`
 
 Once Hyperion has received a request, either from GDA or directly from Agamemnon, it will do the following tasks:
 
