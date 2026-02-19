@@ -10,6 +10,8 @@ from dodal.log import (
     DodalLogHandlers,
     integrate_bluesky_and_ophyd_logging,
     set_up_all_logging_handlers,
+    set_up_debug_memory_handler,
+    set_up_info_file_handler,
 )
 from dodal.log import LOGGER as DODAL_LOGGER
 
@@ -66,6 +68,23 @@ def set_uid_tag(uid):
     tag_filter.run_uid = uid
 
 
+def setup_hyperion_blueapi_logging(log_file_name: str):
+    """Configure debug logging for hyperion-blueapi.
+    Args:
+        log_file_name: Base name of the log file.
+    """
+    dodal_logger = DODAL_LOGGER
+    logging_path, debug_logging_path = _get_logging_dirs(False)
+    set_up_debug_memory_handler(
+        dodal_logger, debug_logging_path, log_file_name, ERROR_LOG_BUFFER_LINES
+    )
+    set_up_info_file_handler(
+        dodal_logger,
+        logging_path,
+        log_file_name,
+    )
+
+
 def do_default_logging_setup(
     file_name: str,
     graylog_port: int,
@@ -115,26 +134,31 @@ def flush_debug_handler() -> str:
 def _get_logging_dirs(dev_mode: bool) -> tuple[Path, Path]:
     """Get the paths to write the mx_bluesky log files to.
 
-    Log location can be specified in the LOG_DIR environment variable, otherwise MX bluesky logs are written to 'dls_sw/ixx/logs/bluesky'.
-    This directory will be created if it is not found
+    Log location must be specified in the LOG_DIR environment variable,
+    and the debug log location specified in the DEBUG_LOG_DIR environment variable.
+    This directory will be created if it is not found.
 
     Logs are written to ./tmp/logs/bluesky if BEAMLINE environment variable is not found
 
+    Args:
+        dev_mode (bool): If True, the logs will be written to /tmp/logs/bluesky if the environment variables are not set
     Returns:
         tuple[Path, Path]: Paths to the standard log file and to the debug log file, for the file handlers to write to
+    Raises:
+        ValueError: If LOG_DIR or DEBUG_LOG_DIR environment variable is not set and dev_mode is False
     """
-
-    beamline = environ.get("BEAMLINE")
-
-    if beamline and not dev_mode:
-        default_logging_str = f"/dls_sw/{beamline}/logs/bluesky/"
-        default_debug_logging_str = f"/dls/tmp/{beamline}/logs/bluesky/"
+    if dev_mode:
+        logging_path = Path(environ.get("LOG_DIR", "/tmp/logs/bluesky"))
+        debug_logging_path = Path(environ.get("DEBUG_LOG_DIR", "/tmp/logs/bluesky"))
     else:
-        default_logging_str = "/tmp/logs/bluesky"
-        default_debug_logging_str = default_logging_str
-
-    logging_path = Path(environ.get("LOG_DIR", default_logging_str))
-    debug_logging_path = Path(environ.get("DEBUG_LOG_DIR", default_debug_logging_str))
+        logging_dir = environ.get("LOG_DIR")
+        if not logging_dir:
+            raise ValueError("LOG_DIR environment variable is not set")
+        debug_logging_dir = environ.get("DEBUG_LOG_DIR")
+        if not debug_logging_dir:
+            raise ValueError("DEBUG_LOG_DIR environment variable is not set")
+        logging_path = Path(logging_dir)
+        debug_logging_path = Path(debug_logging_dir)
 
     Path.mkdir(logging_path, exist_ok=True, parents=True)
     Path.mkdir(debug_logging_path, exist_ok=True, parents=True)

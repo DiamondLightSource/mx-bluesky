@@ -901,7 +901,7 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
     )
 
 
-@patch("mx_bluesky.hyperion.blueapi_plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi_plans.in_process._robot_unload")
 def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -935,7 +935,7 @@ def _request_baton_from_hyperion_during_collection(
     mock_load_centre_collect.side_effect = request_baton_away_from_hyperion
 
 
-@patch("mx_bluesky.hyperion.blueapi_plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi_plans.in_process._robot_unload")
 def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -956,7 +956,7 @@ def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     )
 
 
-@patch("mx_bluesky.hyperion.blueapi_plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi_plans.in_process._robot_unload")
 def test_robot_unload_not_performed_when_beamline_error(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -972,7 +972,7 @@ def test_robot_unload_not_performed_when_beamline_error(
     mock_robot_unload.assert_not_called()
 
 
-@patch("mx_bluesky.hyperion.blueapi_plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi_plans.in_process._robot_unload")
 def test_robot_unload_still_performed_when_sample_exception(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -996,7 +996,7 @@ def test_robot_unload_still_performed_when_sample_exception(
     )
 
 
-@patch("mx_bluesky.hyperion.blueapi_plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi_plans.in_process._robot_unload")
 def test_detector_shutter_closed_when_baton_requested_away_from_hyperion(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
