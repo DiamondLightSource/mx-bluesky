@@ -27,6 +27,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
@@ -45,9 +48,6 @@ from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import _move_and_rotation
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    RotationISPyBCallback,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
     BeamDrawingCallback,

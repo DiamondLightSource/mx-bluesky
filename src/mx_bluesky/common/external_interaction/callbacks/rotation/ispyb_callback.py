@@ -15,6 +15,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloInfoGenerator,
 )
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_mapping import (
+    populate_data_collection_info_for_rotation,
+)
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     DataCollectionPositionInfo,
@@ -30,9 +33,6 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
 from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_mapping import (
-    populate_data_collection_info_for_rotation,
-)
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
