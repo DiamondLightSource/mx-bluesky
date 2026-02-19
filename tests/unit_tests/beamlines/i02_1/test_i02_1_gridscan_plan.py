@@ -78,14 +78,22 @@ def fgs_composite(
     )
 
 
+class SpecifiedTwoDTest(SpecifiedTwoDGridScan):
+    # Skip parent validation for easier testing
+    def _check_lengths_are_same(self):  # type: ignore
+        return self
+
+
 @pytest.mark.parametrize(
     "y_starts_um, z_starts_um, omega_starts_deg, y_step_sizes_um, y_steps, should_raise",
     [
         ([1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], True),
+        ([1], [1], [1], [1, 1], [1], True),
+        ([1], [1], [1, 1], [1], [1], True),
         ([1], [1], [1], [1], [1], False),
     ],
 )
-def test_three_d_grid_scan_validation(
+def test_two_d_grid_scan_validation(
     y_starts_um: list[float],
     z_starts_um: list[float],
     omega_starts_deg: list[float],
@@ -94,37 +102,27 @@ def test_three_d_grid_scan_validation(
     should_raise: bool,
     tmp_path,
 ):
-    if should_raise:
-        with pytest.raises(ValidationError, match="must be length 1 for 2D scans"):
-            SpecifiedTwoDGridScan(
-                x_start_um=0,
-                y_starts_um=y_starts_um,
-                z_starts_um=z_starts_um,
-                y_step_sizes_um=y_step_sizes_um,
-                omega_starts_deg=omega_starts_deg,
-                parameter_model_version=get_param_version(),
-                sample_id=0,
-                visit="visit",
-                file_name="test_file",
-                storage_directory=str(tmp_path),
-                x_steps=5,
-                y_steps=y_steps,
-            )
-    else:
-        SpecifiedTwoDGridScan(
+    def create_params():
+        SpecifiedTwoDTest(
             x_start_um=0,
-            y_starts_um=[0],
-            z_starts_um=[0],
-            y_step_sizes_um=[10],
-            omega_starts_deg=[0],
+            y_starts_um=y_starts_um,
+            z_starts_um=z_starts_um,
+            y_step_sizes_um=y_step_sizes_um,
+            omega_starts_deg=omega_starts_deg,
             parameter_model_version=get_param_version(),
             sample_id=0,
             visit="visit",
             file_name="test_file",
             storage_directory=str(tmp_path),
             x_steps=5,
-            y_steps=[3],
+            y_steps=y_steps,
         )
+
+    if should_raise:
+        with pytest.raises(ValidationError, match="must be length 1 for 2D scans"):
+            create_params()
+    else:
+        create_params()
 
 
 @patch(
