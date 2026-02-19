@@ -83,3 +83,12 @@ def focus_on_oav_view(
         magnitude = -magnitude
 
     yield from bps.abs_set(pmac.z, magnitude, wait=True)
+
+
+def move_on_oav_view_click(
+    position: tuple[int, int], pmac: PMAC = inject("pmac")
+) -> MsgGenerator:
+    x = position[0]
+    y = position[1]
+
+    yield from bps.mv(pmac.x, x, pmac.y, y, wait=True)
