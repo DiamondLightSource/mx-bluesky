@@ -1,4 +1,5 @@
 from functools import partial
+from pathlib import Path
 
 import bluesky.preprocessors as bpp
 import pydantic
@@ -14,6 +15,9 @@ from dodal.devices.flux import Flux
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
+from pydantic import BaseModel, PrivateAttr
+from pydantic_extra_types.semantic_version import SemanticVersion
+from semver import Version
 
 from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
@@ -120,6 +124,31 @@ def _tidy_plan(
 ) -> MsgGenerator:
     LOGGER.info("Tidying up Zebra")
     yield from tidy_up_zebra_after_gridscan(fgs_composite.zebra)
+
+
+PARAMETER_VERSION = Version.parse("1.0.0")
+
+
+def get_internal_param_version() -> SemanticVersion:
+    return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
+
+
+class ExternalGridScanParams(BaseModel):
+    gda_parameter_version: SemanticVersion
+    visit: str
+    file_name: str
+    storage_directory: Path
+    exposure_time_s: float
+    snapshot_directory: Path
+    x_start_um: float
+    y_start_um: float
+    z_start_um: float
+    x_steps: int
+    y_steps: int
+    sample_id: int | None = None
+
+    # Internal parameter version compatible with this external model
+    _internal_param_version: str = PrivateAttr(default="6.0.0")
 
 
 def i02_1_gridscan_plan(

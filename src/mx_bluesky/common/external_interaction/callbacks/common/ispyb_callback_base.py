@@ -129,25 +129,33 @@ class BaseISPyBCallback(PlanReactiveCallback):
         return self.tag_doc(doc)
 
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
+        _data = doc["data"]
+
         assert self.params, "Event handled before activity_gated_start received params"
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "ISPyB handler received event from read hardware"
         )
-        synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
+        synchrotron_mode = _data["synchrotron-synchrotron_mode"]
         assert isinstance(synchrotron_mode, SynchrotronMode)
         hwscan_data_collection_info = DataCollectionInfo(
-            undulator_gap1=doc["data"]["undulator-current_gap"],
+            undulator_gap1=_data["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
-            slitgap_horizontal=doc["data"]["s4_slit_gaps-xgap"],
-            slitgap_vertical=doc["data"]["s4_slit_gaps-ygap"],
+            slitgap_horizontal=_data["s4_slit_gaps-xgap"],
+            slitgap_vertical=_data["s4_slit_gaps-ygap"],
         )
         hwscan_data_collection_info = _update_based_on_energy(
             doc, self.params.detector_params, hwscan_data_collection_info
         )
+
+        # VMXm doesn't have a gonio-y position, allow None
+        pos_y = _data.get("gonio-y", None)
+        if pos_y:
+            pos_y = float(pos_y)
+
         hwscan_position_info = DataCollectionPositionInfo(
-            pos_x=float(doc["data"]["gonio-x"]),
-            pos_y=float(doc["data"]["gonio-y"]),
-            pos_z=float(doc["data"]["gonio-z"]),
+            pos_x=float(_data["gonio-x"]),
+            pos_y=pos_y,
+            pos_z=float(_data["gonio-z"]),
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, hwscan_position_info, self.params
@@ -160,18 +168,24 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def _handle_ispyb_transmission_flux_read(
         self, doc: Event
     ) -> Sequence[ScanDataInfo]:
+        _data = doc["data"]
+
         assert self.params
-        aperture = doc["data"]["aperture_scatterguard-selected_aperture"]
-        beamsize_x_mm = doc["data"]["beamsize-x_um"] / 1000
-        beamsize_y_mm = doc["data"]["beamsize-y_um"] / 1000
+        aperture = _data.get(
+            "aperture_scatterguard-selected_aperture", "Not implemented"
+        )
+        beamsize_x_mm = (
+            _data["beamsize-x_um"] / 1000
+        )  # todo beamsize for vmxm is complicated. Do hacky thing where beamsize is read from fake device until we make real one
+        beamsize_y_mm = _data["beamsize-y_um"] / 1000
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
-            flux=doc["data"]["flux-flux_reading"],
-            detector_mode="ROI" if doc["data"]["eiger_cam_roi_mode"] else "FULL",
-            ispyb_detector_id=doc["data"]["eiger-ispyb_detector_id"],
+            flux=_data["flux-flux_reading"],
+            detector_mode="ROI" if _data["eiger_cam_roi_mode"] else "FULL",
+            ispyb_detector_id=_data["eiger-ispyb_detector_id"],
         )
-        if transmission := doc["data"]["attenuator-actual_transmission"]:
+        if transmission := _data["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
         hwscan_data_collection_info = _update_based_on_energy(
