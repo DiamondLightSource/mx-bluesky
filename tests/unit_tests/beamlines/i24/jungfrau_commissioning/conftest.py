@@ -55,3 +55,7 @@ def rotation_composite(
     )
 
     return composite
+
+
+@pytest.fixture(autouse=True)
+def always_use_i24_beamline(use_i24_beamline): ...
