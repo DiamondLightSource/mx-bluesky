@@ -3,7 +3,8 @@ from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
 
-from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -43,6 +44,9 @@ class JsonMetadataWriter(CallbackBase):
             )
             self.parameters = SingleRotationScan(**json.loads(json_params))
             self.run_start_uid = doc.get("uid")
+            dcid = doc.get("dcid")
+            assert isinstance(dcid, IspybIds)
+            self.dcid = dcid.data_collection_ids[0]
 
     def descriptor(self, doc: dict):  # type: ignore
         self.descriptors[doc["uid"]] = doc
@@ -81,6 +85,7 @@ class JsonMetadataWriter(CallbackBase):
                             "energy_kev": self.energy_in_kev,
                             "angular_increment_deg": self.parameters.rotation_increment_deg,
                             "detector_distance_mm": self.detector_distance_mm,
+                            "dcid": self.dcid,
                         }
                     )
                 )

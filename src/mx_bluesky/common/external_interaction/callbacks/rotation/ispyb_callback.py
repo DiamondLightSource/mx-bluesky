@@ -28,6 +28,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
@@ -69,9 +70,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters."
             )
-            hyperion_params = doc.get("mx_bluesky_parameters")
-            assert isinstance(hyperion_params, str)
-            self.params = SingleRotationScan.model_validate_json(hyperion_params)
+            params = doc.get("mx_bluesky_parameters")
+            assert isinstance(params, str)
+            self.params = SingleRotationScan.model_validate_json(params)
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)
@@ -97,10 +98,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 self.params
             )
             data_collection_info = populate_remaining_data_collection_info(
-                self.params.comment,
-                dcgid,
-                data_collection_info,
-                self.params,
+                self.params.comment, dcgid, data_collection_info, self.params, doc
             )
             data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(
@@ -150,6 +148,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
+        assert self.params, "IspyB callback event triggered before parameters were set"
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
 
         descriptor_name = self.descriptors[doc["descriptor"]].get("name")
@@ -158,6 +157,20 @@ class RotationISPyBCallback(BaseISPyBCallback):
             self.ispyb_ids = self.ispyb.update_deposition(
                 self.ispyb_ids, scan_data_infos
             )
+        elif descriptor_name == PlanNameConstants.ROTATION_DEVICE_READ:
+            data = doc["data"]
+            filepath = data.get("commissioning_jungfrau-_writer-file_path")
+            filename = data.get("commissioning_jungfrau-_writer-file_name")
+            updated_dc = DataCollectionInfo(
+                file_template=f"{filename}.nxs",
+                imgdir=f"{filepath}/",
+                imgprefix=f"{filename}",
+                imgsuffix="nxs",
+            )
+            scan_data_info = self.populate_info_for_update(
+                updated_dc, None, self.params
+            )
+            self.ispyb.update_deposition(self.ispyb_ids, scan_data_info)
 
         return doc
 

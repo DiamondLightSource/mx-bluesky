@@ -24,7 +24,6 @@ from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
-    TEST_MODE,
     USE_NUMTRACKER,
     DetectorParamConstants,
     GridscanParamConstants,
@@ -158,7 +157,6 @@ class WithVisit(BaseModel):
         default=DetectorParamConstants.BEAM_XY_LUT_PATH
     )
     detector_distance_mm: float | None = Field(default=None, gt=0)
-    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
 
 
 class DiffractionExperiment(
@@ -232,7 +230,9 @@ class SplitScan(BaseModel):
 
 
 class WithSample(BaseModel):
-    sample_id: int
+    sample_id: int | None = (
+        None  # None is invalid for dc groups, but valid for regular data collections
+    )
     sample_puck: int | None = None
     sample_pin: int | None = None
 
