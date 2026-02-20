@@ -40,6 +40,7 @@ class InProcessRunner(PlanRunner):
     def decode_and_execute(
         self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
     ) -> MsgGenerator:
+        current_visit = current_visit or ""
         for parameters in parameter_list:
             LOGGER.info(
                 f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
@@ -116,7 +117,7 @@ def _runner_sleep(parameters: Wait) -> MsgGenerator:
 
 def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
     robot = find_device_in_context(context, "robot", BartRobot)
-    smargon = find_device_in_context(context, "smargon", Smargon)
+    smargon = find_device_in_context(context, "gonio", Smargon)
     aperture_scatterguard = find_device_in_context(
         context, "aperture_scatterguard", ApertureScatterguard
     )

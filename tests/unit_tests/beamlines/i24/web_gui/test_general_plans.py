@@ -4,7 +4,7 @@ from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import pytest
-from dodal.devices.i24.dual_backlight import BacklightPositions
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 
 from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 from mx_bluesky.beamlines.i24.web_gui_plans.general_plans import (

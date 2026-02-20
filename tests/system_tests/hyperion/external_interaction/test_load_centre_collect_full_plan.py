@@ -141,7 +141,7 @@ def load_centre_collect_composite(
         eiger=grid_detect_then_xray_centre_composite.eiger,
         flux=composite_for_rotation_scan.flux,
         robot=composite_for_rotation_scan.robot,
-        smargon=composite_for_rotation_scan.smargon,
+        gonio=composite_for_rotation_scan.gonio,
         undulator=composite_for_rotation_scan.undulator,
         synchrotron=composite_for_rotation_scan.synchrotron,
         s4_slit_gaps=composite_for_rotation_scan.s4_slit_gaps,
@@ -466,7 +466,7 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
     set_mock_value(load_centre_collect_composite.robot.current_puck, 2)
 
     def move_to_initial_omega():
-        yield from bps.mv(load_centre_collect_composite.smargon.omega, initial_omega)
+        yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
 
     run_engine(move_to_initial_omega())
     ispyb_gridscan_cb = GridscanISPyBCallback(
@@ -1079,18 +1079,18 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
     # This is the base snapshot position
     def wrapper(*args, **kwargs):
         yield from bps.mv(
-            load_centre_collect_composite.smargon.x,
+            load_centre_collect_composite.gonio.x,
             -0.614,
-            load_centre_collect_composite.smargon.y,
+            load_centre_collect_composite.gonio.y,
             0.0259,
-            load_centre_collect_composite.smargon.z,
+            load_centre_collect_composite.gonio.z,
             0.250,
         )
 
         yield from wrapped(*args, **kwargs)
 
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.detect_grid_and_do_gridscan",
     ) as patched_detect_grid:
         patched_detect_grid.side_effect = wrapper
         yield patched_detect_grid

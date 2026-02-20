@@ -11,9 +11,11 @@ CONFIG_DIR=`dirname $0`/src/mx_bluesky/hyperion
 BLUEAPI_CONFIG=$CONFIG_DIR/blueapi_config.yaml
 SUPERVISOR_CONFIG=$CONFIG_DIR/supervisor/supervisor_config.yaml
 CLIENT_CONFIG=$CONFIG_DIR/supervisor/client_config.yaml
+STOMP_CONFIG=$CONFIG_DIR/blueapi_config.yaml
 DO_CALLBACKS=1
 HEALTHCHECK_PORT=5005
 CALLBACK_WATCHDOG_PORT=5005
+CALLBACK_MODE=0mq
 
 for option in "$@"; do
     case $option in
@@ -45,6 +47,9 @@ for option in "$@"; do
             DO_CALLBACKS=0
             HEALTHCHECK_PORT=5006
             ;;
+	--stomp)
+	    CALLBACK_MODE=stomp
+	    ;;
         --help|--info|--h)
             source .venv/bin/activate
             echo "`basename $0` [options]"
@@ -62,6 +67,7 @@ Options:
   --blueapi               Start hyperion in blueapi mode instead of taking commands from GDA
   --supervisor            Start hyperion in supervisor mode, taking commands from Agamemnon and feeding them to
                           an instance running in blueapi mode.
+  --stomp                 Start external callbacks in stomp mode instead of 0mq (the default)
   --help                  This help
 
 By default this script will start an Hyperion server unless the --no-start flag is specified.
@@ -119,17 +125,15 @@ if [[ $START == 1 ]]; then
     if [ $IN_DEV == false ]; then
         check_user
         ISPYB_CONFIG_PATH="/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-${BEAMLINE}.cfg"
+        ZOCALO_CONFIG=/dls_sw/apps/zocalo/live/configuration.yaml 
     else
         ISPYB_CONFIG_PATH="$RELATIVE_SCRIPT_DIR/tests/test_data/ispyb-test-credentials.cfg"
         ZOCALO_CONFIG="$RELATIVE_SCRIPT_DIR/tests/test_data/zocalo-test-configuration.yaml"
-        export ZOCALO_CONFIG
     fi
+    export ZOCALO_CONFIG
     export ISPYB_CONFIG_PATH
 
     kill_active_apps
-
-    module unload controls_dev
-    module load dials
 
     cd ${RELATIVE_SCRIPT_DIR}
 
@@ -159,6 +163,9 @@ if [[ $START == 1 ]]; then
     cb_commands="--watchdog-port $CALLBACK_WATCHDOG_PORT "
     if [ $MODE = "supervisor" ]; then
       h_commands+="--client-config ${CLIENT_CONFIG} --supervisor-config ${SUPERVISOR_CONFIG} "
+    fi
+    if [ "${CALLBACK_MODE}" = "stomp" ]; then
+       cb_commands+="--stomp-config $STOMP_CONFIG"
     fi
     for i in "${!h_and_cb_args[@]}"
     do

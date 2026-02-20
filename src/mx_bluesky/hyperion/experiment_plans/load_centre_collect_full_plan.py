@@ -11,7 +11,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
-import mx_bluesky.common.xrc_result as flyscan_result
+import mx_bluesky.common.utils.xrc_result as flyscan_result
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
@@ -19,7 +19,7 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler
+from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
     robot_load_then_xray_centre,
@@ -161,9 +161,9 @@ def _samples_and_locations_to_collect(
     else:
         # If the xray centring hasn't found a result but has not thrown an error it
         # means that we do not need to recentre and can collect where we are
-        initial_x_mm = yield from bps.rd(composite.smargon.x.user_readback)
-        initial_y_mm = yield from bps.rd(composite.smargon.y.user_readback)
-        initial_z_mm = yield from bps.rd(composite.smargon.z.user_readback)
+        initial_x_mm = yield from bps.rd(composite.gonio.x.user_readback)
+        initial_y_mm = yield from bps.rd(composite.gonio.y.user_readback)
+        initial_z_mm = yield from bps.rd(composite.gonio.z.user_readback)
 
         return [
             (

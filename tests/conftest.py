@@ -9,14 +9,15 @@ from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any, TypeVar
+from unittest.mock import MagicMock, patch
 
+import bluesky.plan_stubs as bps
 import numpy
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
-from bluesky.utils import Msg
+from bluesky.utils import Msg, MsgGenerator
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
@@ -39,15 +40,15 @@ from dodal.devices.attenuator.filter_selections import (
 )
 from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
+from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i03.beamsize import Beamsize
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop, BeamstopPositions
-from dodal.devices.i03.beamsize import Beamsize
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i04.transfocator import Transfocator
 from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -415,8 +416,7 @@ def smargon() -> Generator[Smargon, None, None]:
 
 @pytest.fixture
 def aithre_gonio():
-    aithre_gonio = aithre.goniometer(connect_immediately=True, mock=True)
-    return aithre_gonio
+    return aithre.goniometer.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
@@ -497,13 +497,7 @@ def oav(test_config_files):
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
-    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
-    # Equivalent to previously set values for microns and beam centre
     set_mock_value(oav.zoom_controller.level, "5.0x")
-
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
@@ -801,7 +795,7 @@ def fake_create_devices(
     devices = {
         "beamstop": beamstop_phase1,
         "eiger": eiger,
-        "smargon": smargon,
+        "gonio": smargon,
         "zebra": zebra,
         "detector_motion": detector_motion,
         "backlight": backlight,
@@ -843,7 +837,7 @@ def fake_create_rotation_devices(
         detector_motion=detector_motion,
         eiger=eiger,
         flux=flux,
-        smargon=smargon,
+        gonio=smargon,
         undulator=undulator,
         aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,
@@ -987,7 +981,7 @@ async def hyperion_flyscan_xrc_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         flux=i03.flux.build(connect_immediately=True, mock=True),
         s4_slit_gaps=s4_slit_gaps,
-        smargon=smargon,
+        gonio=smargon,
         undulator=i03.undulator.build(connect_immediately=True, mock=True),
         synchrotron=synchrotron,
         xbpm_feedback=xbpm_feedback,
@@ -1023,7 +1017,7 @@ async def hyperion_flyscan_xrc_composite(
         side_effect=partial(mock_complete, test_result)
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
-    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
+    set_mock_value(fake_composite.gonio.x.max_velocity, 10)
 
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
@@ -1188,14 +1182,22 @@ def fat_pin_edges():
     return tip_x_px, tip_y_px, top_edge_array, bottom_edge_array
 
 
+T = TypeVar("T")
+
+
+def fake_generator(return_val: T = None) -> MsgGenerator[T]:
+    yield from bps.null()
+    return return_val
+
+
 @pytest.fixture
 def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
     @AsyncStatus.wrap
     async def set_good_position():
         x, y, top_edge_array, bottom_edge_array = pin_tip_edge_data()
         set_mock_value(ophyd_pin_tip_detection.triggered_tip, numpy.array([x, y]))
-        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)
-        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)
+        set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)  # type: ignore
+        set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)  # type: ignore
 
     with patch.object(
         ophyd_pin_tip_detection,
@@ -1298,11 +1300,11 @@ class OavGridSnapshotTestEvents:
             "oav-grid_snapshot-last_path_full_overlay": "test_1_y",
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
-            "smargon-omega": 0,
-            "smargon-chi": 0,
-            "smargon-x": 0,
-            "smargon-y": 0,
-            "smargon-z": 0,
+            "gonio-omega": 0,
+            "gonio-chi": 0,
+            "gonio-x": 0,
+            "gonio-y": 0,
+            "gonio-z": 0,
         },
     }
     test_event_document_oav_snapshot_xz: Event = {
@@ -1327,11 +1329,11 @@ class OavGridSnapshotTestEvents:
             "oav-x_direction": -1,
             "oav-y_direction": -1,
             "oav-z_direction": 1,
-            "smargon-omega": -90,
-            "smargon-chi": 30,
-            "smargon-x": 0,
-            "smargon-y": 0,
-            "smargon-z": 0,
+            "gonio-omega": -90,
+            "gonio-chi": 30,
+            "gonio-x": 0,
+            "gonio-y": 0,
+            "gonio-z": 0,
         },
     }
 
@@ -1359,7 +1361,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
-            "plan_name": "test",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
             "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
         }
@@ -1445,7 +1446,6 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "versions": {"ophyd": "1.6.4.post76+g0895f9f", "bluesky": "1.8.3"},
             "scan_id": 1,
             "plan_type": "generator",
-            "plan_name": PlanNameConstants.GRIDSCAN_AND_MOVE,
             "subplan_name": PlanNameConstants.DO_FGS,
             "omega_to_scan_spec": {
                 GridscanPlane.OMEGA_XY: specs[0],
@@ -1502,9 +1502,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
                 "s4_slit_gaps-ygap": 0.2345,
                 "synchrotron-synchrotron_mode": SynchrotronMode.USER,
                 "undulator-current_gap": 1.234,
-                "smargon-x": 0.158435435,
-                "smargon-y": 0.023547354,
-                "smargon-z": 0.00345684712,
+                "gonio-x": 0.158435435,
+                "gonio-y": 0.023547354,
+                "gonio-z": 0.00345684712,
                 "dcm-energy_in_keV": 11.105,
             },
             "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},

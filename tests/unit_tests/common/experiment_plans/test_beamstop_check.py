@@ -250,7 +250,7 @@ def test_beamstop_check_checks_beamstop_out_diode_above_threshold_before_second_
     ipin_reading_with_beamstop_out,
     beamstop_threshold: float,
     commissioning_mode: bool,
-    expected_exception: Exception | None,
+    expected_exception: type[Exception] | None,
 ):
     set_mock_value(beamstop_check_devices.baton.commissioning, commissioning_mode)
     beamline_parameters.params["ipin_threshold"] = beamstop_threshold
@@ -296,7 +296,7 @@ def test_beamstop_check_checks_beamstop_in_diode_below_threshold(
     beamline_parameters: GDABeamlineParameters,
     ipin_reading_with_beamstop_in,
     beamstop_threshold: float,
-    expected_exception: Exception | None,
+    expected_exception: type[Exception] | None,
 ):
     beamline_parameters.params["ipin_threshold"] = beamstop_threshold
     value_iter = set_mock_values(

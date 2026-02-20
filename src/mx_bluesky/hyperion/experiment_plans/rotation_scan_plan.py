@@ -6,12 +6,12 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
-from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
@@ -83,7 +83,7 @@ class RotationScanComposite(OavSnapshotComposite):
     eiger: EigerDetector
     flux: Flux
     robot: BartRobot
-    smargon: Smargon
+    gonio: Smargon
     undulator: UndulatorInKeV
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
@@ -120,7 +120,7 @@ def rotation_scan_plan(
         motion_values: RotationMotionProfile,
         composite: RotationScanComposite,
     ):
-        axis = composite.smargon.omega
+        axis = composite.gonio.omega
 
         # can move to start as fast as possible
         yield from bps.abs_set(
@@ -165,7 +165,7 @@ def rotation_scan_plan(
             composite.synchrotron,
             composite.s4_slit_gaps,
             composite.dcm,
-            composite.smargon,
+            composite.gonio,
         )
 
         # Get ready for the actual scan
@@ -200,9 +200,9 @@ def rotation_scan_plan(
 
 def _cleanup_plan(composite: RotationScanComposite, **kwargs):
     LOGGER.info("Cleaning up after rotation scan")
-    max_vel = yield from bps.rd(composite.smargon.omega.max_velocity)
+    max_vel = yield from bps.rd(composite.gonio.omega.max_velocity)
     yield from cleanup_sample_environment(composite.detector_motion, group="cleanup")
-    yield from bps.abs_set(composite.smargon.omega.velocity, max_vel, group="cleanup")
+    yield from bps.abs_set(composite.gonio.omega.velocity, max_vel, group="cleanup")
     yield from tidy_up_zebra_after_rotation_scan(
         composite.zebra, composite.sample_shutter, group="cleanup", wait=False
     )
@@ -214,8 +214,8 @@ def _move_and_rotation(
     params: SingleRotationScan,
     oav_params: OAVParameters,
 ):
-    motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration_time)
-    max_vel = yield from bps.rd(composite.smargon.omega.max_velocity)
+    motor_time_to_speed = yield from bps.rd(composite.gonio.omega.acceleration_time)
+    max_vel = yield from bps.rd(composite.gonio.omega.max_velocity)
     motion_values = calculate_motion_profile(params, motor_time_to_speed, max_vel)
 
     def _div_by_1000_if_not_none(num: float | None):
@@ -223,7 +223,7 @@ def _move_and_rotation(
 
     LOGGER.info("moving to position (if specified)")
     yield from bps.abs_set(
-        composite.smargon,
+        composite.gonio,
         CombinedMove(
             x=_div_by_1000_if_not_none(params.x_start_um),
             y=_div_by_1000_if_not_none(params.y_start_um),
@@ -239,7 +239,7 @@ def _move_and_rotation(
 
         if not params.use_grid_snapshots:
             yield from setup_beamline_for_oav(
-                composite.smargon,
+                composite.gonio,
                 composite.backlight,
                 composite.aperture_scatterguard,
                 wait=True,
@@ -260,6 +260,10 @@ def rotation_scan(
     parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
+    """This is intended to be the external API for doing the rotation scan on its own
+    rather than part of a larger UDC-like collection. In the UDC case the
+    BeamDrawingCallback will already be activated."""
+
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
     @bpp.run_decorator(
         md={

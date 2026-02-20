@@ -17,17 +17,17 @@ from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.motors import XYZStage
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
-from dodal.devices.robot import PinMounted
+from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
-from ophyd_async.core import Signal, init_devices, set_mock_value
+from ophyd_async.core import Device, Signal, init_devices, set_mock_value
 from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     CryoStreamError,
     UDCDefaultDevices,
-    UnexpectedSampleError,
     move_to_udc_default_state,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, HyperionFeatureSettings
@@ -64,6 +64,7 @@ async def default_devices(
         hutch_shutter = HutchShutter("")
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
         collimation_table = CollimationTable("")
+        lower_gonio = XYZStage("")
 
     with patch("dodal.devices.hutch_shutter.TEST_MODE", True):
         devices = UDCDefaultDevices(
@@ -73,9 +74,10 @@ async def default_devices(
             cryostream_gantry=cryostream_gantry,
             fluorescence_det_motion=fluo,
             hutch_shutter=hutch_shutter,
+            lower_gonio=lower_gonio,
             robot=robot,
             scintillator=scintillator,
-            smargon=smargon,
+            gonio=smargon,
             oav=oav,
             **beamstop_check_devices.__dict__,
         )
@@ -156,6 +158,10 @@ def test_udc_default_state_runs_in_real_run_engine(
     run_engine(move_to_udc_default_state(default_devices))
 
 
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.udc_default_state._unload_sample_if_present",
+    MagicMock(return_value=iter([Msg("robot_unload")])),
+)
 def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
     sim_run_engine: RunEngineSimulator,
     default_devices: UDCDefaultDevices,
@@ -166,13 +172,14 @@ def test_beamstop_moved_to_data_collection_if_diode_check_not_enabled(
         msgs,
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == pre_beamstop_group,
     )
+    assert msgs[1].command == "robot_unload"
     assert (
-        msgs[1].command == "set"
-        and msgs[1].obj is default_devices.beamstop.selected_pos
-        and msgs[1].args[0] == BeamstopPositions.DATA_COLLECTION
+        msgs[2].command == "set"
+        and msgs[2].obj is default_devices.beamstop.selected_pos
+        and msgs[2].args[0] == BeamstopPositions.DATA_COLLECTION
     )
     assert (
-        msgs[2].command == "wait" and msgs[2].kwargs["group"] == msgs[1].kwargs["group"]
+        msgs[3].command == "wait" and msgs[3].kwargs["group"] == msgs[2].kwargs["group"]
     )
 
 
@@ -222,7 +229,7 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
     pre_beamstop_group = "pre_beamstop_check"
     post_beamstop_group = "post_beamstop_check"
 
-    def assert_expected_set(signal: Signal | Motor, value, group):
+    def assert_expected_set(signal: Signal | Motor | Device, value, group):
         return assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
@@ -306,7 +313,19 @@ def test_udc_default_state_checks_cryostream_selection(
         run_engine(move_to_udc_default_state(default_devices))
 
 
-def test_udc_default_state_checks_that_pin_not_mounted(
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.udc_default_state._verify_correct_cryostream_selected",
+    MagicMock(return_value=iter([Msg("cryostream_gantry_check")])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.udc_default_state._check_cryostream",
+    MagicMock(return_value=iter([Msg("cryostream_check")])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.udc_default_state.robot_unload",
+    MagicMock(return_value=iter([Msg("unload")])),
+)
+def test_udc_default_state_unloads_if_sample_present(
     default_devices, sim_run_engine, beamline_parameters
 ):
     sim_run_engine.add_read_handler_for(
@@ -316,8 +335,38 @@ def test_udc_default_state_checks_that_pin_not_mounted(
         "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_beamline_parameters",
         return_value=beamline_parameters,
     ):
-        with pytest.raises(UnexpectedSampleError):
-            sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+        msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "cryostream_gantry_check"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "cryostream_check"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj == default_devices.scintillator.selected_pos
+        and msg.args[0] == InOut.OUT,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "unload"
+    )
+
+
+def test_udc_default_state_no_unload_if_no_sample_present(
+    default_devices, sim_run_engine, beamline_parameters
+):
+    sim_run_engine.add_read_handler_for(
+        default_devices.robot.gonio_pin_sensor, PinMounted.NO_PIN_MOUNTED
+    )
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_beamline_parameters",
+        return_value=beamline_parameters,
+    ):
+        msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
+
+    assert not [m for m in msgs if m.command == "unload"]
 
 
 def test_default_state_closes_sample_shutter_before_open_hutch_shutter(
@@ -357,3 +406,33 @@ def test_default_state_hutch_shutter_open_is_skipped_if_commissioning_mode_enabl
         and msg.args[0] == ShutterDemand.OPEN
     ]
     assert not open_shutter_msgs
+
+
+@pytest.mark.parametrize(
+    "cryo_mode, commissioning_mode, expected_exception",
+    [
+        [BartRobot.CRYO_MODE_WARM, True, None],
+        [BartRobot.CRYO_MODE_CRYO, True, CryoStreamError],
+        [BartRobot.CRYO_MODE_WARM, False, CryoStreamError],
+        [BartRobot.CRYO_MODE_CRYO, False, CryoStreamError],
+    ],
+)
+def test_default_state_cryo_check_skipped_in_commissioning_mode_if_cryo_mode(
+    run_engine: RunEngine,
+    default_devices: UDCDefaultDevices,
+    cryo_mode: float,
+    commissioning_mode: bool,
+    expected_exception: type | None,
+):
+    set_mock_value(default_devices.robot.cryomode_rbv, cryo_mode)
+    set_mock_value(default_devices.baton.commissioning, commissioning_mode)
+    set_mock_value(
+        default_devices.cryostream.temp,
+        CONST.HARDWARE.MAX_CRYO_TEMP_K + 1,
+    )
+    set_mock_value(
+        default_devices.cryostream.back_pressure,
+        CONST.HARDWARE.MAX_CRYO_PRESSURE_BAR + 0.1,
+    )
+    with pytest.raises(expected_exception) if expected_exception else nullcontext():
+        run_engine(move_to_udc_default_state(default_devices))

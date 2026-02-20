@@ -26,6 +26,13 @@ repos:
         entry: ruff format --force-exclude
         types: [python]
         require_serial: true
+      
+      - id: type-checking
+        name: type-checking with pyright
+        language: system
+        entry: pyright
+        types: [python]
+        require_serial: true
 
       - id: import-contracts
         name: Ensure import directionality
@@ -35,6 +42,12 @@ repos:
         types: [python]
         require_serial: false
 
+      - id: lock dodal
+        name: keep dodal up to date in lockfile
+        pass_filenames: false
+        language: system
+        entry: uv lock --upgrade-package dls-dodal
+
       - id: uv-sync
         name: update uv.lock and venv
         pass_filenames: false
@@ -42,9 +55,16 @@ repos:
         entry: uv sync
         files: ^(uv\.lock|pyproject\.toml)$
 
+      - id: local-install-dodal
+        name: editable install of dodal
+        language: system
+        pass_filenames: false
+        entry: uv pip install -e ../dodal
+        files: ^(uv\.lock|pyproject\.toml)$
+
   # Type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.4.1
+    rev: v1.19.1
     hooks:
       - id: mypy
         files: 'src/.*\.py$'

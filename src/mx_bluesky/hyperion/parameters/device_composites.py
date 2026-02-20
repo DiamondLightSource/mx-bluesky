@@ -6,6 +6,7 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorWithDSpacing
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
@@ -13,9 +14,9 @@ from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
-from dodal.devices.i03.beamsize import Beamsize
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -24,16 +25,14 @@ from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    FlyScanEssentialDevices,
-)
 from mx_bluesky.common.parameters.device_composites import (
+    FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices):
+class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard

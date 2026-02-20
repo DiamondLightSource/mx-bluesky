@@ -5,7 +5,6 @@ from typing import Protocol, TypeVar
 
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
-from bluesky.preprocessors import subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.backlight import InOut
 from dodal.devices.eiger import EigerDetector
@@ -16,9 +15,6 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import (
 )
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
-)
-from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -48,7 +44,6 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.xrc_result import XRayCentreEventHandler
 
 TFlyScanEssentialDevices = TypeVar(
     "TFlyScanEssentialDevices", bound=FlyScanEssentialDevices, contravariant=True
@@ -76,9 +71,6 @@ def grid_detect_then_xray_centre(
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
-    flyscan_event_handler = XRayCentreEventHandler()
-
-    @subs_decorator(flyscan_event_handler)
     def plan_to_perform():
         yield from ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
@@ -100,16 +92,6 @@ def grid_detect_then_xray_centre(
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
 
-    assert flyscan_event_handler.xray_centre_results, (
-        "Flyscan result event not received or no crystal found and exception not raised"
-    )
-
-    yield from change_aperture_then_move_to_xtal(
-        flyscan_event_handler.xray_centre_results[0],
-        composite.smargon,
-        composite.aperture_scatterguard,
-    )
-
 
 # This function should be private but is currently called by Hyperion, see https://github.com/DiamondLightSource/mx-bluesky/issues/1148
 def detect_grid_and_do_gridscan(
@@ -124,7 +106,7 @@ def detect_grid_and_do_gridscan(
     grid_params_callback = GridDetectionCallback()
 
     yield from setup_beamline_for_oav(
-        composite.smargon,
+        composite.gonio,
         composite.backlight,
         composite.aperture_scatterguard,
         wait=True,
@@ -139,7 +121,7 @@ def detect_grid_and_do_gridscan(
         grid_detect_composite = OavGridDetectionComposite(
             backlight=composite.backlight,
             oav=composite.oav,
-            smargon=composite.smargon,
+            gonio=composite.gonio,
             pin_tip_detection=composite.pin_tip_detection,
         )
 
@@ -181,6 +163,7 @@ def detect_grid_and_do_gridscan(
     xrc_params = create_parameters_for_flyscan_xray_centre(
         parameters, grid_params_callback.get_grid_parameters(), xrc_params_type
     )
+    parameters.set_specified_grid_params(xrc_params)
     beamline_specific = construct_beamline_specific(composite, xrc_params)
 
     yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)

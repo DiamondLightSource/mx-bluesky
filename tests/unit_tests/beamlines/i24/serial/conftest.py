@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
-from dodal.devices.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.zebra.zebra import Zebra
 from dodal.utils import AnyDeviceFactory
 from ophyd_async.core import set_mock_value
@@ -56,7 +56,7 @@ def dummy_params_without_pp():
         "checker_pattern": False,
         "chip_map": [1],
     }
-    return FixedTargetParameters(**params)
+    return FixedTargetParameters(**params)  # type: ignore
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def dummy_params_ex():
         "num_images": 10,
         "pump_status": False,
     }
-    return ExtruderParameters(**params)
+    return ExtruderParameters(**params)  # type: ignore
 
 
 @pytest.fixture

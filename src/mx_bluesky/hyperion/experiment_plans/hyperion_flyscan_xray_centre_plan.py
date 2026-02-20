@@ -50,7 +50,7 @@ def construct_hyperion_specific_features(
         xrc_composite.undulator.current_gap,
         xrc_composite.synchrotron.synchrotron_mode,
         xrc_composite.s4_slit_gaps,
-        xrc_composite.smargon,
+        xrc_composite.gonio,
         xrc_composite.dcm.energy_in_keV,
     ]
 
@@ -100,8 +100,7 @@ def construct_hyperion_specific_features(
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
-        signals_to_read_during_collection,
-        get_xrc_results_from_zocalo=True,
+        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
 
 
@@ -130,9 +129,7 @@ def _panda_triggering_setup(
 
     time_between_x_steps_ms = (detector_deadtime_s + parameters.exposure_time_s) * 1e3
 
-    smargon_speed_limit_mm_per_s = yield from bps.rd(
-        xrc_composite.smargon.x.max_velocity
-    )
+    smargon_speed_limit_mm_per_s = yield from bps.rd(xrc_composite.gonio.x.max_velocity)
 
     sample_velocity_mm_per_s = (
         parameters.panda_fast_gridscan_params.x_step_size_mm
@@ -164,7 +161,7 @@ def _panda_triggering_setup(
     yield from setup_panda_for_flyscan(
         xrc_composite.panda,
         parameters.panda_fast_gridscan_params,
-        xrc_composite.smargon,
+        xrc_composite.gonio,
         parameters.exposure_time_s,
         time_between_x_steps_ms,
         sample_velocity_mm_per_s,

@@ -10,15 +10,15 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
 from dodal.devices.flux import Flux
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03 import Beamstop
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -43,8 +43,8 @@ from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
 )
-from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
-    pin_centre_then_flyscan_plan,
+from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
+    pin_centre_then_gridscan_plan,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -78,7 +78,7 @@ class RobotLoadThenCentreComposite:
     flux: Flux
     oav: OAV
     pin_tip_detection: PinTipDetection
-    smargon: Smargon
+    gonio: Smargon
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     undulator: UndulatorInKeV
@@ -113,7 +113,7 @@ def _flyscan_plan_from_robot_load_params(
     params: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    yield from pin_centre_then_flyscan_plan(
+    yield from pin_centre_then_gridscan_plan(
         cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
         oav_config_file,
@@ -152,7 +152,7 @@ def robot_load_then_xray_centre(
         yield from pin_already_loaded(composite.robot, sample_location)
     )
 
-    current_chi = yield from bps.rd(composite.smargon.chi)
+    current_chi = yield from bps.rd(composite.gonio.chi)
     LOGGER.info(f"Read back current smargon chi of {current_chi} degrees.")
     doing_chi_change = parameters.chi_start_deg is not None and not isclose(
         current_chi, parameters.chi_start_deg, abs_tol=0.001

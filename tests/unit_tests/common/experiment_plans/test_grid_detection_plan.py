@@ -60,10 +60,6 @@ def fake_devices(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=params)
-    zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x", "15.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
     set_mock_value(oav.zoom_controller.level, "5.0x")
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
@@ -90,7 +86,7 @@ def fake_devices(
         composite = OavGridDetectionComposite(
             backlight=backlight,
             oav=oav,
-            smargon=smargon,
+            gonio=smargon,
             pin_tip_detection=pin_tip_detection,
         )
 
@@ -328,7 +324,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     composite, _ = fake_devices
 
     # This will cause the grid detect plan to take data at -90 first
-    set_mock_value(composite.smargon.omega.user_readback, -90)
+    set_mock_value(composite.gonio.omega.user_readback, -90)
     composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         side_effect=[X_Z_EDGE_DATA, X_Y_EDGE_DATA]
     )
@@ -376,10 +372,10 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
             "oav-x_direction": -1,
             "oav-y_direction": -1,
             "oav-z_direction": 1,
-            "smargon-x": 100,
-            "smargon-y": 234,
-            "smargon-z": 467,
-            "smargon-omega": 45,
+            "gonio-x": 100,
+            "gonio-y": 234,
+            "gonio-z": 467,
+            "gonio-omega": 45,
         }
     }
 

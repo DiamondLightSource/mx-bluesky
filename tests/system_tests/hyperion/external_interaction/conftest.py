@@ -13,12 +13,12 @@ from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03 import Beamstop
-from dodal.devices.i03.dcm import DCM
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -288,7 +288,7 @@ def grid_detect_then_xray_centre_composite(
         backlight=backlight,
         beamstop=beamstop_phase1,
         panda_fast_grid_scan=panda_fast_grid_scan,
-        smargon=smargon,
+        gonio=smargon,
         undulator=undulator_for_system_test,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
@@ -364,7 +364,7 @@ def fgs_composite_for_fake_zocalo(
     hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(
         side_effect=lambda: completed_status()
     )  # type: ignore
-    hyperion_flyscan_xrc_composite.smargon.stub_offsets.set = MagicMock(
+    hyperion_flyscan_xrc_composite.gonio.stub_offsets.set = MagicMock(
         side_effect=lambda _: completed_status()
     )  # type: ignore
     callback_on_mock_put(
@@ -449,7 +449,7 @@ def composite_for_rotation_scan(
         detector_motion=detector_motion,
         eiger=eiger,
         flux=flux,
-        smargon=smargon,
+        gonio=smargon,
         undulator=undulator_for_system_test,
         aperture_scatterguard=aperture_scatterguard,
         synchrotron=synchrotron,

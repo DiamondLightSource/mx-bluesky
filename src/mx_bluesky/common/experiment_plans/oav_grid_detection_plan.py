@@ -81,7 +81,7 @@ def grid_detection_plan(
         box_size_um (float): The size of each box of the grid in microns
     """
     oav: OAV = composite.oav
-    smargon: Smargon = composite.smargon
+    smargon: Smargon = composite.gonio
     pin_tip_detection: PinTipDetection = composite.pin_tip_detection
 
     LOGGER.info("OAV Centring: Starting grid detection centring")
@@ -104,7 +104,7 @@ def grid_detection_plan(
     for angle in (yield from optimum_grid_detect_angles(smargon)):
         yield from bps.mv(smargon.omega, angle)
         # need to wait for the OAV image to update
-        # See #673 for improvements
+        # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements
         yield from bps.sleep(HardwareConstants.OAV_REFRESH_DELAY)
 
         tip_x_px, tip_y_px = yield from catch_exception_and_warn(

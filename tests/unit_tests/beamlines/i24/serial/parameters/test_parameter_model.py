@@ -6,6 +6,7 @@ from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import (
     MappingType,
     PumpProbeSetting,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
     ChipDescription,
     ExtruderParameters,
@@ -45,51 +46,49 @@ def test_chip_params_with_multiple_exposures(dummy_params_without_pp):
 
 def test_chip_params_with_no_mapping_for_oxford_chip():
     oxford_defaults = get_chip_format(ChipType.Oxford)
-    oxford_chip = {
-        "visit": "foo",
-        "directory": "bar",
-        "filename": "chip",
-        "exposure_time_s": 0.01,
-        "detector_distance_mm": 100,
-        "detector_name": "eiger",
-        "transmission": 1.0,
-        "num_exposures": 1,
-        "chip": oxford_defaults.model_dump(),
-        "map_type": 0,
-        "pump_repeat": 0,
-        "checker_pattern": False,
-        "chip_map": [],
-    }
-    params = FixedTargetParameters(**oxford_chip)
-    assert params.total_num_images == 25600
+    oxford_chip_params = FixedTargetParameters(
+        visit=Path("foo"),
+        directory="bar",
+        filename="chip",
+        exposure_time_s=0.01,
+        detector_distance_mm=100,
+        detector_name=DetectorName("eiger"),
+        transmission=1.0,
+        num_exposures=1,
+        chip=oxford_defaults,
+        map_type=MappingType(0),
+        pump_repeat=PumpProbeSetting(0),
+        checker_pattern=False,
+        chip_map=[],
+    )
+    assert oxford_chip_params.total_num_images == 25600
 
 
 def test_chip_params_with_no_mapping_for_custom_chip():
-    custom_defaults = {
-        "chip_type": ChipType.Custom,
-        "x_num_steps": 5,
-        "y_num_steps": 3,
-        "x_step_size": 0.1,
-        "y_step_size": 0.1,
-        "x_blocks": 1,
-        "y_blocks": 1,
-        "b2b_horz": 0.0,
-        "b2b_vert": 0.0,
-    }
-    custom_chip = {
-        "visit": "foo",
-        "directory": "bar",
-        "filename": "chip",
-        "exposure_time_s": 0.01,
-        "detector_distance_mm": 100,
-        "detector_name": "eiger",
-        "transmission": 1.0,
-        "num_exposures": 2,
-        "chip": ChipDescription(**custom_defaults),
-        "map_type": 0,
-        "pump_repeat": 0,
-        "checker_pattern": False,
-        "chip_map": [],
-    }
-    params = FixedTargetParameters(**custom_chip)
-    assert params.total_num_images == 30
+    custom_defaults = ChipDescription(
+        chip_type=ChipType.Custom,
+        x_num_steps=5,
+        y_num_steps=3,
+        x_step_size=0.1,
+        y_step_size=0.1,
+        x_blocks=1,
+        y_blocks=1,
+        b2b_horz=0.0,
+        b2b_vert=0.0,
+    )
+    custom_chip_params = FixedTargetParameters(
+        visit=Path("foo"),
+        directory="bar",
+        filename="chip",
+        exposure_time_s=0.01,
+        detector_distance_mm=100,
+        detector_name=DetectorName("eiger"),
+        transmission=1.0,
+        num_exposures=2,
+        chip=custom_defaults,
+        map_type=MappingType(0),
+        pump_repeat=PumpProbeSetting(0),
+        checker_pattern=False,
+        chip_map=[],
+    )
+    assert custom_chip_params.total_num_images == 30
