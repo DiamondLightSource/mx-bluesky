@@ -1,17 +1,21 @@
 import pytest
 from dodal.beamlines import i24
+from dodal.devices.beamlines.i24.aperture import Aperture
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.focus_mirrors import (
+    FocusMirrorsMode,
+    HFocusMode,
+    VFocusMode,
+)
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import (
     HUTCH_SAFE_FOR_OPERATIONS,
     HutchShutter,
     ShutterDemand,
     ShutterState,
 )
-from dodal.devices.i24.aperture import Aperture
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode, HFocusMode, VFocusMode
-from dodal.devices.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from ophyd_async.core import callback_on_mock_put, set_mock_value
 

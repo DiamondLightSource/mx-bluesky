@@ -1,7 +1,7 @@
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
-from dodal.devices.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
