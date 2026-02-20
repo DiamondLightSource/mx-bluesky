@@ -96,19 +96,22 @@ class GridDetectionCallback(CallbackBase):
         LOGGER.info(f"Calculated start position {position_grid_start_mm}")
 
         # If data is taken at omega=~0 then it gives us x-y info, at omega=~-90 it is x-z
+
         if abs(gonio_omega) < self.OMEGA_TOLERANCE:
             self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
             self.start_positions_um["y"] = position_grid_start_mm[1] * 1000
             self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
             self.box_numbers["y"] = data["oav-grid_snapshot-num_boxes_y"]
-        elif abs(gonio_omega + 90) < self.OMEGA_TOLERANCE:
+        elif (abs(gonio_omega + 90) < self.OMEGA_TOLERANCE) or (
+            abs(gonio_omega - 270) < self.OMEGA_TOLERANCE
+        ):
             self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
             self.start_positions_um["z"] = position_grid_start_mm[2] * 1000
             self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
             self.box_numbers["z"] = data["oav-grid_snapshot-num_boxes_y"]
         else:
             raise ValueError(
-                f"Grid detection only works at omegas of 0 or -90, omega of {gonio_omega} given."
+                f"Grid detection only works at omegas of 0 or -90 / 270, omega of {gonio_omega} given."
             )
 
         self.x_step_size_um = box_width_px * microns_per_pixel_x
