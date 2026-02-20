@@ -12,18 +12,18 @@ import requests
 from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
 from jsonschema import ValidationError
+from pydantic import BaseModel
 
 from mx_bluesky.common.parameters.components import (
-    MxBlueskyParameters,
     WithVisit,
-    get_param_version,
 )
 from mx_bluesky.common.parameters.constants import (
     GridscanParamConstants,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
-from mx_bluesky.hyperion.parameters.components import Wait
+from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
@@ -70,7 +70,7 @@ class _SinglePin(_PinType):
         return self.single_well_width_um
 
 
-def create_parameters_from_agamemnon() -> Sequence[MxBlueskyParameters]:
+def create_parameters_from_agamemnon() -> Sequence[BaseModel]:
     """Fetch the next instruction from agamemnon and convert it into one or more
     mx-bluesky instructions.
     Returns:
@@ -87,7 +87,6 @@ def create_parameters_from_agamemnon() -> Sequence[MxBlueskyParameters]:
                     Wait.model_validate(
                         {
                             "duration_s": data,
-                            "parameter_model_version": get_param_version(),
                         }
                     )
                 ]
@@ -229,7 +228,7 @@ def _get_withenergy_parameters_from_agamemnon(parameters: dict) -> dict[str, Any
 
 def _populate_parameters_from_agamemnon(
     agamemnon_params,
-) -> Sequence[LoadCentreCollect]:
+) -> Sequence[LoadCentreCollectParams]:
     if not agamemnon_params:
         # Empty dict means no instructions
         return []
@@ -243,9 +242,8 @@ def _populate_parameters_from_agamemnon(
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
 
     return [
-        LoadCentreCollect.model_validate(
+        LoadCentreCollectParams.model_validate(
             {
-                "parameter_model_version": get_param_version(),
                 "visit": visit,
                 "detector_distance_mm": detector_distance,
                 "sample_id": agamemnon_params["sample"]["id"],
@@ -255,6 +253,7 @@ def _populate_parameters_from_agamemnon(
                     "name": "TopNByMaxCount",
                     "n": pin_type.expected_number_of_crystals,
                 },
+                **with_energy_params,
                 "robot_load_then_centre": {
                     "storage_directory": str(visit_directory) + "/xraycentring",
                     "file_name": file_name,
@@ -263,7 +262,7 @@ def _populate_parameters_from_agamemnon(
                     "omega_start_deg": 0.0,
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
-                    **with_energy_params,
+                    "exposure_time_s": GridscanParamConstants.EXPOSURE_TIME_S,
                 },
                 "multi_rotation_scan": {
                     "comment": collection["comment"],
@@ -286,7 +285,6 @@ def _populate_parameters_from_agamemnon(
                             "rotation_direction": "Positive",
                         }
                     ],
-                    **with_energy_params,
                 },
             }
         )

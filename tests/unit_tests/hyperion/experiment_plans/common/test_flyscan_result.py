@@ -1,6 +1,6 @@
 import pytest
 
-from mx_bluesky.common.utils.xrc_result import (
+from mx_bluesky.hyperion.utils.centre_selection import (
     top_n_by_max_count,
     top_n_by_max_count_for_each_sample,
 )

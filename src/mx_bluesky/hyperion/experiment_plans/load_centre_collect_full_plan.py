@@ -12,6 +12,7 @@ from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 import mx_bluesky.common.utils.xrc_result as flyscan_result
+import mx_bluesky.hyperion.utils.centre_selection
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
@@ -138,8 +139,10 @@ def _samples_and_locations_to_collect(
     composite: LoadCentreCollectComposite,
 ) -> MsgGenerator[list[tuple[int, np.ndarray]]]:
     if xrc_results:
-        selection_func = flyscan_result.resolve_selection_fn(
-            parameters.selection_params
+        selection_func = (
+            mx_bluesky.hyperion.utils.centre_selection.resolve_selection_fn(
+                parameters.selection_params
+            )
         )
         hits = selection_func(xrc_results)
         hits_to_collect = []

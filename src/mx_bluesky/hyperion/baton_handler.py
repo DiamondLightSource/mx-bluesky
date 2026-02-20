@@ -6,25 +6,22 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.baton import Baton
+from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.alerting import (
     AlertService,
     get_alerting_service,
-)
-from mx_bluesky.common.parameters.components import (
-    MxBlueskyParameters,
-    get_param_version,
 )
 from mx_bluesky.common.utils.context import (
     find_device_in_context,
 )
 from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
 from mx_bluesky.hyperion.external_interaction.alerting.constants import Subjects
-from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 from mx_bluesky.hyperion.utils.context import (
     clear_all_device_caches,
@@ -87,14 +84,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         """
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
-            runner.decode_and_execute(
-                None,
-                [
-                    UDCDefaultState.model_validate(
-                        {"parameter_model_version": get_param_version()}
-                    )
-                ],
-            ),
+            runner.decode_and_execute(None, [UDCDefaultState()]),
             except_plan=trap_default_state_exception,
             auto_raise=False,
         )
@@ -107,14 +97,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
                 baton, runner, current_visit
             )
         if current_visit:
-            yield from runner.decode_and_execute(
-                current_visit,
-                [
-                    UDCCleanup.model_validate(
-                        {"parameter_model_version": get_param_version()}
-                    )
-                ],
-            )
+            yield from runner.decode_and_execute(current_visit, [UDCCleanup()])
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
@@ -174,7 +157,7 @@ def _wait_for_hyperion_requested(baton: Baton):
 def _fetch_and_process_agamemnon_instruction(
     baton: Baton, runner: PlanRunner, current_visit: str | None
 ) -> MsgGenerator[str | None]:
-    parameter_list: Sequence[MxBlueskyParameters] = create_parameters_from_agamemnon()
+    parameter_list: Sequence[BaseModel] = create_parameters_from_agamemnon()
     if parameter_list:
         current_visit = yield from runner.decode_and_execute(
             current_visit, parameter_list
