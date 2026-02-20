@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.common.maths import AngleWithPhase
 from dodal.devices.beamlines.i24.aperture import AperturePositions
 from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
@@ -91,7 +92,10 @@ async def test_rotation_scan_plan_in_re(
         rotation_composite, DEFAULT_DETECTOR_DISTANCE_MM, 0.1
     )
     mock_calc_motion_profile.assert_called_once_with(
-        params, 1, await rotation_composite.gonio.omega.max_velocity.get_value()
+        params,
+        1,
+        await rotation_composite.gonio.omega.max_velocity.get_value(),
+        AngleWithPhase.wrap(0),
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()

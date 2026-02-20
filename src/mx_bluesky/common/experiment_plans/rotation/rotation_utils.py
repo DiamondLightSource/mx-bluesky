@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 
+from dodal.common.maths import AngleWithPhase
 from dodal.devices.zebra.zebra import RotationDirection
 from dodal.utils import get_beamline_name
 
@@ -34,6 +35,7 @@ def calculate_motion_profile(
     params: SingleRotationScan,
     motor_time_to_speed_s: float,
     max_velocity_deg_s: float,
+    reference_angle: AngleWithPhase = AngleWithPhase(0, 0),
 ) -> RotationMotionProfile:
     """Calculates the various numbers needed for motions in the rotation scan.
     Rotates through "scan width" plus twice an "offset" to take into account
@@ -41,7 +43,15 @@ def calculate_motion_profile(
     degrees of rotation needed to make sure the fast shutter has fully opened before the
     detector trigger is sent.
     See https://github.com/DiamondLightSource/hyperion/wiki/rotation-scan-geometry
-    for a simple pictorial explanation."""
+    for a simple pictorial explanation.
+
+    Args:
+        params (SingleRotationScan): The rotation scan parameters
+        motor_time_to_speed_s (float): Time in seconds in which we assume motor has reached the target speed
+        max_velocity_deg_s (float): Maximum velocity in deg/s for the motor axis
+        reference_angle (AngleWithPhase): Reference position of the rotation axis, from which the motion positions will
+            be derived. Typically this would use the current omega position of the motor, if unspecified 0 is assumed.
+    """
 
     assert params.rotation_increment_deg > 0
 
@@ -57,6 +67,8 @@ def calculate_motion_profile(
             if direction == direction.NEGATIVE
             else direction.NEGATIVE
         )
+
+    start_scan_deg = reference_angle.project_to_unwrapped(start_scan_deg)
 
     num_images = params.num_images
     shutter_time_s = params.shutter_opening_time_s

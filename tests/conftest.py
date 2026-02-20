@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
+import numpy as np
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
@@ -825,9 +826,15 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
     thawer: Thawer,
     beamsize: BeamsizeBase,
+    sim_run_engine: RunEngineSimulator,
 ):
-    set_mock_value(smargon.omega._real_motor.max_velocity, 131)
+    set_mock_value(smargon.omega._real_motor.max_velocity, 131)  # type: ignore
     undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    sim_run_engine.add_handler(
+        "read",
+        lambda msg: {"gonio-omega_axis-offset_and_phase": {"value": np.array([0, 0])}},
+        "gonio-omega_axis",
+    )
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
