@@ -28,7 +28,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.parameters.components import IspybExperimentType
-from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.parameters.constants import USE_NUMTRACKER, PlanNameConstants
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
@@ -73,6 +73,18 @@ class RotationISPyBCallback(BaseISPyBCallback):
             params = doc.get("mx_bluesky_parameters")
             assert isinstance(params, str)
             self.params = SingleRotationScan.model_validate_json(params)
+
+            # Todo this chunk needs to go at the start of any numtracker+ispyb-using plan
+            if self.params.visit == USE_NUMTRACKER:
+                try:
+                    visit = doc.get("instrument_session")
+                    assert isinstance(visit, str)
+                    self.params.visit = visit
+                except Exception as e:
+                    raise ValueError(
+                        f"Error trying to retrieve instrument session from document {doc}"
+                    ) from e
+
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)

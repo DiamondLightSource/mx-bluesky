@@ -24,11 +24,13 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
     JF_COMPLETE_GROUP,
 )
-from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     calculate_motion_profile,
 )
-from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
+from mx_bluesky.common.parameters.constants import (
+    PlanGroupCheckpointConstants,
+    PlanNameConstants,
+)
 from tests.conftest import raw_params_from_file
 from tests.unit_tests.beamlines.i24.jungfrau_commissioning.utils import (
     get_good_single_rotation_params,
@@ -70,12 +72,16 @@ async def test_rotation_scan_plan_in_re(
     run_engine: RunEngine,
     tmp_path,
     rotation_composite: RotationScanComposite,
+    with_numtracker,
+    mock_ispyb_conn,
 ):
     required_hardware_read_signals = [
         rotation_composite.dcm.energy_in_keV,
         rotation_composite.dcm.wavelength_in_a,
         rotation_composite.det_stage.z,
         rotation_composite.jungfrau._writer.file_path,
+        rotation_composite.jungfrau._writer.file_name,
+        rotation_composite.jungfrau.ispyb_detector_id,
     ]
 
     rotation_composite.jungfrau._writer.final_path = (
@@ -115,6 +121,7 @@ def test_single_rotation_plan_in_simulator(
     sim_run_engine: RunEngineSimulator,
     rotation_composite: RotationScanComposite,
     tmp_path,
+    with_numtracker,
 ):
     params = get_good_single_rotation_params(tmp_path)
     set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
@@ -125,7 +132,7 @@ def test_single_rotation_plan_in_simulator(
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "open_run"
-        and msg.run == "OUTER SINGLE ROTATION SCAN",
+        and msg.run == PlanNameConstants.ROTATION_OUTER,
     )
 
     # Wait for rotation devices to be ready before reading metadata
@@ -153,7 +160,7 @@ def test_single_rotation_plan_in_simulator(
     assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "close_run"
-        and msg.run == PlanNameConstants.SINGLE_ROTATION_SCAN,
+        and msg.run == PlanNameConstants.ROTATION_OUTER,
     )
 
 

@@ -41,7 +41,6 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
 from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     USE_NUMTRACKER,
@@ -196,7 +195,7 @@ def single_rotation_plan(
                 "scan_points": [params.scan_points],
                 "rotation_scan_params": params.model_dump_json(),
                 "detector_file_template": params.file_name,
-                "dcid": IspybIds(),
+                "dcid": ispyb_callback.ispyb_ids,
             }
         )
         def _rotation_scan_plan(
