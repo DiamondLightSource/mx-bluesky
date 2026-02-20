@@ -366,7 +366,7 @@ def test_create_parameters_from_agamemnon_contains_expected_data(agamemnon_respo
         assert hyperion_params.sample_id == 6501159
         assert hyperion_params.sample_puck == 5
         assert hyperion_params.sample_pin == 4
-        assert str(hyperion_params.parameter_model_version) == "5.3.0"
+        assert str(hyperion_params.parameter_model_version) == "6.0.0"
         assert hyperion_params.select_centres.n == 1
 
 
@@ -395,11 +395,11 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
         assert robot_load_params.sample_puck == 5
         assert robot_load_params.sample_pin == 4
         assert robot_load_params.demand_energy_ev == 12700.045934258673
-        assert robot_load_params.omega_start_deg == 0.0
+        assert robot_load_params.omega_starts_deg == [0.0, 90.0]
         assert robot_load_params.transmission_frac == 1.0
         assert robot_load_params.tip_offset_um == 300.0
         assert robot_load_params.grid_width_um == 600.0
-        assert str(robot_load_params.parameter_model_version) == "5.3.0"
+        assert str(robot_load_params.parameter_model_version) == "6.0.0"
         assert (
             robot_load_params.storage_directory
             == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring"
@@ -436,7 +436,7 @@ def test_create_parameters_from_agamemnon_contains_expected_rotation_data(
         assert rotation_params.ispyb_experiment_type == "OSC"
 
         assert rotation_params.demand_energy_ev == 12700.045934258673
-        assert str(rotation_params.parameter_model_version) == "5.3.0"
+        assert str(rotation_params.parameter_model_version) == "6.0.0"
         assert (
             rotation_params.storage_directory
             == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242"

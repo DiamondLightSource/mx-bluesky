@@ -37,25 +37,6 @@ from .conftest import sim_fire_event_on_open_run
 
 
 @pytest.fixture
-def test_grid_params():
-    return {
-        "transmission_frac": 1.0,
-        "exposure_time_s": 0,
-        "x_start_um": 0,
-        "y_start_um": 0,
-        "y2_start_um": 0,
-        "z_start_um": 0,
-        "z2_start_um": 0,
-        "x_steps": 10,
-        "y_steps": 10,
-        "z_steps": 10,
-        "x_step_size_um": 0.1,
-        "y_step_size_um": 0.1,
-        "z_step_size_um": 0.1,
-    }
-
-
-@pytest.fixture
 def test_pin_centre_then_xray_centre_params(
     tmp_path,
 ) -> PinTipCentreThenXrayCentre:
@@ -69,14 +50,14 @@ def test_pin_centre_then_xray_centre_params(
 
 @pytest.fixture
 def pin_centre_then_xray_centre_params_with_patched_create_params(
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
     with patch(
         "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.create_parameters_for_grid_detection"
     ) as mock_create_params:
         test_pin_centre_then_xray_centre_params.set_specified_grid_params(
-            test_fgs_params
+            test_three_d_grid_params
         )
         mock_create_params.return_value = test_pin_centre_then_xray_centre_params
         yield test_pin_centre_then_xray_centre_params
@@ -125,9 +106,6 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.pin_tip_centre_plan",
     autospec=True,
 )
@@ -138,15 +116,12 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
 def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     mock_grid_detect: MagicMock,
     mock_pin_tip_centre: MagicMock,
-    mock_grid_callback: MagicMock,
-    test_grid_params: MagicMock,
+    grid_detection_callback_with_detected_grid,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_config_files,
     sim_run_engine: RunEngineSimulator,
 ):
-    mock_grid_callback.return_value.get_grid_parameters.return_value = test_grid_params
-
     sim_run_engine.add_handler_for_callback_subscribes()
 
     sim_run_engine.add_handler(
@@ -392,9 +367,6 @@ def test_pin_tip_centre_then_xray_centre_moves_beamstop_into_place(
 
 @pytest.mark.parametrize("transmission_frac", [1, 0.5, 0.25])
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.pin_tip_centre_plan"
 )
 @patch(
@@ -411,17 +383,12 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     mock_run_gridscan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_pin_tip_centre_plan: MagicMock,
-    mock_grid_detection_callback: MagicMock,
-    test_grid_params,
+    grid_detection_callback_with_detected_grid,
     transmission_frac: float,
     sim_run_engine: RunEngineSimulator,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
-    mock_grid_detection_callback.return_value.get_grid_parameters.return_value = (
-        test_grid_params
-    )
-
     test_pin_centre_then_xray_centre_params.transmission_frac = transmission_frac
 
     msgs = sim_run_engine.simulate_plan(
@@ -521,11 +488,11 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     mock_create_flyscan_params: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     test_config_files,
     run_engine: RunEngine,
 ):
-    mock_create_flyscan_params.return_value = test_fgs_params
+    mock_create_flyscan_params.return_value = test_three_d_grid_params
     run_engine(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
@@ -534,4 +501,4 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
         )
     )
     mock_fetch_xrc_results.assert_called_once()
-    assert mock_fetch_xrc_results.call_args[0][1] == test_fgs_params
+    assert mock_fetch_xrc_results.call_args[0][1] == test_three_d_grid_params

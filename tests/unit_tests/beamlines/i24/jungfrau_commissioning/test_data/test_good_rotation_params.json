@@ -7,7 +7,7 @@
     "sample_id": 123456,
     "transmission_frac": 0.1,
     "storage_directory": "from numtracker",
-    "parameter_model_version": "5.0.0",
+    "parameter_model_version": "6.0.0",
     "visit": "from numtracker",
     "shutter_opening_time_s": 0.5
 }

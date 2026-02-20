@@ -40,12 +40,14 @@ def robot_load_then_centre_params(tmp_path):
 @pytest.fixture
 def robot_load_then_centre_params_with_patched_create_params(
     robot_load_then_centre_params: RobotLoadThenCentre,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
 ):
     with patch(
         "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.create_parameters_for_grid_detection"
     ) as mock_create_params:
-        robot_load_then_centre_params.set_specified_grid_params(test_fgs_params)
+        robot_load_then_centre_params.set_specified_grid_params(
+            test_three_d_grid_params
+        )
         mock_create_params.return_value = robot_load_then_centre_params
         yield
 
@@ -495,7 +497,7 @@ def test_box_size_passed_through_to_gridscan(
     robot_load_then_centre_params: RobotLoadThenCentre,
     grid_detection_callback_with_detected_grid: MagicMock,
     run_engine: RunEngine,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     robot_load_then_centre_params_with_patched_create_params,
 ):
     run_engine(
@@ -505,7 +507,7 @@ def test_box_size_passed_through_to_gridscan(
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == test_fgs_params.box_size_um
+    assert detect_grid_call.args[1].box_size_um == test_three_d_grid_params.box_size_um
 
 
 async def test_multiple_devices(dcm, undulator, undulator_dcm):

@@ -45,16 +45,13 @@ def minimal_3d_gridscan_params():
     return {
         "sample_id": 123,
         "x_start_um": 0.123,
-        "y_start_um": 0.777,
-        "z_start_um": 0.05,
-        "parameter_model_version": "5.0.0",
+        "y_starts_um": [0.777, 2],
+        "z_starts_um": [0.05, 2],
+        "parameter_model_version": "6.0.0",
         "visit": "cm12345",
         "file_name": "test_file_name",
-        "y2_start_um": 2,
-        "z2_start_um": 2,
         "x_steps": 5,
-        "y_steps": 7,
-        "z_steps": 9,
+        "y_steps": [7, 9],
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
     }
 
@@ -62,22 +59,22 @@ def minimal_3d_gridscan_params():
 def get_empty_grid_parameters() -> GridParamUpdate:
     return {
         "x_start_um": 1,
-        "y_start_um": 1,
-        "y2_start_um": 1,
-        "z_start_um": 1,
-        "z2_start_um": 1,
+        "y_starts_um": [1, 1],
+        "z_starts_um": [1, 1],
         "x_steps": 1,
-        "y_steps": 1,
-        "z_steps": 1,
+        "y_steps": [1, 1],
         "x_step_size_um": 1,
-        "y_step_size_um": 1,
-        "z_step_size_um": 1,
+        "y_step_sizes_um": [1, 1],
     }
 
 
 def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
-    assert {"sam_x", "sam_y", "sam_z"} == set(test_params.scan_points.keys())
+    assert all(
+        {"sam_x", "sam_y", "sam_z"} == set(scan_point.keys())
+        for scan_point in test_params.scan_points
+    )
+
     assert test_params.scan_indices == [0, 35]
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == GridscanParamConstants.EXPOSURE_TIME_S
@@ -103,10 +100,11 @@ def test_serialise_deserialise(minimal_3d_gridscan_params):
     "version, valid",
     [
         ("4.3.0", False),
-        ("6.3.7", False),
-        ("5.0.0", True),
-        ("5.3.0", True),
-        ("5.3.7", True),
+        ("7.3.7", False),
+        ("5.0.0", False),
+        ("5.3.0", False),
+        ("5.3.7", False),
+        ("6.0.0", True),
     ],
 )
 def test_param_version(minimal_3d_gridscan_params, version: str, valid: bool):
@@ -120,7 +118,7 @@ def test_param_version(minimal_3d_gridscan_params, version: str, valid: bool):
 
 def test_robot_load_then_centre_params():
     params = {
-        "parameter_model_version": "5.0.0",
+        "parameter_model_version": "6.0.0",
         "sample_id": 123456,
         "visit": "cm12345",
         "file_name": "file_name",

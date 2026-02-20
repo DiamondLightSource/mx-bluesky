@@ -33,14 +33,14 @@ from ....conftest import TestData
 
 
 async def test_results_adjusted_and_event_raised(
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     run_engine: RunEngine,
     zocalo: ZocaloResults,
 ):
     x_ray_centre_event_handler = XRayCentreEventHandler()
     run_engine.subscribe(x_ray_centre_event_handler)
     mock_zocalo_trigger(zocalo, TestData.test_result_large)
-    run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
+    run_engine(fetch_xrc_results_from_zocalo(zocalo, test_three_d_grid_params))
 
     actual = x_ray_centre_event_handler.xray_centre_results
     expected = XRayCentreResult(
@@ -60,7 +60,7 @@ async def test_results_adjusted_and_event_raised(
 
 
 def test_fetch_results_discards_results_below_threshold(
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     run_engine: RunEngine,
     zocalo: ZocaloResults,
 ):
@@ -73,7 +73,7 @@ def test_fetch_results_discards_results_below_threshold(
         + TestData.test_result_below_threshold
         + TestData.test_result_small,
     )
-    run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
+    run_engine(fetch_xrc_results_from_zocalo(zocalo, test_three_d_grid_params))
 
     assert callback.xray_centre_results and len(callback.xray_centre_results) == 2
     assert [r.max_count for r in callback.xray_centre_results] == [50000, 1000]
@@ -81,18 +81,18 @@ def test_fetch_results_discards_results_below_threshold(
 
 def test_no_xtal_found_raises_exception(
     run_engine: RunEngine,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     zocalo: ZocaloResults,
 ):
     mock_zocalo_trigger(zocalo, [])
 
     with pytest.raises(CrystalNotFoundError):
-        run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
+        run_engine(fetch_xrc_results_from_zocalo(zocalo, test_three_d_grid_params))
 
 
 def test_dummy_result_returned_when_no_xtal_and_commissioning_mode_enabled(
     run_engine: RunEngine,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     fake_fgs_composite: FlyScanEssentialDevices,
     beamline_specific: BeamlineSpecificFGSFeatures,
     zocalo: ZocaloResults,
@@ -103,11 +103,11 @@ def test_dummy_result_returned_when_no_xtal_and_commissioning_mode_enabled(
 
     mock_zocalo_trigger(zocalo, [])
 
-    run_engine(fetch_xrc_results_from_zocalo(zocalo, test_fgs_params))
+    run_engine(fetch_xrc_results_from_zocalo(zocalo, test_three_d_grid_params))
     results = xrc_event_handler.xray_centre_results or []
     assert len(results) == 1
     result = results[0]
-    assert result.sample_id == test_fgs_params.sample_id
+    assert result.sample_id == test_three_d_grid_params.sample_id
     assert result.max_count == 10000
     assert result.total_count == 100000
     assert all(np.isclose(result.bounding_box_mm[0], [1.95, 0.95, 0.45]))

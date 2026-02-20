@@ -3,14 +3,14 @@ title Gridscan Parameter Relationships
 
 class DiffractionExperiment
 class DiffractionExperimentWithSample
-class GridCommon {
+class GenericGrid {
     grid_width_um
     exposure_time_s
 }
 class GridScanWithEdgeDetect {
     box_size_um
 }
-class HyperionGridCommon {
+class HyperionGenericGrid {
     enable_dev_shm
 }
 class HyperionThreeDGridScan {
@@ -47,10 +47,10 @@ class RotationScanPerSweep
 
 MxBlueSkyParameters <|-- DiffractionExperiment
 DiffractionExperiment <|-- DiffractionExperimentWithSample
-DiffractionExperimentWithSample <|-- GridCommon
-GridCommon <|-- GridScanWithEdgeDetect
-GridCommon <|-- HyperionGridCommon
-HyperionGridCommon <|-- HyperionThreeDGridScan
+DiffractionExperimentWithSample <|-- GenericGrid
+GenericGrid <|-- GridScanWithEdgeDetect
+GenericGrid <|-- HyperionGenericGrid
+HyperionGenericGrid <|-- HyperionThreeDGridScan
 SpecifiedGrid <|-- HyperionThreeDGridScan
 XyzStarts <|-- SpecifiedGrid
 OptionalXYZStarts <|-- RotationScanPerSweep

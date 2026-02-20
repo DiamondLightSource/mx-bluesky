@@ -12,7 +12,9 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import setup_logging
-from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GenericGridWithHyperionDetectorParams,
+)
 
 from .....conftest import TestData
 
@@ -52,7 +54,7 @@ def mock_store_in_ispyb(config, *args, **kwargs) -> StoreInIspyb:
 class TestXrayCentreIspybHandler:
     def test_fgs_failing_results_in_bad_run_status_in_ispyb(self, test_event_data):
         ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -87,7 +89,7 @@ class TestXrayCentreIspybHandler:
         self, test_event_data
     ):
         ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -133,7 +135,7 @@ class TestXrayCentreIspybHandler:
         gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -169,7 +171,7 @@ class TestXrayCentreIspybHandler:
         gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -202,7 +204,7 @@ class TestXrayCentreIspybHandler:
         self, mock_time, dummy_rotation_data_collection_group_info, test_event_data
     ):
         ispyb_handler = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams,
+            param_type=GenericGridWithHyperionDetectorParams,
         )
 
         ispyb_handler.activity_gated_start(
