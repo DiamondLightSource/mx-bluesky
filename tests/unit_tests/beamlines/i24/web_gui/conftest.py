@@ -45,7 +45,7 @@ def dummy_params_without_pp():
         "checker_pattern": False,
         "chip_map": [1],
     }
-    return FixedTargetParameters(**params)
+    return FixedTargetParameters(**params)  # type: ignore
 
 
 @pytest.fixture
@@ -61,4 +61,4 @@ def dummy_params_ex():
         "num_images": 10,
         "pump_status": False,
     }
-    return ExtruderParameters(**params)
+    return ExtruderParameters(**params)  # type: ignore
