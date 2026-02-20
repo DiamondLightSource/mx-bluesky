@@ -2,6 +2,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
+from dodal.common.maths import AngleWithPhase
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
@@ -207,7 +208,14 @@ def _move_and_rotation(
 ):
     motor_time_to_speed = yield from bps.rd(composite.gonio.omega.acceleration_time)
     max_vel = yield from bps.rd(composite.gonio.omega.max_velocity)
-    motion_values = calculate_motion_profile(params, motor_time_to_speed, max_vel)
+
+    current_omega_offset_and_phase = yield from bps.rd(composite.gonio.omega_axis)
+    motion_values = calculate_motion_profile(
+        params,
+        motor_time_to_speed,
+        max_vel,
+        AngleWithPhase.from_offset_and_phase(current_omega_offset_and_phase),
+    )
 
     def _div_by_1000_if_not_none(num: float | None):
         return num / 1000 if num else num
