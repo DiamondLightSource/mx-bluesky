@@ -17,6 +17,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanISPyBCallback,
 )
@@ -46,9 +49,6 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_grid_detect_then_xray_centre_
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    RotationISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,

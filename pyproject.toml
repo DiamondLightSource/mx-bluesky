@@ -55,7 +55,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.14.0",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@2ce4bb42ef4c388fa23e944acb3cc28f2c59144b",
 ]
 
 
@@ -94,7 +94,7 @@ dev = [
     "tox-uv",
     "types-mock",
     "types-requests",
-    "sphinxcontrib.mermaid", # To build dodal docs
+    "sphinxcontrib.mermaid",     # To build dodal docs
 ]
 
 [project.scripts]

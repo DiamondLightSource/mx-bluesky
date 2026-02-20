@@ -1,7 +1,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
 

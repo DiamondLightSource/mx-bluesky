@@ -12,6 +12,7 @@ from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
 )
+from dodal.utils import BeamlinePrefix, get_beamline_name
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -24,13 +25,16 @@ from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
-    TEST_MODE,
     USE_NUMTRACKER,
     DetectorParamConstants,
     GridscanParamConstants,
 )
 
+TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
+
 PARAMETER_VERSION = Version.parse("5.3.0")
+
+BL = get_beamline_name("i03")
 
 
 def get_param_version() -> SemanticVersion:
@@ -158,7 +162,9 @@ class WithVisit(BaseModel):
         default=DetectorParamConstants.BEAM_XY_LUT_PATH
     )
     detector_distance_mm: float | None = Field(default=None, gt=0)
-    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
+    insertion_prefix: str = (
+        f"{BeamlinePrefix(BL).insertion_prefix}" if TEST_MODE else "SR03I"
+    )
 
 
 class DiffractionExperiment(
@@ -191,7 +197,7 @@ class DiffractionExperiment(
                 Path(values["storage_directory"], "snapshots").as_posix(),
             )
         else:
-            values["snapshot_directory"] = Path("/tmp")
+            values["snapshot_directory"] = Path("/tmp").as_posix()
         return values
 
     @property
@@ -232,7 +238,9 @@ class SplitScan(BaseModel):
 
 
 class WithSample(BaseModel):
-    sample_id: int
+    sample_id: int | None = (
+        None  # None is invalid for dc groups, but valid for regular data collections
+    )
     sample_puck: int | None = None
     sample_pin: int | None = None
 

@@ -76,6 +76,7 @@ class PlanNameConstants:
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
+    ROTATION_DEVICE_READ = "ROTATION DEVICE READ"
 
     SET_ENERGY = "set_energy"
 

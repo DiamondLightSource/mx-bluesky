@@ -27,9 +27,6 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
     JF_COMPLETE_GROUP,
     fly_jungfrau,
 )
-from mx_bluesky.beamlines.i24.parameters.constants import (
-    PlanNameConstants,
-)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
@@ -41,10 +38,14 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     USE_NUMTRACKER,
     PlanGroupCheckpointConstants,
+    PlanNameConstants,
 )
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
@@ -152,8 +153,17 @@ def single_rotation_plan(
     about a fixed axis - for now this axis is limited to omega.
     Needs additional setup of the sample environment and a wrapper to clean up."""
 
-    @bpp.set_run_key_decorator(PlanNameConstants.SINGLE_ROTATION_SCAN)
-    @run_decorator()
+    ispyb_callback = RotationISPyBCallback()
+
+    @bpp.subs_decorator(ispyb_callback)
+    @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_OUTER)
+    @run_decorator(
+        md={
+            "subplan_name": PlanNameConstants.ROTATION_OUTER,
+            "mx_bluesky_parameters": params.model_dump_json(),
+            "activate_callbacks": ["RotationISPyBCallback"],
+        }
+    )
     def _plan_in_run_decorator():
         if not params.detector_distance_mm:
             LOGGER.info(
@@ -185,6 +195,7 @@ def single_rotation_plan(
                 "scan_points": [params.scan_points],
                 "rotation_scan_params": params.model_dump_json(),
                 "detector_file_template": params.file_name,
+                "dcid": ispyb_callback.ispyb_ids,
             }
         )
         def _rotation_scan_plan(
@@ -232,6 +243,9 @@ def single_rotation_plan(
 
             # Read hardware after preparing jungfrau so that device metadata output from callback is correct
             # Whilst metadata is being written in bluesky we need to access the private writer here
+            # We also need to access the private writer so that we get path information to send to ispyb.
+            # This will be needed until numtracker / StartDocumentPathProvider can fully support the MX
+            # usecase, see #issue
             read_hardware_partial = partial(
                 read_hardware_plan,
                 [
@@ -239,6 +253,8 @@ def single_rotation_plan(
                     composite.dcm.wavelength_in_a,
                     composite.det_stage.z,
                     composite.jungfrau._writer.file_path,  # noqa: SLF001 N
+                    composite.jungfrau._writer.file_name,  # noqa: SLF001 N
+                    composite.jungfrau.ispyb_detector_id,
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,
             )

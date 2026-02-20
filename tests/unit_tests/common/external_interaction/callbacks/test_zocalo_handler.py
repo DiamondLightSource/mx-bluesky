@@ -7,6 +7,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
     ZocaloCallback,
     ZocaloTrigger,
 )
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
+    generate_start_info_from_ordered_runs,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -14,9 +17,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    generate_start_info_from_ordered_runs,
 )
 
 EXPECTED_RUN_START_MESSAGE = {"subplan_name": "test_plan_name", "uid": "my_uuid"}

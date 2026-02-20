@@ -3,7 +3,8 @@ from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
 
-from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
+from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.rotation import SingleRotationScan
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -13,11 +14,25 @@ READING_DUMP_FILENAME = "collection_info.json"
 class JsonMetadataWriter(CallbackBase):
     """Callback class to handle the creation of metadata json files for commissioning.
 
-    To use, subscribe the Bluesky RunEngine to an instance of this class.
-    E.g.:
-        metadata_writer_callback = JsonMetadataWriter(parameters)
-        RE.subscribe(metadata_writer_callback)
-    Or decorate a plan using bluesky.preprocessors.subs_decorator.
+    Currently, nexus files aren't being written by nexgen, so writer needs to include
+    the dcid produced by an ispyb callback. To get this working, the ispyb callback need
+    to be triggered in the right way before the start function here is run.
+
+    To use:
+        1. subscribe the Bluesky RunEngine to an instance of this class.
+        E.g.:
+            metadata_writer_callback = JsonMetadataWriter(parameters)
+            RE.subscribe(metadata_writer_callback)
+        Or decorate a plan using bluesky.preprocessors.subs_decorator.
+        2. Subscribe the RE to the rotation callbacks:
+            ispyb_callback = RotationISPyBCallback()
+            @bpp.subs_decorator(ispyb_callback)
+            ...
+        3. Open a run with key decorator PlanNameConstants.ROTATION_OUTER, with metadata:
+        "activate_callbacks": ["RotationISPyBCallback"]
+        4. Open a run with key decorator PlanNameConstants.ROTATION_MAIN, with metadata:
+        "dcid": ispyb_callback.ispyb_ids
+
 
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
 
@@ -43,6 +58,12 @@ class JsonMetadataWriter(CallbackBase):
             )
             self.parameters = SingleRotationScan(**json.loads(json_params))
             self.run_start_uid = doc.get("uid")
+            dcid = doc.get("dcid")
+            assert isinstance(dcid, IspybIds), (
+                "Rotation start document should include dcid of type IspybIds to use JF metadata writer. This should come from RotationISPyBCallback activated by a "
+                "PlanNameConstants.ROTATION_OUTER run"
+            )
+            self.dcid = dcid
 
     def descriptor(self, doc: dict):  # type: ignore
         self.descriptors[doc["uid"]] = doc
@@ -81,6 +102,7 @@ class JsonMetadataWriter(CallbackBase):
                             "energy_kev": self.energy_in_kev,
                             "angular_increment_deg": self.parameters.rotation_increment_deg,
                             "detector_distance_mm": self.detector_distance_mm,
+                            "dcid": self.dcid.data_collection_ids[0],
                         }
                     )
                 )
