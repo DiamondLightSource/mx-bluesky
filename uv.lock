@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.0.1.dev24+gfd21a9ece"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#fd21a9ece9734c58fa94306a6861d250bdaadef2" }
+version = "2.0.1.dev26+g2ce4bb42e"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=2ce4bb42ef4c388fa23e944acb3cc28f2c59144b#2ce4bb42ef4c388fa23e944acb3cc28f2c59144b" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2108,7 +2108,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.0.0rc2" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=2ce4bb42ef4c388fa23e944acb3cc28f2c59144b" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
