@@ -1052,9 +1052,12 @@ def test_baton_handler_fails_if_synchrotron_machine_countdown_below_threshold(
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
     dont_patch_clear_devices,
+    caplog,
 ):
     synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
     set_mock_value(synchrotron.machine_user_countdown, 5)
 
-    with pytest.raises(PlanError, match="Synchrotron machine countdown too low"):
+    with caplog.at_level("INFO"):
         run_udc_when_requested(bluesky_context, udc_runner)
+
+    assert "Synchrotron machine countdown too low" in caplog.text

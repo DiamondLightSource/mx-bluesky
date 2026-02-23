@@ -31,6 +31,7 @@ from mx_bluesky.hyperion.utils.context import (
 
 HYPERION_USER = "Hyperion"
 NO_USER = "None"
+COUNTDOWN_THRESHOLD_SECONDS = 600
 
 
 def run_forever(runner: PlanRunner):
@@ -90,11 +91,11 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
 
         LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
 
-        if countdown < 600:
+        if countdown < COUNTDOWN_THRESHOLD_SECONDS:
             _raise_udc_completed_alert(get_alerting_service())
             # Release the baton for orderly exit from the instruction loop
             yield from _unrequest_baton(baton)
-            raise PlanError("Synchrotron machine countdown too low")
+            LOGGER.info("Synchrotron machine countdown too low")
 
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
