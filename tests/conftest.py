@@ -812,7 +812,7 @@ def fake_create_rotation_devices(
     beamsize: BeamsizeBase,
     sim_run_engine: RunEngineSimulator,
 ):
-    set_mock_value(smargon.omega._real_motor.max_velocity, 131)  # type: ignore
+    set_mock_value(smargon.omega.max_velocity, 131)  # type: ignore
     undulator.set = MagicMock(side_effect=lambda _: completed_status())
     sim_run_engine.add_handler(
         "read",
@@ -1284,7 +1284,9 @@ class OavGridSnapshotTestEvents:
             "oav-grid_snapshot-last_path_full_overlay": "test_1_y",
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
-            "gonio-omega": 0,
+            "gonio-omega": 1080,
+            "gonio-omega_axis-phase": 0.0,
+            "gonio-omega_axis-offset_and_phase": np.array([1080.0, 0.0]),
             "gonio-chi": 0,
             "gonio-x": 0,
             "gonio-y": 0,
@@ -1313,7 +1315,9 @@ class OavGridSnapshotTestEvents:
             "oav-x_direction": -1,
             "oav-y_direction": -1,
             "oav-z_direction": 1,
-            "gonio-omega": -90,
+            "gonio-omega": 990,
+            "gonio-omega_axis-phase": 270.0,
+            "gonio-omega_axis-offset_and_phase": np.array([720.0, 270.0]),
             "gonio-chi": 30,
             "gonio-x": 0,
             "gonio-y": 0,
