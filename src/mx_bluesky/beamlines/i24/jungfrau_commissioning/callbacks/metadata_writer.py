@@ -14,7 +14,7 @@ READING_DUMP_FILENAME = "collection_info.json"
 class JsonMetadataWriter(CallbackBase):
     """Callback class to handle the creation of metadata json files for commissioning.
 
-    Currently, nexus files aren't being written by nexgen, so writer needs to include
+    Currently, nexus files aren't being written by nexgen, so this writer needs to include
     the dcid produced by an ispyb callback. To get this working, the ispyb callback need
     to be triggered in the right way before the start function here is run.
 

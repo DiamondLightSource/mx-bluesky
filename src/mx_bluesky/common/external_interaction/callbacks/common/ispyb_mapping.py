@@ -43,6 +43,9 @@ def populate_remaining_data_collection_info(
             "Expected RunStart doc to be provided to populate_remaining_data_collection_info when using numtracker for visit"
         )
         data_collection_info.visit_string = doc.get("instrument_session")
+        assert isinstance(data_collection_info.visit_string, str), (
+            "Failed to get instrument session during ispyb callbacks"
+        )
     else:
         data_collection_info.visit_string = params.visit
         data_collection_info.imgdir = params.detector_params.directory

@@ -239,7 +239,7 @@ class SplitScan(BaseModel):
 
 class WithSample(BaseModel):
     sample_id: int | None = (
-        None  # None is invalid for dc groups, but valid for regular data collections
+        None  # Expeye won't accept None for dc groups, but it will for regular data collections
     )
     sample_puck: int | None = None
     sample_pin: int | None = None

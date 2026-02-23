@@ -27,7 +27,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
+    IspybExperimentType,
+)
 from mx_bluesky.common.parameters.constants import USE_NUMTRACKER, PlanNameConstants
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
@@ -38,6 +41,17 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 
 if TYPE_CHECKING:
     from event_model.documents import Event, RunStart, RunStop
+
+
+def get_instrument_session_from_md(doc: RunStart, params: DiffractionExperiment):
+    try:
+        visit = doc.get("instrument_session")
+        assert isinstance(visit, str)
+        params.visit = visit
+    except Exception as e:
+        raise ValueError(
+            f"Error trying to retrieve instrument session from document {doc}"
+        ) from e
 
 
 class RotationISPyBCallback(BaseISPyBCallback):
@@ -74,16 +88,8 @@ class RotationISPyBCallback(BaseISPyBCallback):
             assert isinstance(params, str)
             self.params = SingleRotationScan.model_validate_json(params)
 
-            # Todo this chunk needs to go at the start of any numtracker+ispyb-using plan
             if self.params.visit == USE_NUMTRACKER:
-                try:
-                    visit = doc.get("instrument_session")
-                    assert isinstance(visit, str)
-                    self.params.visit = visit
-                except Exception as e:
-                    raise ValueError(
-                        f"Error trying to retrieve instrument session from document {doc}"
-                    ) from e
+                get_instrument_session_from_md(doc, self.params)
 
             dcgid = (
                 self.ispyb_ids.data_collection_group_id

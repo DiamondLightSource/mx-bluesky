@@ -243,9 +243,7 @@ def single_rotation_plan(
 
             # Read hardware after preparing jungfrau so that device metadata output from callback is correct
             # Whilst metadata is being written in bluesky we need to access the private writer here
-            # We also need to access the private writer so that we get path information to send to ispyb.
-            # This will be needed until numtracker / StartDocumentPathProvider can fully support the MX
-            # usecase, see #issue
+            # Won't be accessing private writer when using ophyd-async v0.16
             read_hardware_partial = partial(
                 read_hardware_plan,
                 [
