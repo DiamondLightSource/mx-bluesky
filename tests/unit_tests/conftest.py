@@ -559,3 +559,9 @@ async def beamstop_check_devices(
 @pytest.fixture
 async def ipin():
     yield i03.ipin.build(connect_immediately=True, mock=True)
+
+
+@pytest.fixture
+async def with_numtracker(run_engine: RunEngine):
+    """Plans using numtracker will get their visit from instrument session, set in BlueAPI"""
+    run_engine.md["instrument_session"] = "cm31105-4"

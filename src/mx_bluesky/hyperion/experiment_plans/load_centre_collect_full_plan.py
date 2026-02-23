@@ -165,6 +165,8 @@ def _samples_and_locations_to_collect(
         initial_y_mm = yield from bps.rd(composite.gonio.y.user_readback)
         initial_z_mm = yield from bps.rd(composite.gonio.z.user_readback)
 
+        assert parameters.sample_id
+
         return [
             (
                 parameters.sample_id,

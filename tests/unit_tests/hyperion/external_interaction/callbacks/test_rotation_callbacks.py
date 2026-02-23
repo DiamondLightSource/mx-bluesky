@@ -4,6 +4,12 @@ import pytest
 from bluesky.run_engine import RunEngine
 from event_model import RunStart
 
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.rotation.nexus_callback import (
+    RotationNexusFileCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
@@ -18,12 +24,6 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    RotationISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
-    RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
@@ -56,7 +56,7 @@ def do_rotation_scan(
 
 @pytest.mark.timeout(2)
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
+    "mx_bluesky.common.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
 )
 def test_nexus_handler_gets_documents_in_plan(
@@ -82,7 +82,7 @@ def test_nexus_handler_gets_documents_in_plan(
 
 @pytest.mark.timeout(2)
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
+    "mx_bluesky.common.external_interaction.callbacks.rotation.nexus_callback.NexusWriter",
     autospec=True,
 )
 def test_nexus_handler_only_writes_once(
@@ -198,7 +198,7 @@ n_images_store_id = [
 
 @pytest.mark.parametrize("n_images,store_id", n_images_store_id)
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
+    "mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb",
     new=MagicMock(),
 )
 def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(

@@ -33,6 +33,13 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
+    RotationISPyBCallback,
+    generate_start_info_from_ordered_runs,
+)
+from mx_bluesky.common.external_interaction.callbacks.rotation.nexus_callback import (
+    RotationNexusFileCallback,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -55,13 +62,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    RotationISPyBCallback,
-    generate_start_info_from_ordered_runs,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
-    RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
@@ -796,7 +796,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+    "mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )
 def test_rotation_scan_correctly_triggers_ispyb_callback(
     mock_store_in_ispyb,
@@ -828,7 +828,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
     "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger"
 )
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+    "mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )
 def test_rotation_scan_correctly_triggers_zocalo_callback(
     mock_store_in_ispyb,
@@ -1171,7 +1171,7 @@ def test_full_multi_rotation_plan_docs_emitted(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.rotation.nexus_callback.NexusWriter"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
@@ -1468,7 +1468,7 @@ def test_full_multi_rotation_plan_arms_eiger_asynchronously_and_disarms(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+    "mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",
@@ -1512,7 +1512,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
 
 
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
+    "mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback.StoreInIspyb"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.check_topup_and_wait_if_necessary",

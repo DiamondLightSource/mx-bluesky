@@ -239,6 +239,7 @@ def test_when_robot_load_and_snapshot_plan_called_correct_plan_called(
     tip_offset = 0
     oav_config = CONST.OAV_CENTRING_FILE
     mock_pin_tip_detection = MagicMock(spec=PinTipDetection)
+    assert robot_load_params.sample_id
     run_engine(
         robot_load_and_snapshot(
             aithre_robot_load_composite.robot,
@@ -267,6 +268,8 @@ def test_when_robot_unload_plan_called_correct_plan_called(
     robot_load_params: AithreRobotLoad,
     run_engine: RunEngine,
 ):
+    assert robot_load_params.sample_id
+
     run_engine(
         robot_unload(
             aithre_robot_load_composite.robot,
