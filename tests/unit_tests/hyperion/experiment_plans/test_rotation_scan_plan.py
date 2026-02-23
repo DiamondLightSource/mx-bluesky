@@ -11,7 +11,7 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 import h5py
 import numpy as np
 import pytest
-from bluesky import Msg
+from bluesky import FailedStatus, Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.maths import AngleWithPhase
@@ -317,8 +317,8 @@ async def test_full_rotation_plan_smargon_settings(
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
 
-    omega_set: MagicMock = get_mock_put(smargon.omega._real_motor.user_setpoint)  # type: ignore
-    omega_velocity_set: MagicMock = get_mock_put(smargon.omega._real_motor.velocity)  # type: ignore
+    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)  # type: ignore
+    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)  # type: ignore
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
     assert await smargon.phi.user_setpoint.get_value() == params.phi_start_deg
@@ -398,7 +398,7 @@ def test_cleanup_happens(
             )
         cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
-        with pytest.raises(MyTestError) as exc:
+        with pytest.raises(FailedStatus) as exc:
             run_engine(
                 rotation_scan(
                     fake_create_rotation_devices,
@@ -406,7 +406,7 @@ def test_cleanup_happens(
                     oav_parameters_for_rotation,
                 )
             )
-        assert "Experiment fails because this is a test" in exc.value.args[0]
+        assert "Experiment fails because this is a test" in str(exc.value)
         cleanup_plan.assert_called_once()
 
 
@@ -821,7 +821,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj is composite.gonio.omega
+            and msg.obj is composite.gonio.omega_axis.phase
             and msg.args[0] == omega,
         )
         msgs = assert_message_and_return_remaining(
@@ -995,10 +995,10 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         mock_callback = Mock(spec=RotationISPyBCallback)
         run_engine.subscribe(mock_callback)
         omega_put = get_mock_put(
-            fake_create_rotation_devices.gonio.omega._real_motor.user_setpoint  # type: ignore
+            fake_create_rotation_devices.gonio.omega.user_setpoint  # type: ignore
         )
         set_mock_value(
-            fake_create_rotation_devices.gonio.omega._real_motor.acceleration_time,  # type: ignore
+            fake_create_rotation_devices.gonio.omega.acceleration_time,  # type: ignore
             0.1,
         )
         with (
