@@ -9,6 +9,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
+from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import I02_1FgsParams
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -147,14 +148,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             doc, self.params.detector_params, hwscan_data_collection_info
         )
 
-        # VMXm doesn't have a gonio-y position, allow None
-        pos_y = _data.get("gonio-y", None)
-        if pos_y:
-            pos_y = float(pos_y)
-
         hwscan_position_info = DataCollectionPositionInfo(
             pos_x=float(_data["gonio-x"]),
-            pos_y=pos_y,
+            pos_y=float(_data.get("gonio-y")),
             pos_z=float(_data["gonio-z"]),
         )
         scan_data_infos = self.populate_info_for_update(
@@ -174,10 +170,23 @@ class BaseISPyBCallback(PlanReactiveCallback):
         aperture = _data.get(
             "aperture_scatterguard-selected_aperture", "Not implemented"
         )
-        beamsize_x_mm = (
-            _data["beamsize-x_um"] / 1000
-        )  # todo beamsize for vmxm is complicated. Do hacky thing where beamsize is read from fake device until we make real one
-        beamsize_y_mm = _data["beamsize-y_um"] / 1000
+        beamsize_x_mm = _data.get("beamsize-x_um", None)
+        if beamsize_x_mm:
+            beamsize_x_mm = beamsize_x_mm / 1000
+        beamsize_y_mm = _data.get("beamsize-y_um", None)
+        if beamsize_y_mm:
+            beamsize_y_mm = beamsize_y_mm / 1000
+        if not (beamsize_x_mm and beamsize_y_mm):
+            # todo write issue about vmxm beamsize and link here
+            try:
+                assert isinstance(self.params, I02_1FgsParams)
+                beamsize_x_mm = self.params.beam_size_x
+                beamsize_y_mm = self.params.beam_size_y
+            except AssertionError:
+                ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
+                    "ISPyB callbacks couldn't get beamsize"
+                )
+
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,

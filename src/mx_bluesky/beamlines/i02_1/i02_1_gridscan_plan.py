@@ -151,8 +151,21 @@ class ExternalGridScanParams(BaseModel):
     _internal_param_version: str = PrivateAttr(default="6.0.0")
 
 
+class I02_1FgsParams(SpecifiedTwoDGridScan):  # noqa: N801
+    """For VMXm gridscans, GDA currently takes the snapshots and provides bluesky with a path, and
+    sends over the grid parameters"""
+
+    path_to_xtal_snapshot: Path
+    beam_size_x: float
+    beam_size_y: float
+    microns_per_pixel_x: float
+    microns_per_pixel_y: float
+    upper_left_x: int  # position of X,Y for the top left of the grid, in pixels
+    upper_left_y: int
+
+
 def i02_1_gridscan_plan(
-    parameters: SpecifiedTwoDGridScan,
+    parameters: I02_1FgsParams,
     composite: FlyScanXRayCentreComposite = inject(""),
 ) -> MsgGenerator:
     """BlueAPI entry point for i02-1 grid scans"""
