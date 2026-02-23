@@ -85,16 +85,6 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             runner: The runner
         """
 
-        baton = _get_baton(context)
-        synchrotron = _get_synchrotron(context)
-        countdown = yield from bps.rd(synchrotron.machine_user_countdown)
-
-        LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
-
-        if countdown < COUNTDOWN_THRESHOLD_SECONDS:
-            yield from _release_baton_on_completed_alert(baton)
-            LOGGER.info("Synchrotron machine countdown too low")
-
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
             runner.decode_and_execute(None, [UDCDefaultState()]),
@@ -106,6 +96,9 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         baton = _get_baton(context)
         current_visit: str | None = None
         while (yield from _is_requesting_baton(baton)):
+            abort = yield from _abort_if_countdown_too_low(context, baton)
+            if abort:
+                return
             current_visit = yield from _fetch_and_process_agamemnon_instruction(
                 baton, runner, current_visit
             )
@@ -229,6 +222,22 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
         yield from bps.abs_set(baton.requested_user, NO_USER)
         return NO_USER
     return requested_user
+
+
+def _abort_if_countdown_too_low(
+    context: BlueskyContext, baton: Baton
+) -> MsgGenerator[bool]:
+    synchrotron = _get_synchrotron(context)
+    countdown = yield from bps.rd(synchrotron.machine_user_countdown)
+
+    LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
+
+    if countdown < COUNTDOWN_THRESHOLD_SECONDS:
+        LOGGER.info("Synchrotron machine countdown too low")
+        yield from _release_baton_on_completed_alert(baton)
+        return True
+
+    return False
 
 
 def _release_baton_on_completed_alert(baton) -> MsgGenerator:
