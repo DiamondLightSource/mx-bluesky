@@ -1050,15 +1050,6 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
     assert event_params.omega_start_deg == 30
 
 
-@pytest.mark.parametrize(
-    "omega_flip, mod_360", [[False, False], [False, True], [True, False], [True, True]]
-)
-def test_calculate_motion_profile_accounts_for_mod360_and_omega_flip(
-    omega_flip: bool, mod_360: bool
-):
-    pass
-
-
 def test_rotation_scan_does_not_verify_undulator_gap_until_before_run(
     rotation_scan_simulated_messages,
     test_rotation_params: RotationScan,
