@@ -155,6 +155,8 @@ def robot_load_and_change_energy_plan(
 
     yield from prepare_for_robot_load(composite.aperture_scatterguard, composite.gonio)
 
+    assert params.sample_id
+
     yield from bpp.set_run_key_wrapper(
         bpp.run_wrapper(
             robot_load_and_snapshots(

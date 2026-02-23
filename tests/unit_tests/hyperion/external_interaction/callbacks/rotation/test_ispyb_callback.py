@@ -1,9 +1,14 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+from event_model.documents import RunStart
+
 from mx_bluesky.common.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
+    get_instrument_session_from_md,
 )
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 from ......conftest import (
     EXPECTED_END_TIME,
@@ -283,3 +288,11 @@ def test_comment_correct_after_hardware_read(
     assert update_dc_comment_req.body == {
         "comments": " Sample position (µm): (158, 24, 3)"
     }
+
+
+def test_exception_if_no_instrument_session_in_md(
+    test_fgs_params: SpecifiedThreeDGridScan,
+):
+    doc = RunStart(time=0, uid="0")
+    with pytest.raises(ValueError, match="Error trying to retrieve instrument session"):
+        get_instrument_session_from_md(doc, test_fgs_params)
