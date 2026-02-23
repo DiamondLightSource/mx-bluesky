@@ -92,9 +92,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
 
         if countdown < COUNTDOWN_THRESHOLD_SECONDS:
-            _raise_udc_completed_alert(get_alerting_service())
-            # Release the baton for orderly exit from the instruction loop
-            yield from _unrequest_baton(baton)
+            yield from _release_baton_on_completed_alert(baton)
             LOGGER.info("Synchrotron machine countdown too low")
 
         _raise_udc_start_alert(get_alerting_service())
@@ -178,9 +176,7 @@ def _fetch_and_process_agamemnon_instruction(
             current_visit, parameter_list
         )
     else:
-        _raise_udc_completed_alert(get_alerting_service())
-        # Release the baton for orderly exit from the instruction loop
-        yield from _unrequest_baton(baton)
+        yield from _release_baton_on_completed_alert(baton)
     return current_visit
 
 
@@ -233,3 +229,8 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
         yield from bps.abs_set(baton.requested_user, NO_USER)
         return NO_USER
     return requested_user
+
+
+def _release_baton_on_completed_alert(baton) -> MsgGenerator:
+    _raise_udc_completed_alert(get_alerting_service())
+    yield from _unrequest_baton(baton)
