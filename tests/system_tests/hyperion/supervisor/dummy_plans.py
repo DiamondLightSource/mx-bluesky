@@ -19,7 +19,7 @@ def clean_up_udc(
     visit: str,
     cleanup_group: str = "cleanup",
     robot: BartRobot = inject("robot"),
-    smargon: Smargon = inject("smargon"),
+    smargon: Smargon = inject("gonio"),
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     lower_gonio: XYZStage = inject("lower_gonio"),
     detector_motion: DetectorMotion = inject("detector_motion"),
