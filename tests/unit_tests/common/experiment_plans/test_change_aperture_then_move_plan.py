@@ -5,7 +5,8 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
-    change_aperture_then_move_to_xtal,
+    change_aperture,
+    move_to_xtal,
 )
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 
@@ -25,7 +26,7 @@ def simple_flyscan_hit():
 
 
 @pytest.mark.parametrize("set_stub_offsets", [True, False])
-def test_change_aperture_then_move_to_xtal_happy_path(
+def test_change_aperture_then_move_to_xtal_plans_happy_path(
     sim_run_engine: RunEngineSimulator,
     simple_flyscan_hit: XRayCentreResult,
     smargon: Smargon,
@@ -33,12 +34,13 @@ def test_change_aperture_then_move_to_xtal_happy_path(
     set_stub_offsets: bool,
 ):
     msgs = sim_run_engine.simulate_plan(
-        change_aperture_then_move_to_xtal(
+        change_aperture(
             simple_flyscan_hit,
-            smargon,
             aperture_scatterguard,
-            set_stub_offsets,
         )
+    )
+    msgs += sim_run_engine.simulate_plan(
+        move_to_xtal(simple_flyscan_hit, smargon, set_stub_offsets)
     )
 
     msgs = assert_message_and_return_remaining(

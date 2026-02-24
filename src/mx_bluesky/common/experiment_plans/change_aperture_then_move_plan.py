@@ -1,3 +1,6 @@
+from collections.abc import Generator, Sequence
+from typing import Any
+
 import bluesky.plan_stubs as bps
 import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
@@ -17,33 +20,49 @@ from mx_bluesky.common.utils.tracing import TRACER
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler, XRayCentreResult
 
 
-def get_results_then_change_aperture_and_move_to_xtal(
+def _get_xrc_results(
     composite: GridDetectThenXRayCentreComposite,
     parameters: SpecifiedThreeDGridScan,
     flyscan_event_handler: XRayCentreEventHandler,
-):
+) -> Generator[Any, Any, Sequence[XRayCentreResult]]:
     yield from fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
     flyscan_results = flyscan_event_handler.xray_centre_results
     assert flyscan_results, (
         "Flyscan result event not received or no crystal found and exception not raised"
     )
-    yield from change_aperture_then_move_to_xtal(
-        flyscan_results[0],
-        composite.gonio,
-        composite.aperture_scatterguard,
+    return flyscan_results
+
+
+def get_results_and_move_to_xtal(
+    composite: GridDetectThenXRayCentreComposite,
+    parameters: SpecifiedThreeDGridScan,
+    flyscan_event_handler: XRayCentreEventHandler,
+):
+    flyscan_results = yield from _get_xrc_results(
+        composite, parameters, flyscan_event_handler
     )
+    yield from move_to_xtal(flyscan_results[0], composite.gonio)
 
 
-def change_aperture_then_move_to_xtal(
+def get_results_then_change_aperture_and_move_to_xtal(
+    composite: GridDetectThenXRayCentreComposite,
+    parameters: SpecifiedThreeDGridScan,
+    flyscan_event_handler: XRayCentreEventHandler,
+):
+    flyscan_results = yield from _get_xrc_results(
+        composite, parameters, flyscan_event_handler
+    )
+    yield from change_aperture(flyscan_results[0], composite.aperture_scatterguard)
+    yield from move_to_xtal(flyscan_results[0], composite.gonio)
+
+
+def change_aperture(
     best_hit: XRayCentreResult,
-    smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
-    set_stub_offsets: bool | None = None,
 ):
     """For the given x-ray centring result,
     * Change the aperture so that the beam size is comparable to the crystal size
-    * Centre on the centre-of-mass
-    * Reset the stub offsets if specified by params"""
+    """
     bounding_box_size = numpy.abs(
         best_hit.bounding_box_mm[1] - best_hit.bounding_box_mm[0]
     )
@@ -52,7 +71,16 @@ def change_aperture_then_move_to_xtal(
         bounding_box_size,
     )
 
-    # once we have the results, go to the appropriate position
+
+def move_to_xtal(
+    best_hit: XRayCentreResult,
+    smargon: Smargon,
+    set_stub_offsets: bool | None = None,
+):
+    """For the given x-ray centring result,
+    * Centre on the centre-of-mass
+    * Reset the stub offsets if specified by params
+    """
     LOGGER.info("Moving to centre of mass.")
     with TRACER.start_span("move_to_result"):
         x, y, z = best_hit.centre_of_mass_mm
