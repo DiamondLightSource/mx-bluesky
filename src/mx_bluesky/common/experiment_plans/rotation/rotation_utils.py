@@ -68,7 +68,7 @@ def calculate_motion_profile(
             else direction.NEGATIVE
         )
 
-    start_scan_deg = reference_angle.project_to_unwrapped(start_scan_deg)
+    start_scan_deg = reference_angle.nearest_to_phase(start_scan_deg).unwrap()
 
     num_images = params.num_images
     shutter_time_s = params.shutter_opening_time_s

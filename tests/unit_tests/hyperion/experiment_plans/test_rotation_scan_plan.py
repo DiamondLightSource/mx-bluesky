@@ -207,21 +207,23 @@ def test_rotation_scan_calculations(test_rotation_params: RotationScan):
 
 
 @pytest.mark.parametrize(
-    "initial_omega, omega_flip",
+    "initial_omega, expected_start, expected_acceleration_offset,  omega_flip",
     [
-        [0, False],
-        [90, False],
-        [375, False],
-        [-150, False],
-        [0, True],
-        [90, True],
-        [375, True],
-        [-150, True],
+        [0, 10, 10.00375, False],
+        [90, 10, 10.00375, False],
+        [375, 370, 370.00375, False],
+        [-150, 10, 10.00375, False],
+        [0, -10, -10.00375, True],
+        [90, -10, -10.00375, True],
+        [375, 350, 349.99625, True],
+        [-150, -10, -10.00375, True],
     ],
 )
 def test_calculate_motion_profile_computes_values_for_wrapped_axis(
     test_rotation_params: RotationScan,
     initial_omega: float,
+    expected_start: float,
+    expected_acceleration_offset: float,
     omega_flip: bool,
 ):
     with patch(
@@ -244,7 +246,7 @@ def test_calculate_motion_profile_computes_values_for_wrapped_axis(
 
         # Params request negative motion
         assert motion_values.direction == "Positive" if omega_flip else "Negative"
-        assert motion_values.start_scan_deg == reference_angle.offset + 10 * sign
+        assert motion_values.start_scan_deg == expected_start
 
         assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
         assert motion_values.shutter_time_s == 0.6
@@ -252,11 +254,7 @@ def test_calculate_motion_profile_computes_values_for_wrapped_axis(
 
         # 1.5 * distance moved in time for accel (fudge)
         assert motion_values.acceleration_offset_deg == 0.00375
-        assert (
-            motion_values.start_motion_deg
-            == reference_angle.offset
-            + (10 + motion_values.acceleration_offset_deg) * sign
-        )
+        assert motion_values.start_motion_deg == expected_acceleration_offset
 
         assert motion_values.total_exposure_s == 360
         assert motion_values.scan_width_deg == 180
