@@ -8,6 +8,7 @@ import pytest
 from blueapi.core import BlueskyContext
 from bluesky.run_engine import get_bluesky_event_loop, set_bluesky_event_loop
 from ophyd_async.core import Device
+from ophyd_async.core._utils import cached_get_type_hints
 from ophyd_async.plan_stubs import ensure_connected
 
 from mx_bluesky.common.utils.context import device_composite_from_context
@@ -130,6 +131,9 @@ def reinitialise_beamline(dev_mode: bool, i: int):
 
 
 def check_instances_are_garbage_collected(i: int):
+    # ophyd_async caches the type hints for derived signals, where these use bound functions
+    # this will retain a reference to the device in the lru cache unless cleared
+    cached_get_type_hints.cache_clear()
     gc.collect()
     device_counts: dict[str, int] = {}
     for ref in weak_ids_to_devices.valuerefs():
