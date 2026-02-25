@@ -9,7 +9,6 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
 from dodal.devices.synchrotron import SynchrotronMode
 
-from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import I02_1FgsParams
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -179,10 +178,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if not (beamsize_x_mm and beamsize_y_mm):
             # todo write issue about vmxm beamsize and link here
             try:
-                assert isinstance(self.params, I02_1FgsParams)
-                beamsize_x_mm = self.params.beam_size_x
-                beamsize_y_mm = self.params.beam_size_y
-            except AssertionError:
+                beamsize_x_mm = self.params.beam_size_x  # type: ignore
+                beamsize_y_mm = self.params.beam_size_y  # type: ignore
+            except Exception:
                 ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
                     "ISPyB callbacks couldn't get beamsize"
                 )

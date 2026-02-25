@@ -19,7 +19,7 @@ from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
     PinTipCentringComposite,
     pin_tip_centre_plan,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants

@@ -31,7 +31,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
     GridDetectionCallback,
     GridParamUpdate,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import (

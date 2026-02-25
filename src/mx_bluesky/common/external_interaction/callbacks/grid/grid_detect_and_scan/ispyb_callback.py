@@ -21,7 +21,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloInfoGenerator,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -66,7 +66,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
         bpp.run_wrapper(
             plan_generator,
             md={
-                "activate_callbacks": ["GridscanISPyBCallback"],
+                "activate_callbacks": ["GridDetectAndScanISPyBCallback"],
                 "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
             },
@@ -78,11 +78,14 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
 ispyb_activation_decorator = make_decorator(ispyb_activation_wrapper)
 
 
-class GridscanISPyBCallback(BaseISPyBCallback):
+class GridDetectAndScanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
     receiving an 'event' document for the 'ispyb_reading_hardware' event, and updates the
     deposition on receiving its final 'stop' document.
+
+    This callback is specifically for detecting and scanning two grids. In the future
+    this callback should be made compatible to a generic number of grids
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:

@@ -21,10 +21,10 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -416,7 +416,9 @@ def test_ispyb_deposition_in_gridscan(
     set_mock_value(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
     )
-    ispyb_callback = GridscanISPyBCallback(GenericGridWithHyperionDetectorParams)
+    ispyb_callback = GridDetectAndScanISPyBCallback(
+        GenericGridWithHyperionDetectorParams
+    )
     run_engine.subscribe(ispyb_callback)
     run_engine(
         grid_detect_then_xray_centre(

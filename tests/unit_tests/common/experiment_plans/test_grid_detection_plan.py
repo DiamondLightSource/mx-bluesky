@@ -26,8 +26,8 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
@@ -218,7 +218,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
 ):
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     composite, _ = fake_devices
-    cb = GridscanISPyBCallback(param_type=GenericGrid)
+    cb = GridDetectAndScanISPyBCallback(param_type=GenericGrid)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     run_engine.subscribe(cb)
 
@@ -232,7 +232,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
 
         assert_event(
             cb.activity_gated_start.mock_calls[0],  # pyright:ignore
-            {"activate_callbacks": ["GridscanISPyBCallback"]},
+            {"activate_callbacks": ["GridDetectAndScanISPyBCallback"]},
         )
         assert_event(
             cb.activity_gated_event.mock_calls[0],  # pyright: ignore
