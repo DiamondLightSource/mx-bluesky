@@ -19,6 +19,7 @@ from pydantic import BaseModel, PrivateAttr
 from pydantic_extra_types.semantic_version import SemanticVersion
 from semver import Version
 
+from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -31,13 +32,14 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
+    ZocaloInfoGenerator,
+    ZocaloStartInfo,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    generate_start_info_from_omega_map,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback import (
+    GridscanISPyBCallback,
 )
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
@@ -47,8 +49,30 @@ from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GonioWithOmegaType,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
+
+
+# todo this all needs chanigng
+def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
+    """
+    Generate the zocalo trigger info from bluesky runs where the frame number is
+    computed using metadata added to the document by the ISPyB callback and the
+    run start which together can be used to determine the correct frame numbering.
+    """
+    doc = yield []
+    omega_to_scan_spec = doc["omega_to_scan_spec"]
+    start_frame = 0
+    infos = []
+    for i, omega in enumerate([0, 90]):
+        frames = number_of_frames_from_scan_spec(omega_to_scan_spec[omega])
+        infos.append(
+            ZocaloStartInfo(
+                doc["grid_plane_to_id_map"][omega], None, start_frame, frames, i
+            )
+        )
+        start_frame += frames
+    yield infos
 
 
 def create_gridscan_callbacks() -> tuple[
@@ -57,11 +81,11 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=SpecifiedTwoDGridScan),
         GridscanISPyBCallback(
-            param_type=GenericGrid,
+            param_type=I02_1FgsParams,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,
+                generate_start_info_from_omega_map,  # todo dont need this
             ),
         ),
     )
@@ -149,19 +173,6 @@ class ExternalGridScanParams(BaseModel):
 
     # Internal parameter version compatible with this external model
     _internal_param_version: str = PrivateAttr(default="6.0.0")
-
-
-class I02_1FgsParams(SpecifiedTwoDGridScan):  # noqa: N801
-    """For VMXm gridscans, GDA currently takes the snapshots and provides bluesky with a path, and
-    sends over the grid parameters"""
-
-    path_to_xtal_snapshot: Path
-    beam_size_x: float
-    beam_size_y: float
-    microns_per_pixel_x: float
-    microns_per_pixel_y: float
-    upper_left_x: int  # position of X,Y for the top left of the grid, in pixels
-    upper_left_y: int
 
 
 def i02_1_gridscan_plan(

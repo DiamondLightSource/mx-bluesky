@@ -24,7 +24,7 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -267,7 +267,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
         msg
         for msg in msgs
         if msg.command == "open_run"
-        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"]
+        and "GridDetectAndScanISPyBCallback" in msg.kwargs["activate_callbacks"]
     ]
     assert not activations
 
@@ -340,7 +340,7 @@ def test_grid_detect_then_xray_centre_activates_ispyb_callback(
     assert_message_and_return_remaining(
         msgs_from_simulated_grid_detect_then_xray_centre,
         lambda msg: msg.command == "open_run"
-        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+        and "GridDetectAndScanISPyBCallback" in msg.kwargs["activate_callbacks"],
     )
 
 
