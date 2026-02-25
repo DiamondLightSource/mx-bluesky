@@ -148,7 +148,7 @@ async def test_tip_found_only_after_all_iterations_exhausted_in_the_same_directi
     )
 
     x_user_setpoint.assert_has_calls(
-        [call(expected_step_size, wait=True), call(expected_step_size * 2, wait=True)]
+        [call(expected_step_size), call(expected_step_size * 2)]
     )
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)

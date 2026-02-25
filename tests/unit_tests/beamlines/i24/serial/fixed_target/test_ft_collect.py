@@ -147,7 +147,7 @@ def test_load_motion_program_data(
     )
     call_list = []
     for i in expected_calls:
-        call_list.append(call(i, wait=True))
+        call_list.append(call(i))
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(call_list)
 
@@ -228,8 +228,8 @@ def test_start_i24_with_eiger(
     )
 
     shutter_call_list = [
-        call("Reset", wait=True),
-        call("Open", wait=True),
+        call("Reset"),
+        call("Open"),
     ]
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
@@ -280,10 +280,10 @@ def test_finish_i24(
     )
 
     mock_pmac_string = get_mock_put(pmac.pmac_string)
-    mock_pmac_string.assert_has_calls([call("&2!x0y0z0", wait=True)])
+    mock_pmac_string.assert_has_calls([call("&2!x0y0z0")])
 
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True)])
+    mock_shutter.assert_has_calls([call("Close")])
 
     fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 
@@ -453,19 +453,15 @@ async def test_main_fixed_target_plan(
     mock_zebra_input = get_mock_put(zebra.inputs.soft_in_2)
 
     mock_beam_x.assert_called_once_with(
-        pytest.approx(1597.06, 1e-2), wait=True
+        pytest.approx(1597.06, 1e-2)
     )  # Check beam center set
     assert dummy_params_without_pp.total_num_images == 400
     mock_get_chip_prog.assert_called_once_with(dummy_params_without_pp)
     mock_motion_program.asset_called_once()
     mock_start.assert_called_once()
-    mock_pmac_str.assert_called_once_with(
-        "&2!x0y0z0", wait=True
-    )  # Check pmac moved to start
+    mock_pmac_str.assert_called_once_with("&2!x0y0z0")  # Check pmac moved to start
     assert fake_dcid.notify_start.call_count == 1
-    mock_zebra_input.assert_called_once_with(
-        "Yes", wait=True
-    )  # Check fast shutter open
+    mock_zebra_input.assert_called_once_with("Yes")  # Check fast shutter open
     fake_nexgen.assert_called_once_with(
         mock_get_chip_prog.return_value,
         dummy_params_without_pp,
