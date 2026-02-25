@@ -290,9 +290,7 @@ def test_when_hyperion_requested_then_hyperion_set_to_current_user(
 
     run_udc_when_requested(bluesky_context, udc_runner)
 
-    assert get_mock_put(baton.current_user).mock_calls[0] == call(
-        HYPERION_USER, wait=True
-    )
+    assert get_mock_put(baton.current_user).mock_calls[0] == call(HYPERION_USER)
 
 
 @patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state")
@@ -315,7 +313,7 @@ def test_when_hyperion_requested_then_default_state_and_collection_run(
 
 async def _assert_baton_released(baton: Baton):
     assert await baton.requested_user.get_value() != HYPERION_USER
-    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)
+    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER)
 
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
@@ -775,7 +773,7 @@ async def test_commissioning_signal_set_on_baton_acquire(
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
             parent.assert_has_calls(
                 [
-                    call.current_user("Hyperion", wait=True),
+                    call.current_user("Hyperion"),
                     call.set_commissioning_signal(baton.commissioning),
                     call.create_parameters_from_agamemnon(),
                     call.create_parameters_from_agamemnon(),
@@ -847,7 +845,7 @@ def test_run_udc_when_requested_raises_baton_release_udc_completed_event_when_hy
                 "Hyperion UDC has completed all pending Agamemnon requests.",
                 {},
             ),
-            call.current_user(NO_USER, wait=True),
+            call.current_user(NO_USER),
             call.raise_alert(
                 Subjects.UDC_BATON_RELEASED,
                 "Hyperion has released the baton. The baton is currently "
@@ -890,7 +888,7 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
 
     parent.assert_has_calls(
         [
-            call.current_user(NO_USER, wait=True),
+            call.current_user(NO_USER),
             call.raise_alert(
                 Subjects.UDC_BATON_RELEASED,
                 "Hyperion has released the baton. The baton is currently "
@@ -1030,5 +1028,5 @@ def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
 
     baton: Baton = bluesky_context.find_device("baton")  # type: ignore
     mock_move_to_udc_default_state.assert_called_once()
-    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER, wait=True)
-    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)
+    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER)
+    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER)

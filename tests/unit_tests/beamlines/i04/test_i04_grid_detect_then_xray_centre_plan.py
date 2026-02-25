@@ -421,9 +421,9 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     with pytest.raises(CrystalNotFoundError):
         run_engine(i04_grid_detect_then_xrc_default_params())
 
-    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(initial_x, wait=True)])
-    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(initial_y, wait=True)])
-    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z, wait=True)])
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(initial_x)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(initial_y)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(initial_z)])
 
 
 @pytest.fixture()

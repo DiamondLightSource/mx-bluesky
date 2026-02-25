@@ -91,14 +91,14 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     # Check backlight was moved IN for grid detect then OUT for gridscan
     backlight_mock = get_mock_put(composite.backlight.position)
     backlight_mock.assert_has_calls(
-        [call(InOut.IN, wait=True), call(InOut.OUT, wait=True)],
+        [call(InOut.IN), call(InOut.OUT)],
         any_order=False,
     )
     assert backlight_mock.call_count == 2
 
     # Check aperture was moved out of beam for grid detect
     assert (
-        call(ApertureValue.OUT_OF_BEAM, wait=True)
+        call(ApertureValue.OUT_OF_BEAM)
         in get_mock_put(
             composite.aperture_scatterguard.selected_aperture
         ).call_args_list
