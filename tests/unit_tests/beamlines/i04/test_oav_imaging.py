@@ -770,7 +770,7 @@ async def test_find_beam_centres_iterates_and_sets_centres(
 
     assert get_mock_put(zoom_controller_with_centres.level).call_count == 4
     assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
-        call(level, wait=True) for level in level_names
+        call(level) for level in level_names
     ]
 
     for i, centre in zoom_controller_with_centres.beam_centres.items():
@@ -810,7 +810,7 @@ async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_set
 
     assert get_mock_put(zoom_controller_with_centres.level).call_count == 2
     assert get_mock_put(zoom_controller_with_centres.level).call_args_list == [
-        call(level, wait=True) for level in ("1.0x", "7.5x")
+        call(level) for level in ("1.0x", "7.5x")
     ]
 
     centres = list(zoom_controller_with_centres.beam_centres.values())
@@ -968,9 +968,7 @@ async def test_find_beam_centre_at_current_zoom_and_transmission_only_finds_cent
         )
     )
 
-    get_mock_put(zoom_controller.level).assert_called_once_with(
-        current_zoom_level, wait=True
-    )
+    get_mock_put(zoom_controller.level).assert_called_once_with(current_zoom_level)
     total_mv_calls = 0
     for centring_device in zoom_controller.beam_centres.values():
         zoom_level = await centring_device.level_name.get_value()

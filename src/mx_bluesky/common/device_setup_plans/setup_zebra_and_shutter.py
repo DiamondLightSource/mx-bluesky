@@ -78,7 +78,7 @@ def set_shutter_auto_input(zebra: Zebra, input: int, group="set_shutter_trigger"
     For more details see the ZebraShutter device."""
     auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
     auto_shutter_control = zebra.logic_gates.and_gates[auto_gate]
-    yield from bps.abs_set(auto_shutter_control.sources[2], input, group)
+    yield from bps.abs_set(auto_shutter_control.sources[2], input, group=group)
 
 
 def configure_zebra_and_shutter_for_auto_shutter(

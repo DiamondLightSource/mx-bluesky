@@ -264,7 +264,7 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True)])
+    mock_shutter.assert_has_calls([call("Close")])
 
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1

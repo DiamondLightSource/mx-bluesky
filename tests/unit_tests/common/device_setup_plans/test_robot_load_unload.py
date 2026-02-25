@@ -55,7 +55,7 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     get_mock_put(aperture_scatterguard.selected_aperture).assert_called_once_with(
-        ApertureValue.OUT_OF_BEAM, wait=ANY
+        ApertureValue.OUT_OF_BEAM
     )
 
 

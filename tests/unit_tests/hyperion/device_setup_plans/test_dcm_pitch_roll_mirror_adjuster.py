@@ -90,10 +90,10 @@ def test_adjust_mirror_stripe(
     run_engine(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
 
     expected_calls = [
-        call.stripe_set(expected_stripe, wait=True),
-        call.apply_stripe(None, wait=True),
-        call.lat_set(expected_lat, wait=True),
-        call.yaw_mrad(expected_yaw, wait=True),
+        call.stripe_set(expected_stripe),
+        call.apply_stripe(None),
+        call.lat_set(expected_lat),
+        call.yaw_mrad(expected_yaw),
     ]
     assert parent.method_calls == expected_calls
     mirror_voltages.vertical_voltages[0].set.assert_called_once_with(  # type: ignore

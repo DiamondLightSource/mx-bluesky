@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.0.1.dev24+gfd21a9ece"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#fd21a9ece9734c58fa94306a6861d250bdaadef2" }
+version = "2.0.1.dev26+gfa0d70d0e"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#fa0d70d0e81dfab2ea964ad431e890e8de2c1f85" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -812,6 +812,7 @@ dependencies = [
     { name = "daq-config-server", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "deepdiff", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "graypy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "mysql-connector-python", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "opencv-python-headless", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "ophyd", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2120,7 +2121,7 @@ requires-dist = [
     { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "ophyd", specifier = ">=1.10.5" },
-    { name = "ophyd-async", specifier = ">=0.14.0" },
+    { name = "ophyd-async", specifier = ">=0.16.0" },
     { name = "pydantic" },
     { name = "pydantic-extra-types", specifier = ">=2.10.1" },
     { name = "pyepics" },
@@ -2669,7 +2670,7 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.14.2"
+version = "0.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bluesky", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2683,9 +2684,9 @@ dependencies = [
     { name = "stamina", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "velocity-profile", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f4/41/33d7e597e4cea13b1d5a4bf95406daa0157a061707aa385ae081525e2432/ophyd_async-0.14.2.tar.gz", hash = "sha256:800bf6cdafd6318de3cd51c47791a924b9189aff2ced057b0443e67576fa455f", size = 527311, upload-time = "2025-12-19T11:23:19.554Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/2d/cd178f31c4efb7f2a1b2787900d62b70b478111c5db51a625307f5fb9b15/ophyd_async-0.16.tar.gz", hash = "sha256:c8a3671c704da77c7a7b7c5343b972230f743b1029a100f6c5780123fb0df33d", size = 545367, upload-time = "2026-02-17T16:39:37.897Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/79/4348eeb2450739b45881315944b0fc7c52fc94859c83cbe31802e16eb37b/ophyd_async-0.14.2-py3-none-any.whl", hash = "sha256:c6dada008e7829a39dd485b45177d91717f05ff6c6b2066a2ff505ffc40285a3", size = 205449, upload-time = "2025-12-19T11:23:18.494Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/ab/0c92e9824c9e54df5a06b5759957fc23c30489c2aabef5653dd9057b3f61/ophyd_async-0.16-py3-none-any.whl", hash = "sha256:017d837767b63cdc20af1851275495b6bb0db195a887e0bd989dc7a17e0f0c79", size = 208499, upload-time = "2026-02-17T16:39:36.542Z" },
 ]
 
 [package.optional-dependencies]
