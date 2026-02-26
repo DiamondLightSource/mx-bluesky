@@ -126,6 +126,13 @@ pytest_plugins = ["tests.expeye_helpers"]
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
+TEST_VISIT = "cm1234-67"
+TEST_CONTAINER = 8
+TEST_SESSION_ID = 90
+EXPECTED_START_TIME = "2024-02-08 14:03:59"
+EXPECTED_END_TIME = "2024-02-08 14:04:01"
+TEST_SAMPLE_ID = 364758
+TEST_BARCODE = "12345A"
 
 TEST_RESULT_LARGE = [
     {
@@ -1255,13 +1262,6 @@ def _dummy_params(tmp_path):
         )
     )
     return dummy_params
-
-
-TEST_SESSION_ID = 90
-EXPECTED_START_TIME = "2024-02-08 14:03:59"
-EXPECTED_END_TIME = "2024-02-08 14:04:01"
-TEST_SAMPLE_ID = 364758
-TEST_BARCODE = "12345A"
 
 
 def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:
