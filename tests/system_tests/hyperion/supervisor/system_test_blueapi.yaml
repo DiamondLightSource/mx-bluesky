@@ -6,7 +6,7 @@ env:
     - kind: planFunctions
       module: system_tests.hyperion.supervisor.dummy_plans
   events:
-    broadcast_status_events: false
+    broadcast_status_events: true
 api:
   url: http://localhost:5005
   cors:
