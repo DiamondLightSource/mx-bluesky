@@ -2121,7 +2121,7 @@ requires-dist = [
     { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "ophyd", specifier = ">=1.10.5" },
-    { name = "ophyd-async", specifier = ">=0.14.0" },
+    { name = "ophyd-async", specifier = ">=0.16.0" },
     { name = "pydantic" },
     { name = "pydantic-extra-types", specifier = ">=2.10.1" },
     { name = "pyepics" },
