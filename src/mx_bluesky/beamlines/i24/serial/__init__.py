@@ -1,14 +1,3 @@
-from mx_bluesky.beamlines.i24.serial.web_gui_plans.general_plans import (
-    gui_gonio_move_on_click,
-    gui_move_backlight,
-    gui_move_detector,
-    gui_run_chip_collection,
-    gui_run_extruder_collection,
-    gui_set_fiducial_0,
-    gui_set_zoom_level,
-    gui_stage_move_on_click,
-)
-
 from .extruder.i24ssx_extruder_collect_py3v2 import (
     enter_hutch,
     initialise_extruder,
@@ -33,6 +22,8 @@ from .fixed_target.i24ssx_chip_manager_py3v1 import (
 from .log import clean_up_log_config_at_end, setup_collection_logs
 from .setup_beamline.setup_detector import setup_detector_stage
 
+# NOTE. Keeping plans in here still in use by the edms until possible to remove them
+
 __all__ = [
     "setup_detector_stage",
     "run_extruder_plan",
@@ -54,13 +45,4 @@ __all__ = [
     "pumpprobe_calc",
     "setup_collection_logs",
     "clean_up_log_config_at_end",
-    # GUI plans
-    "gui_stage_move_on_click",
-    "gui_gonio_move_on_click",
-    "gui_move_detector",
-    "gui_run_chip_collection",
-    "gui_move_backlight",
-    "gui_set_zoom_level",
-    "gui_set_fiducial_0",
-    "gui_run_extruder_collection",
 ]

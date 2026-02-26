@@ -2,12 +2,18 @@ import json
 from collections.abc import Generator
 from math import isclose
 from pathlib import PosixPath
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion.blueapi.parameters import (
+    LoadCentreCollectParams,
+    load_centre_collect_to_internal,
+)
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _get_next_instruction,
     _get_pin_type_from_agamemnon_collect_parameters,
@@ -20,7 +26,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
     update_params_from_agamemnon,
 )
-from mx_bluesky.hyperion.parameters.components import Wait
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
@@ -360,13 +365,12 @@ def test_compare_params_causes_no_warning_when_compared_to_gda_params(
 def test_create_parameters_from_agamemnon_contains_expected_data(agamemnon_response):
     hyperion_params_list = create_parameters_from_agamemnon()
     for hyperion_params in hyperion_params_list:
-        assert isinstance(hyperion_params, LoadCentreCollect)
+        assert isinstance(hyperion_params, LoadCentreCollectParams)
         assert hyperion_params.visit == "mx34598-77"
         assert isclose(hyperion_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
         assert hyperion_params.sample_id == 6501159
         assert hyperion_params.sample_puck == 5
         assert hyperion_params.sample_pin == 4
-        assert str(hyperion_params.parameter_model_version) == "5.3.0"
         assert hyperion_params.select_centres.n == 1
 
 
@@ -380,7 +384,9 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
 ):
     hyperion_params_list = create_parameters_from_agamemnon()
     load_centre_collect_list = [
-        p for p in hyperion_params_list if isinstance(p, LoadCentreCollect)
+        load_centre_collect_to_internal(p)
+        for p in hyperion_params_list
+        if isinstance(p, LoadCentreCollectParams)
     ]
     assert len(hyperion_params_list) == len(load_centre_collect_list) == 2
 
@@ -420,10 +426,12 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
 def test_create_parameters_from_agamemnon_contains_expected_rotation_data(
     agamemnon_response,
 ):
-    hyperion_params_list = create_parameters_from_agamemnon()
+    hyperion_params_list = [
+        load_centre_collect_to_internal(cast(LoadCentreCollectParams, p))
+        for p in create_parameters_from_agamemnon()
+    ]  # type: ignore
     assert len(hyperion_params_list) == 2
     for hyperion_params in hyperion_params_list:
-        assert isinstance(hyperion_params, LoadCentreCollect)
         rotation_params = hyperion_params.multi_rotation_scan
         assert rotation_params.visit == "mx34598-77"
         assert isclose(rotation_params.detector_distance_mm, 237.017, abs_tol=1e-3)  # type: ignore
