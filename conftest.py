@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 # Ensure that the blueapi entry point is not invoked by doctest as this will fail
-collect_ignore = ["src/mx_bluesky/hyperion/blueapi_plans/blueapi.py"]
+collect_ignore = ["src/mx_bluesky/hyperion/blueapi/plans.py"]
 
 environ["HYPERION_TEST_MODE"] = "true"
 
