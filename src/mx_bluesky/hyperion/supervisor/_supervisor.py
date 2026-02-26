@@ -14,6 +14,7 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
+from mx_bluesky.hyperion.supervisor._task_monitor import TaskMonitor
 
 
 class SupervisorRunner(PlanRunner):
@@ -104,7 +105,10 @@ class SupervisorRunner(PlanRunner):
 
     def _run_task_remotely(self, task_request: TaskRequest):
         try:
-            result = self.blueapi_client.run_task(task_request)
+            with TaskMonitor(self.blueapi_client, task_request) as task_monitor:
+                result = self.blueapi_client.run_task(
+                    task_request, on_event=task_monitor.on_blueapi_event
+                )
             LOGGER.info(
                 f"hyperion-blueapi completed task execution with result {result}"
             )
