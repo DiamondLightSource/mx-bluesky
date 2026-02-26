@@ -14,6 +14,7 @@ from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
 from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
@@ -21,7 +22,16 @@ from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
+from ophyd_async.core import TriggerInfo
+from ophyd_async.fastcs.jungfrau import (
+    GainMode,
+    create_jungfrau_external_triggering_info,
+)
 
+from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils import (
+    JF_COMPLETE_GROUP,
+    fly_jungfrau,
+)
 from mx_bluesky.beamlines.i24.serial.dcid import (
     DCID,
     read_beam_info_from_hardware,
@@ -40,6 +50,9 @@ from mx_bluesky.beamlines.i24.serial.parameters import FixedTargetParameters
 from mx_bluesky.beamlines.i24.serial.parameters.constants import (
     BEAM_CENTER_LUT_FILES,
 )
+from mx_bluesky.beamlines.i24.serial.parameters.experiment_parameters import (
+    BeamSettings,
+)
 from mx_bluesky.beamlines.i24.serial.setup_beamline import caget, cagetstring, caput, pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline import setup_beamline as sup
 from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
@@ -52,6 +65,10 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline.setup_zebra_plans import (
     setup_zebra_for_fastchip_plan,
 )
 from mx_bluesky.beamlines.i24.serial.write_nexus import call_nexgen
+from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+    read_hardware_plan,
+)
+from mx_bluesky.common.parameters.constants import PlanNameConstants
 
 
 def write_userlog(
@@ -307,7 +324,7 @@ def start_i24(
     SSX_LOGGER.info(f"Total number of images: {parameters.total_num_images}")
     SSX_LOGGER.info(f"Number of exposures: {parameters.num_exposures}")
     SSX_LOGGER.info(f"Number of gates (=Total images/N exposures): {num_gates:.4f}")
-
+    trigger_info = None
     if parameters.detector_name == "eiger":
         SSX_LOGGER.info("Using Eiger detector")
 
@@ -371,6 +388,32 @@ def start_i24(
 
         yield from bps.sleep(1.5)
 
+    elif parameters.detector_name == "jungfrau":
+        SSX_LOGGER.info("Using Jungfrau detector")
+        trigger_info = create_jungfrau_external_triggering_info(
+            parameters.total_num_images, parameters.exposure_time_s
+        )
+        SSX_LOGGER.debug("Arm Zebra.")
+        shutter_time_offset = (
+            SHUTTER_OPEN_TIME
+            if parameters.pump_repeat is PumpProbeSetting.Medium1
+            else 0.0
+        )
+        yield from setup_zebra_for_fastchip_plan(
+            zebra,
+            parameters.detector_name,
+            num_gates,
+            parameters.num_exposures,
+            parameters.exposure_time_s,
+            shutter_time_offset,
+            wait=True,
+        )
+        if parameters.pump_repeat == PumpProbeSetting.Medium1:
+            yield from open_fast_shutter_at_each_position_plan(
+                zebra, parameters.num_exposures, parameters.exposure_time_s
+            )
+        yield from arm_zebra(zebra)
+
     else:
         msg = f"Unknown Detector Type, det_type = {parameters.detector_name}"
         SSX_LOGGER.error(msg)
@@ -379,7 +422,7 @@ def start_i24(
     # Open the hutch shutter
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
-    return start_time
+    return start_time, trigger_info, beam_settings
 
 
 @log_on_entry
@@ -445,6 +488,7 @@ def main_fixed_target_plan(
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
+    jungfrau: CommissioningJungfrau,
 ) -> MsgGenerator:
     SSX_LOGGER.info("Running a chip collection on I24")
 
@@ -477,7 +521,7 @@ def main_fixed_target_plan(
 
     set_datasize(parameters)
 
-    start_time = yield from start_i24(
+    start_time, trigger_info, beam_settings = yield from start_i24(
         zebra,
         aperture,
         backlight,
@@ -490,6 +534,8 @@ def main_fixed_target_plan(
         beam_center_device,
         dcid,
     )
+    if parameters.detector_name == "jungfrau":
+        assert trigger_info
 
     SSX_LOGGER.info("Moving to Start")
     yield from bps.trigger(pmac.to_xyz_zero)
@@ -512,15 +558,62 @@ def main_fixed_target_plan(
             chip_prog_dict, parameters, wavelength, (beam_x, beam_y), start_time
         )
 
-    yield from kickoff_and_complete_collection(pmac, parameters)
+    yield from kickoff_and_complete_collection(
+        pmac, parameters, jungfrau, dcid, start_time, beam_settings, trigger_info
+    )
 
 
-def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameters):
+def kickoff_and_complete_collection(
+    pmac: PMAC,
+    parameters: FixedTargetParameters,
+    jungfrau: CommissioningJungfrau,
+    dcid: DCID,
+    start_time: datetime,
+    beam_settings: BeamSettings,
+    trigger_info: TriggerInfo | None = None,
+):
     prog_num = get_prog_num(
         parameters.chip.chip_type, parameters.map_type, parameters.pump_repeat
     )
     yield from bps.abs_set(pmac.program_number, prog_num, group="setup_pmac")
     yield from bps.wait(group="setup_pmac")  # Make sure the soft signals are set
+
+    # need to read jf signals and do gcid bits after prepare, since we only have the filepath after doing prepare
+    def after_prepare_plan():
+        file_path_sig = jungfrau._writer.file_path  # noqa: SLF001 N
+        file_name_sig = jungfrau._writer.file_name  # noqa: SLF001 N
+        # todo still need to get metadata callback to trigger on this plan
+        yield from read_hardware_plan(
+            [
+                file_path_sig,
+                file_name_sig,
+                jungfrau.ispyb_detector_id,
+            ],
+            PlanNameConstants.ROTATION_DEVICE_READ,
+        )
+        file_name = yield from bps.rd(file_name_sig)
+        filepath = yield from bps.rd(file_path_sig)
+
+        filetemplate = f"{file_name}.nxs"
+
+        dcid.generate_dcid(
+            beam_settings=beam_settings,
+            image_dir=filepath,
+            file_template=filetemplate,
+            num_images=parameters.total_num_images,
+            shots_per_position=parameters.num_exposures,
+            start_time=start_time,
+            pump_probe=bool(parameters.pump_repeat),
+        )
+
+    if trigger_info:
+        SSX_LOGGER.info("Flying jungfrau")
+        yield from fly_jungfrau(
+            jungfrau,
+            trigger_info,
+            GainMode.DYNAMIC,
+            read_hardware_after_prepare_plan=after_prepare_plan,
+        )
 
     @bpp.run_decorator(md={"subplan_name": "run_ft_collection"})
     def run_collection():
@@ -528,6 +621,10 @@ def kickoff_and_complete_collection(pmac: PMAC, parameters: FixedTargetParameter
         yield from bps.kickoff(pmac.run_program, wait=True)
         yield from bps.complete(pmac.run_program, wait=True)
         SSX_LOGGER.info("Collection completed without errors.")
+
+    if trigger_info:
+        SSX_LOGGER.info("Waiting for Jungfrau to mark collection as finished...")
+        yield from bps.wait(JF_COMPLETE_GROUP)
 
     yield from run_collection()
 
@@ -591,6 +688,7 @@ def run_fixed_target_plan(
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
@@ -621,6 +719,7 @@ def run_fixed_target_plan(
         beam_center_device,
         parameters,
         dcid,
+        jungfrau,
     )
 
 
@@ -637,6 +736,7 @@ def run_plan_in_wrapper(
     beam_center_device: DetectorBeamCenter,
     parameters: FixedTargetParameters,
     dcid: DCID,
+    jungfrau: CommissioningJungfrau,
 ) -> MsgGenerator:
     yield from bpp.contingency_wrapper(
         main_fixed_target_plan(
@@ -652,6 +752,7 @@ def run_plan_in_wrapper(
             beam_center_device,
             parameters,
             dcid,
+            jungfrau,
         ),
         except_plan=lambda e: (yield from run_aborted_plan(pmac, dcid, e)),
         final_plan=lambda: (

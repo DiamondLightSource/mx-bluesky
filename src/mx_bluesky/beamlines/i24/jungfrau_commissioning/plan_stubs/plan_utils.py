@@ -46,6 +46,7 @@ def fly_jungfrau(
     yield from bps.mv(jungfrau.drv.gain_mode, gain_mode)
     LOGGER.info("Preparing detector...")
     yield from bps.prepare(jungfrau, trigger_info, wait=True)
+
     LOGGER.info("Detector prepared")
     if read_hardware_after_prepare_plan:
         yield from read_hardware_after_prepare_plan()

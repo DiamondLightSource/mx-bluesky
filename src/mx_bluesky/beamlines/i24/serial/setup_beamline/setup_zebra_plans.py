@@ -332,6 +332,11 @@ def setup_zebra_for_fastchip_plan(
         yield from bps.abs_set(
             zebra.output.out_pvs[TTL_EIGER], zebra.mapping.sources.AND3, group=group
         )
+    elif det_type == "jungfrau":
+        ttl = zebra.mapping.outputs.TTL_JUNGFRAU
+        yield from bps.abs_set(
+            zebra.output.out_pvs[ttl], zebra.mapping.sources.AND3, group=group
+        )
 
     # Square wave - needs a small drop to make it work for eiger
     pulse_width = (
