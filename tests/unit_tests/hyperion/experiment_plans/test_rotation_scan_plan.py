@@ -277,10 +277,10 @@ async def test_full_rotation_plan_smargon_settings(
     # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
     assert omega_velocity_set.call_count == 4
     assert omega_velocity_set.call_args_list == [
-        call(test_max_velocity, wait=True),
-        call(test_max_velocity, wait=True),
-        call(rotation_speed, wait=True),
-        call(test_max_velocity, wait=True),
+        call(test_max_velocity),
+        call(test_max_velocity),
+        call(rotation_speed),
+        call(test_max_velocity),
     ]
 
 
@@ -949,11 +949,11 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             )
 
         assert omega_put.mock_calls[0:5] == [
-            call(0, wait=True),
-            call(90, wait=True),
-            call(180, wait=True),
-            call(270, wait=True),
-            call(expected_start_angle_with_runup, wait=True),
+            call(0),
+            call(90),
+            call(180),
+            call(270),
+            call(expected_start_angle_with_runup),
         ]
         mock_setup_zebra_for_rotation.assert_called_once_with(
             fake_create_rotation_devices.zebra,

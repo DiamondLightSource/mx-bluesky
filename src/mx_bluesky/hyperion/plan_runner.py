@@ -7,11 +7,11 @@ from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.callbacks.zmq import Publisher
 from bluesky.utils import MsgGenerator
+from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
     LogUidTaggingCallback,
 )
-from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.parameters.constants import CONST
@@ -44,7 +44,7 @@ class PlanRunner:
 
     @abstractmethod
     def decode_and_execute(
-        self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
+        self, current_visit: str | None, parameter_list: Sequence[BaseModel]
     ) -> MsgGenerator:
         pass
 
