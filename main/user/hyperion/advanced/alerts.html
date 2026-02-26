@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Alerts &#8212; mx-bluesky 1.6.3.dev24+g3bda0c7ca documentation</title>
+    <title>Alerts &#8212; mx-bluesky 1.6.3.dev26+g2b8482ed8 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=b6e73d3b"></script>
+    <script src="../../../_static/documentation_options.js?v=dde8dced"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -474,6 +474,8 @@ itself.</p>
 <li><p>When Hyperion finishes UDC collection (there are no more Agamemnon instructions).</p></li>
 <li><p>When Hyperion releases the baton.</p></li>
 <li><p>When Hyperion moves on to a new container (puck).</p></li>
+<li><p>When Hyperion is paused waiting for beam for more than 10 minutes (xbpm_feedback position stable. Repeats every 10 minutes)</p></li>
+<li><p>When Hyperion data collection takes longer than 10 minutes (as measured from the last wait-for-beam check)</p></li>
 </ul>
 <section id="graylog-alert-configuration">
 <h2>Graylog Alert Configuration<a class="headerlink" href="#graylog-alert-configuration" title="Link to this heading">#</a></h2>

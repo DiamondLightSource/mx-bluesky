@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Grid Detect Then Xray Centre &#8212; mx-bluesky 1.6.3.dev24+g3bda0c7ca documentation</title>
+    <title>Grid Detect Then Xray Centre &#8212; mx-bluesky 1.6.3.dev26+g2b8482ed8 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=b6e73d3b"></script>
+    <script src="../../_static/documentation_options.js?v=dde8dced"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -417,7 +417,6 @@
 
 
 
-
 <li class="toctree-l2"><a class="reference internal" href="../hyperion/reference/baton.html">Hyperion Baton</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../hyperion/reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
@@ -521,7 +520,7 @@
   <section id="grid-detect-then-xray-centre">
 <h1>Grid Detect Then Xray Centre<a class="headerlink" href="#grid-detect-then-xray-centre" title="Link to this heading">#</a></h1>
 <p>The aim of this page is to provide a general overview of the <code class="docutils literal notranslate"><span class="pre">grid_detect_then_xray_centre_plan</span></code>.</p>
-<p>The code for the <code class="docutils literal notranslate"><span class="pre">grid_detect_then_xray_centre</span></code> plan is now entirely <code class="docutils literal notranslate"><span class="pre">mx-bluesky/common/</span></code> and <a class="reference external" href="https://github.com/DiamondLightSource/dodal">dodal</a>. There is a new Hyperion entry point, <code class="docutils literal notranslate"><span class="pre">hyperion_grid_detect_then_xray_centre</span></code> which calls this common plan, setting up Hyperion features for it. There will soon be an i04 entry point that calls the common plan in the same way.</p>
+<p>The code for the <code class="docutils literal notranslate"><span class="pre">grid_detect_then_xray_centre</span></code> plan is now entirely <code class="docutils literal notranslate"><span class="pre">mx-bluesky/common/</span></code> and <a class="reference external" href="https://github.com/DiamondLightSource/dodal">dodal</a>. There is an i04 entry point that calls the common plan.</p>
 <p>There are then a number of plans that make up the <code class="docutils literal notranslate"><span class="pre">grid_detect_then_xray_centre_plan</span></code> plan. Some important ones:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#grid-detect"><span class="std std-ref">grid_detection_plan</span></a> - Use the OAV to optically calculate a grid for a scan that would cover the whole sample.</p></li>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Hyperion Overview &#8212; mx-bluesky 1.6.3.dev24+g3bda0c7ca documentation</title>
+    <title>Hyperion Overview &#8212; mx-bluesky 1.6.3.dev26+g2b8482ed8 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=b6e73d3b"></script>
+    <script src="../../../_static/documentation_options.js?v=dde8dced"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -417,7 +417,6 @@
 
 
 
-
 <li class="toctree-l2"><a class="reference internal" href="baton.html">Hyperion Baton</a></li>
 <li class="toctree-l2"><a class="reference internal" href="param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="coordinate-systems.html">Hyperion Coordinate Systems</a></li>
@@ -565,43 +564,9 @@ and that hyperion will create mock devices.</p>
 <p>Tracing information (the time taken to complete different steps of experiments) is collected by an <a class="reference external" href="https://opentelemetry.io/">OpenTelemetry</a> tracer, and currently we export this information to a local Jaeger monitor (if available). To see the tracing output, run the <a class="reference external" href="https://www.jaegertracing.io/docs/1.6/getting-started/">Jaeger all-in-one container</a>, and go to the web interface at http://localhost:16686.</p>
 </section>
 </section>
-<section class="tex2jax_ignore mathjax_ignore" id="rest-api-gda-mode">
-<h1>REST API (GDA Mode)<a class="headerlink" href="#rest-api-gda-mode" title="Link to this heading">#</a></h1>
-<p>When running in GDA mode, Hyperion offers the following API</p>
-<section id="starting-a-scan">
-<h2>Starting a scan<a class="headerlink" href="#starting-a-scan" title="Link to this heading">#</a></h2>
-<p>To start a scan you can do the following:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="o">-</span><span class="n">X</span> <span class="n">PUT</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">5005</span><span class="o">/</span><span class="n">flyscan_xray_centre</span><span class="o">/</span><span class="n">start</span> <span class="o">--</span><span class="n">data</span><span class="o">-</span><span class="n">binary</span> <span class="s2">&quot;@tests/test_data/parameter_json_files/test_parameters.json&quot;</span> <span class="o">-</span><span class="n">H</span> <span class="s2">&quot;Content-Type: application/json&quot;</span>
-</pre></div>
-</div>
-</section>
-<section id="getting-the-runner-status">
-<h2>Getting the Runner Status<a class="headerlink" href="#getting-the-runner-status" title="Link to this heading">#</a></h2>
-<p>To get the status of the runner:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">5005</span><span class="o">/</span><span class="n">status</span>
-</pre></div>
-</div>
-</section>
-<section id="stopping-the-scan">
-<h2>Stopping the Scan<a class="headerlink" href="#stopping-the-scan" title="Link to this heading">#</a></h2>
-<p>To stop a scan that is currently running:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="o">-</span><span class="n">X</span> <span class="n">PUT</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">5005</span><span class="o">/</span><span class="n">stop</span>
-
-</pre></div>
-</div>
-</section>
-<section id="writing-out-debug-logs">
-<h2>Writing out <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> logs<a class="headerlink" href="#writing-out-debug-logs" title="Link to this heading">#</a></h2>
-<p>To make the app write the <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> level logs stored in the <code class="docutils literal notranslate"><span class="pre">CircularMemoryHandler</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="o">-</span><span class="n">X</span> <span class="n">PUT</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">5005</span><span class="o">/</span><span class="n">flush_debug_log</span>
-
-</pre></div>
-</div>
-</section>
-</section>
-<section class="tex2jax_ignore mathjax_ignore" id="rest-api-udc-mode">
-<h1>REST API (UDC Mode)<a class="headerlink" href="#rest-api-udc-mode" title="Link to this heading">#</a></h1>
-<p>In UDC Mode, the only endpoint available is the <code class="docutils literal notranslate"><span class="pre">/status</span></code> endpoint.</p>
+<section class="tex2jax_ignore mathjax_ignore" id="rest-api">
+<h1>REST API<a class="headerlink" href="#rest-api" title="Link to this heading">#</a></h1>
+<p>The only endpoint available is the <code class="docutils literal notranslate"><span class="pre">/status</span></code> endpoint, which returns the current execution status of the runner</p>
 </section>
 
 
@@ -659,14 +624,7 @@ and that hyperion will create mock devices.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tracing">Tracing</a></li>
 </ul>
 </li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#rest-api-gda-mode">REST API (GDA Mode)</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-a-scan">Starting a scan</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-the-runner-status">Getting the Runner Status</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stopping-the-scan">Stopping the Scan</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-out-debug-logs">Writing out <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> logs</a></li>
-</ul>
-</li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#rest-api-udc-mode">REST API (UDC Mode)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#rest-api">REST API</a></li>
 </ul>
 
   </nav></div>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Hyperion User Guide &#8212; mx-bluesky 1.6.3.dev24+g3bda0c7ca documentation</title>
+    <title>Hyperion User Guide &#8212; mx-bluesky 1.6.3.dev26+g2b8482ed8 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=b6e73d3b"></script>
+    <script src="../../_static/documentation_options.js?v=dde8dced"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -463,14 +463,16 @@
 <h2>What is Hyperion?<a class="headerlink" href="#what-is-hyperion" title="Link to this heading">#</a></h2>
 <p>Hyperion is a service for running high throughput unattended data collection (UDC). It does not provide a user
 interface, instead instructions are pulled from Agamemnon which is controlled by information obtained in ISPyB.</p>
-<p>The software supports two modes of operation:</p>
-<ul class="simple">
-<li><p>UDC mode (experimental) where Hyperion automatically fetches instructions from Agamemnon.</p></li>
-<li><p>GDA mode (where GDA fetches and decodes the Agamemnon
-instructions). GDA mode will be removed in a future release.</p></li>
-</ul>
-<p>The mode of operation is determined by configuration using the <code class="docutils literal notranslate"><span class="pre">gda.mx.udc.hyperion.enable</span></code> parameter inside
-GDA properties. See <a class="reference internal" href="configuration.html"><span class="doc">configuration</span></a> for other properties that control Hyperions behavior.</p>
+<dl class="simple">
+<dt>The software supports two modes of operation:</dt><dd><dl class="simple">
+<dt>UDC mode (the default):</dt><dd><p>The software runs in UDC mode where Hyperion automatically fetches instructions from Agamemnon.</p>
+</dd>
+<dt>Blueapi mode (experimental):</dt><dd><p>Hyperion is launched in two processes <code class="docutils literal notranslate"><span class="pre">hyperion-supervisor</span></code> and <code class="docutils literal notranslate"><span class="pre">hyperion-blueapi</span></code>. See
+<a class="reference internal" href="../../developer/hyperion/hyperion-blueapi.html"><span class="doc">Hyperion-BlueAPI</span></a></p>
+</dd>
+</dl>
+</dd>
+</dl>
 <p>Once Hyperion has received a request, either from GDA or directly from Agamemnon, it will do the following tasks:</p>
 <ul class="simple">
 <li><p>Robot Load (if the requested sample has not yet been loaded)</p></li>
