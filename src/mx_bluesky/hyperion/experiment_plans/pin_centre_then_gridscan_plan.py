@@ -2,16 +2,9 @@ from __future__ import annotations
 
 import json
 
-import bluesky.preprocessors as bpp
-from blueapi.core import BlueskyContext
-from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
-from mx_bluesky.common.device_setup_plans.utils import (
-    start_preparing_data_collection_then_do_plan,
-)
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )
@@ -34,9 +27,7 @@ from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -49,17 +40,6 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
     PinTipCentreThenXrayCentre,
 )
-
-
-def create_devices(
-    context: BlueskyContext,
-) -> HyperionGridDetectThenXRayCentreComposite:
-    """
-    HyperionGridDetectThenXRayCentreComposite contains all the devices we need, reuse that.
-    """
-    return device_composite_from_context(
-        context, HyperionGridDetectThenXRayCentreComposite
-    )
 
 
 def create_parameters_for_grid_detection(
@@ -132,29 +112,3 @@ def pin_centre_then_gridscan_plan(
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_gridscan_and_xrc(), parameters)
-
-
-def pin_tip_centre_then_xray_centre(
-    composite: HyperionGridDetectThenXRayCentreComposite,
-    parameters: PinTipCentreThenXrayCentre,
-    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
-) -> MsgGenerator:
-    """Starts preparing for collection then performs the pin tip centre and xray centre"""
-    eiger: EigerDetector = composite.eiger
-
-    eiger.set_detector_parameters(parameters.detector_params)
-
-    flyscan_event_handler = XRayCentreEventHandler()
-
-    @bpp.subs_decorator(flyscan_event_handler)
-    def _pin_centre_flyscan_then_xrc() -> MsgGenerator:
-        yield from start_preparing_data_collection_then_do_plan(
-            composite.beamstop,
-            eiger,
-            composite.detector_motion,
-            parameters.detector_params.detector_distance,
-            pin_centre_then_gridscan_plan(composite, parameters, oav_config_file),
-            group=CONST.WAIT.GRID_READY_FOR_DC,
-        )
-
-    yield from _pin_centre_flyscan_then_xrc()

@@ -1,7 +1,6 @@
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
-from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
@@ -53,7 +52,6 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
-from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     SingleRotationScan,
@@ -61,7 +59,6 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -92,12 +89,6 @@ class RotationScanComposite(OavSnapshotComposite):
     oav: OAV
     xbpm_feedback: XBPMFeedback
     thawer: Thawer
-
-
-def create_devices(context: BlueskyContext) -> RotationScanComposite:
-    """Ensures necessary devices have been instantiated"""
-
-    return device_composite_from_context(context, RotationScanComposite)
 
 
 def rotation_scan_plan(
@@ -253,30 +244,6 @@ def _move_and_rotation(
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(composite, params, motion_values)
-
-
-def rotation_scan(
-    composite: RotationScanComposite,
-    parameters: RotationScan,
-    oav_params: OAVParameters | None = None,
-) -> MsgGenerator:
-    """This is intended to be the external API for doing the rotation scan on its own
-    rather than part of a larger UDC-like collection. In the UDC case the
-    BeamDrawingCallback will already be activated."""
-
-    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
-    @bpp.run_decorator(
-        md={
-            "activate_callbacks": ["BeamDrawingCallback"],
-            "with_snapshot": parameters.model_dump_json(
-                include=WithSnapshot.model_fields.keys()  # type: ignore
-            ),
-        }
-    )
-    def _wrapped_rotation_scan():
-        yield from rotation_scan_internal(composite, parameters, oav_params)
-
-    yield from _wrapped_rotation_scan()
 
 
 def rotation_scan_internal(
