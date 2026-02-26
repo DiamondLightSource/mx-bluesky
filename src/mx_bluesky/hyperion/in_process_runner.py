@@ -10,8 +10,8 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
+from pydantic import BaseModel
 
-from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
@@ -19,14 +19,17 @@ from mx_bluesky.common.utils.context import (
 )
 from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.blueapi_plans import clean_up_udc, move_to_udc_default_state
+from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion.blueapi.parameters import (
+    LoadCentreCollectParams,
+    load_centre_collect_to_internal,
+)
+from mx_bluesky.hyperion.blueapi.plans import clean_up_udc, move_to_udc_default_state
 from mx_bluesky.hyperion.experiment_plans import load_centre_collect_full
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
 )
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import UDCDefaultDevices
-from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState, Wait
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 
 
@@ -38,7 +41,7 @@ class InProcessRunner(PlanRunner):
         self._current_status: Status = Status.IDLE
 
     def decode_and_execute(
-        self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
+        self, current_visit: str | None, parameter_list: Sequence[BaseModel]
     ) -> MsgGenerator:
         current_visit = current_visit or ""
         for parameters in parameter_list:
@@ -46,11 +49,15 @@ class InProcessRunner(PlanRunner):
                 f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
             )
             match parameters:
-                case LoadCentreCollect():
+                case LoadCentreCollectParams():
                     current_visit = parameters.visit
                     devices: Any = create_devices(self.context)
                     yield from self.execute_plan(
-                        partial(load_centre_collect_full, devices, parameters)
+                        partial(
+                            load_centre_collect_full,
+                            devices,
+                            load_centre_collect_to_internal(parameters),
+                        )
                     )
                 case Wait():
                     yield from self.execute_plan(partial(_runner_sleep, parameters))

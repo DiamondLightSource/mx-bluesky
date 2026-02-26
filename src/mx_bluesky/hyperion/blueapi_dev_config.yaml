@@ -4,7 +4,7 @@ env:
       module: dodal.beamlines.i03
       mock: true
     - kind: planFunctions
-      module: mx_bluesky.hyperion.blueapi_plans
+      module: mx_bluesky.hyperion.blueapi.plans
   events:
     broadcast_status_events: false
 api:
