@@ -101,21 +101,22 @@ def test_external_callbacks_not_running_raises_exception_for_plan_execution(
         fut.result()
 
 
+@patch("mx_bluesky.hyperion.in_process_runner.create_devices", new=MagicMock())
 @patch("mx_bluesky.hyperion.in_process_runner.load_centre_collect_full")
 def test_in_process_runner_skips_native_collection_if_sample_error(
     mock_load_centre_collect: MagicMock,
     run_engine: RunEngine,
-    patch_timer_expiry,
     external_load_centre_collect_params: LoadCentreCollectParams,
 ):
     mock_load_centre_collect.side_effect = CrystalNotFoundError(
         "Simulated crystal not found"
     )
     runner = InProcessRunner(BlueskyContext(run_engine=run_engine), True)
+    runner.reset_callback_watchdog_timer()
     run_engine(
         runner.decode_and_execute(
             "TEST_VISIT",
             [external_load_centre_collect_params, external_load_centre_collect_params],
         )
     )
-    mock_load_centre_collect.assert_called_once_with(ANY, ANY, ANY)
+    mock_load_centre_collect.assert_called_once_with(ANY, ANY)
