@@ -32,14 +32,15 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
-    ZocaloInfoGenerator,
-    ZocaloStartInfo,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
@@ -50,34 +51,11 @@ from mx_bluesky.common.parameters.device_composites import (
     GonioWithOmegaType,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
 
 
-# todo this all needs chanigng
-def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
-    """
-    Generate the zocalo trigger info from bluesky runs where the frame number is
-    computed using metadata added to the document by the ISPyB callback and the
-    run start which together can be used to determine the correct frame numbering.
-    """
-    doc = yield []
-    omega_to_scan_spec = doc["omega_to_scan_spec"]
-    start_frame = 0
-    infos = []
-    for i, omega in enumerate([0, 90]):
-        frames = number_of_frames_from_scan_spec(omega_to_scan_spec[omega])
-        infos.append(
-            ZocaloStartInfo(
-                doc["grid_plane_to_id_map"][omega], None, start_frame, frames, i
-            )
-        )
-        start_frame += frames
-    yield infos
-
-
-def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridscanISPyBCallback
-]:
+def create_gridscan_callbacks(
+    params: I02_1FgsParams,
+) -> tuple[GridscanNexusFileCallback, GridscanISPyBCallback]:
     return (
         GridscanNexusFileCallback(param_type=SpecifiedTwoDGridScan),
         GridscanISPyBCallback(
@@ -85,7 +63,7 @@ def create_gridscan_callbacks() -> tuple[
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,  # todo dont need this
+                lambda: generate_start_info_from_omega_map(params.omega_starts_deg),
             ),
         ),
     )
@@ -182,7 +160,7 @@ def i02_1_gridscan_plan(
     """BlueAPI entry point for i02-1 grid scans"""
 
     beamline_specific = construct_i02_1_specific_features(composite, parameters)
-    callbacks = create_gridscan_callbacks()
+    callbacks = create_gridscan_callbacks(parameters)
 
     @bpp.subs_decorator(callbacks)
     def decorated_flyscan_plan():

@@ -176,7 +176,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if beamsize_y_mm:
             beamsize_y_mm = beamsize_y_mm / 1000
         if not (beamsize_x_mm and beamsize_y_mm):
-            # todo write issue about vmxm beamsize and link here
+            # VMXm don't have a beamsize device in dodal yet, they get beamsize sent in from GDA
             try:
                 beamsize_x_mm = self.params.beam_size_x  # type: ignore
                 beamsize_y_mm = self.params.beam_size_y  # type: ignore
