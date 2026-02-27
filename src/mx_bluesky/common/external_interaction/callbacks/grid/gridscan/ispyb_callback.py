@@ -15,9 +15,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
-    GridscanPlane,
-)
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     add_processing_time_to_comment,
     common_populate_axis_info,
@@ -45,6 +42,7 @@ if TYPE_CHECKING:
     from event_model import RunStart, RunStop
 
 T = TypeVar("T", bound="SpecifiedGrids")
+D = TypeVar("D")
 
 
 def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
@@ -93,8 +91,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.param_type = param_type
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
-        self._grid_plane_to_id_map: dict[GridscanPlane, int] = {}
-        self._grid_plane_to_width_map: dict[GridscanPlane, int] = {}
+        self._grid_num_to_id_map: dict[int, int] = {}
         self.data_collection_group_info: DataCollectionGroupInfo | None
 
     def activity_gated_start(self, doc: RunStart):
@@ -142,9 +139,11 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert isinstance(self.params, SpecifiedGrids)
         scan_data_infos = []
         for grid_num in range(self.params.num_grids):
+            id = self.ispyb_ids.data_collection_ids[grid_num]
+            self._grid_num_to_id_map[grid_num] = id
             scan_data_info = ScanDataInfo(
                 data_collection_info=event_sourced_data_collection_info,
-                data_collection_id=self.ispyb_ids.data_collection_ids[grid_num],
+                data_collection_id=id,
             )
             scan_data_infos.append(scan_data_info)
         return scan_data_infos
@@ -179,6 +178,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
             self.data_collection_group_info = None
             return super().activity_gated_stop(doc)
         return self.tag_doc(doc)
+
+    def tag_doc(self, doc: D) -> D:
+        doc = super().tag_doc(doc)
+        assert isinstance(doc, dict)
+        if self._grid_num_to_id_map:
+            doc["_grid_num_to_id_map"] = self._grid_num_to_id_map
+        return doc  # type: ignore
 
     def data_collection_number_from_gridplane(self, plane) -> int:
         assert self.params

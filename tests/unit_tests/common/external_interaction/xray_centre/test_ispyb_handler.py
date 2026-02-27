@@ -197,11 +197,15 @@ class TestXrayCentreIspybHandler:
         assert not hasattr(latest_record, "dc_group_id")
 
     @patch(
+        "mx_bluesky.common.external_interaction.callbacks.grid.utils.time",
+        new=MagicMock(side_effect=[100]),
+    )
+    @patch(
         "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.time",
-        side_effect=[2, 100],
+        new=MagicMock(side_effect=[2]),
     )
     def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
-        self, mock_time, dummy_rotation_data_collection_group_info, test_event_data
+        self, dummy_rotation_data_collection_group_info, test_event_data
     ):
         ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams,

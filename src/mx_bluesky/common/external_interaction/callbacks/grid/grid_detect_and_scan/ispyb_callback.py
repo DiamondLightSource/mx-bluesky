@@ -39,7 +39,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedGrids
+from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
@@ -57,7 +57,7 @@ class GridscanPlane(StrEnum):
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
-T = TypeVar("T", bound="SpecifiedGrids")
+T = TypeVar("T", bound="GenericGrid")
 
 
 def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
