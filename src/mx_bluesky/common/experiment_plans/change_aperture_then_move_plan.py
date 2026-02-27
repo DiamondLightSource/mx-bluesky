@@ -5,6 +5,7 @@ import bluesky.plan_stubs as bps
 import numpy
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.zocalo import ZocaloResults
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
@@ -21,11 +22,11 @@ from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler, XRayCentr
 
 
 def _get_xrc_results(
-    composite: GridDetectThenXRayCentreComposite,
+    zocalo: ZocaloResults,
     parameters: SpecifiedThreeDGridScan,
     flyscan_event_handler: XRayCentreEventHandler,
 ) -> Generator[Any, Any, Sequence[XRayCentreResult]]:
-    yield from fetch_xrc_results_from_zocalo(composite.zocalo, parameters)
+    yield from fetch_xrc_results_from_zocalo(zocalo, parameters)
     flyscan_results = flyscan_event_handler.xray_centre_results
     assert flyscan_results, (
         "Flyscan result event not received or no crystal found and exception not raised"
@@ -39,7 +40,7 @@ def get_results_and_move_to_xtal(
     flyscan_event_handler: XRayCentreEventHandler,
 ):
     flyscan_results = yield from _get_xrc_results(
-        composite, parameters, flyscan_event_handler
+        composite.zocalo, parameters, flyscan_event_handler
     )
     yield from move_to_xtal(flyscan_results[0], composite.gonio)
 
@@ -50,7 +51,7 @@ def get_results_then_change_aperture_and_move_to_xtal(
     flyscan_event_handler: XRayCentreEventHandler,
 ):
     flyscan_results = yield from _get_xrc_results(
-        composite, parameters, flyscan_event_handler
+        composite.zocalo, parameters, flyscan_event_handler
     )
     yield from change_aperture(flyscan_results[0], composite.aperture_scatterguard)
     yield from move_to_xtal(flyscan_results[0], composite.gonio)
