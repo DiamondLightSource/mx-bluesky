@@ -281,7 +281,7 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
         GridDetectAndScanISPyBCallback(
-            param_type=SpecifiedThreeDGridScan,
+            param_type=GenericGrid,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
