@@ -16,7 +16,9 @@ from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
 from mx_bluesky.common.parameters.constants import Status
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
@@ -328,3 +330,27 @@ def test_unrecognised_instruction_raises_assertion_error(runner: SupervisorRunne
                 ],
             )
         )
+
+
+@pytest.mark.parametrize(
+    "exception_type", [SampleError.__name__, CrystalNotFoundError.__name__]
+)
+def test_sample_error_skips_subsequent_instructions(
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+    exception_type: str,
+):
+    mock_blueapi_client.run_task.return_value = TaskStatus(
+        task_id="TASK_ID",
+        result=TaskError(type=exception_type, message="Simulated sample error"),
+        task_complete=True,
+        task_failed=True,
+    )
+    runner.context.run_engine(
+        runner.decode_and_execute(
+            TEST_VISIT,
+            [external_load_centre_collect_params, external_load_centre_collect_params],
+        )
+    )
+    mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)

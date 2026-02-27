@@ -44,38 +44,41 @@ class SupervisorRunner(PlanRunner):
             if self._current_status == Status.ABORTING:
                 raise PlanError("Plan execution cancelled, supervisor is shutting down")
             self._current_status = Status.BUSY
-            for parameters in parameter_list:
-                LOGGER.info(
-                    f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
-                )
-                match parameters:
-                    case LoadCentreCollectParams():
-                        task_request = TaskRequest(
-                            name="load_centre_collect",
-                            params={"parameters": parameters},
-                            instrument_session=instrument_session,
-                        )
-                        self._run_task_remotely(task_request)
-                    case Wait():
-                        yield from bps.sleep(parameters.duration_s)
-                    case UDCDefaultState():
-                        task_request = TaskRequest(
-                            name="move_to_udc_default_state",
-                            params={},
-                            instrument_session=instrument_session,
-                        )
-                        self._run_task_remotely(task_request)
-                    case UDCCleanup():
-                        task_request = TaskRequest(
-                            name="clean_up_udc",
-                            params={"visit": current_visit},
-                            instrument_session=instrument_session,
-                        )
-                        self._run_task_remotely(task_request)
-                    case _:
-                        raise AssertionError(
-                            f"Unsupported instruction decoded from agamemnon {type(parameters)}"
-                        )
+            try:
+                for parameters in parameter_list:
+                    LOGGER.info(
+                        f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
+                    )
+                    match parameters:
+                        case LoadCentreCollectParams():
+                            task_request = TaskRequest(
+                                name="load_centre_collect",
+                                params={"parameters": parameters},
+                                instrument_session=instrument_session,
+                            )
+                            self._run_task_remotely(task_request)
+                        case Wait():
+                            yield from bps.sleep(parameters.duration_s)
+                        case UDCDefaultState():
+                            task_request = TaskRequest(
+                                name="move_to_udc_default_state",
+                                params={},
+                                instrument_session=instrument_session,
+                            )
+                            self._run_task_remotely(task_request)
+                        case UDCCleanup():
+                            task_request = TaskRequest(
+                                name="clean_up_udc",
+                                params={"visit": current_visit},
+                                instrument_session=instrument_session,
+                            )
+                            self._run_task_remotely(task_request)
+                        case _:
+                            raise AssertionError(
+                                f"Unsupported instruction decoded from agamemnon {type(parameters)}"
+                            )
+            except SampleError:
+                LOGGER.info("Ignoring sample error, continuing...")
         except:
             self._current_status = Status.FAILED
             raise
@@ -122,7 +125,9 @@ class SupervisorRunner(PlanRunner):
                     )
                     match task_error.type:
                         case CrystalNotFoundError.__name__ | SampleError.__name__:
-                            LOGGER.info("Continuing collection due to sample error")
+                            raise SampleError(
+                                f"Remote task error: {task_error.message}"
+                            )
                         case _:
                             if self.current_status != Status.ABORTING:
                                 raise PlanError(

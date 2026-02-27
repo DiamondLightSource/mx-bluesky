@@ -113,7 +113,6 @@ def supervisor_runner_no_ping(
 
 
 def handle_event(plan_started: Event, event_payload: AnyEvent, context: MessageContext):
-    print(f"Got event {event_payload}")
     match event_payload:
         case DataEvent() as data_event:
             if (
@@ -163,7 +162,6 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
     plan_called = Event()
 
     def handle_abort(event_payload: AnyEvent, context: MessageContext):
-        print(f"Abort got event {event_payload}")
         match event_payload:
             case WorkerEvent() as worker_event:
                 if worker_event.state == WorkerState.ABORTING:
@@ -404,7 +402,7 @@ def test_supervisor_decode_and_execute_raises_planerror_if_blueapi_plan_raises_e
         )
 
 
-def test_supervisor_decode_and_execute_continues_if_blueapi_plan_raises_warningerror(
+def test_supervisor_decode_and_execute_continues_if_blueapi_plan_raises_sample_error(
     supervisor_runner: SupervisorRunner, tmp_path
 ):
     params = LoadCentreCollectParams(
@@ -415,5 +413,5 @@ def test_supervisor_decode_and_execute_continues_if_blueapi_plan_raises_warninge
     )
     params.sample_id = CRYSTAL_NOT_FOUND_SAMPLE_ID
     supervisor_runner.run_engine(
-        supervisor_runner.decode_and_execute(TEST_VISIT, [params])
+        supervisor_runner.decode_and_execute(TEST_VISIT, [params, params])
     )
