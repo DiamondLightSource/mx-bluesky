@@ -23,7 +23,7 @@ from ophyd_async.core import (
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
-from mx_bluesky.common.utils.exceptions import WarningError
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, WarningError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.blueapi.parameters import (
     HyperionParam,
@@ -32,6 +32,9 @@ from mx_bluesky.hyperion.blueapi.parameters import (
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
+
+BEAMLINE_ERROR_SAMPLE_ID = 111111
+CRYSTAL_NOT_FOUND_SAMPLE_ID = 222222
 
 
 def publish_event(plan_name: str):
@@ -43,6 +46,11 @@ def load_centre_collect(
     parameters: LoadCentreCollectParams,
     composite: LoadCentreCollectComposite = inject(),
 ) -> MsgGenerator:
+    LOGGER.info(f"load_centre_collect called with sample id {parameters.sample_id}")
+    if parameters.sample_id == BEAMLINE_ERROR_SAMPLE_ID:
+        raise ValueError("Simulated beamline error")
+    elif parameters.sample_id == CRYSTAL_NOT_FOUND_SAMPLE_ID:
+        raise CrystalNotFoundError("Simulated crystal not found")
     yield from bps.sleep(1)
 
 

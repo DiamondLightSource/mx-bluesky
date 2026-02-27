@@ -37,8 +37,10 @@ class TaskMonitor:
         self._blueapi_client = blueapi_client
         self._is_waiting_for_beam: bool = False
         self._timer = None
+        # self.completion_event: WorkerEvent | None = None
 
     def __enter__(self) -> Self:
+        # self.completion_event = None
         self._is_waiting_for_beam = False
         self._start_time = time.monotonic()
         self._reset_timer()
@@ -50,6 +52,10 @@ class TaskMonitor:
 
     def on_blueapi_event(self, event: AnyEvent):
         match event:
+            # case WorkerEvent() as worker_event:
+            #     if worker_event.task_status and worker_event.task_status.task_complete:
+            #         self.completion_event = worker_event
+            #
             case ProgressEvent(statuses=statuses):
                 feedback_statuses = [
                     s

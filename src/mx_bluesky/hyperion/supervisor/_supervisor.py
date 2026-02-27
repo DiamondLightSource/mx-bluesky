@@ -5,11 +5,13 @@ from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.service.model import TaskRequest
+from blueapi.worker.event import TaskError
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from pydantic import BaseModel
 
 from mx_bluesky.common.parameters.constants import Status
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
@@ -87,7 +89,7 @@ class SupervisorRunner(PlanRunner):
 
     def is_connected(self) -> bool:
         try:
-            self.blueapi_client.get_state()
+            self.blueapi_client.state  # noqa: B018
         except Exception as e:
             LOGGER.debug(f"Failed to get worker state: {e}")
             return False
@@ -106,18 +108,31 @@ class SupervisorRunner(PlanRunner):
     def _run_task_remotely(self, task_request: TaskRequest):
         try:
             with TaskMonitor(self.blueapi_client, task_request) as task_monitor:
-                result = self.blueapi_client.run_task(
+                task_status = self.blueapi_client.run_task(
                     task_request, on_event=task_monitor.on_blueapi_event
                 )
             LOGGER.info(
-                f"hyperion-blueapi completed task execution with result {result}"
+                f"hyperion-blueapi completed task execution with task_status {task_status}"
             )
+
+            match task_status.result:
+                case TaskError() as task_error:
+                    LOGGER.info(
+                        f"hyperion-blueapi plan execution encountered an error: {task_error.type}: {task_error.message}"
+                    )
+                    match task_error.type:
+                        case CrystalNotFoundError.__name__ | SampleError.__name__:
+                            LOGGER.info("Continuing collection due to sample error")
+                        case _:
+                            if self.current_status != Status.ABORTING:
+                                raise PlanError(
+                                    f"Exception raised during plan execution: {task_error}"
+                                )
         except BlueskyStreamingError as e:
-            # We may receive a BlueskyStreamingError if the remote server
-            # processed an abort during plan execution, but this is not
-            # the only possible cause.
             if self.current_status != Status.ABORTING:
-                raise PlanError(f"Exception raised during plan execution: {e}") from e
+                raise PlanError(
+                    "BlueskyStreamingError raised during plan execution"
+                ) from e
         finally:
             if self.current_status == Status.ABORTING:
                 LOGGER.info("Aborting local runner...")
