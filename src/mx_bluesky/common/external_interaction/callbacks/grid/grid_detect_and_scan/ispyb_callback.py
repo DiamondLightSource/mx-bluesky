@@ -22,7 +22,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     ASSERT_START_BEFORE_EVENT_DOC_MESSAGE,
-    add_processing_time_to_comment,
+    common_add_processing_time_to_comment,
     common_populate_axis_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -172,7 +172,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def _add_processing_time_to_comment(self, processing_start_time: float):
-        add_processing_time_to_comment(
+        common_add_processing_time_to_comment(
             self, processing_start_time, self.data_collection_group_info
         )
 

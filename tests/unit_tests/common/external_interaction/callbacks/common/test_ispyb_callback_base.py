@@ -58,3 +58,8 @@ def test_exception_when_instrument_session_doesnt_exist(
 
     with pytest.raises(ValueError):
         run_engine(test_plan())
+
+
+def test_handle_ispyb_transmission_flux_read_if_no_beamsize():
+    # Test exception and check if params exist then it still works
+    ...

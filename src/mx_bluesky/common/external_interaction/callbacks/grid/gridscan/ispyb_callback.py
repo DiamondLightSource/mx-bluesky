@@ -16,7 +16,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_remaining_data_collection_info,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
-    add_processing_time_to_comment,
+    common_add_processing_time_to_comment,
     common_populate_axis_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -112,7 +112,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return super().activity_gated_start(doc)
 
     def _add_processing_time_to_comment(self, processing_start_time: float):
-        add_processing_time_to_comment(
+        common_add_processing_time_to_comment(
             self, processing_start_time, self.data_collection_group_info
         )
 
@@ -150,7 +150,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
         assert self.data_collection_group_info, (
-            f"No data collection group info - stop document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+            f"No data collection group info - stop document has been emitted before a {PlanNameConstants.DO_FGS} start document"
         )
         if doc.get("run_start") == self._start_of_fgs_uid:
             self._processing_start_time = time()

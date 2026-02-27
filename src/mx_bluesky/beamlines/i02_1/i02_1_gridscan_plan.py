@@ -38,6 +38,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
+    ispyb_activation_decorator,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     generate_start_info_from_num_grids,
@@ -162,6 +163,7 @@ def i02_1_gridscan_plan(
     beamline_specific = construct_i02_1_specific_features(composite, parameters)
     callbacks = create_gridscan_callbacks(parameters)
 
+    @ispyb_activation_decorator
     @bpp.subs_decorator(callbacks)
     def decorated_flyscan_plan():
         yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)

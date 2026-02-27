@@ -83,7 +83,7 @@ def common_populate_axis_info(data_collection_info: DataCollectionInfo, doc: dic
         data_collection_info.chi_start = chi_start
 
 
-def add_processing_time_to_comment(
+def common_add_processing_time_to_comment(
     callback: BaseISPyBCallback,
     processing_start_time: float,
     data_collection_group_info: DataCollectionGroupInfo | None,
