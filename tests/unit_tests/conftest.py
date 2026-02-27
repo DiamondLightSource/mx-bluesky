@@ -51,10 +51,12 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridDetectAndScanISPyBCallback,
-    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -66,6 +68,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
+    GridscanParamConstants,
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
@@ -179,7 +182,9 @@ def create_gridscan_callbacks() -> tuple[
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,
+                lambda: generate_start_info_from_omega_map(
+                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+                ),
             ),
         ),
     )

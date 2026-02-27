@@ -84,7 +84,6 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
-    SpecifiedGrids,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -213,7 +212,7 @@ def i04_default_grid_detect_and_xray_centre(
         # https://github.com/DiamondLightSource/mx-bluesky/issues/1117
         flyscan_event_handler = XRayCentreEventHandler()
         callbacks = (
-            *create_gridscan_callbacks(grid_common_params.specified_grid_params),
+            *create_gridscan_callbacks(),
             flyscan_event_handler,
         )
 
@@ -276,9 +275,9 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(group)
 
 
-def create_gridscan_callbacks(
-    params: SpecifiedGrids | None,
-) -> tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback]:
+def create_gridscan_callbacks() -> tuple[
+    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
+]:
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
         GridDetectAndScanISPyBCallback(

@@ -15,6 +15,7 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
 )
 from mx_bluesky.common.parameters.constants import PlanNameConstants
+from mx_bluesky.common.parameters.gridscan import SpecifiedGrids
 from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
 
 ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
@@ -38,6 +39,33 @@ def generate_start_info_from_omega_map(
         infos.append(
             ZocaloStartInfo(
                 doc["grid_plane_to_id_map"][omega], None, start_frame, frames, i
+            )
+        )
+        start_frame += frames
+    yield infos
+
+
+def generate_start_info_from_num_grids(
+    params: SpecifiedGrids,
+) -> ZocaloInfoGenerator:
+    """
+    Generate the zocalo trigger info from bluesky runs where the grid specs
+    are immediately known from entry parameters. Metadata added to the document
+    by the ispyb callback maps the data collection id to the grid number.
+    """
+
+    doc = yield []
+    start_frame = 0
+    infos = []
+    for grid_num in range(params.num_grids):
+        frames = len(params.scan_points[grid_num])
+        infos.append(
+            ZocaloStartInfo(
+                doc["_grid_num_to_id_map"][grid_num],
+                None,
+                start_frame,
+                frames,
+                grid_num,
             )
         )
         start_frame += frames

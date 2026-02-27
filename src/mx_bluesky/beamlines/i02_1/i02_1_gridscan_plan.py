@@ -40,7 +40,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callba
     GridscanISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
-    generate_start_info_from_omega_map,
+    generate_start_info_from_num_grids,
 )
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
@@ -63,7 +63,7 @@ def create_gridscan_callbacks(
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                lambda: generate_start_info_from_omega_map(params.omega_starts_deg),
+                lambda: generate_start_info_from_num_grids(params),
             ),
         ),
     )

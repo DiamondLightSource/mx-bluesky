@@ -94,7 +94,7 @@ dev = [
     "tox-uv",
     "types-mock",
     "types-requests",
-    "sphinxcontrib.mermaid", # To build dodal docs
+    "sphinxcontrib.mermaid",     # To build dodal docs
 ]
 
 [project.scripts]
