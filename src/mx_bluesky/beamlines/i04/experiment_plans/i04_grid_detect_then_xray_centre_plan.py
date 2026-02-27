@@ -64,14 +64,17 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridDetectAndScanISPyBCallback,
-    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
+)
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
+    GridscanParamConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
@@ -81,6 +84,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
+    SpecifiedGrids,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -208,7 +212,10 @@ def i04_default_grid_detect_and_xray_centre(
         # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
         # https://github.com/DiamondLightSource/mx-bluesky/issues/1117
         flyscan_event_handler = XRayCentreEventHandler()
-        callbacks = *create_gridscan_callbacks(), flyscan_event_handler
+        callbacks = (
+            *create_gridscan_callbacks(grid_common_params.specified_grid_params),
+            flyscan_event_handler,
+        )
 
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
@@ -269,17 +276,19 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(group)
 
 
-def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
-]:
+def create_gridscan_callbacks(
+    params: SpecifiedGrids | None,
+) -> tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback]:
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
         GridDetectAndScanISPyBCallback(
-            param_type=GenericGrid,
+            param_type=SpecifiedThreeDGridScan,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,
+                lambda: generate_start_info_from_omega_map(
+                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+                ),
             ),
         ),
     )
