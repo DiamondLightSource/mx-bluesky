@@ -32,7 +32,11 @@ from ....conftest import (
     TEST_VISIT,
     raw_params_from_file,
 )
-from .dummy_plans import WaitForFeedbackParams
+from .dummy_plans import (
+    BEAMLINE_ERROR_SAMPLE_ID,
+    CRYSTAL_NOT_FOUND_SAMPLE_ID,
+    WaitForFeedbackParams,
+)
 
 BLUEAPI_SERVER_CONFIG = (
     "tests/system_tests/hyperion/supervisor/system_test_blueapi.yaml"
@@ -160,12 +164,7 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
     def handle_abort(event_payload: AnyEvent, context: MessageContext):
         match event_payload:
             case WorkerEvent() as worker_event:
-                if (
-                    worker_event.state == WorkerState.IDLE
-                    and worker_event.task_status
-                    and worker_event.task_status.task_complete
-                    and worker_event.task_status.task_failed
-                ):
+                if worker_event.state == WorkerState.ABORTING:
                     plan_aborted.set()
 
     ebc.subscribe_to_all_events(partial(handle_event, plan_called))
@@ -174,7 +173,7 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
     def shutdown_in_background():
         plan_called.wait(10)
         assert supervisor_runner.current_status == Status.BUSY
-        assert supervisor_runner.blueapi_client.get_state() == WorkerState.RUNNING
+        assert supervisor_runner.blueapi_client.state == WorkerState.RUNNING
         supervisor_runner.shutdown()
         assert supervisor_runner.current_status == Status.ABORTING
 
@@ -190,7 +189,7 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
     with pytest.raises(RunEngineInterrupted):
         supervisor_runner.run_engine(execute_remotely())
 
-    assert supervisor_runner.blueapi_client.get_state() == WorkerState.IDLE
+    assert supervisor_runner.blueapi_client.state == WorkerState.IDLE
     assert plan_aborted.wait(10)
     fut.result()
 
@@ -385,3 +384,34 @@ def test_supervisor_no_alerts_when_not_stuck(
     supervisor_runner._run_task_remotely(task_request)
 
     mock_alerting_service.raise_alert.assert_not_called()
+
+
+def test_supervisor_decode_and_execute_raises_planerror_if_blueapi_plan_raises_exception(
+    supervisor_runner: SupervisorRunner, tmp_path
+):
+    params = LoadCentreCollectParams(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
+            tmp_path,
+        )
+    )
+    params.sample_id = BEAMLINE_ERROR_SAMPLE_ID
+    with pytest.raises(PlanError, match="Simulated beamline error"):
+        supervisor_runner.run_engine(
+            supervisor_runner.decode_and_execute(TEST_VISIT, [params])
+        )
+
+
+def test_supervisor_decode_and_execute_continues_if_blueapi_plan_raises_sample_error(
+    supervisor_runner: SupervisorRunner, tmp_path
+):
+    params = LoadCentreCollectParams(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
+            tmp_path,
+        )
+    )
+    params.sample_id = CRYSTAL_NOT_FOUND_SAMPLE_ID
+    supervisor_runner.run_engine(
+        supervisor_runner.decode_and_execute(TEST_VISIT, [params, params])
+    )

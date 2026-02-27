@@ -44,34 +44,39 @@ class InProcessRunner(PlanRunner):
         self, current_visit: str | None, parameter_list: Sequence[BaseModel]
     ) -> MsgGenerator:
         current_visit = current_visit or ""
-        for parameters in parameter_list:
-            LOGGER.info(
-                f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
-            )
-            match parameters:
-                case LoadCentreCollectParams():
-                    current_visit = parameters.visit
-                    devices: Any = create_devices(self.context)
-                    yield from self.execute_plan(
-                        partial(
-                            load_centre_collect_full,
-                            devices,
-                            load_centre_collect_to_internal(parameters),
+        try:
+            for parameters in parameter_list:
+                LOGGER.info(
+                    f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
+                )
+                match parameters:
+                    case LoadCentreCollectParams():
+                        current_visit = parameters.visit
+                        devices: Any = create_devices(self.context)
+                        yield from self.execute_plan(
+                            partial(
+                                load_centre_collect_full,
+                                devices,
+                                load_centre_collect_to_internal(parameters),
+                            )
                         )
-                    )
-                case Wait():
-                    yield from self.execute_plan(partial(_runner_sleep, parameters))
-                case UDCDefaultState():
-                    udc_default_devices: UDCDefaultDevices = (
-                        device_composite_from_context(self.context, UDCDefaultDevices)
-                    )
-                    yield from move_to_udc_default_state(udc_default_devices)
-                case UDCCleanup():
-                    yield from _clean_up_udc(self.context, current_visit)
-                case _:
-                    raise AssertionError(
-                        f"Unsupported instruction decoded from agamemnon {type(parameters)}"
-                    )
+                    case Wait():
+                        yield from self.execute_plan(partial(_runner_sleep, parameters))
+                    case UDCDefaultState():
+                        udc_default_devices: UDCDefaultDevices = (
+                            device_composite_from_context(
+                                self.context, UDCDefaultDevices
+                            )
+                        )
+                        yield from move_to_udc_default_state(udc_default_devices)
+                    case UDCCleanup():
+                        yield from _clean_up_udc(self.context, current_visit)
+                    case _:
+                        raise AssertionError(
+                            f"Unsupported instruction decoded from agamemnon {type(parameters)}"
+                        )
+        except WarningError:
+            pass
         return current_visit
 
     def execute_plan(
@@ -94,6 +99,7 @@ class InProcessRunner(PlanRunner):
         except WarningError as e:
             LOGGER.warning("Plan failed with warning", exc_info=e)
             self._current_status = Status.FAILED
+            raise
         except RequestAbort:
             # This will occur when the run engine processes an abort when we shut down
             LOGGER.info("UDC Runner aborting")
