@@ -84,7 +84,7 @@ def test_change_aperture_then_move_to_xtal_plans_happy_path(
 @patch(
     "mx_bluesky.common.experiment_plans.change_aperture_then_move_plan.fetch_xrc_results_from_zocalo"
 )
-def test_get_results_then_change_aperture_and_move_to_xtal_calls_excpected_plans(
+def test_get_results_then_change_aperture_and_move_to_xtal_calls_expected_plans(
     mock_fetch_results_from_zocalo: MagicMock,
     mock_change_aperture: MagicMock,
     mock__get_xrc_results: MagicMock,
