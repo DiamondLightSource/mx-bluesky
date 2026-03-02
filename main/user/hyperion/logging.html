@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Logging &#8212; mx-bluesky 1.6.3.dev26+g2b8482ed8 documentation</title>
+    <title>Logging &#8212; mx-bluesky 1.6.3.dev27+g5c3a0db84 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=dde8dced"></script>
+    <script src="../../_static/documentation_options.js?v=a32b6d2b"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -491,9 +491,9 @@ controlled by the <code class="docutils literal notranslate"><span class="pre">g
 <p>The standard logs files do not record all messages, only those at INFO level or higher, in order to keep storage
 requirements to a minimum.
 In the event of an error occurring, then trace-level logging for the most recent events (by default 5000) is flushed
-to a separate set of log files. Due to the size of these files, they are stored separately from the main log files
-. These logs are located in <code class="docutils literal notranslate"><span class="pre">/dls/tmp/&lt;beamline&gt;/logs/bluesky</span></code> by default, or
-otherwise as specified by the <code class="docutils literal notranslate"><span class="pre">DEBUG_LOG_DIR</span></code> environment variable.</p>
+to a separate set of log files. Due to the size of these files, they are stored separately from the main
+log files. These logs are typically located in <code class="docutils literal notranslate"><span class="pre">/dls/tmp/&lt;beamline&gt;/logs/bluesky</span></code>,
+as specified by the <code class="docutils literal notranslate"><span class="pre">DEBUG_LOG_DIR</span></code> environment variable.</p>
 </section>
 </section>
 
