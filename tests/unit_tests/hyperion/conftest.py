@@ -184,5 +184,5 @@ def launch_test_in_runner_event_loop(
 
 
 @pytest.fixture()
-def use_beamline_i03(monkeypatch):
+def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
     monkeypatch.setenv("BEAMLINE", "i03")
