@@ -52,45 +52,6 @@ To fake interaction and processing with Zocalo, you can run `fake_zocalo/dls_sta
 
 Tracing information (the time taken to complete different steps of experiments) is collected by an [OpenTelemetry](https://opentelemetry.io/) tracer, and currently we export this information to a local Jaeger monitor (if available). To see the tracing output, run the [Jaeger all-in-one container](https://www.jaegertracing.io/docs/1.6/getting-started/), and go to the web interface at http://localhost:16686.
 
+# REST API
 
-# REST API (GDA Mode)
-
-When running in GDA mode, Hyperion offers the following API
-
-## Starting a scan
-
-To start a scan you can do the following:
-
-```
-curl -X PUT http://127.0.0.1:5005/flyscan_xray_centre/start --data-binary "@tests/test_data/parameter_json_files/test_parameters.json" -H "Content-Type: application/json"
-```
-
-## Getting the Runner Status
-
-To get the status of the runner:
-
-```
-curl http://127.0.0.1:5005/status
-```
-
-## Stopping the Scan
-
-To stop a scan that is currently running:
-
-```
-curl -X PUT http://127.0.0.1:5005/stop
-
-```
-
-## Writing out `DEBUG` logs
-
-To make the app write the `DEBUG` level logs stored in the `CircularMemoryHandler`:
-
-```
-curl -X PUT http://127.0.0.1:5005/flush_debug_log
-
-```
-
-# REST API (UDC Mode)
-
-In UDC Mode, the only endpoint available is the `/status` endpoint.
+The only endpoint available is the `/status` endpoint, which returns the current execution status of the runner

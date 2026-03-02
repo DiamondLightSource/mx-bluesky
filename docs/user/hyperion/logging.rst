@@ -38,6 +38,6 @@ Debug Log
 The standard logs files do not record all messages, only those at INFO level or higher, in order to keep storage 
 requirements to a minimum. 
 In the event of an error occurring, then trace-level logging for the most recent events (by default 5000) is flushed 
-to a separate set of log files. Due to the size of these files, they are stored separately from the main log files
-. These logs are located in ``/dls/tmp/<beamline>/logs/bluesky`` by default, or 
-otherwise as specified by the ``DEBUG_LOG_DIR`` environment variable. 
+to a separate set of log files. Due to the size of these files, they are stored separately from the main
+log files. These logs are typically located in ``/dls/tmp/<beamline>/logs/bluesky``,
+as specified by the ``DEBUG_LOG_DIR`` environment variable.

@@ -7,8 +7,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
+from dodal.log import (
+    ERROR_LOG_BUFFER_LINES,
+    set_up_all_logging_handlers,
+)
 from dodal.log import LOGGER as DODAL_LOGGER
-from dodal.log import set_up_all_logging_handlers
 
 import mx_bluesky.common.utils.log as log
 from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
@@ -18,6 +21,12 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 from ....conftest import clear_log_handlers
 
 TEST_GRAYLOG_PORT = 5555
+
+
+@pytest.fixture(autouse=True)
+def patch_log_dirs(monkeypatch, tmp_path):
+    monkeypatch.setenv("LOG_DIR", str(tmp_path))
+    monkeypatch.setenv("DEBUG_LOG_DIR", str(tmp_path))
 
 
 @pytest.fixture(scope="function")
@@ -39,7 +48,10 @@ def clear_and_mock_loggers():
 @pytest.mark.skip_log_setup
 def test_no_env_variable_sets_correct_file_handler(
     clear_and_mock_loggers,
+    monkeypatch,
 ) -> None:
+    monkeypatch.delenv("LOG_DIR")
+    monkeypatch.delenv("DEBUG_LOG_DIR")
     log.do_default_logging_setup("hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True)
     file_handlers: FileHandler = next(
         filter(lambda h: isinstance(h, FileHandler), DODAL_LOGGER.handlers)  # type: ignore
@@ -209,47 +221,49 @@ def test_get_logging_dir_uses_env_var(mock_mkdir: MagicMock, dev_mode: bool):
         assert mock_mkdir.call_count == 2
 
 
-@pytest.mark.parametrize(
-    "dev_mode, expected_log_dir, expected_debug_log_dir",
-    [
-        [True, "/tmp/logs/bluesky/", "/tmp/logs/bluesky/"],
-        [False, "/dls_sw/test/logs/bluesky/", "/dls/tmp/test/logs/bluesky/"],
-    ],
-)
-@patch("mx_bluesky.common.utils.log.Path.mkdir")
-def test_get_logging_dir_uses_beamline_if_no_dir_env_var(
-    mock_mkdir: MagicMock,
-    dev_mode: bool,
-    expected_log_dir: str,
-    expected_debug_log_dir: str,
+@pytest.mark.parametrize("env_var_name", ["LOG_DIR", "DEBUG_LOG_DIR"])
+def test_get_logging_dir_raises_valueerror_if_no_env_var_and_dev_mode_false(
+    env_var_name: str, monkeypatch
 ):
-    with patch.dict(os.environ, {"BEAMLINE": "test"}, clear=True):
-        assert log._get_logging_dirs(dev_mode) == (
-            Path(expected_log_dir),
-            Path(expected_debug_log_dir),
-        )
-        assert mock_mkdir.call_count == 2
+    monkeypatch.delenv(env_var_name)
+    with pytest.raises(
+        ValueError, match=f"{env_var_name} environment variable is not set"
+    ):
+        log._get_logging_dirs(False)
 
 
-@pytest.mark.parametrize("dev_mode", [True, False])
-@patch("mx_bluesky.common.utils.log.Path.mkdir")
-def test_get_logging_dir_uses_tmp_if_no_env_var(mock_mkdir: MagicMock, dev_mode: bool):
-    assert log._get_logging_dirs(dev_mode) == (
+@patch("mx_bluesky.common.utils.log.Path.mkdir", MagicMock())
+def test_get_logging_dir_dev_mode_defaults_to_tmp(monkeypatch):
+    monkeypatch.delenv("LOG_DIR")
+    monkeypatch.delenv("DEBUG_LOG_DIR")
+    assert log._get_logging_dirs(True) == (
         Path("/tmp/logs/bluesky"),
         Path("/tmp/logs/bluesky"),
     )
-    assert mock_mkdir.call_count == 2
 
 
 @pytest.mark.skip_log_setup
-@patch("mx_bluesky.common.utils.log.Path.mkdir")
 @patch(
     "mx_bluesky.common.utils.log.integrate_bluesky_and_ophyd_logging",
 )
-def test_default_logging_setup_integrate_logs_flag(
-    mock_integrate_logs: MagicMock, mock_mkdir
-):
+def test_default_logging_setup_integrate_logs_flag(mock_integrate_logs: MagicMock):
     log.do_default_logging_setup(
         "hyperion.log", TEST_GRAYLOG_PORT, dev_mode=True, integrate_all_logs=False
     )
     mock_integrate_logs.assert_not_called()
+
+
+@patch("mx_bluesky.common.utils.log.set_up_debug_memory_handler")
+@patch("mx_bluesky.common.utils.log.set_up_info_file_handler")
+def test_setup_hyperion_blueapi_logging_configures_debug_and_file_handlers(
+    mock_info_setup: MagicMock,
+    mock_debug_setup: MagicMock,
+    clear_and_mock_loggers,
+    tmp_path: Path,
+):
+    log.setup_hyperion_blueapi_logging("hyperion-test.log")
+    fh_emit, _ = clear_and_mock_loggers
+    mock_info_setup.assert_called_once_with(DODAL_LOGGER, tmp_path, "hyperion-test.log")
+    mock_debug_setup.assert_called_once_with(
+        DODAL_LOGGER, tmp_path, "hyperion-test.log", ERROR_LOG_BUFFER_LINES
+    )
