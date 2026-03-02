@@ -11,7 +11,7 @@ from .conftest import raw_params_from_file
 
 
 @pytest.fixture
-def bluesky_context(run_engine: RunEngine):
+def bluesky_context(run_engine: RunEngine, use_beamline_i03):
     config = ApplicationConfig(
         **{  # type: ignore
             "env": {

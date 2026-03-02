@@ -23,6 +23,10 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 from ....conftest import raw_params_from_file
 
 
+@pytest.fixture(autouse=True)
+def always_use_beamline_i03(use_beamline_i03): ...
+
+
 @pytest.fixture
 def load_centre_collect_params_with_panda(tmp_path, request):
     with patch(
