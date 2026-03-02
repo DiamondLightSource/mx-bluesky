@@ -5,7 +5,7 @@
 STOP=0
 START=1
 IN_DEV=false
-MODE=gda
+MODE=udc
 
 CONFIG_DIR=`dirname $0`/src/mx_bluesky/hyperion
 BLUEAPI_CONFIG=$CONFIG_DIR/blueapi_config.yaml
@@ -63,8 +63,8 @@ Options:
                           options.
   --no-start              Used to specify that the script should be run without starting the server.
   --dev                   Enable dev mode to run from a local workspace on a development machine.
-  --udc                   Start hyperion in UDC mode instead of taking commands from GDA
-  --blueapi               Start hyperion in blueapi mode instead of taking commands from GDA
+  --udc                   Start hyperion in UDC mode taking instructions from agamemnon in a monolithic process
+  --blueapi               Start hyperion in blueapi mode taking instructions from the supervisor
   --supervisor            Start hyperion in supervisor mode, taking commands from Agamemnon and feeding them to
                           an instance running in blueapi mode.
   --stomp                 Start external callbacks in stomp mode instead of 0mq (the default)
@@ -147,6 +147,16 @@ if [[ $START == 1 ]]; then
     echo "$(date) Logging to $LOG_DIR"
     export LOG_DIR
     mkdir -p "$LOG_DIR"
+    if [ -z "$DEBUG_LOG_DIR" ]; then
+        if [ $IN_DEV = true ]; then
+            DEBUG_LOG_DIR=$LOG_DIR
+        else
+            DEBUG_LOG_DIR=/dls/tmp/$BEAMLINE/logs/bluesky
+        fi
+    fi
+    echo "Debug log file set to $DEBUG_LOG_DIR"
+    export DEBUG_LOG_DIR
+    mkdir -p "$DEBUG_LOG_DIR"
     if [ $MODE = "supervisor" ]; then
       start_log_path=$LOG_DIR/supervisor_start_log.log
     else

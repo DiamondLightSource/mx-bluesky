@@ -1,6 +1,6 @@
 import json
 from functools import partial
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -119,9 +119,9 @@ def _do_thaw_and_confirm_cleanup(
     smargon.omega.set = move_mock
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer._control).call_args_list[-1]
-    assert last_thawer_call == call(OnOff.OFF, wait=ANY)
+    assert last_thawer_call == call(OnOff.OFF)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
-    assert last_velocity_call == call(initial_velocity, wait=ANY)
+    assert last_velocity_call == call(initial_velocity)
 
 
 def test_given_thaw_succeeds_then_velocity_restored_and_thawer_turned_off(
@@ -168,7 +168,7 @@ def test_given_different_rotations_and_times_then_velocity_correct(
 ):
     run_engine(thaw(time, rotation, thawer=thawer, smargon=smargon))
     first_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[0]
-    assert first_velocity_call == call(expected_speed, wait=ANY)
+    assert first_velocity_call == call(expected_speed)
 
 
 @pytest.mark.parametrize(
@@ -190,8 +190,8 @@ def test_given_different_rotations_then_motor_moved_relative(
     set_mock_value(smargon.omega.user_setpoint, start_pos)
     run_engine(thaw(10, rotation, thawer=thawer, smargon=smargon))
     assert get_mock_put(smargon.omega.user_setpoint).call_args_list == [
-        call(expected_end, wait=ANY),
-        call(start_pos, wait=ANY),
+        call(expected_end),
+        call(start_pos),
     ]
 
 
@@ -359,7 +359,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
         run_plan()
 
     mock_level_set = get_mock_put(oav_full_screen.zoom_controller.level)
-    mock_level_set.assert_has_calls([call("1.0x", wait=True), call("2.0x", wait=True)])
+    mock_level_set.assert_has_calls([call("1.0x"), call("2.0x")])
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
@@ -496,12 +496,12 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_after_both_rot
         ),
     )
 
-    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(1.0, wait=True)])
-    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(2.0, wait=True)])
-    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(3.0, wait=True)])
-    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(5.0, wait=True)])
-    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(7.0, wait=True)])
-    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(9.0, wait=True)])
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(1.0)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(2.0)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(3.0)])
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(5.0)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(7.0)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(9.0)])
 
 
 def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
@@ -618,8 +618,8 @@ def test_plans_carry_on_thaw_if_redis_connection_check_fails(
         omega_put = get_mock_put(smargon.omega.user_setpoint)
 
         assert omega_put.call_args_list == [
-            call(360.0, wait=True),
-            call(0.0, wait=True),
+            call(360.0),
+            call(0.0),
         ]
 
         omega_put.reset_mock()

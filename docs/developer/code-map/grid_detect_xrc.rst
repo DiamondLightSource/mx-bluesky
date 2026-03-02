@@ -3,7 +3,7 @@ Grid Detect Then Xray Centre
 
 The aim of this page is to provide a general overview of the ``grid_detect_then_xray_centre_plan``.
 
-The code for the ``grid_detect_then_xray_centre`` plan is now entirely ``mx-bluesky/common/`` and `dodal <https://github.com/DiamondLightSource/dodal>`_. There is a new Hyperion entry point, ``hyperion_grid_detect_then_xray_centre`` which calls this common plan, setting up Hyperion features for it. There will soon be an i04 entry point that calls the common plan in the same way.
+The code for the ``grid_detect_then_xray_centre`` plan is now entirely ``mx-bluesky/common/`` and `dodal <https://github.com/DiamondLightSource/dodal>`_. There is an i04 entry point that calls the common plan.
 
 There are then a number of plans that make up the ``grid_detect_then_xray_centre_plan`` plan. Some important ones:
 
