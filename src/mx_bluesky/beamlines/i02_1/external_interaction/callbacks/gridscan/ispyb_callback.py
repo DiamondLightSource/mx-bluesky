@@ -5,7 +5,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     construct_comment_for_gridscan,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback import (
-    GridscanISPyBCallback,
+    GridscanISPyBCallback as CommonGridscanISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -16,7 +16,11 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 
-class I021GridscanISPyBCallback(GridscanISPyBCallback):
+def _make_comment(x_steps: int, y_steps: int) -> str:
+    return f"Diffraction grid scan of {x_steps} by {y_steps}."
+
+
+class GridscanISPyBCallback(CommonGridscanISPyBCallback):
     def _get_scan_infos(self, doc) -> Sequence[ScanDataInfo]:
         """
         For VMXm, grid information is available immediately after the plan is triggered.
@@ -63,9 +67,8 @@ class I021GridscanISPyBCallback(GridscanISPyBCallback):
 
             data_collection_id = self.ispyb_ids.data_collection_ids[0]
 
-            self.data_collection_group_info.comments = (
-                f"Diffraction grid scan of {data_collection_grid_info.steps_x} by "
-                f"{self.params.y_steps}."
+            self.data_collection_group_info.comments = _make_comment(
+                self.params.x_steps, self.params.y_steps[0]
             )
 
             self._populate_axis_info(data_collection_info, doc["data"])

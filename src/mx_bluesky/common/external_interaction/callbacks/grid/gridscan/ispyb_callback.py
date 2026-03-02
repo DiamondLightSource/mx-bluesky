@@ -95,7 +95,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self.data_collection_group_info: DataCollectionGroupInfo | None
 
     def activity_gated_start(self, doc: RunStart):
-        if doc.get("subplan_name") == PlanNameConstants.DO_FGS:
+        if doc.get("subplan_name") == PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK:
             self._start_of_fgs_uid = doc.get("uid")
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 "ISPyB callback received start document with experiment parameters and "
@@ -185,10 +185,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         if self._grid_num_to_id_map:
             doc["_grid_num_to_id_map"] = self._grid_num_to_id_map
         return doc  # type: ignore
-
-    def data_collection_number_from_gridplane(self, plane) -> int:
-        assert self.params
-        return self.params.detector_params.run_number
 
     def fill_gridscan_deposition_and_store(
         self, make_scan_infos_with_grid_info: Callable[..., Sequence[ScanDataInfo]]

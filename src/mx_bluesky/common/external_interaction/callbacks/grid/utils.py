@@ -55,9 +55,10 @@ def generate_start_info_from_num_grids(
     """
 
     doc = yield []
-    start_frame = 0
+
     infos = []
     for grid_num in range(params.num_grids):
+        start_frame = params.scan_indices[grid_num]
         frames = len(params.scan_points[grid_num])
         infos.append(
             ZocaloStartInfo(

@@ -24,6 +24,9 @@ from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
+from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_callback import (
+    GridscanISPyBCallback,
+)
 from mx_bluesky.beamlines.i02_1.parameters.gridscan import SpecifiedTwoDGridScan
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -37,7 +40,6 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     GridscanNexusFileCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback import (
-    GridscanISPyBCallback,
     ispyb_activation_decorator,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
@@ -163,8 +165,8 @@ def i02_1_gridscan_plan(
     beamline_specific = construct_i02_1_specific_features(composite, parameters)
     callbacks = create_gridscan_callbacks(parameters)
 
-    @ispyb_activation_decorator
     @bpp.subs_decorator(callbacks)
+    @ispyb_activation_decorator(parameters)
     def decorated_flyscan_plan():
         yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)
 

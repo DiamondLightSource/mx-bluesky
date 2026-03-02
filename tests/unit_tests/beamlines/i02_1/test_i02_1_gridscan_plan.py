@@ -21,35 +21,18 @@ from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import (
     i02_1_gridscan_plan,
 )
 from mx_bluesky.beamlines.i02_1.parameters.gridscan import SpecifiedTwoDGridScan
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
+    populate_data_collection_group,
+    populate_remaining_data_collection_info,
+)
+from mx_bluesky.common.external_interaction.ispyb.data_model import (
+    DataCollectionInfo,
+    ScanDataInfo,
+)
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.device_composites import (
     GonioWithOmega,
 )
-
-
-@pytest.fixture
-def fgs_params_two_d(tmp_path) -> I02_1FgsParams:
-    return I02_1FgsParams(
-        x_start_um=0,
-        y_starts_um=[0],
-        z_starts_um=[0],
-        y_step_sizes_um=[10],
-        omega_starts_deg=[0],
-        parameter_model_version=get_param_version(),
-        sample_id=0,
-        visit="visit",
-        file_name="test_file",
-        storage_directory=str(tmp_path),
-        x_steps=5,
-        y_steps=[3],
-        path_to_xtal_snapshot=tmp_path,
-        beam_size_x=0,
-        beam_size_y=0,
-        microns_per_pixel_x=1,
-        microns_per_pixel_y=1,
-        upper_left_x=0,
-        upper_left_y=0,
-    )
 
 
 @pytest.fixture
@@ -151,12 +134,55 @@ def test_i02_1_flyscan_xray_centre_in_re(
     )
 
     mock_create_features.return_value = expected_features
-    run_engine(
-        i02_1_gridscan_plan(fgs_params_two_d, fgs_composite)
-    )  # todo fix this typing
+    run_engine(i02_1_gridscan_plan(fgs_params_two_d, fgs_composite))
     mock_common_scan.assert_called_once_with(
         fgs_composite, fgs_params_two_d, expected_features
     )
 
 
-def test_ispyb_callbacks_activated_when_expected(): ...
+@patch(
+    "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.construct_i02_1_specific_features",
+)
+@patch(
+    "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.common_flyscan_xray_centre",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback.StoreInIspyb"
+)
+def test_ispyb_activated_correct_params(
+    mock_store_ispyb: MagicMock,
+    mock_create_features: MagicMock,
+    run_engine: RunEngine,
+    fgs_params_two_d: I02_1FgsParams,
+    fgs_composite: FlyScanXRayCentreComposite,
+):
+    mock_ispyb = MagicMock()
+
+    mock_store_ispyb.return_value = mock_ispyb
+    expected_features = construct_i02_1_specific_features(
+        fgs_composite, fgs_params_two_d
+    )
+    run_engine.md["data"] = {}
+
+    mock_create_features.return_value = expected_features
+    # uid = "test uid"
+
+    # def do_run_start_and_run_stop():
+    #     yield from RunStart(uid=uid, time=0)
+    #     yield from RunStop(uid=uid, )
+
+    run_engine(i02_1_gridscan_plan(fgs_params_two_d, fgs_composite))
+    initial_group_info = populate_data_collection_group(fgs_params_two_d)
+    initial_group_info.comments = f"Diffraction grid scan of {fgs_params_two_d.x_steps} by {fgs_params_two_d.y_steps[0]}.Zocalo processing took 0.00 s."
+    initial_scan_info = ScanDataInfo(
+        data_collection_info=populate_remaining_data_collection_info(
+            "MX-Bluesky: Xray centring 1/1 -",
+            None,
+            DataCollectionInfo(),
+            fgs_params_two_d,
+        )
+    )
+    mock_ispyb.begin_deposition.assert_called_once_with(
+        initial_group_info, [initial_scan_info]
+    )
