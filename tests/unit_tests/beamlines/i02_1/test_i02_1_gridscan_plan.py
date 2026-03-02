@@ -166,11 +166,6 @@ def test_ispyb_activated_correct_params(
     run_engine.md["data"] = {}
 
     mock_create_features.return_value = expected_features
-    # uid = "test uid"
-
-    # def do_run_start_and_run_stop():
-    #     yield from RunStart(uid=uid, time=0)
-    #     yield from RunStop(uid=uid, )
 
     run_engine(i02_1_gridscan_plan(fgs_params_two_d, fgs_composite))
     initial_group_info = populate_data_collection_group(fgs_params_two_d)
