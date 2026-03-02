@@ -21,7 +21,7 @@ class RobotLoadThenCentreParams(HyperionParam):
     file_name: str
     transmission_frac: float
     exposure_time_s: float
-    omega_start_deg: float
+    omega_starts_deg: list[int]
     chi_start_deg: float
     tip_offset_um: float
     grid_width_um: float

@@ -22,11 +22,9 @@ from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
-    OptionalXyzStarts,
     RotationAxis,
     SplitScan,
     WithSample,
-    WithScan,
 )
 from mx_bluesky.common.parameters.constants import (
     DetectorParamConstants,
@@ -34,7 +32,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 
 
-class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts, WithSample):
+class RotationScanPerSweep(OptionalGonioAngleStarts, WithSample):
     """
     Describes a rotation scan about the specified axis.
 
@@ -48,6 +46,9 @@ class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts, WithSamp
         nexus_vds_start_img: The frame number of the first frame captured during the rotation
     """
 
+    x_start_um: float | None = None
+    y_start_um: float | None = None
+    z_start_um: float | None = None
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)
@@ -109,7 +110,7 @@ class RotationExperiment(DiffractionExperiment):
 
 
 class SingleRotationScan(
-    WithScan, RotationExperiment, RotationScanPerSweep, DiffractionExperimentWithSample
+    RotationExperiment, RotationScanPerSweep, DiffractionExperimentWithSample
 ):
     @property
     def detector_params(self):
