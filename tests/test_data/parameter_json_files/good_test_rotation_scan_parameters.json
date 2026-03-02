@@ -7,7 +7,10 @@
     "demand_energy_ev": 100,
     "exposure_time_s": 0.1,
     "insertion_prefix": "SR03S",
-    "omega_start_deg": 0.0,
+    "omega_starts_deg": [
+        0,
+        90
+    ],
     "file_name": "file_name",
     "scan_width_deg": 180.0,
     "rotation_axis": "omega",

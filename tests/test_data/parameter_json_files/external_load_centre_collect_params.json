@@ -10,7 +10,10 @@
     "file_name": "robot_load_centring_file",
     "transmission_frac": 1.0,
     "exposure_time_s": 0.002,
-    "omega_start_deg": 0,
+    "omega_starts_deg": [
+      0,
+      90
+    ],
     "chi_start_deg": 30,
     "tip_offset_um": 25,
     "grid_width_um": 20
