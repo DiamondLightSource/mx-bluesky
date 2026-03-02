@@ -74,5 +74,5 @@ def mirrors() -> FocusMirrorsMode:
 
 
 @pytest.fixture()
-def use_i24_beamline(monkeypatch):
+def use_i24_beamline(monkeypatch, patch_beamline_env_variable):
     monkeypatch.setenv("BEAMLINE", "i24")

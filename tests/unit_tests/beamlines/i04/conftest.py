@@ -14,5 +14,5 @@ def murko_callback() -> MurkoCallback:
 
 
 @pytest.fixture(autouse=True)
-def always_use_i04_beamline(monkeypatch):
+def always_use_i04_beamline(monkeypatch, patch_beamline_env_variable):
     monkeypatch.setenv("BEAMLINE", "i04")
