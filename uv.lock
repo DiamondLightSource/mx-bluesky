@@ -368,7 +368,7 @@ wheels = [
 
 [[package]]
 name = "blueapi"
-version = "1.11.5"
+version = "1.11.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioca", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -396,9 +396,9 @@ dependencies = [
     { name = "tomlkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/02/8f/b1f5b8bbbd04d6a0f518f7ab2b42e4ad3877efb95f9b7bbb9280186a7975/blueapi-1.11.5.tar.gz", hash = "sha256:a5372be3979f1f14bfd9b37de2f6421652247644728f940e083891e7a2d0f7ae", size = 1812662, upload-time = "2026-01-30T13:32:54.447Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/bf/fbf311822ecbb8b8f6ab849de568a12b6f43176555620c56febc5815c8e0/blueapi-1.11.4.tar.gz", hash = "sha256:c2360ea6c2e6f9203fdbe7ba61e1da048e72d487d83eaeeb7326b2a56421f8df", size = 1812057, upload-time = "2026-01-20T11:38:26.094Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/45/93/2a51977443d837ffab8c574ac04fd02c223ead8c32da4c924db7e8e4d0b5/blueapi-1.11.5-py3-none-any.whl", hash = "sha256:ce4c741f7d7c6a8d412d8d2bdb94639c26f13cdb66c1ab33d6467c4f3f49302e", size = 78679, upload-time = "2026-01-30T13:32:53.294Z" },
+    { url = "https://files.pythonhosted.org/packages/02/84/63fc52280b0296b1e6251f3ef34c88a05b30b98fe9fb0463ea3684ee3a52/blueapi-1.11.4-py3-none-any.whl", hash = "sha256:9c703ea4ed268f8b14dd971b20c795f399ea094be0e0d72b276dfda171639fdc", size = 78232, upload-time = "2026-01-20T11:38:24.84Z" },
 ]
 
 [[package]]
@@ -2106,7 +2106,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types" },
-    { name = "blueapi", specifier = ">=1.8.0" },
+    { name = "blueapi", specifier = "==1.11.4" },
     { name = "bluesky", specifier = ">=1.14.6" },
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "cachetools" },
