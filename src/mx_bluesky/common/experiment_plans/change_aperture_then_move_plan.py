@@ -45,6 +45,7 @@ def get_results_and_move_to_xtal(
     yield from move_to_xtal(flyscan_results[0], composite.gonio)
 
 
+# Currently not being used, but see https://github.com/DiamondLightSource/mx-bluesky/issues/561
 def get_results_then_change_aperture_and_move_to_xtal(
     composite: GridDetectThenXRayCentreComposite,
     parameters: SpecifiedThreeDGridScan,

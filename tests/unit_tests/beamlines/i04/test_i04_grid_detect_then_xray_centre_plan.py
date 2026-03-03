@@ -648,6 +648,7 @@ def test_i04_grid_detect_then_xrc_only_sets_aperture_at_start_of_plan(
         )
     )
 
+    # Out of beam for grid detect, large for gridscan, out again after tidy up
     assert get_mock_put(aperture_scatterguard.selected_aperture).call_args_list == [
         call(ApertureValue.OUT_OF_BEAM),
         call(ApertureValue.LARGE),
