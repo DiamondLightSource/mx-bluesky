@@ -64,7 +64,7 @@ def _call_blueapi_plan(
     parameters: dict,
 ):
     with patch(
-        f"mx_bluesky.hyperion.blueapi.plans.{internal_name}",
+        f"mx_bluesky.hyperion.blueapi.in_process.{internal_name}",
         return_value=iter([]),
         create=False,
     ) as mock_plan:

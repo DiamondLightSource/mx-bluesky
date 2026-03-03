@@ -20,12 +20,12 @@ from mx_bluesky.common.utils.context import (
 from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
-from mx_bluesky.hyperion.blueapi.parameters import (
+from mx_bluesky.hyperion.blueapi.in_process import (
     LoadCentreCollectParams,
-    load_centre_collect_to_internal,
+    clean_up_udc,
+    load_centre_collect,
+    move_to_udc_default_state,
 )
-from mx_bluesky.hyperion.blueapi.plans import clean_up_udc, move_to_udc_default_state
-from mx_bluesky.hyperion.experiment_plans import load_centre_collect_full
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
 )
@@ -54,9 +54,9 @@ class InProcessRunner(PlanRunner):
                     devices: Any = create_devices(self.context)
                     yield from self.execute_plan(
                         partial(
-                            load_centre_collect_full,
+                            load_centre_collect,
+                            parameters,
                             devices,
-                            load_centre_collect_to_internal(parameters),
                         )
                     )
                 case Wait():
