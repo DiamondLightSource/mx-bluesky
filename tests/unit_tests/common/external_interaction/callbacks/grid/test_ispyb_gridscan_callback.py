@@ -37,7 +37,7 @@ def test_gridscan_callback_start_calls_correct_funcs(
     cb = Callback(SpecifiedThreeDGridScan)
     cb.fill_gridscan_deposition_and_store = MagicMock()
     doc = {
-        "subplan_name": PlanNameConstants.DO_FGS,
+        "subplan_name": PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
         "mx_bluesky_parameters": test_three_d_grid_params.model_dump_json(),
     }
     cb.activity_gated_start(doc)  # type: ignore

@@ -117,6 +117,10 @@ def test_two_d_grid_scan_validation(
 
 
 @patch(
+    "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.create_gridscan_callbacks",
+    new=MagicMock(),
+)
+@patch(
     "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.construct_i02_1_specific_features",
 )
 @patch(
