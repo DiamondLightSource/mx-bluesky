@@ -13,7 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          # Need this to get version number from last tag
           fetch-depth: 0
 
       - name: Set up Docker Buildx
@@ -29,7 +28,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       ################################
-      # Hyperion Container Image Build 
+      # Hyperion Container Image Build
       ################################
 
       - name: Build and export to Docker local cache
@@ -62,29 +61,34 @@ jobs:
         uses: docker/build-push-action@v6
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
-        # This does not build the image again, it will find the image in the
-        # Docker cache and publish it
         with:
           context: .
           file: Dockerfile.hyperion
           push: true
           tags: ${{ steps.meta-hyperion.outputs.tags }}
           labels: ${{ steps.meta-hyperion.outputs.labels }}
-          # Set the annotations to make the description appear in the GH repo page
           annotations: ${{ steps.meta-hyperion.outputs.annotations }}
 
       - name: Check disk space before
-        run: df  -h && docker buildx du
+        run: df -h && docker buildx du
 
       - name: Prune local image cache before next build
         run: docker buildx prune -f
 
       - name: Check disk space after
-        run: df  -h && docker buildx du
+        run: df -h && docker buildx du
 
       ###############################
       # BlueAPI Container Image Build
       ###############################
+
+      - name: Generate uv lock file
+        run: |
+          set -vxeuo pipefail
+          pip install uv
+          uv venv
+          uv pip install -e .
+          uv lock --output uv.build.lock
 
       - name: Build and export Dockerfile.blueapi to local cache
         uses: docker/build-push-action@v6
@@ -94,7 +98,6 @@ jobs:
           context: .
           file: Dockerfile.blueapi
           load: true
-
 
       - name: Create tags for publishing BlueAPI image
         id: meta-blueapi
@@ -123,5 +126,4 @@ jobs:
           push: true
           tags: ${{ steps.meta-blueapi.outputs.tags }}
           labels: ${{ steps.meta-blueapi.outputs.labels }}
-          # Set the annotations to make the description appear in the GH repo page
           annotations: ${{ steps.meta-blueapi.outputs.annotations }}

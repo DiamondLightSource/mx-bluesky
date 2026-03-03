@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from event_model import Event
+from redis.exceptions import ConnectionError
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
     MurkoCallback,
@@ -294,6 +295,7 @@ def test_if_redis_connection_fails_then_there_is_no_error(
 def test_warning_is_logged_if_redis_connection_fails(caplog):
     callback = MurkoCallback("", "")
     doc = {}
+    callback.redis_client.ping = MagicMock(side_effect=ConnectionError())
     callback.start(doc)  # type: ignore
     log_message = caplog.records[-1]
     assert log_message.levelname == "WARNING"

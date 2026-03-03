@@ -26,7 +26,7 @@ repos:
         entry: ruff format --force-exclude
         types: [python]
         require_serial: true
-      
+
       - id: type-checking
         name: type-checking with pyright
         language: system
@@ -41,19 +41,6 @@ repos:
         entry: lint-imports
         types: [python]
         require_serial: false
-
-      - id: lock dodal
-        name: keep dodal up to date in lockfile
-        pass_filenames: false
-        language: system
-        entry: uv lock --upgrade-package dls-dodal
-
-      - id: uv-sync
-        name: update uv.lock and venv
-        pass_filenames: false
-        language: system
-        entry: uv sync
-        files: ^(uv\.lock|pyproject\.toml)$
 
       - id: local-install-dodal
         name: editable install of dodal

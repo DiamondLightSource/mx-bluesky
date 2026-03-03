@@ -51,11 +51,13 @@ dependencies = [
     # as by default pip-install will not upgrade to a pre-release.
     #
     "daq-config-server>=v1.0.0-rc.2",
-    "blueapi >= 1.8.0",
+    "blueapi >= 1.12.1",
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.16.0",
     "bluesky >= 1.14.6",
     "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    #> 6.0.0 Currently incompatible with latest requests version
+    "chardet < 6.0.0",
 ]
 
 
@@ -63,6 +65,39 @@ dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.rst"
 requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "build",
+    # Commented out due to dependency version conflict with pydantic 1.x
+    # "copier",
+    "diff-cover",
+    "GitPython",
+    "import-linter",
+    "ispyb",
+    "ipython",
+    "mypy",
+    "myst-parser",
+    "plantweb",
+    "pre-commit",
+    "pydata-sphinx-theme>=0.12",
+    "pyright>=1.1.408",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-random-order",
+    "pytest-timeout",
+    "pytest",
+    "responses",
+    "ruff",
+    "sphinx-autobuild",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "tox-uv",
+    "types-mock",
+    "types-requests",
+    "sphinxcontrib.mermaid",     # To build dodal docs
+]
 
 [dependency-groups]
 dev = [
@@ -94,8 +129,9 @@ dev = [
     "tox-uv",
     "types-mock",
     "types-requests",
-    "sphinxcontrib.mermaid", # To build dodal docs
+    "sphinxcontrib.mermaid",     # To build dodal docs
 ]
+
 
 [project.scripts]
 mx-bluesky = "mx_bluesky.__main__:main"

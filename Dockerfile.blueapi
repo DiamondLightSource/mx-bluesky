@@ -12,7 +12,10 @@ RUN apt update -y && \
     apt upgrade -y && \
     apt install -y libgl1 libglib2.0-0
 
-RUN uv pip install --no-cache-dir --no-compile mx-bluesky
+
+COPY uv.build.lock .
+
+RUN uv sync --frozen --locked --lockf
 
 # Create and set permissions for uv venv, root cache
 # and user cache. Allows Blueapi's setup-scratch

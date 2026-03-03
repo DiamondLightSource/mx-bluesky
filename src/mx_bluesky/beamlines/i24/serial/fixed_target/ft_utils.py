@@ -6,7 +6,7 @@ menu in the edm screen, as their order should always match.
 New ones may be added if needed in the future.
 """
 
-from enum import Enum, IntEnum
+from enum import IntEnum, StrEnum
 
 
 class MappingType(IntEnum):
@@ -47,7 +47,7 @@ class PumpProbeSetting(IntEnum):
         return self.name
 
 
-class Fiducials(str, Enum):
+class Fiducials(StrEnum):
     origin = "origin"
     zero = "zero"
     fid1 = "f1"

@@ -176,3 +176,4 @@ edm_serial/
 
 # Generated PlantUML diagrams
 docs/developer/hyperion/reference/param_hierarchy.puml
+uv.lock
