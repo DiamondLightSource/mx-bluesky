@@ -224,8 +224,11 @@ def set_panda_directory(panda_directory: Path) -> MsgGenerator:
     suffix = datetime.now().strftime("_%Y%m%d%H%M%S")
 
     async def set_panda_dir():
+        LOGGER.info("Getting path provider")
+
         await cast(UpdatingPathProvider, get_path_provider()).update(
             directory=panda_directory, suffix=suffix
         )
 
+    LOGGER.info("Setting panda directory")
     yield from bps.wait_for([set_panda_dir])
