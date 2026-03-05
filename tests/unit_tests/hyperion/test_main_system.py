@@ -143,12 +143,12 @@ def test_hyperion_in_udc_mode_starts_logging(
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
-def test_hyperion_in_udc_mode_starts_udc_api(
+def test_hyperion_in_udc_mode_starts_udc_api_on_hyperion_port(
     mock_create_udc_server: MagicMock,
     mock_setup_context: MagicMock,
 ):
     main()
-    mock_create_udc_server.assert_called_once()
+    mock_create_udc_server.assert_called_once_with(ANY, HyperionConstants.HYPERION_PORT)
     assert isinstance(mock_create_udc_server.mock_calls[0].args[0], PlanRunner)
 
 
