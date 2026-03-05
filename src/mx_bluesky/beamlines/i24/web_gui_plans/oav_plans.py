@@ -94,7 +94,7 @@ def move_on_oav_view_click(
     x_microns_per_pixel = yield from bps.rd(oav.microns_per_pixel_x)
     y_microns_per_pixel = yield from bps.rd(oav.microns_per_pixel_y)
 
-    x_um = x * x_microns_per_pixel
-    y_um = y * y_microns_per_pixel
+    x_mm = (x * x_microns_per_pixel) / 1000
+    y_mm = (y * y_microns_per_pixel) / 1000
 
-    yield from bps.mv(pmac.x, x_um, pmac.y, y_um, wait=True)
+    yield from bps.mv(pmac.x, x_mm, pmac.y, y_mm, wait=True)
