@@ -255,9 +255,7 @@ def udc_runner(bluesky_context: BlueskyContext) -> PlanRunner:
 def mock_load_centre_collect():
     with (
         patch("mx_bluesky.hyperion.in_process_runner.create_devices"),
-        patch(
-            "mx_bluesky.hyperion.in_process_runner.load_centre_collect_full"
-        ) as mock_plan,
+        patch("mx_bluesky.hyperion.in_process_runner.load_centre_collect") as mock_plan,
     ):
         yield mock_plan
 
@@ -424,7 +422,7 @@ async def test_when_exception_raised_in_getting_agamemnon_instruction_then_loop_
 
 
 @patch("mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon")
-@patch("mx_bluesky.hyperion.in_process_runner.load_centre_collect_full")
+@patch("mx_bluesky.hyperion.in_process_runner.load_centre_collect")
 @patch(
     "mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state", new=MagicMock()
 )
@@ -915,7 +913,7 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
     )
 
 
-@patch("mx_bluesky.hyperion.blueapi.plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
 def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -926,14 +924,14 @@ def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     mock_load_centre_collect = single_collection_agamemnon_request
     mock_load_centre_collect.return_value = iter([])
     parent = MagicMock()
-    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect")
     parent.attach_mock(mock_robot_unload, "robot_unload")
 
     run_udc_when_requested(bluesky_context, udc_runner)
 
     parent.assert_has_calls(
         [
-            call.load_centre_collect_full(ANY, ANY),
+            call.load_centre_collect(ANY, ANY),
             call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
@@ -949,7 +947,7 @@ def _request_baton_from_hyperion_during_collection(
     mock_load_centre_collect.side_effect = request_baton_away_from_hyperion
 
 
-@patch("mx_bluesky.hyperion.blueapi.plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
 def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -970,7 +968,7 @@ def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
     )
 
 
-@patch("mx_bluesky.hyperion.blueapi.plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
 def test_robot_unload_not_performed_when_beamline_error(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -986,7 +984,7 @@ def test_robot_unload_not_performed_when_beamline_error(
     mock_robot_unload.assert_not_called()
 
 
-@patch("mx_bluesky.hyperion.blueapi.plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
 def test_robot_unload_still_performed_when_sample_exception(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
@@ -996,7 +994,7 @@ def test_robot_unload_still_performed_when_sample_exception(
 ):
     mock_load_centre_collect = single_collection_agamemnon_request
     parent = MagicMock()
-    parent.attach_mock(mock_load_centre_collect, "load_centre_collect_full")
+    parent.attach_mock(mock_load_centre_collect, "load_centre_collect")
     parent.attach_mock(mock_robot_unload, "robot_unload")
     mock_load_centre_collect.side_effect = SampleError("Simulated beamline error")
 
@@ -1004,13 +1002,13 @@ def test_robot_unload_still_performed_when_sample_exception(
 
     parent.assert_has_calls(
         [
-            call.load_centre_collect_full(ANY, ANY),
+            call.load_centre_collect(ANY, ANY),
             call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
 
-@patch("mx_bluesky.hyperion.blueapi.plans._robot_unload")
+@patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
 def test_detector_shutter_closed_when_baton_requested_away_from_hyperion(
     mock_robot_unload,
     bluesky_context: BlueskyContext,
