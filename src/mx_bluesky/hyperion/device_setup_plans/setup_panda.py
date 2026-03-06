@@ -230,5 +230,5 @@ def set_panda_directory(panda_directory: Path) -> MsgGenerator:
             directory=panda_directory, suffix=suffix
         )
 
-    LOGGER.info("Setting panda directory")
-    yield from bps.wait_for([set_panda_dir])
+    futures = yield from bps.wait_for([set_panda_dir])
+    return futures[0].result()
