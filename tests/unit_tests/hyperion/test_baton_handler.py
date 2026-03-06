@@ -1042,8 +1042,8 @@ def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
 
     baton: Baton = bluesky_context.find_device("baton")  # type: ignore
     mock_move_to_udc_default_state.assert_called_once()
-    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER, wait=True)
-    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)
+    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER)
+    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER)
 
 
 def test_baton_handler_fails_if_synchrotron_machine_countdown_below_threshold(
