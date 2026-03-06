@@ -7,15 +7,15 @@ from bluesky.utils import MsgGenerator
 from dodal.beamlines.i02_1 import ZebraFastGridScanTwoD
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.beamlines.i02_1.flux import Flux
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params_plan,
 )
-from dodal.devices.flux import Flux
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import Slits
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel
 from pydantic_extra_types.semantic_version import SemanticVersion
 from semver import Version
 
@@ -44,6 +44,10 @@ from mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callba
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     generate_start_info_from_num_grids,
+)
+from mx_bluesky.common.parameters.components import (
+    IspybExperimentType,
+    get_param_version,
 )
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
@@ -82,7 +86,7 @@ class FlyScanXRayCentreComposite(FlyScanEssentialDevices[GonioWithOmegaType]):
     attenuator: ReadOnlyAttenuator
     flux: Flux
     undulator: BaseUndulator
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: Slits
 
 
 def construct_i02_1_specific_features(
@@ -139,10 +143,9 @@ def get_internal_param_version() -> SemanticVersion:
 
 
 class ExternalGridScanParams(BaseModel):
-    gda_parameter_version: SemanticVersion
     visit: str
     file_name: str
-    storage_directory: Path
+    storage_directory: str
     exposure_time_s: float
     snapshot_directory: Path
     x_start_um: float
@@ -150,24 +153,55 @@ class ExternalGridScanParams(BaseModel):
     z_start_um: float
     x_steps: int
     y_steps: int
-    sample_id: int | None = None
+    beam_size_x: float
+    beam_size_y: float
+    microns_per_pixel_x: float
+    microns_per_pixel_y: float
+    upper_left_x: int
+    upper_left_y: int
+    detector_distance_mm: float
+    sample_id: int
 
-    # Internal parameter version compatible with this external model
-    _internal_param_version: str = PrivateAttr(default="6.0.0")
+
+def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
+    return I02_1FgsParams(
+        y_starts_um=[params.y_start_um],
+        x_start_um=params.x_start_um,
+        z_starts_um=[params.z_start_um],
+        omega_starts_deg=[0],
+        sample_id=params.sample_id,
+        visit=params.visit,
+        parameter_model_version=get_param_version(),
+        file_name=params.file_name,
+        storage_directory=params.storage_directory,
+        x_steps=params.x_steps,
+        y_steps=[params.y_steps],
+        path_to_xtal_snapshot=params.snapshot_directory,
+        beam_size_x=params.beam_size_x,
+        beam_size_y=params.beam_size_y,
+        microns_per_pixel_x=params.microns_per_pixel_x,
+        microns_per_pixel_y=params.microns_per_pixel_y,
+        upper_left_x=params.upper_left_x,
+        upper_left_y=params.upper_left_y,
+        detector_distance_mm=params.detector_distance_mm,
+        ispyb_experiment_type=IspybExperimentType.GRIDSCAN_2D,
+    )
 
 
 def i02_1_gridscan_plan(
-    parameters: I02_1FgsParams,
+    parameters: ExternalGridScanParams,
     composite: FlyScanXRayCentreComposite = inject(""),
 ) -> MsgGenerator:
     """BlueAPI entry point for i02-1 grid scans"""
 
-    beamline_specific = construct_i02_1_specific_features(composite, parameters)
-    callbacks = create_gridscan_callbacks(parameters)
+    params = get_internal_params(parameters)
+
+    beamline_specific = construct_i02_1_specific_features(composite, params)
+    callbacks = create_gridscan_callbacks(params)
 
     @bpp.subs_decorator(callbacks)
-    @ispyb_activation_decorator(parameters)
+    @ispyb_activation_decorator(params)
     def decorated_flyscan_plan():
-        yield from common_flyscan_xray_centre(composite, parameters, beamline_specific)
+        yield from common_flyscan_xray_centre(composite, params, beamline_specific)
 
     yield from decorated_flyscan_plan()
