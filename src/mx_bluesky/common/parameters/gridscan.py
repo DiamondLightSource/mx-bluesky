@@ -124,7 +124,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/1634 for a better structure for this
     # class
 
-    omega_starts_deg: list[float] = Field(
+    omega_starts_deg: list[int] = Field(
         default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
     )
     x_step_size_um: PositiveFloat = Field(

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -64,7 +64,7 @@ def test_ispyb_deposition_rounds_position_to_int(
     ],
 )
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping.oav_utils.bottom_right_from_top_left",
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping.oav_utils.bottom_right_from_top_left",
     autospec=True,
 )
 def test_ispyb_deposition_rounds_box_size_int(

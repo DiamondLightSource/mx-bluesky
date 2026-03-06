@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from graypy import GELFTCPHandler
 
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
@@ -48,12 +48,12 @@ def mock_store_in_ispyb(config, *args, **kwargs) -> StoreInIspyb:
     MagicMock(return_value=td.DUMMY_TIME_STRING),
 )
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb",
     mock_store_in_ispyb,
 )
 class TestXrayCentreIspybHandler:
     def test_fgs_failing_results_in_bad_run_status_in_ispyb(self, test_event_data):
-        ispyb_handler = GridscanISPyBCallback(
+        ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
@@ -88,7 +88,7 @@ class TestXrayCentreIspybHandler:
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
         self, test_event_data
     ):
-        ispyb_handler = GridscanISPyBCallback(
+        ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
@@ -134,7 +134,7 @@ class TestXrayCentreIspybHandler:
         )
         gelf_handler.emit = MagicMock()
 
-        ispyb_handler = GridscanISPyBCallback(
+        ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
@@ -170,7 +170,7 @@ class TestXrayCentreIspybHandler:
         )
         gelf_handler.emit = MagicMock()
 
-        ispyb_handler = GridscanISPyBCallback(
+        ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_handler.activity_gated_start(
@@ -197,13 +197,17 @@ class TestXrayCentreIspybHandler:
         assert not hasattr(latest_record, "dc_group_id")
 
     @patch(
-        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.time",
-        side_effect=[2, 100],
+        "mx_bluesky.common.external_interaction.callbacks.grid.utils.time",
+        new=MagicMock(side_effect=[100]),
+    )
+    @patch(
+        "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.time",
+        new=MagicMock(side_effect=[2]),
     )
     def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
-        self, mock_time, dummy_rotation_data_collection_group_info, test_event_data
+        self, dummy_rotation_data_collection_group_info, test_event_data
     ):
-        ispyb_handler = GridscanISPyBCallback(
+        ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams,
         )
 

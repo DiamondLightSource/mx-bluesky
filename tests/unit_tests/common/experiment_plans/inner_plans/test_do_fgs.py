@@ -18,7 +18,7 @@ from ophyd_async.core import init_devices, set_mock_value
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     kickoff_and_complete_gridscan,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridscanPlane,
 )
 from mx_bluesky.common.parameters.constants import (
