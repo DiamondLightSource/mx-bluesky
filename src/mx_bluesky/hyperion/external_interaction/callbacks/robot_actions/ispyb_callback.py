@@ -48,21 +48,21 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
         )
         subplan = doc.get("subplan_name")
         if subplan == CONST.PLAN.ROBOT_LOAD or subplan == CONST.PLAN.ROBOT_UNLOAD:
-            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+            ISPYB_ZOCALO_CALLBACK_LOGGER.debug(
                 f"ISPyB robot load callback received: {doc}"
             )
             metadata = doc.get("metadata")
             assert isinstance(metadata, dict)
-            self._sample_id = metadata.get("sample_id")
-            if not self._sample_id:
+            _visit = metadata.get("visit")
+            _sample_id = metadata.get("sample_id")
+            if not _sample_id or not _visit:
                 ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                     "No sample ID provided, not recording robot action in ispyb."
                 )
             else:
+                self._sample_id = int(_sample_id)
                 self.run_uid = doc.get("uid")
-                proposal, session = get_proposal_and_session_from_visit_string(
-                    metadata["visit"]
-                )
+                proposal, session = get_proposal_and_session_from_visit_string(_visit)
                 self.action_id = self.expeye.start_robot_action(
                     "LOAD" if subplan == CONST.PLAN.ROBOT_LOAD else "UNLOAD",
                     proposal,
@@ -115,8 +115,5 @@ class RobotLoadISPyBCallback(PlanReactiveCallback):
                 else BLSampleStatus.ERROR_BEAMLINE,
             )
             self.action_id = None
-            self._reset_state()
+            self._sample_id = None
         return super().activity_gated_stop(doc)
-    
-    def _reset_state(self):
-        self._sample_id = None
