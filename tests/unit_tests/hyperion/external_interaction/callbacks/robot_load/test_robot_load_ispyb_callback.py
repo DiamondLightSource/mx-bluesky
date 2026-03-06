@@ -237,3 +237,13 @@ def test_robot_unload_event_without_sample_id_and_visit_is_ignored(
     mock_expeye.return_value.update_robot_action.assert_not_called()
     mock_expeye.return_value.end_robot_action.assert_not_called()
     mock_expeye.return_value.update_sample_status.assert_not_called()
+
+
+# In the event where sample id has not been set on the robot
+def test_robot_unload_event_where_sample_id_is_zero_is_ignored():
+    pass
+
+
+# When udc default state unloads the robot.
+def test_robot_unload_event_where_visit_is_undefined_is_ignored():
+    pass
