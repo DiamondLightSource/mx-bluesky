@@ -239,11 +239,53 @@ def test_robot_unload_event_without_sample_id_and_visit_is_ignored(
     mock_expeye.return_value.update_sample_status.assert_not_called()
 
 
-# In the event where sample id has not been set on the robot
-def test_robot_unload_event_where_sample_id_is_zero_is_ignored():
-    pass
+# In the event where sample id has not been set on the robot - this
+# condition was encountered during testing although it's not clear how
+# the system arrived in this state.
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
+    autospec=True,
+)
+def test_robot_unload_event_where_sample_id_is_zero_is_ignored(
+    expeye_interaction: MagicMock,
+    test_event_data,
+):
+    ispyb_callback = RobotLoadISPyBCallback()
+    expeye = expeye_interaction.return_value
+    expeye.start_robot_action.return_value = ACTION_ID
+    start_document = test_event_data.test_robot_unload_start_document.copy()
+    start_document["metadata"]["sample_id"] = 0
+    ispyb_callback.start(start_document)
+    ispyb_callback.descriptor(test_event_data.test_descriptor_document_robot_unload)
+    ispyb_callback.event(test_event_data.test_event_document_robot_unload)
+    ispyb_callback.stop(test_event_data.test_robot_unload_stop_document)
+
+    expeye.start_robot_action.assert_not_called()
+    expeye.update_robot_action.assert_not_called()
+    expeye.end_robot_action.assert_not_called()
+    expeye.update_sample_status.assert_not_called()
 
 
 # When udc default state unloads the robot.
-def test_robot_unload_event_where_visit_is_undefined_is_ignored():
-    pass
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback.ExpeyeInteraction",
+    autospec=True,
+)
+def test_robot_unload_event_where_visit_is_undefined_is_ignored(
+    expeye_interaction: MagicMock,
+    test_event_data,
+):
+    ispyb_callback = RobotLoadISPyBCallback()
+    expeye = expeye_interaction.return_value
+    expeye.start_robot_action.return_value = ACTION_ID
+    start_document = test_event_data.test_robot_unload_start_document.copy()
+    del start_document["metadata"]["visit"]
+    ispyb_callback.start(start_document)
+    ispyb_callback.descriptor(test_event_data.test_descriptor_document_robot_unload)
+    ispyb_callback.event(test_event_data.test_event_document_robot_unload)
+    ispyb_callback.stop(test_event_data.test_robot_unload_stop_document)
+
+    expeye.start_robot_action.assert_not_called()
+    expeye.update_robot_action.assert_not_called()
+    expeye.end_robot_action.assert_not_called()
+    expeye.update_sample_status.assert_not_called()
