@@ -102,7 +102,7 @@ def test_external_callbacks_not_running_raises_exception_for_plan_execution(
 
 
 @patch("mx_bluesky.hyperion.in_process_runner.create_devices", new=MagicMock())
-@patch("mx_bluesky.hyperion.in_process_runner.load_centre_collect_full")
+@patch("mx_bluesky.hyperion.in_process_runner.load_centre_collect")
 def test_in_process_runner_skips_native_collection_if_sample_error(
     mock_load_centre_collect: MagicMock,
     run_engine: RunEngine,
