@@ -137,12 +137,29 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         synchrotron_mode = _data["synchrotron-synchrotron_mode"]
         assert isinstance(synchrotron_mode, SynchrotronMode)
-        hwscan_data_collection_info = DataCollectionInfo(
-            undulator_gap1=_data["undulator-current_gap"],
-            synchrotron_mode=synchrotron_mode.value,
-            slitgap_horizontal=_data["s4_slit_gaps-xgap"],
-            slitgap_vertical=_data["s4_slit_gaps-ygap"],
-        )
+
+        # We should improve slit PV name to give consistency, or come up with a way
+        # to get better typing on the _data dict
+        if _data["s4_slit_gaps-xgap"]:
+            hwscan_data_collection_info = DataCollectionInfo(
+                undulator_gap1=_data["undulator-current_gap"],
+                synchrotron_mode=synchrotron_mode.value,
+                slitgap_horizontal=_data["s4_slit_gaps-xgap"],
+                slitgap_vertical=_data["s4_slit_gaps-ygap"],
+            )
+
+        elif _data["s4_slit_gaps-x_gap"]:
+            hwscan_data_collection_info = DataCollectionInfo(
+                undulator_gap1=_data["undulator-current_gap"],
+                synchrotron_mode=synchrotron_mode.value,
+                slitgap_horizontal=_data["s4_slit_gaps-x_gap"],
+                slitgap_vertical=_data["s4_slit_gaps-y_gap"],
+            )
+        else:
+            raise ValueError(
+                f"Couldn't read slits from {doc=} and so couldn't update ispyb data collection info."
+            )
+
         hwscan_data_collection_info = _update_based_on_energy(
             doc, self.params.detector_params, hwscan_data_collection_info
         )
