@@ -50,8 +50,8 @@ class GridscanISPyBCallback(CommonGridscanISPyBCallback):
                 file_template=file_template,
             )
             data_collection_grid_info = DataCollectionGridInfo(
-                dx_in_mm=self.params.x_step_size_um * 1000,
-                dy_in_mm=self.params.y_step_sizes_um[grid_num] * 1000,
+                dx_in_mm=self.params.x_step_size_um / 1000,
+                dy_in_mm=self.params.y_step_sizes_um[grid_num] / 1000,
                 steps_x=self.params.x_steps,
                 steps_y=self.params.y_steps[grid_num],
                 microns_per_pixel_x=self.params.microns_per_pixel_x,

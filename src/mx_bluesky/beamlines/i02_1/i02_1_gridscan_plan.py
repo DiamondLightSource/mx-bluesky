@@ -57,6 +57,7 @@ from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GonioWithOmegaType,
 )
+from mx_bluesky.common.parameters.gridscan import PositiveFloat
 from mx_bluesky.common.utils.log import LOGGER
 
 
@@ -162,13 +163,18 @@ class ExternalGridScanParams(BaseModel):
     detector_distance_mm: float
     sample_id: int
 
+    # GDA branch needs to update for these params
+    x_step_size_um: PositiveFloat
+    y_step_sizes_um: list[PositiveFloat]
+    omega_start_deg: int
+
 
 def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
     return I02_1FgsParams(
         y_starts_um=[params.y_start_um],
         x_start_um=params.x_start_um,
         z_starts_um=[params.z_start_um],
-        omega_starts_deg=[0],
+        omega_starts_deg=[params.omega_start_deg],
         sample_id=params.sample_id,
         visit=params.visit,
         parameter_model_version=get_param_version(),
@@ -185,6 +191,8 @@ def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
         upper_left_y=params.upper_left_y,
         detector_distance_mm=params.detector_distance_mm,
         ispyb_experiment_type=IspybExperimentType.GRIDSCAN_2D,
+        x_step_size_um=params.x_step_size_um,
+        y_step_sizes_um=params.y_step_sizes_um,
     )
 
 
