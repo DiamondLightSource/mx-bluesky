@@ -190,7 +190,7 @@ def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
         upper_left_x=params.upper_left_x,
         upper_left_y=params.upper_left_y,
         detector_distance_mm=params.detector_distance_mm,
-        ispyb_experiment_type=IspybExperimentType.GRIDSCAN_2D,
+        ispyb_experiment_type=IspybExperimentType.SAD,
         x_step_size_um=params.x_step_size_um,
         y_step_sizes_um=params.y_step_sizes_um,
     )
