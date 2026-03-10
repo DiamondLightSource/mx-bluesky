@@ -193,6 +193,7 @@ def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
         ispyb_experiment_type=IspybExperimentType.SAD,
         x_step_size_um=params.x_step_size_um,
         y_step_sizes_um=params.y_step_sizes_um,
+        use_roi_mode=False,
     )
 
 
