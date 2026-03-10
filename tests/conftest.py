@@ -90,7 +90,7 @@ from scanspec.specs import Line
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_config_client,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridscanPlane,
 )
 from mx_bluesky.common.parameters.constants import (

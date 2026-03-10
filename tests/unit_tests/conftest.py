@@ -49,12 +49,14 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    generate_start_info_from_omega_map,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -66,6 +68,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
+    GridscanParamConstants,
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
@@ -170,16 +173,18 @@ def assert_event(mock_call, expected):
 
 
 def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridscanISPyBCallback
+    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
-        GridscanISPyBCallback(
+        GridDetectAndScanISPyBCallback(
             param_type=SpecifiedThreeDGridScan,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,
+                lambda: generate_start_info_from_omega_map(
+                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+                ),
             ),
         ),
     )
@@ -210,7 +215,7 @@ def mock_subscriptions(test_three_d_grid_params):
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
+            "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb"
         ) as mock_store_in_ispyb,
     ):
         mock_store_in_ispyb.return_value.begin_deposition.return_value = IspybIds(
@@ -227,13 +232,17 @@ def mock_subscriptions(test_three_d_grid_params):
         yield (nexus_callback, ispyb_callback)
 
 
-ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback | GridscanISPyBCallback]]
+ReWithSubs = tuple[
+    RunEngine, tuple[GridscanNexusFileCallback | GridDetectAndScanISPyBCallback]
+]
 
 
 @pytest.fixture
 def run_engine_with_subs(
     run_engine: RunEngine,
-    mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
+    mock_subscriptions: tuple[
+        GridscanNexusFileCallback | GridDetectAndScanISPyBCallback
+    ],
 ) -> Generator[ReWithSubs, Any, None]:
     for cb in list(mock_subscriptions):
         run_engine.subscribe(cb)
@@ -271,7 +280,7 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 
 def run_generic_ispyb_handler_setup(
-    ispyb_handler: GridscanISPyBCallback,
+    ispyb_handler: GridDetectAndScanISPyBCallback,
     params: SpecifiedThreeDGridScan,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff

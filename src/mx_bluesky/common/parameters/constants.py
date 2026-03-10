@@ -71,6 +71,7 @@ class PlanNameConstants:
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     DO_FGS = "do_fgs"
     FLYSCAN_RESULTS = "xray_centre_results"
+    TRIGGER_GRIDSCAN_ISPYB_CALLBACK = "trigger gridscan ispyb callback"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"

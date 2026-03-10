@@ -37,11 +37,11 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
@@ -78,7 +78,7 @@ def mock_plan():
 def run_engine_with_subs_snapshots_already_taken(run_engine_with_subs, test_event_data):
     run_engine, subscriptions = run_engine_with_subs
     ispyb_gridscan_callback = [
-        sub for sub in subscriptions if isinstance(sub, GridscanISPyBCallback)
+        sub for sub in subscriptions if isinstance(sub, GridDetectAndScanISPyBCallback)
     ][0]
     ispyb_gridscan_callback.active = True
     ispyb_gridscan_callback.start(
@@ -94,7 +94,7 @@ def run_engine_with_subs_snapshots_already_taken(run_engine_with_subs, test_even
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -122,7 +122,9 @@ class TestFlyscanXrayCentrePlan:
         test_three_d_grid_params: SpecifiedThreeDGridScan,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        ispyb_callback = GridscanISPyBCallback(param_type=SpecifiedThreeDGridScan)
+        ispyb_callback = GridDetectAndScanISPyBCallback(
+            param_type=SpecifiedThreeDGridScan
+        )
         run_engine.subscribe(ispyb_callback)
 
         error = None
@@ -319,7 +321,7 @@ class TestFlyscanXrayCentrePlan:
         test_three_d_grid_params: SpecifiedThreeDGridScan,
         run_engine_with_subs_snapshots_already_taken: tuple[
             RunEngine,
-            tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
+            tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback],
         ],
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -342,7 +344,7 @@ class TestFlyscanXrayCentrePlan:
         )
 
         with patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter.create_nexus_file",
+            "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback.NexusWriter.create_nexus_file",
             autospec=True,
         ):
             [run_engine.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
@@ -576,7 +578,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         run_engine_with_subs: tuple[
             RunEngine,
-            tuple[GridscanNexusFileCallback, GridscanISPyBCallback],
+            tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback],
         ],
         test_three_d_grid_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,

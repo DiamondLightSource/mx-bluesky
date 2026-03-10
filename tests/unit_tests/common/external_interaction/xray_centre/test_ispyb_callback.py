@@ -10,8 +10,8 @@ from ophyd_async.epics.core import epics_signal_rw
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
     GridscanPlane,
     _smargon_omega_to_xyxz_plane,
 )
@@ -73,7 +73,7 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
 )
 class TestXrayCentreISPyBCallback:
     def test_activity_gated_start_3d(self, mock_ispyb_conn, test_event_data, tmp_path):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
@@ -116,7 +116,7 @@ class TestXrayCentreISPyBCallback:
     def test_reason_provided_if_crystal_not_found_error(
         self, mock_update_data_collection_group_table, mock_ispyb_conn, test_event_data
     ):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
@@ -137,7 +137,7 @@ class TestXrayCentreISPyBCallback:
         )
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn, test_event_data):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
@@ -166,7 +166,7 @@ class TestXrayCentreISPyBCallback:
         assert update_dc_requests[1].body == expected_upsert
 
     def test_flux_read_events_3d(self, mock_ispyb_conn, test_event_data):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
@@ -231,7 +231,7 @@ class TestXrayCentreISPyBCallback:
         snapshot_events: list[str],
         first_comment: str,
     ):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
@@ -334,7 +334,7 @@ class TestXrayCentreISPyBCallback:
     async def test_ispyb_callback_handles_read_hardware_in_run_engine(
         self, run_engine, mock_ispyb_conn, dummy_rotation_data_collection_group_info
     ):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback._handle_ispyb_hardware_read = MagicMock()
@@ -349,7 +349,7 @@ class TestXrayCentreISPyBCallback:
         @subs_decorator(callback)
         @run_decorator(
             md={
-                "activate_callbacks": ["GridscanISPyBCallback"],
+                "activate_callbacks": ["GridDetectAndScanISPyBCallback"],
             },
         )
         def test_plan():
@@ -366,7 +366,7 @@ class TestXrayCentreISPyBCallback:
         callback._handle_ispyb_transmission_flux_read.assert_called_once()
 
     @patch(
-        "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.GridscanISPyBCallback._handle_oav_grid_snapshot_triggered",
+        "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.GridDetectAndScanISPyBCallback._handle_oav_grid_snapshot_triggered",
     )
     @patch(
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_deposition",
@@ -381,7 +381,7 @@ class TestXrayCentreISPyBCallback:
         mock__handle_oav_grid_snapshot_triggered,
         test_event_data,
     ):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_descriptor(
@@ -400,7 +400,7 @@ class TestXrayCentreISPyBCallback:
     def test_ispyb_callback_clears_state_after_run_stop(
         self, test_event_data, mock_ispyb_conn
     ):
-        callback = GridscanISPyBCallback(
+        callback = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         callback.active = True
