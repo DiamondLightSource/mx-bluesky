@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Generic, TypeVar
 
-from daq_config_server.client import ConfigServer
+from daq_config_server.app.client import ConfigClient
 from pydantic import TypeAdapter
 
 from mx_bluesky.common.parameters.constants import (
@@ -22,7 +22,7 @@ _JSON_CONFIG_PATHS = [OavConstants.OAV_CONFIG_JSON]
 T = TypeVar("T", bound=FeatureSettings)
 
 
-class MXConfigClient(ConfigServer, Generic[T]):
+class MXConfigClient(ConfigClient, Generic[T]):
     def __init__(
         self,
         feature_sources: type[FeatureSettingSources],
