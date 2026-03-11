@@ -89,7 +89,7 @@ def _get_internal_rotation_params(
         file_name=entry_params.filename,
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,
-        storage_directory=USE_NUMTRACKER,
+        storage_directory="/tmp",
     )
 
 
@@ -133,12 +133,12 @@ def set_up_beamline_for_rotation(
         AperturePositions.IN,
         composite.beamstop.pos_select,
         BeamstopPositions.DATA_COLLECTION,
-        composite.det_stage.y,
-        JF_DET_STAGE_Y_POSITION_MM,
+        # composite.det_stage.y,
+        # JF_DET_STAGE_Y_POSITION_MM,
         composite.backlight.backlight_position,
         BacklightPositions.OUT,
-        composite.det_stage.z,
-        det_z_mm,
+        # composite.det_stage.z,
+        # det_z_mm,
         composite.attenuator,
         transmission_frac,
     )
@@ -217,6 +217,8 @@ def single_rotation_plan(
                 direction=motion_values.direction,
                 shutter_opening_deg=motion_values.shutter_opening_deg,
                 shutter_opening_s=motion_values.shutter_time_s,
+                ttl_input_for_detector_to_use=composite.zebra.mapping.outputs.TTL_JUNGFRAU,
+                group=PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC
             )
 
             yield from bps.wait(PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC)
@@ -238,13 +240,14 @@ def single_rotation_plan(
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
                     composite.det_stage.z,
-                    composite.jungfrau._writer.file_path,  # noqa: SLF001 N
+                    composite.commissioning_jungfrau._writer.file_path,  # noqa: SLF001 N
+                    composite.commissioning_jungfrau._writer.file_name,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,
             )
 
             yield from fly_jungfrau(
-                composite.jungfrau,
+                composite.commissioning_jungfrau,
                 _jf_trigger_info,
                 GainMode.DYNAMIC,
                 wait=False,
@@ -270,7 +273,7 @@ def single_rotation_plan(
             final_plan=partial(
                 _cleanup_plan,
                 composite.zebra,
-                composite.jungfrau,
+                composite.commissioning_jungfrau,
                 composite.sample_shutter,
             ),
         )

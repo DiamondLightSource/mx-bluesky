@@ -22,10 +22,10 @@ STANDARD_DARKS_RUN = "STANDARD DARKS RUN"
 
 def do_pedestal_darks(
     exp_time_s: float = 0.001,
-    pedestal_frames: PositiveInt = 20,
+    pedestal_frame: PositiveInt = 20,
     pedestal_loops: PositiveInt = 200,
     filename: str = "pedestal_darks",
-    jungfrau: CommissioningJungfrau = inject("jungfrau"),
+    jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
 ) -> MsgGenerator:
     """Acquire darks in pedestal mode, using dynamic gain mode. This calibrates the offsets
     for the jungfrau, and must be performed before acquiring real data in dynamic gain mode.
@@ -43,11 +43,13 @@ def do_pedestal_darks(
 
     Args:
         exp_time_s: Length of detector exposure for each frame.
-        pedestal_frames: Number of frames acquired per pedestal loop.
-        pedestal_loops: Number of times to acquire a set of pedestal_frames
+        pedestal_frame: Number of frames acquired per pedestal loop.
+        pedestal_loops: Number of times to acquire a set of pedestal_frame
         filename: Name of output file
         jungfrau: Jungfrau device
     """
+
+    # do_default_logging_setup()
 
     @bpp.set_run_key_decorator(PEDESTAL_DARKS_RUN)
     @bpp.run_decorator(
@@ -59,7 +61,7 @@ def do_pedestal_darks(
     @bpp.stage_decorator([jungfrau])
     def _do_decorated_plan():
         trigger_info = create_jungfrau_pedestal_triggering_info(
-            exp_time_s, pedestal_frames, pedestal_loops
+            exp_time_s, pedestal_frame, pedestal_loops
         )
         LOGGER.info(
             "Jungfrau will be triggered in pedestal mode and in dynamic gain mode"
@@ -84,7 +86,7 @@ def do_non_pedestal_darks(
     exp_time_s: float = 0.001,
     total_triggers: PositiveInt = 1000,
     filename: str = "darks",
-    jungfrau: CommissioningJungfrau = inject("jungfrau"),
+    jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
 ) -> MsgGenerator:
     """Internally take a set of images at a given gain mode.
 

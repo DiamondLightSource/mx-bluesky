@@ -9,7 +9,7 @@ from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
 )
-from ophyd_async.fastcs.jungfrau import GainMode
+from ophyd_async.fastcs.jungfrau import AcquisitionType, GainMode, PedestalMode
 
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -46,6 +46,16 @@ def fly_jungfrau(
     yield from bps.mv(jungfrau.drv.gain_mode, gain_mode)
     LOGGER.info("Preparing detector...")
     yield from bps.prepare(jungfrau, trigger_info, wait=True)
+
+    # set pedestal mode on again because ioc seems to turn it off
+    # Setting signals once the detector is in pedestal mode can cause errors,
+    # so do this last
+    acq_type = yield from bps.rd(jungfrau.drv.acquisition_type)
+    if acq_type == AcquisitionType.PEDESTAL:
+        LOGGER.info("Waiting 0.3s before turning on pedestal mode again")
+        yield from bps.sleep(0.3)
+        yield from bps.abs_set(jungfrau.drv.pedestal_mode_state, PedestalMode.ON)
+
     LOGGER.info("Detector prepared")
     if read_hardware_after_prepare_plan:
         yield from read_hardware_after_prepare_plan()

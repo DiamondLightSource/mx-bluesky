@@ -9,6 +9,7 @@ from dodal.devices.zebra.zebra import (
     RotationDirection,
     Zebra,
 )
+from dodal.devices.zebra.zebra import TrigSource
 from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutter,
     ZebraShutterControl,
@@ -235,6 +236,7 @@ def tidy_up_zebra_after_rotation_scan(
         wait: If true, block until completion.
     """
 
+    yield from bps.abs_set(zebra.pc.pulse_source, TrigSource.TIME, group=group)
     yield from bps.abs_set(zebra.pc.arm, ArmDemand.DISARM, group=group)
     yield from bps.abs_set(
         zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
