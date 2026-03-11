@@ -98,7 +98,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         while (yield from _is_requesting_baton(baton)):
             abort = yield from _abort_if_countdown_too_low(context, baton)
             if abort:
-                return
+                break
             current_visit = yield from _fetch_and_process_agamemnon_instruction(
                 baton, runner, current_visit
             )

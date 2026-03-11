@@ -1042,15 +1042,16 @@ def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
 
     baton: Baton = bluesky_context.find_device("baton")  # type: ignore
     mock_move_to_udc_default_state.assert_called_once()
-    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER, wait=True)
-    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER, wait=True)
+    assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER)
+    assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER)
 
 
-def test_baton_handler_fails_if_synchrotron_machine_countdown_below_threshold(
+def test_baton_handler_ends_collections_if_synchrotron_machine_countdown_below_threshold(
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
     dont_patch_clear_devices,
     caplog,
+    mock_load_centre_collect,
 ):
     synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
     set_mock_value(synchrotron.machine_user_countdown, 5)
@@ -1058,4 +1059,5 @@ def test_baton_handler_fails_if_synchrotron_machine_countdown_below_threshold(
     with caplog.at_level("INFO"):
         run_udc_when_requested(bluesky_context, udc_runner)
 
+    mock_load_centre_collect.assert_not_called()
     assert "Synchrotron machine countdown too low" in caplog.text

@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.1.1.dev2+g55b94f659"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#55b94f65916a4172e760756f20e11b293cc27bb4" }
+version = "2.0.1.dev13+g28c3f20f6"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=28c3f20f6108d2769e7995f1008e7d76446fb38b#28c3f20f6108d2769e7995f1008e7d76446fb38b" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -812,7 +812,6 @@ dependencies = [
     { name = "daq-config-server", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "deepdiff", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "graypy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "mysql-connector-python", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "opencv-python-headless", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "ophyd", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
