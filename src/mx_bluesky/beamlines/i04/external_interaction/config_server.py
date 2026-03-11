@@ -1,6 +1,4 @@
-from daq_config_server.models.feature_settings.i04_feature_settings import (
-    I04FeatureSettings,
-)
+from daq_config_server.models import I04FeatureSettings
 from dodal.beamlines.i04 import DAQ_CONFIGURATION_PATH
 from dodal.common.beamlines.config_client import get_config_client
 

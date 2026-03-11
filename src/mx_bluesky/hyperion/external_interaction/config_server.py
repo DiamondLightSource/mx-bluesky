@@ -1,6 +1,4 @@
-from daq_config_server.models.feature_settings.hyperion_feature_settings import (
-    HyperionFeatureSettings,
-)
+from daq_config_server.models import HyperionFeatureSettings
 from dodal.beamlines.i03 import DAQ_CONFIGURATION_PATH
 from dodal.common.beamlines.config_client import get_config_client
 
