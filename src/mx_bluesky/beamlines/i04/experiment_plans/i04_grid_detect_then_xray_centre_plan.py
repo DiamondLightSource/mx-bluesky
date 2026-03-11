@@ -340,9 +340,10 @@ def _get_grid_common_params(
     _current_wavelength_a: float, parameters: I04AutoXrcParams
 ) -> GridCommon:
     """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
-    _assumed_wavelength_a = get_i04_feature_settings().ASSUMED_WAVELENGTH_IN_A
-    _unscaled_transmission = get_i04_feature_settings().XRC_UNSCALED_TRANSMISSION_FRAC
-    _unscaled_exposure_time_s = get_i04_feature_settings().XRC_UNSCALED_EXPOSURE_TIME_S
+    feature_settings = get_i04_feature_settings()
+    _assumed_wavelength_a = feature_settings.ASSUMED_WAVELENGTH_IN_A
+    _unscaled_transmission = feature_settings.XRC_UNSCALED_TRANSMISSION_FRAC
+    _unscaled_exposure_time_s = feature_settings.XRC_UNSCALED_EXPOSURE_TIME_S
     transmission_frac, exposure_time_s = (
         fix_transmission_and_exposure_time_for_current_wavelength(
             _current_wavelength_a,
