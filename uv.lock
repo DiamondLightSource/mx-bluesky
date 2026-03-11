@@ -684,8 +684,8 @@ wheels = [
 
 [[package]]
 name = "daq-config-server"
-version = "1.1.2"
-source = { registry = "https://pypi.org/simple" }
+version = "1.2.1.dev3+g1820bab03"
+source = { git = "https://github.com/DiamondLightSource/daq-config-server.git?rev=add_feature_flag_models_2#1820bab033e459fe29f50edb17d796c6a53081b7" }
 dependencies = [
     { name = "cachetools", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "fastapi", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -698,10 +698,6 @@ dependencies = [
     { name = "urllib3", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "xmltodict", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/1e/37373402723769ced976215ffb1716353d89c0772d5bec8116d9f981d095/daq_config_server-1.1.2.tar.gz", hash = "sha256:2f8c9e43a41534d90512be7ecab37de0fdf33d4b00a6b61bd04e3c82d886062f", size = 126067, upload-time = "2026-01-12T11:28:21.034Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/9f/b8df9fad0b1005e95460ee92092a1da33c282c158336bc23bd7635981f29/daq_config_server-1.1.2-py3-none-any.whl", hash = "sha256:c2bca297feb01a51883e3df7d6ade11af9a3f311602e5584320b1e12881cf636", size = 29273, upload-time = "2026-01-12T11:28:19.635Z" },
 ]
 
 [[package]]
@@ -2106,7 +2102,7 @@ requires-dist = [
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "cachetools" },
     { name = "caproto" },
-    { name = "daq-config-server", specifier = ">=1.1.2" },
+    { name = "daq-config-server", git = "https://github.com/DiamondLightSource/daq-config-server.git?rev=add_feature_flag_models_2" },
     { name = "deepdiff" },
     { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1629_remove_mx_config_client" },
     { name = "fastapi", extras = ["all"] },
