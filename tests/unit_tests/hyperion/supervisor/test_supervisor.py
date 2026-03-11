@@ -1,11 +1,13 @@
 from concurrent.futures import Executor
 from threading import Event
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.core import BlueskyContext
 from blueapi.service.model import TaskRequest
+from blueapi.worker import TaskStatus, WorkerState
+from blueapi.worker.event import TaskError, TaskResult
 from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
 
@@ -14,7 +16,9 @@ from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
 from mx_bluesky.common.parameters.constants import Status
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
 from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
@@ -32,7 +36,15 @@ def mock_blueapi_client():
     with patch(
         "mx_bluesky.hyperion.supervisor._supervisor.BlueapiClient"
     ) as mock_class:
-        yield mock_class.from_config.return_value
+        mock_client = mock_class.from_config.return_value
+        yield mock_client
+
+
+@pytest.fixture(autouse=True)
+def mock_blueapi_client_state(mock_blueapi_client):
+    mock_state = PropertyMock(return_value=WorkerState.IDLE)
+    type(mock_blueapi_client).state = mock_state
+    yield mock_state
 
 
 @pytest.fixture
@@ -169,6 +181,12 @@ def test_current_status_set_to_busy_during_execution(
     def wait_for_check(*args, **kwargs):
         task_executing.set()
         check_complete.wait(1)
+        return TaskStatus(
+            task_id="TASK_ID",
+            result=TaskResult(result=None, type="None"),
+            task_complete=True,
+            task_failed=False,
+        )
 
     mock_blueapi_client.run_task.side_effect = wait_for_check
 
@@ -192,11 +210,17 @@ def test_current_status_set_to_busy_during_execution(
 def test_current_status_set_to_failed_on_exception_and_raise_plan_error(
     mock_blueapi_client: MagicMock, runner: SupervisorRunner
 ):
-    mock_blueapi_client.run_task.side_effect = BlueskyStreamingError(
-        "Simulated exception"
+    status = TaskStatus(
+        task_id="TASK_ID",
+        result=TaskError(type="RuntimeError", message="Simulated exception"),
+        task_complete=True,
+        task_failed=True,
     )
+    mock_blueapi_client.run_task.return_value = status
 
-    with pytest.raises(PlanError, match="Exception raised.*: Simulated exception"):
+    with pytest.raises(
+        PlanError, match="Exception raised.* message='Simulated exception'"
+    ):
         runner.context.run_engine(
             runner.decode_and_execute(
                 TEST_VISIT,
@@ -211,16 +235,20 @@ def test_current_status_set_to_failed_on_exception_and_raise_plan_error(
 
 
 def test_is_connected_queries_blueapi_client(
-    runner: SupervisorRunner, mock_blueapi_client: MagicMock
+    runner: SupervisorRunner,
+    mock_blueapi_client: MagicMock,
+    mock_blueapi_client_state: PropertyMock,
 ):
     assert runner.is_connected()
-    mock_blueapi_client.get_state.assert_called_once()
+    mock_blueapi_client_state.assert_called_once()
 
 
 def test_is_connected_returns_false_on_exception(
-    runner: SupervisorRunner, mock_blueapi_client: MagicMock
+    runner: SupervisorRunner,
+    mock_blueapi_client: MagicMock,
+    mock_blueapi_client_state: PropertyMock,
 ):
-    mock_blueapi_client.get_state.side_effect = RuntimeError("Simulated exception")
+    mock_blueapi_client_state.side_effect = RuntimeError("Simulated exception")
     assert not runner.is_connected()
 
 
@@ -302,3 +330,27 @@ def test_unrecognised_instruction_raises_assertion_error(runner: SupervisorRunne
                 ],
             )
         )
+
+
+@pytest.mark.parametrize(
+    "exception_type", [SampleError.__name__, CrystalNotFoundError.__name__]
+)
+def test_sample_error_skips_subsequent_instructions(
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+    exception_type: str,
+):
+    mock_blueapi_client.run_task.return_value = TaskStatus(
+        task_id="TASK_ID",
+        result=TaskError(type=exception_type, message="Simulated sample error"),
+        task_complete=True,
+        task_failed=True,
+    )
+    runner.context.run_engine(
+        runner.decode_and_execute(
+            TEST_VISIT,
+            [external_load_centre_collect_params, external_load_centre_collect_params],
+        )
+    )
+    mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
