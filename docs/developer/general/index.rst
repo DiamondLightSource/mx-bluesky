@@ -46,6 +46,7 @@ Documentation is split into four categories, and each is also accessible from li
             explanations/decisions
             explanations/callback_and_run_logic
             explanations/containerised_mx_bluesky
+            explanations/inject_pattern
 
         +++
 

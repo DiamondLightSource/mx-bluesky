@@ -2,10 +2,10 @@ import bluesky.preprocessors as bpp
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.jungfrau import Jungfrau
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
+    Jungfrau,
     create_jungfrau_internal_triggering_info,
     create_jungfrau_pedestal_triggering_info,
 )

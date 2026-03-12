@@ -4,12 +4,16 @@ from typing import cast
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
-from dodal.devices.jungfrau import Jungfrau
 from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
 )
-from ophyd_async.fastcs.jungfrau import AcquisitionType, GainMode, PedestalMode
+from ophyd_async.fastcs.jungfrau import (
+    AcquisitionType,
+    GainMode,
+    Jungfrau,
+    PedestalMode,
+)
 
 from mx_bluesky.common.utils.log import LOGGER
 

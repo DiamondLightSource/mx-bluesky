@@ -8,11 +8,11 @@ from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
 from dodal.devices.hutch_shutter import HutchShutter
-from dodal.devices.jungfrau import Jungfrau
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from ophyd_async.fastcs.jungfrau import Jungfrau
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

@@ -8,11 +8,11 @@ from dodal.devices.beamlines.i24.aperture import AperturePositions
 from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.jungfrau import Jungfrau
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from ophyd_async.fastcs.jungfrau import (
     GainMode,
+    Jungfrau,
     create_jungfrau_external_triggering_info,
 )
 from pydantic import BaseModel, field_validator

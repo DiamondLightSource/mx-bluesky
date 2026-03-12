@@ -1,11 +1,11 @@
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.jungfrau import Jungfrau
 from ophyd_async.core import (
     WatchableAsyncStatus,
 )
 from ophyd_async.fastcs.jungfrau import (
     GainMode,
+    Jungfrau,
     create_jungfrau_external_triggering_info,
 )
 from pydantic import PositiveInt
