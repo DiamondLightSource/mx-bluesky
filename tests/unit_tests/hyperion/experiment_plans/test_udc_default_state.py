@@ -5,7 +5,9 @@ import pytest
 from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from daq_config_server.models import HyperionFeatureSettings
+from daq_config_server.models.feature_settings.hyperion_feature_settings import (
+    HyperionFeatureSettings,
+)
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
