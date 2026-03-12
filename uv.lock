@@ -684,8 +684,8 @@ wheels = [
 
 [[package]]
 name = "daq-config-server"
-version = "1.2.1.dev3+g1820bab03"
-source = { git = "https://github.com/DiamondLightSource/daq-config-server.git?rev=add_feature_flag_models_2#1820bab033e459fe29f50edb17d796c6a53081b7" }
+version = "1.2.1.dev8+g10a22d603"
+source = { git = "https://github.com/DiamondLightSource/daq-config-server.git?rev=add_feature_flag_models_2#10a22d6037a6e90802f0bd1b8acd56463649397f" }
 dependencies = [
     { name = "cachetools", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "fastapi", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -798,8 +798,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.0.1.dev55+g60d80004f"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1629_remove_mx_config_client#60d80004fac01de051955a1826de692c64e9d8ea" }
+version = "2.1.1.dev47+g0f48a7121"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1629_remove_mx_config_client#0f48a712163d0ec993f01f3c4bbe2a425c0f3c6b" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
