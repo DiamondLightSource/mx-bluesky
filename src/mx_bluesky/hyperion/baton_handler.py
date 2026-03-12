@@ -102,8 +102,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             current_visit = yield from _fetch_and_process_agamemnon_instruction(
                 baton, runner, current_visit
             )
-        if current_visit:
-            yield from runner.decode_and_execute(current_visit, [UDCCleanup()])
+        yield from runner.decode_and_execute(current_visit, [UDCCleanup()])
 
     def release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested

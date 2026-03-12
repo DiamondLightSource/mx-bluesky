@@ -13,6 +13,7 @@ from bluesky import Msg
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.synchrotron import Synchrotron
@@ -34,7 +35,7 @@ from mx_bluesky.common.utils.exceptions import (
     WarningError,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, Wait
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
@@ -911,6 +912,38 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
             ),
         ]
     )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    return_value=[],
+)
+def test_run_udc_when_requested_calls_udc_cleanup_with_no_visit(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    udc_runner.decode_and_execute = MagicMock()
+    run_udc_when_requested(bluesky_context, udc_runner)
+    udc_runner.decode_and_execute.assert_called_with(None, [UDCCleanup()])
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
+)
+def test_run_udc_when_requested_calls_udc_cleanup_with_visit(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    def dummy_plan_with_visit_return(_, __) -> MsgGenerator:
+        yield from bps.null()
+        return "cm12345-12"
+
+    udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan_with_visit_return)
+    run_udc_when_requested(bluesky_context, udc_runner)
+    udc_runner.decode_and_execute.assert_called_with("cm12345-12", [UDCCleanup()])
 
 
 @patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
