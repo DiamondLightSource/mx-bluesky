@@ -23,7 +23,10 @@ from ophyd_async.core import callback_on_mock_put, set_mock_value
 @pytest.fixture
 def shutter() -> HutchShutter:
     shutter = i24.shutter.build(connect_immediately=True, mock=True)
-    set_mock_value(shutter.interlock.status, HUTCH_SAFE_FOR_OPERATIONS)
+    set_mock_value(
+        shutter.interlock.status,  # type: ignore
+        HUTCH_SAFE_FOR_OPERATIONS,
+    )
 
     def set_status(value: ShutterDemand, *args, **kwargs):
         value_sta = ShutterState.OPEN if value == "Open" else ShutterState.CLOSED

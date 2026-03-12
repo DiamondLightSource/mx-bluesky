@@ -6,6 +6,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.baton import Baton
+from dodal.devices.synchrotron import Synchrotron
 from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.alerting import (
@@ -30,6 +31,7 @@ from mx_bluesky.hyperion.utils.context import (
 
 HYPERION_USER = "Hyperion"
 NO_USER = "None"
+COUNTDOWN_THRESHOLD_SECONDS = 600
 
 
 def run_forever(runner: PlanRunner):
@@ -82,6 +84,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             baton: The baton device
             runner: The runner
         """
+
         _raise_udc_start_alert(get_alerting_service())
         yield from bpp.contingency_wrapper(
             runner.decode_and_execute(None, [UDCDefaultState()]),
@@ -93,6 +96,9 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
         baton = _get_baton(context)
         current_visit: str | None = None
         while (yield from _is_requesting_baton(baton)):
+            abort = yield from _abort_if_countdown_too_low(context, baton)
+            if abort:
+                break
             current_visit = yield from _fetch_and_process_agamemnon_instruction(
                 baton, runner, current_visit
             )
@@ -163,9 +169,7 @@ def _fetch_and_process_agamemnon_instruction(
             current_visit, parameter_list
         )
     else:
-        _raise_udc_completed_alert(get_alerting_service())
-        # Release the baton for orderly exit from the instruction loop
-        yield from _unrequest_baton(baton)
+        yield from _release_baton_on_completed_alert(baton)
     return current_visit
 
 
@@ -201,6 +205,10 @@ def _get_baton(context: BlueskyContext) -> Baton:
     return find_device_in_context(context, "baton", Baton)
 
 
+def _get_synchrotron(context: BlueskyContext) -> Synchrotron:
+    return find_device_in_context(context, "synchrotron", Synchrotron)
+
+
 def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
     """Relinquish the requested user of the baton if it is not already requested
     by another user.
@@ -214,3 +222,24 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
         yield from bps.abs_set(baton.requested_user, NO_USER)
         return NO_USER
     return requested_user
+
+
+def _abort_if_countdown_too_low(
+    context: BlueskyContext, baton: Baton
+) -> MsgGenerator[bool]:
+    synchrotron = _get_synchrotron(context)
+    countdown = yield from bps.rd(synchrotron.machine_user_countdown)
+
+    LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
+
+    if countdown < COUNTDOWN_THRESHOLD_SECONDS:
+        LOGGER.info("Synchrotron machine countdown too low")
+        yield from _release_baton_on_completed_alert(baton)
+        return True
+
+    return False
+
+
+def _release_baton_on_completed_alert(baton) -> MsgGenerator:
+    _raise_udc_completed_alert(get_alerting_service())
+    yield from _unrequest_baton(baton)

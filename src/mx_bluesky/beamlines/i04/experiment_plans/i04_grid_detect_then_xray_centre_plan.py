@@ -44,7 +44,7 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
-    get_results_then_change_aperture_and_move_to_xtal,
+    get_results_and_move_to_xtal,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -231,7 +231,7 @@ def i04_default_grid_detect_and_xray_centre(
             assert isinstance(
                 grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
             ), "Specified grid params couldn't be found after grid detection"
-            yield from get_results_then_change_aperture_and_move_to_xtal(
+            yield from get_results_and_move_to_xtal(
                 composite,
                 grid_common_params.specified_grid_params,
                 flyscan_event_handler,

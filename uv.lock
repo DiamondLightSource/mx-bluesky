@@ -368,7 +368,7 @@ wheels = [
 
 [[package]]
 name = "blueapi"
-version = "1.11.5"
+version = "1.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioca", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -380,6 +380,7 @@ dependencies = [
     { name = "fastapi", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "gitpython", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "graypy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "httpx", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "observability-utils", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "opentelemetry-distro", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "opentelemetry-instrumentation-fastapi", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -389,16 +390,15 @@ dependencies = [
     { name = "pyjwt", extra = ["crypto"], marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "pyyaml", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "scanspec", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "stomp-py", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "super-state-machine", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "tiled", extra = ["client"], marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "tomlkit", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/02/8f/b1f5b8bbbd04d6a0f518f7ab2b42e4ad3877efb95f9b7bbb9280186a7975/blueapi-1.11.5.tar.gz", hash = "sha256:a5372be3979f1f14bfd9b37de2f6421652247644728f940e083891e7a2d0f7ae", size = 1812662, upload-time = "2026-01-30T13:32:54.447Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/4a/2244feddb92befa6c12f20a9c651c0a0d10c9aa1a80efe07b32c455b273c/blueapi-1.12.1.tar.gz", hash = "sha256:13ca0d312613adb45fb03bcc9737c5d9dd59f27d7aeb043e16d1a2b53005fd0d", size = 1828722, upload-time = "2026-02-26T17:02:34.869Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/45/93/2a51977443d837ffab8c574ac04fd02c223ead8c32da4c924db7e8e4d0b5/blueapi-1.11.5-py3-none-any.whl", hash = "sha256:ce4c741f7d7c6a8d412d8d2bdb94639c26f13cdb66c1ab33d6467c4f3f49302e", size = 78679, upload-time = "2026-01-30T13:32:53.294Z" },
+    { url = "https://files.pythonhosted.org/packages/03/3c/bcad3767a5ce5e2a4f5487a03c885deecabd7688aa1cb2b899fb33cad1f9/blueapi-1.12.1-py3-none-any.whl", hash = "sha256:0e834fcd4c5eb340f40303fba3b7af93164e68d85b038bb7200df63c941b9d02", size = 83456, upload-time = "2026-02-26T17:02:33.786Z" },
 ]
 
 [[package]]
@@ -812,7 +812,6 @@ dependencies = [
     { name = "daq-config-server", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "deepdiff", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "graypy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "mysql-connector-python", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "opencv-python-headless", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "ophyd", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2102,7 +2101,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types" },
-    { name = "blueapi", specifier = ">=1.8.0" },
+    { name = "blueapi", specifier = ">=1.12.0" },
     { name = "bluesky", specifier = ">=1.14.6" },
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "cachetools" },
@@ -4079,7 +4078,7 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.2.3"
+version = "0.2.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -4094,9 +4093,9 @@ dependencies = [
     { name = "pyyaml", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "typer", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/1e/cc60843c6f40655718dcf2fc9947e2b360fdfa40d4374db361643c1e5341/tiled-0.2.3.tar.gz", hash = "sha256:ce6a8acc5047e767dcc70520d166b10e0840f3e2b9970a06dcf7f9f9f1fb3f7b", size = 2493279, upload-time = "2025-12-17T20:36:45.781Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/c1/8db533a61e7f1b62e9bd67f998c29b54abfc2422bafbf518cb8b109c08f7/tiled-0.2.8.tar.gz", hash = "sha256:b3cc7537a19bf086fadb8f97e7467309a06a4fc57bb78ae892a74ed3c37c5a09", size = 2503777, upload-time = "2026-02-27T17:57:53.598Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/3c/5098fb82017078cd7324b78c34f136d389e44251719f6332abbad455815d/tiled-0.2.3-py3-none-any.whl", hash = "sha256:f926cd097a430739ad0baddb45540aaeeb868eba9650100e9ec0200ddb866ba5", size = 1846157, upload-time = "2025-12-17T20:36:42.93Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/a9/c6c646093195a6d3e40661f11b95e753eea2524a1d21d6f9f08e47eca6d4/tiled-0.2.8-py3-none-any.whl", hash = "sha256:faaac4b9aa637339208cb552ac33a0b88b0b21372aec0ffcf10ed30efef6c311", size = 1703255, upload-time = "2026-02-27T17:57:50.018Z" },
 ]
 
 [package.optional-dependencies]
