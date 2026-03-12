@@ -8,7 +8,6 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
-from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
@@ -60,8 +59,6 @@ def load_centre_collect_full(
      that satisfies the chosen selection function,
      move to that centre and do a collection with the specified parameters.
     """
-
-    get_config_client("i03").reset_cache()
 
     if not oav_params:
         oav_params = OAVParameters(context="xrayCentring")
