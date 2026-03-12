@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import numpy
+import numpy as np
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
@@ -838,9 +839,15 @@ def fake_create_rotation_devices(
     xbpm_feedback: XBPMFeedback,
     thawer: Thawer,
     beamsize: BeamsizeBase,
+    sim_run_engine: RunEngineSimulator,
 ):
-    set_mock_value(smargon.omega.max_velocity, 131)
+    set_mock_value(smargon.omega.max_velocity, 131)  # type: ignore
     undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    sim_run_engine.add_handler(
+        "read",
+        lambda msg: {"gonio-omega_axis-offset_and_phase": {"value": np.array([0, 0])}},
+        "gonio-omega_axis",
+    )
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
@@ -1306,7 +1313,9 @@ class OavGridSnapshotTestEvents:
             "oav-grid_snapshot-last_path_full_overlay": "test_1_y",
             "oav-grid_snapshot-last_path_outer": "test_2_y",
             "oav-grid_snapshot-last_saved_path": "test_3_y",
-            "gonio-omega": 0,
+            "gonio-omega": 1080,
+            "gonio-omega_axis-phase": 0.0,
+            "gonio-omega_axis-offset_and_phase": np.array([1080.0, 0.0]),
             "gonio-chi": 0,
             "gonio-x": 0,
             "gonio-y": 0,
@@ -1335,7 +1344,9 @@ class OavGridSnapshotTestEvents:
             "oav-x_direction": -1,
             "oav-y_direction": -1,
             "oav-z_direction": 1,
-            "gonio-omega": -90,
+            "gonio-omega": 990,
+            "gonio-omega_axis-phase": 270.0,
+            "gonio-omega_axis-offset_and_phase": np.array([720.0, 270.0]),
             "gonio-chi": 30,
             "gonio-x": 0,
             "gonio-y": 0,

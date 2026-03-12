@@ -53,8 +53,9 @@ def get_min_and_max_y_of_pin(
 def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
     """We need to match the 0 and -90 that the fast grid scan performs but the order in
     which we do the grid detection does not matter so we do the closest angle first."""
-    current_omega = yield from bps.rd(smargon.omega)
-    if current_omega < -45:
+    current_omega = yield from bps.rd(smargon.omega_axis.phase)
+    axis = smargon.omega_axis
+    if axis.distance(current_omega, -90) < axis.distance(current_omega, 0):
         return [-90, 0]
     else:
         return [0, -90]
@@ -102,7 +103,7 @@ def grid_detection_plan(
     grid_width_pixels = int(grid_width_microns / microns_per_pixel_x)
 
     for angle in (yield from optimum_grid_detect_angles(smargon)):
-        yield from bps.mv(smargon.omega, angle)
+        yield from bps.mv(smargon.omega_axis.phase, angle)
         # need to wait for the OAV image to update
         # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements
         yield from bps.sleep(HardwareConstants.OAV_REFRESH_DELAY)

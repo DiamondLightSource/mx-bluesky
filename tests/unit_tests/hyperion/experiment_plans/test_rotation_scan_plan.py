@@ -11,9 +11,10 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 import h5py
 import numpy as np
 import pytest
-from bluesky import Msg
+from bluesky import FailedStatus, Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.common.maths import AngleWithPhase
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.beamlines.i03 import BeamstopPositions
@@ -175,7 +176,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
 
 
 @patch(
-    "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
+    "mx_bluesky.common.experiment_plans.rotation.rotation_utils.RotationParamConstants.OMEGA_FLIP",
     new=False,
 )
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
@@ -203,6 +204,61 @@ def test_rotation_scan_calculations(test_rotation_params: RotationScan):
     assert motion_values.total_exposure_s == 360
     assert motion_values.scan_width_deg == 180
     assert motion_values.distance_to_move_deg == -180.3075
+
+
+@pytest.mark.parametrize(
+    "initial_omega, expected_start, expected_acceleration_offset,  omega_flip",
+    [
+        [0, 10, 10.00375, False],
+        [90, 10, 10.00375, False],
+        [375, 370, 370.00375, False],
+        [-150, 10, 10.00375, False],
+        [0, -10, -10.00375, True],
+        [90, -10, -10.00375, True],
+        [375, 350, 349.99625, True],
+        [-150, -10, -10.00375, True],
+    ],
+)
+def test_calculate_motion_profile_computes_values_for_wrapped_axis(
+    test_rotation_params: RotationScan,
+    initial_omega: float,
+    expected_start: float,
+    expected_acceleration_offset: float,
+    omega_flip: bool,
+):
+    with patch(
+        "mx_bluesky.common.experiment_plans.rotation.rotation_utils.RotationParamConstants.OMEGA_FLIP",
+        new=omega_flip,
+    ):
+        params = next(test_rotation_params.single_rotation_scans)
+        params.exposure_time_s = 0.2
+        params.omega_start_deg = 10
+
+        reference_angle = AngleWithPhase.wrap(initial_omega)
+        motion_values = calculate_motion_profile(
+            params,
+            0.005,  # time for acceleration
+            224,
+            reference_angle,
+        )
+
+        sign = -1 if omega_flip else 1
+
+        # Params request negative motion
+        assert motion_values.direction == "Positive" if omega_flip else "Negative"
+        assert motion_values.start_scan_deg == expected_start
+
+        assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
+        assert motion_values.shutter_time_s == 0.6
+        assert motion_values.shutter_opening_deg == 0.3  # distance moved in 0.6 s
+
+        # 1.5 * distance moved in time for accel (fudge)
+        assert motion_values.acceleration_offset_deg == 0.00375
+        assert motion_values.start_motion_deg == expected_acceleration_offset
+
+        assert motion_values.total_exposure_s == 360
+        assert motion_values.scan_width_deg == 180
+        assert motion_values.distance_to_move_deg == 180.3075 * -sign
 
 
 @patch(
@@ -261,8 +317,8 @@ async def test_full_rotation_plan_smargon_settings(
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
 
-    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)
-    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)
+    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)  # type: ignore
+    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)  # type: ignore
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
     assert await smargon.phi.user_setpoint.get_value() == params.phi_start_deg
@@ -342,7 +398,7 @@ def test_cleanup_happens(
             )
         cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
-        with pytest.raises(MyTestError) as exc:
+        with pytest.raises(FailedStatus) as exc:
             run_engine(
                 rotation_scan_internal(
                     fake_create_rotation_devices,
@@ -350,7 +406,7 @@ def test_cleanup_happens(
                     oav_parameters_for_rotation,
                 )
             )
-        assert "Experiment fails because this is a test" in exc.value.args[0]
+        assert "Experiment fails because this is a test" in str(exc.value)
         cleanup_plan.assert_called_once()
 
 
@@ -758,7 +814,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj is composite.gonio.omega
+            and msg.obj is composite.gonio.omega_axis.phase
             and msg.args[0] == omega,
         )
         msgs = assert_message_and_return_remaining(
@@ -931,8 +987,13 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             scan.omega_start_deg = 30
         mock_callback = Mock(spec=RotationISPyBCallback)
         run_engine.subscribe(mock_callback)
-        omega_put = get_mock_put(fake_create_rotation_devices.gonio.omega.user_setpoint)
-        set_mock_value(fake_create_rotation_devices.gonio.omega.acceleration_time, 0.1)
+        omega_put = get_mock_put(
+            fake_create_rotation_devices.gonio.omega.user_setpoint  # type: ignore
+        )
+        set_mock_value(
+            fake_create_rotation_devices.gonio.omega.acceleration_time,  # type: ignore
+            0.1,
+        )
         with (
             patch("bluesky.plan_stubs.wait", autospec=True),
             patch(
