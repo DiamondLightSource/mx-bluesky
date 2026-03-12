@@ -349,6 +349,12 @@ def pytest_runtest_setup(item):
     else:
         print("Skipping log setup for log test - deleting existing handlers")
         _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        )
+        DODAL_LOGGER.addHandler(handler)
 
 
 def pytest_runtest_teardown(item):
