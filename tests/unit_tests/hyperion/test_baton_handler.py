@@ -35,7 +35,7 @@ from mx_bluesky.common.utils.exceptions import (
     WarningError,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, Wait
+from mx_bluesky.hyperion._plan_runner_params import RobotUnload, UDCCleanup, Wait
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
@@ -918,21 +918,21 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     return_value=[],
 )
-def test_run_udc_when_requested_calls_udc_cleanup_with_no_visit(
+def test_run_udc_when_requested_calls_robot_unload_with_no_visit(
     mock_create_params: MagicMock,
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
 ):
     udc_runner.decode_and_execute = MagicMock()
     run_udc_when_requested(bluesky_context, udc_runner)
-    udc_runner.decode_and_execute.assert_called_with(None, [UDCCleanup()])
+    udc_runner.decode_and_execute.assert_any_call(None, [RobotUnload()])
 
 
 @patch(
     "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
     side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
 )
-def test_run_udc_when_requested_calls_udc_cleanup_with_visit(
+def test_run_udc_when_requested_calls_robot_unload_with_visit(
     mock_create_params: MagicMock,
     bluesky_context: BlueskyContext,
     udc_runner: PlanRunner,
@@ -943,7 +943,57 @@ def test_run_udc_when_requested_calls_udc_cleanup_with_visit(
 
     udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan_with_visit_return)
     run_udc_when_requested(bluesky_context, udc_runner)
-    udc_runner.decode_and_execute.assert_called_with("cm12345-12", [UDCCleanup()])
+    udc_runner.decode_and_execute.assert_any_call("cm12345-12", [RobotUnload()])
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
+)
+def test_robot_unload_is_not_called_after_plan_error_raised_but_udc_cleanup_is_called(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    def dummy_plan_with_exception(_, parameter_list) -> MsgGenerator:
+        if isinstance(parameter_list[0], Wait):
+            raise PlanError("Simulated exception")
+        else:
+            yield from bps.null()
+
+    udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan_with_exception)
+
+    with pytest.raises(PlanError, match="Simulated exception"):
+        run_udc_when_requested(bluesky_context, udc_runner)
+
+    udc_runner.decode_and_execute.assert_has_calls(
+        [call(None, [AGAMEMNON_WAIT_INSTRUCTION]), call(None, [UDCCleanup()])]
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
+)
+def test_robot_unload_is_called_after_normal_completion_and_udc_cleanup_is_called(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    def dummy_plan(_, __) -> MsgGenerator:
+        yield from bps.null()
+
+    udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan)
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    udc_runner.decode_and_execute.assert_has_calls(
+        [
+            call(None, [AGAMEMNON_WAIT_INSTRUCTION]),
+            call(None, [RobotUnload()]),
+            call(None, [UDCCleanup()]),
+        ]
+    )
 
 
 @patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")

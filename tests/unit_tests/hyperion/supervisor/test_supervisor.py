@@ -17,7 +17,12 @@ from mx_bluesky.common.parameters.components import (
 )
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
-from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion._plan_runner_params import (
+    RobotUnload,
+    UDCCleanup,
+    UDCDefaultState,
+    Wait,
+)
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
@@ -145,6 +150,21 @@ def test_decode_and_execute_default_state(
     )
 
 
+def test_decode_and_execute_robot_unload(
+    mock_blueapi_client: MagicMock, runner: SupervisorRunner
+):
+    runner.context.run_engine(runner.decode_and_execute(TEST_VISIT, [RobotUnload()]))
+
+    mock_blueapi_client.run_task.assert_called_once_with(
+        TaskRequest(
+            name="robot_unload",
+            params={"visit": TEST_VISIT},
+            instrument_session=TEST_VISIT,
+        ),
+        on_event=ANY,
+    )
+
+
 def test_decode_and_execute_udc_cleanup(
     mock_blueapi_client: MagicMock, runner: SupervisorRunner
 ):
@@ -162,7 +182,7 @@ def test_decode_and_execute_udc_cleanup(
     mock_blueapi_client.run_task.assert_called_once_with(
         TaskRequest(
             name="clean_up_udc",
-            params={"visit": TEST_VISIT},
+            params={},
             instrument_session=TEST_VISIT,
         ),
         on_event=ANY,

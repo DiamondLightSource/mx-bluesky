@@ -18,7 +18,11 @@ from mx_bluesky.common.utils.context import (
 )
 from mx_bluesky.common.utils.exceptions import BeamlineCheckFailureError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState
+from mx_bluesky.hyperion._plan_runner_params import (
+    RobotUnload,
+    UDCCleanup,
+    UDCDefaultState,
+)
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
@@ -102,12 +106,13 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
             current_visit = yield from _fetch_and_process_agamemnon_instruction(
                 baton, runner, current_visit
             )
-        yield from runner.decode_and_execute(current_visit, [UDCCleanup()])
+        yield from runner.decode_and_execute(current_visit, [RobotUnload()])
 
-    def release_baton() -> MsgGenerator:
+    def clean_up_and_release_baton() -> MsgGenerator:
         # If hyperion has given up the baton itself we need to also release requested
         # user so that hyperion doesn't think we're requested again
         baton = _get_baton(context)
+        yield from runner.decode_and_execute(None, [UDCCleanup()])
         previous_requested_user = yield from _unrequest_baton(baton)
         LOGGER.debug("Hyperion no longer current baton holder.")
         yield from bps.abs_set(baton.current_user, NO_USER, wait=True)
@@ -125,7 +130,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
     def collect_then_release() -> MsgGenerator:
         yield from bpp.contingency_wrapper(
             collect(),
-            final_plan=release_baton,
+            final_plan=clean_up_and_release_baton,
         )
 
     context.run_engine(acquire_baton())

@@ -8,6 +8,7 @@ See Also:
 
 from dodal.device_manager import DeviceManager
 from dodal.devices.baton import Baton
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.utils import BeamlinePrefix, get_beamline_name
@@ -20,26 +21,25 @@ devices = DeviceManager()
 
 @devices.factory()
 def baton() -> Baton:
-    """Get the i03 baton device, instantiate it if it hasn't already been.
-    If this is called when already instantiated in i03, it will return the existing object.
-    """
     return Baton(f"{PREFIX.beamline_prefix}-CS-BATON-01:")
 
 
 @devices.factory()
 def synchrotron() -> Synchrotron:
-    """Get the i03 Synchrotron device, instantiate it if it hasn't already been.
-    If this is called when already instantiated in i03, it will return the existing object.
-    """
     return Synchrotron()
 
 
 @devices.factory()
 def xbpm_feedback() -> XBPMFeedback:
-    """Get the i03 XBPM feeback device, instantiate it if it hasn't already been.
-    If this is called when already instantiated in i03, it will return the existing object.
-    """
     return XBPMFeedback(
         PREFIX.beamline_prefix,
         "xbpm_feedback",
+    )
+
+
+@devices.factory()
+def detector_motion() -> DetectorMotion:
+    return DetectorMotion(
+        device_prefix=f"{PREFIX.beamline_prefix}-MO-DET-01:",
+        pmac_prefix=f"{PREFIX.beamline_prefix}-MO-PMAC-02:",
     )
