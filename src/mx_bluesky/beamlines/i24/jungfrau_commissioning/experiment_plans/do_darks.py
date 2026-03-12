@@ -2,7 +2,7 @@ import bluesky.preprocessors as bpp
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.jungfrau import Jungfrau
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
@@ -25,7 +25,7 @@ def do_pedestal_darks(
     pedestal_frame: PositiveInt = 20,
     pedestal_loops: PositiveInt = 200,
     filename: str = "pedestal_darks",
-    jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
+    jungfrau: Jungfrau = inject("jungfrau"),
 ) -> MsgGenerator:
     """Acquire darks in pedestal mode, using dynamic gain mode. This calibrates the offsets
     for the jungfrau, and must be performed before acquiring real data in dynamic gain mode.
@@ -86,7 +86,7 @@ def do_non_pedestal_darks(
     exp_time_s: float = 0.001,
     total_triggers: PositiveInt = 1000,
     filename: str = "darks",
-    jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
+    jungfrau: Jungfrau = inject("jungfrau"),
 ) -> MsgGenerator:
     """Internally take a set of images at a given gain mode.
 

@@ -1,6 +1,6 @@
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.jungfrau import Jungfrau
 from ophyd_async.core import (
     WatchableAsyncStatus,
 )
@@ -20,7 +20,7 @@ def do_external_acquisition(
     gain_mode: GainMode,
     total_triggers: PositiveInt = 1,
     wait: bool = False,
-    jungfrau: CommissioningJungfrau = inject("commissioning_jungfrau"),
+    jungfrau: Jungfrau = inject("jungfrau"),
 ) -> MsgGenerator[WatchableAsyncStatus]:
     """
     Kickoff external triggering on the Jungfrau, and optionally wait for completion.

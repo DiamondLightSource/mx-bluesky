@@ -10,6 +10,7 @@ from mx_bluesky.common.utils.log import LOGGER
 READING_DUMP_FILENAME = "collection_info.json"
 from time import sleep
 
+
 class JsonMetadataWriter(CallbackBase):
     """Callback class to handle the creation of metadata json files for commissioning.
 
@@ -51,7 +52,9 @@ class JsonMetadataWriter(CallbackBase):
         event_descriptor = self.descriptors[doc["descriptor"]]
 
         if event_descriptor.get("name") == PlanNameConstants.ROTATION_DEVICE_READ:
-            sleep(1) #todo investigate race condition to see if setting file name and file path is happening properly
+            sleep(
+                1
+            )  # todo investigate race condition to see if setting file name and file path is happening properly
             assert self.parameters is not None
             data = doc.get("data")
             assert data is not None
@@ -59,10 +62,10 @@ class JsonMetadataWriter(CallbackBase):
             self.energy_in_kev = data.get("dcm-energy_in_keV")
             LOGGER.info(f"at event doc looks like {doc}")
             self.detector_distance_mm = data.get("det_stage-z")
-            assert data.get("commissioning_jungfrau-_writer-file_path"), (
+            assert data.get("jungfrau-odin-file_path"), (
                 "No detector writer path was found"
             )
-            self.final_path = Path(data.get("commissioning_jungfrau-_writer-file_path"))
+            self.final_path = Path(data.get("jungfrau-odin-file_path"))
 
             LOGGER.info(
                 f"Metadata writer received parameters, energy_in_kev: {self.energy_in_kev}, wavelength: {self.wavelength_in_a}, det_distance_mm: {self.detector_distance_mm}, file path: {self.final_path}"

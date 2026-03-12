@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
 from itertools import accumulate
 from typing import Annotated, Any, Self
@@ -75,7 +74,7 @@ class RotationExperiment(DiffractionExperiment):
         if self.run_number:
             optional_args["run_number"] = self.run_number
         assert self.detector_distance_mm is not None
-        #os.makedirs(self.storage_directory, exist_ok=True)
+        # os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,

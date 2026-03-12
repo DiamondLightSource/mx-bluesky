@@ -6,9 +6,9 @@ from bluesky.preprocessors import run_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.beamlines.i24.aperture import AperturePositions
 from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
+from dodal.devices.jungfrau import Jungfrau
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from ophyd_async.fastcs.jungfrau import (
@@ -218,7 +218,7 @@ def single_rotation_plan(
                 shutter_opening_deg=motion_values.shutter_opening_deg,
                 shutter_opening_s=motion_values.shutter_time_s,
                 ttl_input_for_detector_to_use=composite.zebra.mapping.outputs.TTL_JUNGFRAU,
-                group=PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC
+                group=PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC,
             )
 
             yield from bps.wait(PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC)
@@ -240,14 +240,14 @@ def single_rotation_plan(
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
                     composite.det_stage.z,
-                    composite.commissioning_jungfrau._writer.file_path,  # noqa: SLF001 N
-                    composite.commissioning_jungfrau._writer.file_name,  # noqa: SLF001 N
+                    composite.jungfrau.odin.file_path,  # noqa: SLF001 N
+                    composite.jungfrau.odin.file_name,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,
             )
 
             yield from fly_jungfrau(
-                composite.commissioning_jungfrau,
+                composite.jungfrau,
                 _jf_trigger_info,
                 GainMode.DYNAMIC,
                 wait=False,
@@ -273,7 +273,7 @@ def single_rotation_plan(
             final_plan=partial(
                 _cleanup_plan,
                 composite.zebra,
-                composite.commissioning_jungfrau,
+                composite.jungfrau,
                 composite.sample_shutter,
             ),
         )
@@ -283,7 +283,7 @@ def single_rotation_plan(
 
 def _cleanup_plan(
     zebra: Zebra,
-    jf: CommissioningJungfrau,
+    jf: Jungfrau,
     zebra_shutter: ZebraShutter,
     group="rotation cleanup",
 ):

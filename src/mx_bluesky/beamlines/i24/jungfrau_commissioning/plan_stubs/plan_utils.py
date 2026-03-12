@@ -4,7 +4,7 @@ from typing import cast
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.jungfrau import Jungfrau
 from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
@@ -17,7 +17,7 @@ JF_COMPLETE_GROUP = "JF complete"
 
 
 def fly_jungfrau(
-    jungfrau: CommissioningJungfrau,
+    jungfrau: Jungfrau,
     trigger_info: TriggerInfo,
     gain_mode: GainMode,
     wait: bool = False,
@@ -54,7 +54,7 @@ def fly_jungfrau(
     if acq_type == AcquisitionType.PEDESTAL:
         LOGGER.info("Waiting 0.3s before turning on pedestal mode again")
         yield from bps.sleep(0.3)
-        yield from bps.abs_set(jungfrau.drv.pedestal_mode_state, PedestalMode.ON)
+        yield from bps.abs_set(jungfrau.drv.pedestal_mode, PedestalMode.ON)
 
     LOGGER.info("Detector prepared")
     if read_hardware_after_prepare_plan:
