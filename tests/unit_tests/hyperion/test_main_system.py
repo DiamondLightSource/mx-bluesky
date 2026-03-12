@@ -11,6 +11,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 import pytest
 from blueapi.config import ApplicationConfig
 from dodal.devices.baton import Baton
+from dodal.devices.synchrotron import Synchrotron
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
@@ -267,7 +268,9 @@ def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown
         plan_runner = mock_create_udc_server.mock_calls[0].args[0]
         context = plan_runner.context
         baton = find_device_in_context(context, "baton", Baton)
+        synchrotron = find_device_in_context(context, "synchrotron", Synchrotron)
         set_mock_value(baton.requested_user, HYPERION_USER)
+        set_mock_value(synchrotron.machine_user_countdown, 1200)
         while len(mock_create_parameters_from_agamemnon.mock_calls) == 0:
             sleep(0.2)
         os.kill(os.getpid(), signal.SIGTERM)
