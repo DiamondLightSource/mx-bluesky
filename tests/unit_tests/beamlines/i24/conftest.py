@@ -74,3 +74,8 @@ def mirrors() -> FocusMirrorsMode:
     set_mock_value(mirrors.horizontal, HFocusMode.FOCUS_10)
     set_mock_value(mirrors.vertical, VFocusMode.FOCUS_10)
     return mirrors
+
+
+@pytest.fixture()
+def use_i24_beamline(monkeypatch):
+    monkeypatch.setenv("BEAMLINE", "i24")

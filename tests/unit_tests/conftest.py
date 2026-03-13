@@ -241,7 +241,7 @@ def run_engine_with_subs(
 
 
 @pytest.fixture
-def test_fgs_params(tmp_path):
+def test_fgs_params(tmp_path, patch_beamline_env_variable):
     return SpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
