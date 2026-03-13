@@ -9,7 +9,7 @@ from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any, TypeVar
+from typing import Any, TypedDict, TypeVar
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -85,9 +85,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.beamlines.i04.external_interaction.config_server import (
-    get_i04_config_client,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -111,13 +108,15 @@ from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from tests.test_data.oav import (
+    TEST_DISPLAY_CONFIG,
+    TEST_OAV_CENTRING_JSON,
+    TEST_OAV_ZOOM_LEVELS,
+)
 
 pytest_plugins = ["tests.expeye_helpers"]
 
@@ -229,8 +228,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+    ("ZOOM_PARAMS_FILE", TEST_OAV_ZOOM_LEVELS),
+    ("DISPLAY_CONFIG", TEST_DISPLAY_CONFIG),
 ]
 
 
@@ -779,13 +778,19 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
     return Beamsize(aperture_scatterguard, name="beamsize")
 
 
+class ConfigFilesForTests(TypedDict):
+    zoom_params_file: str
+    oav_config_json: str
+    display_config: str
+
+
 @pytest.fixture()
 def test_config_files():
-    return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-        "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display.configuration",
-    }
+    return ConfigFilesForTests(
+        zoom_params_file=TEST_OAV_ZOOM_LEVELS,
+        oav_config_json=TEST_OAV_CENTRING_JSON,
+        display_config=TEST_DISPLAY_CONFIG,
+    )
 
 
 @pytest.fixture()
@@ -1748,26 +1753,6 @@ def assert_images_pixelwise_equal(actual, expected):
             assert bytes_expected_bytes, (
                 f"Actual and expected images differ, {actual} != {expected}"
             )
-
-
-IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
-    get_hyperion_config_client,
-    get_i04_config_client,
-]
-
-
-@pytest.fixture(autouse=True)
-def mock_mx_config_server():
-    # Don't actually talk to central service during unit tests, and reset caches between test
-
-    for client in IMPLEMENTED_CONFIG_CLIENTS:
-        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
-
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=fake_config_server_get_file_contents,
-    ):
-        yield
 
 
 @pytest.fixture(autouse=True)
