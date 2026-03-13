@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Configuration &#8212; mx-bluesky 1.6.3.dev36+g2f4e3d550 documentation</title>
+    <title>Configuration &#8212; mx-bluesky 1.6.3.dev37+g023dda5ad documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=11f480ba"></script>
+    <script src="../../_static/documentation_options.js?v=53c37946"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -535,9 +535,10 @@ moved to the data collection position.</p></td>
 </section>
 <section id="config-server">
 <h2>Config Server<a class="headerlink" href="#config-server" title="Link to this heading">#</a></h2>
-<p>If the <a class="reference external" href="https://github.com/DiamondLightSource/daq-config-server/">Config Server</a> is deployed and running, Hyperion is configured to use it in preference to reading the
-<code class="docutils literal notranslate"><span class="pre">domain.properties</span></code> file directly. However in the event of the config server being unavailable Hyperion will fall
-back to reading it from the filesystem.</p>
+<p>Hyperion is configured to use the daq-config-server to read the <code class="docutils literal notranslate"><span class="pre">domain.properties</span></code> and <code class="docutils literal notranslate"><span class="pre">beamlineParameters</span></code> files.
+These are read through a client that caches requests to reduce load on the server. When either of these files is changed,
+the cache needs to be cleared before the changes will be picked up. To do this, when in in-process UDC mode, restart
+Hyperion. When in blueapi mode, restart the blueapi environment.</p>
 <p>Note that currently the rest of the configuration files are not read from the config server, but the intention is that
 ultimately it will be the source of all configuration and the remainder of the files in <code class="docutils literal notranslate"><span class="pre">daq_configuration</span></code> will be
 moved over to it.</p>
