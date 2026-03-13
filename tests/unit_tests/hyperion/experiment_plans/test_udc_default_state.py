@@ -5,6 +5,9 @@ import pytest
 from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from daq_config_server.models.feature_settings.hyperion_feature_settings import (
+    HyperionFeatureSettings,
+)
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
@@ -30,7 +33,7 @@ from mx_bluesky.hyperion.experiment_plans.udc_default_state import (
     UDCDefaultDevices,
     move_to_udc_default_state,
 )
-from mx_bluesky.hyperion.parameters.constants import CONST, HyperionFeatureSettings
+from mx_bluesky.hyperion.parameters.constants import CONST
 
 
 @pytest.fixture
@@ -91,14 +94,12 @@ async def default_devices(
 @pytest.fixture
 def feature_flags_with_beamstop_diode_check():
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_config_client"
-    ) as mock_get_config_client:
-        mock_get_config_client.return_value.get_feature_flags.return_value = (
-            HyperionFeatureSettings(
-                BEAMSTOP_DIODE_CHECK=True,
-            )
+        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_feature_settings"
+    ) as mock_get_feature_settings:
+        mock_get_feature_settings.return_value = HyperionFeatureSettings(
+            BEAMSTOP_DIODE_CHECK=True,
         )
-        yield mock_get_config_client.return_value.get_feature_flags.return_value
+        yield mock_get_feature_settings.return_value
 
 
 async def test_given_cryostream_temp_is_too_high_then_exception_raised(
@@ -202,14 +203,12 @@ def test_beamstop_check_is_called_with_detector_distances_from_config_server(
     max_z: float,
 ):
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_config_client"
-    ) as mock_get_config_client:
-        mock_get_config_client.return_value.get_feature_flags.return_value = (
-            HyperionFeatureSettings(
-                BEAMSTOP_DIODE_CHECK=True,
-                DETECTOR_DISTANCE_LIMIT_MAX_MM=max_z,
-                DETECTOR_DISTANCE_LIMIT_MIN_MM=min_z,
-            )
+        "mx_bluesky.hyperion.experiment_plans.udc_default_state.get_hyperion_feature_settings"
+    ) as mock_get_feature_settings:
+        mock_get_feature_settings.return_value = HyperionFeatureSettings(
+            BEAMSTOP_DIODE_CHECK=True,
+            DETECTOR_DISTANCE_LIMIT_MAX_MM=max_z,
+            DETECTOR_DISTANCE_LIMIT_MIN_MM=min_z,
         )
         sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
     mock_move_beamstop_in.assert_called_once_with(ANY, ANY, min_z, max_z)

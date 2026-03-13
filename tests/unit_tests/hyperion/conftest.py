@@ -140,7 +140,7 @@ def test_omega_flip(request):
 @pytest.fixture
 def fgs_params_use_panda(tmp_path):
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new="tests/test_data/test_domain_properties_with_panda",
     ):
         params = raw_params_from_file(
