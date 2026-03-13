@@ -812,6 +812,7 @@ dependencies = [
     { name = "daq-config-server", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "deepdiff", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "graypy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "mysql-connector-python", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "opencv-python-headless", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "ophyd", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
