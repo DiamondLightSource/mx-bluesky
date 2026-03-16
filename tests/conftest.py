@@ -395,6 +395,16 @@ def i03_beamline_parameters():
             yield params
 
 
+@pytest.fixture(autouse=True)
+def test_beamline_parameters():
+    """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"test": "tests/test_data/test_beamline_parameters.txt"},
+    ) as params:
+        yield params
+
+
 @pytest.fixture
 def hyperion_fgs_params(tmp_path):
     return HyperionSpecifiedThreeDGridScan(
