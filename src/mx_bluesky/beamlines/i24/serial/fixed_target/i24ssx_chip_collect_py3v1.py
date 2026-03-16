@@ -18,7 +18,7 @@ from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.beamlines.i24.pmac import PMAC
-from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.hutch_shutter import InterlockedHutchShutter, ShutterDemand
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
@@ -267,7 +267,7 @@ def start_i24(
     backlight: DualBacklight,
     beamstop: Beamstop,
     detector_stage: YZStage,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     parameters: FixedTargetParameters,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
@@ -386,7 +386,7 @@ def start_i24(
 def finish_i24(
     zebra: Zebra,
     pmac: PMAC,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     dcm: DCM,
     detector_stage: YZStage,
     parameters: FixedTargetParameters,
@@ -439,7 +439,7 @@ def main_fixed_target_plan(
     backlight: DualBacklight,
     beamstop: Beamstop,
     detector_stage: YZStage,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
@@ -548,7 +548,7 @@ def collection_complete_plan(
 def tidy_up_after_collection_plan(
     zebra: Zebra,
     pmac: PMAC,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     dcm: DCM,
     detector_stage: YZStage,
     parameters: FixedTargetParameters,
@@ -586,7 +586,7 @@ def run_fixed_target_plan(
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
     detector_stage: YZStage = inject("detector_motion"),
-    shutter: HutchShutter = inject("shutter"),
+    shutter: InterlockedHutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
@@ -631,7 +631,7 @@ def run_plan_in_wrapper(
     backlight: DualBacklight,
     beamstop: Beamstop,
     detector_stage: YZStage,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
