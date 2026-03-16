@@ -16,7 +16,7 @@ from dodal.devices.cryostream import (
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
-from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.hutch_shutter import InterlockedHutchShutter, ShutterDemand
 from dodal.devices.motors import XYZStage
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_detector import OAV
@@ -49,7 +49,7 @@ class UDCDefaultDevices(BeamstopCheckDevices):
     cryostream: OxfordCryoStream
     cryostream_gantry: CryoStreamGantry
     fluorescence_det_motion: FluorescenceDetector
-    hutch_shutter: HutchShutter
+    hutch_shutter: InterlockedHutchShutter
     lower_gonio: XYZStage
     robot: BartRobot
     scintillator: Scintillator

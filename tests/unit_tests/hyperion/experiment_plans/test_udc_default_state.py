@@ -19,7 +19,11 @@ from dodal.devices.cryostream import (
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
-from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.hutch_shutter import (
+    HutchInterlock,
+    InterlockedHutchShutter,
+    ShutterDemand,
+)
 from dodal.devices.motors import XYZStage
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.robot import BartRobot, PinMounted
@@ -64,7 +68,7 @@ async def default_devices(
         cryostream = OxfordCryoStream("")
         cryojet = OxfordCryoJet("")
         fluo = FluorescenceDetector("")
-        hutch_shutter = HutchShutter("")
+        hutch_shutter = InterlockedHutchShutter("", interlock=HutchInterlock(""))
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
         collimation_table = CollimationTable("")
         lower_gonio = XYZStage("")
@@ -134,16 +138,20 @@ async def test_scintillator_is_moved_out_before_aperture_scatterguard_moved_in(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "scin-selected_pos"
-        and msg.args[0] == InOut.OUT,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "scin-selected_pos"
+            and msg.args[0] == InOut.OUT
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "aperture_scatterguard-selected_aperture"
+            and msg.args[0] == ApertureValue.SMALL
+        ),
     )
 
 
@@ -231,10 +239,12 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
     def assert_expected_set(signal: Signal | Motor | Device, value, group):
         return assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == signal.name
-            and msg.args[0] == value
-            and msg.kwargs["group"] == group,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == signal.name
+                and msg.args[0] == value
+                and msg.kwargs["group"] == group
+            ),
         )
 
     msgs = assert_expected_set(
@@ -278,8 +288,9 @@ def test_udc_pre_and_post_groups_contains_expected_items_and_are_waited_on_befor
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == post_beamstop_group,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == post_beamstop_group
+        ),
     )
 
 
@@ -344,9 +355,11 @@ def test_udc_default_state_unloads_if_sample_present(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj == default_devices.scintillator.selected_pos
-        and msg.args[0] == InOut.OUT,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj == default_devices.scintillator.selected_pos
+            and msg.args[0] == InOut.OUT
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "unload"
@@ -374,21 +387,26 @@ def test_default_state_closes_sample_shutter_before_open_hutch_shutter(
     msgs = sim_run_engine.simulate_plan(move_to_udc_default_state(default_devices))
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is default_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.CLOSE,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is default_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.CLOSE
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == msgs[0].kwargs["group"],
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is default_devices.hutch_shutter
-        and msg.args[0] == ShutterDemand.OPEN
-        and msg.kwargs["group"] == "pre_beamstop_check",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is default_devices.hutch_shutter
+            and msg.args[0] == ShutterDemand.OPEN
+            and msg.kwargs["group"] == "pre_beamstop_check"
+        ),
     )
 
 

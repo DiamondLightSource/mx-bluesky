@@ -5,7 +5,7 @@ from unittest.mock import ANY, MagicMock, call, mock_open, patch
 import pytest
 from bluesky.utils import FailedStatus
 from dodal.devices.beamlines.i24.pmac import PMAC
-from dodal.devices.hutch_shutter import HutchShutter
+from dodal.devices.hutch_shutter import InterlockedHutchShutter
 from dodal.devices.zebra.zebra import Zebra
 from ophyd_async.core import (
     callback_on_mock_put,
@@ -174,7 +174,7 @@ def test_start_i24_with_eiger(
     fake_caput,
     fake_dcid,
     zebra: Zebra,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     run_engine,
     aperture,
     backlight,
