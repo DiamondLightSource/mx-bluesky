@@ -16,7 +16,11 @@ from dodal.devices.cryostream import (
 from dodal.devices.cryostream import InOut as CryoInOut
 from dodal.devices.fluorescence_detector_motion import FluorescenceDetector
 from dodal.devices.fluorescence_detector_motion import InOut as FlouInOut
-from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.hutch_shutter import (
+    HutchInterlock,
+    InterlockedHutchShutter,
+    ShutterDemand,
+)
 from dodal.devices.motors import XYZStage
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.robot import BartRobot, PinMounted
@@ -61,7 +65,7 @@ async def default_devices(
         cryostream = OxfordCryoStream("")
         cryojet = OxfordCryoJet("")
         fluo = FluorescenceDetector("")
-        hutch_shutter = HutchShutter("")
+        hutch_shutter = InterlockedHutchShutter("", interlock=HutchInterlock(""))
         scintillator = Scintillator("", MagicMock(), MagicMock(), name="scin")
         collimation_table = CollimationTable("")
         lower_gonio = XYZStage("")
