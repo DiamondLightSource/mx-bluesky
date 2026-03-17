@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.1.1.dev21+g8d1478372"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#8d14783727b7a89465bf5d571b25c3ce35c03399" }
+version = "2.1.1.dev60+ga5f0b7631"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1509_use_config_server_for_detector_lut#a5f0b7631b804645f9e9b47c3383801ff4b2263c" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2109,7 +2109,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.1.2" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=mx_bluesky_1509_use_config_server_for_detector_lut" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
