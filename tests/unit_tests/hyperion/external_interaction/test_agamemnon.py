@@ -20,12 +20,11 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _get_withenergy_parameters_from_agamemnon,
     _get_withvisit_parameters_from_agamemnon,
     _instruction_and_data,
-    _PinType,
-    _SinglePin,
     compare_params,
     create_parameters_from_agamemnon,
     update_params_from_agamemnon,
 )
+from mx_bluesky.hyperion.external_interaction.pin_type import PinType, SinglePin
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
@@ -40,7 +39,7 @@ from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 def test_given_various_pin_formats_then_pin_width_as_expected(
     num_wells, well_width, buffer, expected_width
 ):
-    pin = _PinType(num_wells, well_width, buffer)
+    pin = PinType(num_wells, well_width, buffer)
     assert pin.full_width == expected_width
 
 
@@ -60,20 +59,20 @@ def set_up_agamemnon_params(
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
         _get_pin_type_from_agamemnon_collect_parameters(set_up_agamemnon_params())
-        == _SinglePin()
+        == SinglePin()
     )
 
 
 @pytest.mark.parametrize(
     "loop_name, expected_loop",
     [
-        ("multipin_6x50+9", _PinType(6, 50, 9)),
-        ("multipin_6x25.8+8.6", _PinType(6, 25.8, 8.6)),
-        ("multipin_9x31+90", _PinType(9, 31, 90)),
+        ("multipin_6x50+9", PinType(6, 50, 9)),
+        ("multipin_6x25.8+8.6", PinType(6, 25.8, 8.6)),
+        ("multipin_9x31+90", PinType(9, 31, 90)),
     ],
 )
 def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
-    loop_name: str, expected_loop: _PinType
+    loop_name: str, expected_loop: PinType
 ):
     assert (
         _get_pin_type_from_agamemnon_collect_parameters(
@@ -99,7 +98,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
         _get_pin_type_from_agamemnon_collect_parameters(
             set_up_agamemnon_params(loop_name)
         )
-        == _SinglePin()
+        == SinglePin()
     )
     mock_logger.warning.assert_called_once()
 
@@ -165,7 +164,7 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
 ):
     configure_mock_agamemnon(mock_requests, "multipin_6x50+98.1")
     instruction, params = _instruction_and_data(_get_next_instruction("i03"))
-    assert _get_pin_type_from_agamemnon_collect_parameters(params) == _PinType(
+    assert _get_pin_type_from_agamemnon_collect_parameters(params) == PinType(
         6, 50, 98.1
     )
 
