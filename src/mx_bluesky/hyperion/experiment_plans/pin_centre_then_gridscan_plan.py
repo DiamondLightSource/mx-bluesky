@@ -59,7 +59,7 @@ def pin_centre_then_gridscan_plan(
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    """Plan that performs a pin tip centre followed by a gridscan to determine the centres of interest"""
+    """Plan that performs a pin tip centre followed by a gridscan to determine the centre of interest."""
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,

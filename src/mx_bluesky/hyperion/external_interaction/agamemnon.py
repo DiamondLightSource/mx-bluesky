@@ -1,4 +1,3 @@
-import dataclasses
 import json
 import os
 import re
@@ -24,6 +23,7 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion._plan_runner_params import Wait
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
+from mx_bluesky.hyperion.external_interaction.pin_type import PinType, SinglePin
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 T = TypeVar("T", bound=WithVisit)
@@ -36,38 +36,6 @@ MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(
 class _InstructionType(StrEnum):
     WAIT = "wait"
     COLLECT = "collect"
-
-
-@dataclasses.dataclass
-class _PinType:
-    expected_number_of_crystals: int
-    single_well_width_um: float
-    tip_to_first_well_um: float = 0
-
-    @property
-    def full_width(self) -> float:
-        """This is the "width" of the area where there may be samples.
-
-        From a pin perspective this is along the length of the pin but we use width here as
-        we mount the sample at 90 deg to the optical camera.
-
-        We calculate the full width by adding all the gaps between wells then assuming
-        there is a buffer of {tip_to_first_well_um} either side too. In reality the
-        calculation does not need to be very exact as long as we get a width that's good
-        enough to use for optical centring and XRC grid size.
-        """
-        return (self.expected_number_of_crystals - 1) * self.single_well_width_um + (
-            2 * self.tip_to_first_well_um
-        )
-
-
-class _SinglePin(_PinType):
-    def __init__(self):
-        super().__init__(1, GridscanParamConstants.WIDTH_UM)
-
-    @property
-    def full_width(self) -> float:
-        return self.single_well_width_um
 
 
 def create_parameters_from_agamemnon() -> Sequence[BaseModel]:
@@ -141,7 +109,7 @@ def update_params_from_agamemnon(parameters: T) -> T:
             parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
             parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
             parameters.select_centres.n = pin_type.expected_number_of_crystals
-            if pin_type != _SinglePin():
+            if pin_type != SinglePin():
                 # Rotation snapshots will be generated from the gridscan snapshots,
                 # no need to specify snapshot omega.
                 parameters.multi_rotation_scan.snapshot_omegas_deg = []
@@ -171,13 +139,13 @@ def _get_parameters_from_url(url: str) -> dict:
 
 def _get_pin_type_from_agamemnon_collect_parameters(
     collect_parameters: dict,
-) -> _PinType:
+) -> PinType:
     loop_type_name: str | None = collect_parameters["sample"]["loopType"]
     if loop_type_name:
         regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
         if regex_search:
             wells, well_size, tip_to_first_well = regex_search.groups()
-            return _PinType(int(wells), float(well_size), float(tip_to_first_well))
+            return PinType(int(wells), float(well_size), float(tip_to_first_well))
         else:
             loop_type_message = (
                 f"Agamemnon loop type of {loop_type_name} not recognised"
@@ -185,7 +153,7 @@ def _get_pin_type_from_agamemnon_collect_parameters(
             if loop_type_name.startswith(MULTIPIN_PREFIX):
                 raise ValueError(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
             LOGGER.warning(f"{loop_type_message}, assuming single pin")
-    return _SinglePin()
+    return SinglePin()
 
 
 def _get_next_instruction(beamline: str) -> dict:

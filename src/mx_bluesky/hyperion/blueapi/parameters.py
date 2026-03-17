@@ -2,13 +2,19 @@
 This module contains the parameter models exported via the hyperion-blueapi REST interface.
 """
 
+from typing import Any
+
 from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
 from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.blueapi.mixins import WithCentreSelection
+from mx_bluesky.hyperion.external_interaction.pin_type import SinglePin
+from mx_bluesky.hyperion.parameters.constants import HyperionConstants
+from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
@@ -74,3 +80,34 @@ def load_centre_collect_to_internal(
     params_as_dict = external_params.model_dump()
     params_as_dict["parameter_model_version"] = get_param_version()
     return LoadCentreCollect(**params_as_dict)
+
+
+def pin_tip_centre_then_xray_centre_to_internal(
+    visit: str,
+    storage_directory: str,
+    sample_id: int,
+    sample_puck: int,
+    sample_pin: int,
+) -> PinTipCentreThenXrayCentre:
+    params_as_dict: dict[str, Any] = {
+        "visit": visit,
+        "storage_directory": storage_directory,
+    }
+    params_as_dict["file_name"] = "xrc"
+    params_as_dict["parameter_model_version"] = get_param_version()
+    params_as_dict["demand_energy_ev"] = None
+    # TODO sample_id must not be none?
+    params_as_dict["sample_id"] = sample_id
+    params_as_dict["sample_puck"] = sample_puck
+    params_as_dict["sample_pin"] = sample_pin
+    params_as_dict["detector_distance_mm"] = (
+        HyperionConstants.DEFAULT_DETECTOR_DISTANCE_MM
+    )
+    pin = SinglePin()
+    params_as_dict["tip_offset_um"] = pin.full_width / 2
+    params_as_dict["grid_width_um"] = pin.full_width
+    params_as_dict["exposure_time_s"] = GridscanParamConstants.EXPOSURE_TIME_S
+    params_as_dict["transmission_frac"] = 1.0
+
+    # gonio pos is as found
+    return PinTipCentreThenXrayCentre(**params_as_dict)
