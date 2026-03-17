@@ -21,7 +21,7 @@ from dodal.devices.beamlines.i24.beamstop import Beamstop
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
-from dodal.devices.hutch_shutter import HutchShutter, ShutterDemand
+from dodal.devices.hutch_shutter import InterlockedHutchShutter, ShutterDemand
 from dodal.devices.motors import YZStage
 from dodal.devices.zebra.zebra import Zebra
 
@@ -191,7 +191,7 @@ def main_extruder_plan(
     backlight: DualBacklight,
     beamstop: Beamstop,
     detector_stage: YZStage,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center_device: DetectorBeamCenter,
@@ -373,7 +373,7 @@ def collection_aborted_plan(
 @log_on_entry
 def tidy_up_at_collection_end_plan(
     zebra: Zebra,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     parameters: ExtruderParameters,
     dcid: DCID,
     dcm: DCM,
@@ -383,7 +383,7 @@ def tidy_up_at_collection_end_plan(
 
     Args:
         zebra (Zebra): The Zebra device.
-        shutter (HutchShutter): The HutchShutter device.
+        shutter (InterlockedHutchShutter): The InterlockedHutchShutter device.
         parameters (ExtruderParameters): Collection parameters.
     """
     yield from reset_zebra_when_collection_done_plan(zebra)
@@ -423,7 +423,7 @@ def run_plan_in_wrapper(
     backlight: DualBacklight,
     beamstop: Beamstop,
     detector_stage: YZStage,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     dcm: DCM,
     mirrors: FocusMirrorsMode,
     beam_center_eiger: DetectorBeamCenter,
@@ -469,7 +469,7 @@ def run_extruder_plan(
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
     detector_stage: YZStage = inject("detector_motion"),
-    shutter: HutchShutter = inject("shutter"),
+    shutter: InterlockedHutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
