@@ -1,9 +1,9 @@
 import bluesky.plan_stubs as bps
-from daq_config_server.client import ConfigServer
 from daq_config_server.models import (
     BeamlinePitchLookupTable,
     BeamlineRollLookupTable,
 )
+from dodal.beamlines.i03 import CONFIG_CLIENT
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
@@ -120,8 +120,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     d_spacing_a: float = yield from bps.rd(
         undulator_dcm.dcm_ref().crystal_metadata_d_spacing_a
     )
-    config_server = ConfigServer(url="https://daq-config.diamond.ac.uk")
-    pitch_energy_table = config_server.get_file_contents(
+    pitch_energy_table = CONFIG_CLIENT.get_file_contents(
         undulator_dcm.pitch_energy_table_path, BeamlinePitchLookupTable
     )
 
@@ -137,7 +136,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     LOGGER.info("Waiting for DCM pitch adjust to complete...")
 
     # DCM Roll
-    roll_energy_table = config_server.get_file_contents(
+    roll_energy_table = CONFIG_CLIENT.get_file_contents(
         undulator_dcm.roll_energy_table_path, BeamlineRollLookupTable
     )
     dcm_roll_adjuster = lookup_table_adjuster(
