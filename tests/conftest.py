@@ -488,7 +488,7 @@ def detector_motion():
 
 
 @pytest.fixture
-def undulator(patch_beamline_env_variable):
+def undulator():
     undulator = i03.undulator.build(mock=True, connect_immediately=True)
     return undulator
 
