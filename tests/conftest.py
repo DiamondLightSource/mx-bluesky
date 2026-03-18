@@ -22,6 +22,7 @@ from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
+from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -85,9 +86,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.beamlines.i04.external_interaction.config_server import (
-    get_i04_config_client,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -110,9 +108,6 @@ from mx_bluesky.common.utils.log import (
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-)
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
@@ -1760,26 +1755,6 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
-    get_hyperion_config_client,
-    get_i04_config_client,
-]
-
-
-@pytest.fixture(autouse=True)
-def mock_mx_config_server():
-    # Don't actually talk to central service during unit tests, and reset caches between test
-
-    for client in IMPLEMENTED_CONFIG_CLIENTS:
-        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
-
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=fake_config_server_get_file_contents,
-    ):
-        yield
-
-
 @pytest.fixture(autouse=True)
 def mock_alert_service():
     with patch(
@@ -1792,3 +1767,18 @@ def mock_alert_service():
 @pytest.fixture()
 def patch_beamline_env_variable(monkeypatch):
     monkeypatch.setenv("BEAMLINE", "dev")
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    get_config_client.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def patch_get_hyperion_feature_settings():
+    fake_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        str(fake_path),
+    ):
+        yield
