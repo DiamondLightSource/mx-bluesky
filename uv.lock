@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.1.1.dev22+g7aebba209"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#7aebba20914fb7aad28c62445d2348fd088c2c4a" }
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -825,6 +825,10 @@ dependencies = [
     { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "scanspec", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "zocalo", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/2a/126dd1294d9b25a1733d9fbca309fae979768fcdab5c18e6a9566e4bd019/dls_dodal-2.2.0.tar.gz", hash = "sha256:ea84215445401aeb1309f837f6ac2f32cfba808e071cdaf5ce66a3164243b147", size = 1644938, upload-time = "2026-03-18T15:15:03.149Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b1/b7/a17ce24f49c5a4c32c6e13c5cf77d7dfbc84ae31168a5323fd279d537ad1/dls_dodal-2.2.0-py3-none-any.whl", hash = "sha256:db302284b9246fb550e7a7e7a3fe610b6ac8d7254edcfab8a4a0a90167bc29ae", size = 390076, upload-time = "2026-03-18T15:15:01.891Z" },
 ]
 
 [[package]]
@@ -2109,7 +2113,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.3.0" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
+    { name = "dls-dodal", specifier = "==2.2.0" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
