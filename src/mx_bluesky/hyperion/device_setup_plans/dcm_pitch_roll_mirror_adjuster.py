@@ -1,5 +1,5 @@
 import bluesky.plan_stubs as bps
-from daq_config_server.models import (
+from daq_config_server.models.lookup_tables.mx_lut_models import (
     BeamlinePitchLookupTable,
     BeamlineRollLookupTable,
 )
@@ -19,9 +19,6 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
-)
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"
@@ -32,8 +29,7 @@ def _apply_and_wait_for_voltages_to_settle(
     stripe: MirrorStripe,
     mirror_voltages: MirrorVoltages,
 ):
-    config_server = get_hyperion_config_client()
-    config_dict = config_server.get_file_contents(
+    config_dict = CONFIG_CLIENT.get_file_contents(
         mirror_voltages.voltage_lookup_table_path, dict
     )
     # sample mode is the only mode supported
