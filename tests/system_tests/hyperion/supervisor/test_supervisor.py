@@ -21,7 +21,7 @@ from bluesky_stomp.messaging import MessageContext
 from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import Status
-from mx_bluesky.hyperion._plan_runner_params import UDCCleanup
+from mx_bluesky.hyperion._plan_runner_params import RobotUnload
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
@@ -117,7 +117,7 @@ def handle_event(plan_started: Event, event_payload: AnyEvent, context: MessageC
         case DataEvent() as data_event:
             if (
                 data_event.name == "start"
-                and data_event.doc["plan_name"] == "clean_up_udc"
+                and data_event.doc["plan_name"] == "robot_unload"
             ):
                 plan_started.set()
 
@@ -129,7 +129,9 @@ def test_supervisor_connects_to_blueapi_and_stomp(
     client_config: ApplicationConfig,
     supervisor_runner: SupervisorRunner,
 ):
-    params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
+    params = RobotUnload.model_validate(
+        {"parameter_model_version": get_param_version()}
+    )
     ebc = get_event_bus_client(supervisor_runner)
 
     received_message_event = Event()
@@ -146,7 +148,9 @@ def test_supervisor_connects_to_blueapi_and_stomp(
 def test_supervisor_continues_to_next_instruction_on_warning_error(
     supervisor_runner: SupervisorRunner,
 ):
-    params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
+    params = RobotUnload.model_validate(
+        {"parameter_model_version": get_param_version()}
+    )
     supervisor_runner.run_engine(
         supervisor_runner.decode_and_execute("raise_warning_error", [params])
     )
@@ -156,7 +160,9 @@ def test_supervisor_continues_to_next_instruction_on_warning_error(
 def test_supervisor_raises_request_abort_when_shutdown_requested(
     supervisor_runner: SupervisorRunner, tpe: ThreadPoolExecutor
 ):
-    params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
+    params = RobotUnload.model_validate(
+        {"parameter_model_version": get_param_version()}
+    )
     ebc = get_event_bus_client(supervisor_runner)
     plan_aborted = Event()
     plan_called = Event()
@@ -197,7 +203,9 @@ def test_supervisor_raises_request_abort_when_shutdown_requested(
 def test_supervisor_raises_plan_error_when_plan_fails_with_other_exception(
     supervisor_runner: SupervisorRunner,
 ):
-    params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
+    params = RobotUnload.model_validate(
+        {"parameter_model_version": get_param_version()}
+    )
     with pytest.raises(PlanError, match="Exception raised during plan execution:"):
         supervisor_runner.run_engine(
             supervisor_runner.decode_and_execute("raise_other_error", [params])
@@ -233,7 +241,9 @@ async def test_supervisor_checks_for_external_callback_ping(
     ebc = get_event_bus_client(supervisor_runner_no_ping)
     received_message_event = Event()
     ebc.subscribe_to_all_events(partial(handle_event, received_message_event))
-    params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
+    params = RobotUnload.model_validate(
+        {"parameter_model_version": get_param_version()}
+    )
 
     def run_test_in_background():
         sleep(1)
@@ -254,7 +264,9 @@ def test_supervisor_raises_plan_error_when_external_callbacks_watchdog_expired(
     runner = supervisor_runner_no_ping
     runner.EXTERNAL_CALLBACK_WATCHDOG_TIMER_S = 0.5  # type: ignore
     runner.reset_callback_watchdog_timer()
-    params = UDCCleanup.model_validate({"parameter_model_version": get_param_version()})
+    params = RobotUnload.model_validate(
+        {"parameter_model_version": get_param_version()}
+    )
     # Allow callback watchdog to expire
     sleep(1)
     with pytest.raises(PlanError, match="External callback watchdog timer expired.*"):

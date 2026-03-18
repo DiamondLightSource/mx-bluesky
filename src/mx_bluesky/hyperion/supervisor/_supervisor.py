@@ -13,7 +13,12 @@ from pydantic import BaseModel
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion._plan_runner_params import (
+    RobotUnload,
+    UDCCleanup,
+    UDCDefaultState,
+    Wait,
+)
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 from mx_bluesky.hyperion.supervisor._task_monitor import TaskMonitor
@@ -57,6 +62,13 @@ class SupervisorRunner(PlanRunner):
                                 instrument_session=instrument_session,
                             )
                             self._run_task_remotely(task_request)
+                        case RobotUnload():
+                            task_request = TaskRequest(
+                                name="robot_unload",
+                                params={"visit": current_visit},
+                                instrument_session=instrument_session,
+                            )
+                            self._run_task_remotely(task_request)
                         case Wait():
                             yield from bps.sleep(parameters.duration_s)
                         case UDCDefaultState():
@@ -69,7 +81,7 @@ class SupervisorRunner(PlanRunner):
                         case UDCCleanup():
                             task_request = TaskRequest(
                                 name="clean_up_udc",
-                                params={"visit": current_visit},
+                                params={},
                                 instrument_session=instrument_session,
                             )
                             self._run_task_remotely(task_request)
