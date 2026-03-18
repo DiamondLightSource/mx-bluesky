@@ -20,11 +20,9 @@ from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
-from dodal.common.beamlines.beamline_parameters import (
-    GDABeamlineParameters,
-)
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
+from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -67,6 +65,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
+from dodal.testing.fixtures.config_server import fake_config_server_get_file_contents
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ophyd_async.core import (
@@ -87,9 +86,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.beamlines.i04.external_interaction.config_server import (
-    get_i04_config_client,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -112,9 +108,6 @@ from mx_bluesky.common.utils.log import (
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-)
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
@@ -376,8 +369,8 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    return GDABeamlineParameters.from_file(
-        "tests/test_data/test_beamline_parameters.txt"
+    return fake_config_server_get_file_contents(
+        "tests/test_data/test_beamline_parameters.txt", dict
     )
 
 
@@ -395,6 +388,16 @@ def i03_beamline_parameters():
             ]:
                 context_stack.enter_context(context_mgr)
             yield params
+
+
+@pytest.fixture(autouse=True)
+def test_beamline_parameters():
+    """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"test": "tests/test_data/test_beamline_parameters.txt"},
+    ) as params:
+        yield params
 
 
 @pytest.fixture
@@ -586,7 +589,7 @@ def attenuator():
 
 @pytest.fixture
 def beamstop_phase1(
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
@@ -1752,41 +1755,6 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-def _fake_config_server_read(
-    filepath: str | Path,
-    desired_return_type: type[str] | type[dict] = str,
-    reset_cached_result=False,
-):
-    filepath = Path(filepath)
-    # Minimal logic required for unit tests
-    with filepath.open("r") as f:
-        contents = f.read()
-        if desired_return_type is str:
-            return contents
-        elif desired_return_type is dict:
-            return json.loads(contents)
-
-
-IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
-    get_hyperion_config_client,
-    get_i04_config_client,
-]
-
-
-@pytest.fixture(autouse=True)
-def mock_config_server():
-    # Don't actually talk to central service during unit tests, and reset caches between test
-
-    for client in IMPLEMENTED_CONFIG_CLIENTS:
-        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
-
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=_fake_config_server_read,
-    ):
-        yield
-
-
 @pytest.fixture(autouse=True)
 def mock_alert_service():
     with patch(
@@ -1794,3 +1762,23 @@ def mock_alert_service():
         create=True,
     ) as service:
         yield service
+
+
+@pytest.fixture()
+def patch_beamline_env_variable(monkeypatch):
+    monkeypatch.setenv("BEAMLINE", "dev")
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    get_config_client.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def patch_get_hyperion_feature_settings():
+    fake_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        str(fake_path),
+    ):
+        yield

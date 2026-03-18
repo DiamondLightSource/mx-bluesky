@@ -23,6 +23,10 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 from ....conftest import raw_params_from_file
 
 
+@pytest.fixture(autouse=True)
+def always_use_beamline_i03(use_beamline_i03): ...
+
+
 @pytest.fixture
 def load_centre_collect_params_with_panda(tmp_path, request):
     with patch(
@@ -188,7 +192,7 @@ def test_dev_shm_enabled_if_use_gpu_results_enabled(
         else "tests/test_data/test_domain_properties"
     )
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new=properties_path,
     ):
         grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)

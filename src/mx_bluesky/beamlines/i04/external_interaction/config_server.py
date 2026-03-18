@@ -1,15 +1,16 @@
-from functools import cache
-
-from mx_bluesky.beamlines.i04.parameters.constants import (
+from daq_config_server.models.feature_settings.i04_feature_settings import (
     I04FeatureSettings,
-    I04FeatureSettingsSources,
 )
-from mx_bluesky.common.external_interaction.config_server import MXConfigClient
+from dodal.beamlines.i04 import DAQ_CONFIGURATION_PATH
+from dodal.common.beamlines.config_client import get_config_client
+
+GDA_DOMAIN_PROPERTIES_PATH = DAQ_CONFIGURATION_PATH + "/domain/domain.properties"
 
 
-@cache
-def get_i04_config_client() -> MXConfigClient[I04FeatureSettings]:
-    return MXConfigClient(
-        feature_sources=I04FeatureSettingsSources,
-        feature_dc=I04FeatureSettings,
+def get_i04_feature_settings() -> I04FeatureSettings:
+    config_client = get_config_client("i04")
+    return config_client.get_file_contents(
+        GDA_DOMAIN_PROPERTIES_PATH,
+        desired_return_type=I04FeatureSettings,
+        reset_cached_result=True,
     )

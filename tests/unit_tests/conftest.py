@@ -241,7 +241,7 @@ def run_engine_with_subs(
 
 
 @pytest.fixture
-def test_fgs_params(tmp_path):
+def test_fgs_params(tmp_path, patch_beamline_env_variable):
     return SpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
@@ -497,16 +497,6 @@ def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
     run_engine.subscribe(base_provider.run_start, "start")
 
     return detector
-
-
-@pytest.fixture(autouse=True)
-def use_fake_properites_for_config_server():
-    properties_path = "tests/test_data/test_domain_properties"
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
-        new=properties_path,
-    ):
-        yield
 
 
 @pytest.fixture

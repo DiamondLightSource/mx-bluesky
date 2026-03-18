@@ -140,7 +140,7 @@ def test_omega_flip(request):
 @pytest.fixture
 def fgs_params_use_panda(tmp_path):
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new="tests/test_data/test_domain_properties_with_panda",
     ):
         params = raw_params_from_file(
@@ -181,3 +181,8 @@ def launch_test_in_runner_event_loop(
         return future.result(TEST_SCRIPT_TIMEOUT_S)
 
     return executor.submit(_launch_in_new_thread)
+
+
+@pytest.fixture()
+def use_beamline_i03(monkeypatch):
+    monkeypatch.setenv("BEAMLINE", "i03")

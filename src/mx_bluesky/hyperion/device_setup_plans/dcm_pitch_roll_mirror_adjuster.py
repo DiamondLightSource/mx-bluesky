@@ -1,4 +1,5 @@
 import bluesky.plan_stubs as bps
+from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
@@ -15,9 +16,6 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
-)
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
 DCM_GROUP = "DCM_GROUP"
@@ -28,7 +26,7 @@ def _apply_and_wait_for_voltages_to_settle(
     stripe: MirrorStripe,
     mirror_voltages: MirrorVoltages,
 ):
-    config_server = get_hyperion_config_client()
+    config_server = get_config_client("i03")
     config_dict = config_server.get_file_contents(
         mirror_voltages.voltage_lookup_table_path, dict
     )
