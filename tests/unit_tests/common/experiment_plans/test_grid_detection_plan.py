@@ -22,6 +22,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
     grid_detection_plan,
+    optimum_grid_detect_angles,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -324,7 +325,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     composite, _ = fake_devices
 
     # This will cause the grid detect plan to take data at -90 first
-    set_mock_value(composite.gonio.omega.user_readback, -90)
+    set_mock_value(composite.gonio.omega.user_readback, -90)  # type: ignore
     composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         side_effect=[X_Z_EDGE_DATA, X_Y_EDGE_DATA]
     )
@@ -376,6 +377,8 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
             "gonio-y": 234,
             "gonio-z": 467,
             "gonio-omega": 45,
+            "gonio-omega_axis-phase": 45,
+            "gonio-omega_axis-offset_and_phase": np.array([0, 45]),
         }
     }
 
@@ -523,3 +526,32 @@ def test_given_array_with_all_invalid_top_and_bottom_sections_then_min_and_max_i
     min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
     assert min_y == expected_min
     assert max_y == expected_max
+
+
+@pytest.mark.parametrize(
+    "omega, expected_sequence",
+    [
+        [0, [0, -90]],
+        [5, [0, -90]],
+        [-5, [0, -90]],
+        [-44, [0, -90]],
+        [-46, [-90, -0]],
+        [-90, [-90, -0]],
+        [-135, [-90, -0]],
+        [-224, [-90, -0]],
+        [-225, [0, -90]],
+        [-226, [0, -90]],
+        [90, [0, -90]],
+        [134, [0, -90]],
+        [135, [0, -90]],
+        [136, [-90, 0]],
+        [180, [-90, -0]],
+        [270, [-90, 0]],
+        [290, [-90, 0]],
+        [330, [0, -90]],
+    ],
+)
+def test_optimum_grid_detect_angles(smargon, run_engine, omega, expected_sequence):
+    set_mock_value(smargon.omega.user_readback, omega)
+    result = run_engine(optimum_grid_detect_angles(smargon))
+    assert result.plan_result == expected_sequence

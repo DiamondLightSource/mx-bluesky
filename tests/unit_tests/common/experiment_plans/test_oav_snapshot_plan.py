@@ -118,7 +118,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "gonio-omega"
+            and msg.obj.name == "gonio-omega_axis-phase"
             and msg.args[0] == expected["omega"]
             and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
@@ -206,3 +206,7 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
         )
+
+
+def test_oav_snapshot_plan_moves_omega_phase_regardless_of_absolute_position():
+    pass
