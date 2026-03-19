@@ -3,7 +3,7 @@ from daq_config_server.models.lookup_tables.mx_lut_models import (
     BeamlinePitchLookupTable,
     BeamlineRollLookupTable,
 )
-from dodal.beamlines.i03 import CONFIG_CLIENT
+from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
@@ -29,7 +29,7 @@ def _apply_and_wait_for_voltages_to_settle(
     stripe: MirrorStripe,
     mirror_voltages: MirrorVoltages,
 ):
-    config_dict = CONFIG_CLIENT.get_file_contents(
+    config_dict = get_config_client("i03").get_file_contents(
         mirror_voltages.voltage_lookup_table_path, dict
     )
     # sample mode is the only mode supported
@@ -116,7 +116,8 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     d_spacing_a: float = yield from bps.rd(
         undulator_dcm.dcm_ref().crystal_metadata_d_spacing_a
     )
-    pitch_energy_table = CONFIG_CLIENT.get_file_contents(
+    config_client = get_config_client("i03")
+    pitch_energy_table = config_client.get_file_contents(
         undulator_dcm.pitch_energy_table_path, BeamlinePitchLookupTable
     )
 
@@ -132,7 +133,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     LOGGER.info("Waiting for DCM pitch adjust to complete...")
 
     # DCM Roll
-    roll_energy_table = CONFIG_CLIENT.get_file_contents(
+    roll_energy_table = config_client.get_file_contents(
         undulator_dcm.roll_energy_table_path, BeamlineRollLookupTable
     )
     dcm_roll_adjuster = lookup_table_adjuster(
