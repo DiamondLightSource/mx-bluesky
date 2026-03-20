@@ -1,4 +1,8 @@
 import bluesky.plan_stubs as bps
+from daq_config_server.models.lookup_tables.mx_lut_models import (
+    BeamlinePitchLookupTable,
+    BeamlineRollLookupTable,
+)
 from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import (
@@ -9,7 +13,6 @@ from dodal.devices.focusing_mirror import (
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
-    parse_lookup_table,
 )
 
 from mx_bluesky.common.utils.log import LOGGER
@@ -26,8 +29,7 @@ def _apply_and_wait_for_voltages_to_settle(
     stripe: MirrorStripe,
     mirror_voltages: MirrorVoltages,
 ):
-    config_server = get_config_client("i03")
-    config_dict = config_server.get_file_contents(
+    config_dict = get_config_client("i03").get_file_contents(
         mirror_voltages.voltage_lookup_table_path, dict
     )
     # sample mode is the only mode supported
@@ -114,12 +116,15 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     d_spacing_a: float = yield from bps.rd(
         undulator_dcm.dcm_ref().crystal_metadata_d_spacing_a
     )
+    config_client = get_config_client("i03")
+    pitch_energy_table = config_client.get_file_contents(
+        undulator_dcm.pitch_energy_table_path, BeamlinePitchLookupTable
+    )
+
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(
-            *parse_lookup_table(undulator_dcm.pitch_energy_table_path)
-        ),
+        linear_interpolation_lut(*pitch_energy_table.columns),
         dcm.xtal_1.pitch_in_mrad,
         bragg_deg,
     )
@@ -128,10 +133,11 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     LOGGER.info("Waiting for DCM pitch adjust to complete...")
 
     # DCM Roll
+    roll_energy_table = config_client.get_file_contents(
+        undulator_dcm.roll_energy_table_path, BeamlineRollLookupTable
+    )
     dcm_roll_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(
-            *parse_lookup_table(undulator_dcm.roll_energy_table_path)
-        ),
+        linear_interpolation_lut(*roll_energy_table.columns),
         dcm.xtal_1.roll_in_mrad,
         bragg_deg,
     )

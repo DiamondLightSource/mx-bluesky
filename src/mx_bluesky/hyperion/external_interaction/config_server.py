@@ -8,8 +8,7 @@ GDA_DOMAIN_PROPERTIES_PATH = DAQ_CONFIGURATION_PATH + "/domain/domain.properties
 
 
 def get_hyperion_feature_settings() -> HyperionFeatureSettings:
-    config_client = get_config_client("i03")
-    return config_client.get_file_contents(
+    return get_config_client("i03").get_file_contents(
         GDA_DOMAIN_PROPERTIES_PATH,
         desired_return_type=HyperionFeatureSettings,
     )

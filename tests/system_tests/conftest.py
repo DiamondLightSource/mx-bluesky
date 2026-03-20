@@ -8,10 +8,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
+from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
 from ophyd_async.core import AsyncStatus, set_mock_value
 from PIL import Image
+
+from tests.conftest import set_up_dcm
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -122,6 +126,8 @@ DATA_COLLECTION_COLUMN_MAP = {
         "dataCollectionPlanId",
     ]
 }
+
+LOCAL_CONFIG_SERVER_URL = "http://0.0.0.0:8555"
 
 
 def _system_test_env_error_message(env_var: str):
@@ -234,3 +240,49 @@ def compare_comment(
     match = re.search(" Zocalo processing took", actual_comment)
     truncated_comment = actual_comment[: match.start()] if match else actual_comment
     assert truncated_comment == expected_comment
+
+
+@pytest.fixture
+def config_client():
+    # Connects to real config server hosted locally
+    # Test files are stored in the hyperion-system-tests repo under ./daq_config_server/config/
+    # They have been mounted to match the paths in /dls_sw/i03/ so that the whitelist
+    # and file converter map behave as expected with no mocking needed.
+    # https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing/-/tree/add_daq_config_server/daq-config-server/config/?ref_type=heads
+    return ConfigClient(url=LOCAL_CONFIG_SERVER_URL)
+
+
+@pytest.fixture(autouse=True)
+def patch_i03_config_client():
+    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.config_client.BEAMLINE_CONFIG_SERVER_ENDPOINTS",
+        {
+            "i03": LOCAL_CONFIG_SERVER_URL,
+            "test": LOCAL_CONFIG_SERVER_URL,
+        },
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patch_get_hyperion_feature_settings():
+    path = "/dls_sw/i03/software/daq_configuration/domain/domain.properties"
+    with patch(
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        str(path),
+    ):
+        yield
+
+
+@pytest.fixture
+def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
+    undulator_dcm: UndulatorDCM = i03.undulator_dcm.build(
+        connect_immediately=True,
+        mock=True,
+        daq_configuration_path="/dls_sw/i03/software/daq_configuration/",
+        dcm=dcm,
+        undulator=undulator,
+    )
+    set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
+    yield undulator_dcm
