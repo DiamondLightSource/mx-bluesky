@@ -4,7 +4,7 @@ from daq_config_server.models.feature_settings.hyperion_feature_settings import 
     HyperionFeatureSettings,
 )
 from dodal.common.beamlines.beamline_parameters import BEAMLINE_PARAMETER_PATHS
-from dodal.common.beamlines.config_client import get_config_client
+from dodal.common.beamlines.beamline_utils import get_config_client
 
 from mx_bluesky.hyperion.external_interaction.config_server import (
     GDA_DOMAIN_PROPERTIES_PATH,
@@ -39,5 +39,4 @@ def test_get_domain_proeprties_from_real_config_server(
 
 @pytest.mark.system_test
 def test_local_config_server_being_used_with_get_config_client():
-    assert get_config_client("i03")._url == LOCAL_CONFIG_SERVER_URL
-    assert get_config_client("test")._url == LOCAL_CONFIG_SERVER_URL
+    assert get_config_client()._url == LOCAL_CONFIG_SERVER_URL

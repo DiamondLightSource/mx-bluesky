@@ -19,9 +19,8 @@ from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
-from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.beamline_utils import clear_config_client, clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
-from dodal.common.beamlines.config_client import get_config_client
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
     ApertureScatterguard,
@@ -635,7 +634,7 @@ def lower_gonio(
 @pytest.fixture
 def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
-    voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
+    voltages._voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
         vc.set = MagicMock(side_effect=lambda _: completed_status())
     for vc in voltages.horizontal_voltages.values():
@@ -1735,5 +1734,5 @@ def patch_beamline_env_variable(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def clear_cache():
-    get_config_client.cache_clear()
+def reset_config_client():
+    clear_config_client()
