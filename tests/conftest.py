@@ -639,7 +639,6 @@ def lower_gonio(
 @pytest.fixture
 def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
-    voltages._voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
         vc.set = MagicMock(side_effect=lambda _: completed_status())
     for vc in voltages.horizontal_voltages.values():
