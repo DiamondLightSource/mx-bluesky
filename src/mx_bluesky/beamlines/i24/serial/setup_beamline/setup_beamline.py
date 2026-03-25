@@ -2,7 +2,7 @@ from pathlib import Path
 
 import bluesky.plan_stubs as bps
 from daq_config_server.models.lookup_tables import DetectorXYLookupTable
-from dodal.beamlines.i24 import config_client
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i24.aperture import Aperture, AperturePositions
 from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.beamlines.i24.beamstop import Beamstop, BeamstopPositions
@@ -28,7 +28,7 @@ def compute_beam_center_position_from_lut(
     using the values in the lookup table for the conversion.
     """
     lut_columns = (
-        config_client().get_file_contents(lut_path, DetectorXYLookupTable).columns
+        get_config_client().get_file_contents(lut_path, DetectorXYLookupTable).columns
     )
 
     calc_x = linear_interpolation_lut(lut_columns[0], lut_columns[1])
