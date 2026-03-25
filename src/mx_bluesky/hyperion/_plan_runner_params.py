@@ -20,6 +20,12 @@ class UDCDefaultState(BaseModel):
 
 class UDCCleanup(BaseModel):
     """Represents an instruction to perform UDC Cleanup,
-    in which the detector shutter is closed and a robot unload is performed."""
+    in which the detector shutter is closed."""
+
+    pass
+
+
+class RobotUnload(BaseModel):
+    """Represents an instruction to perform a robot unload."""
 
     pass

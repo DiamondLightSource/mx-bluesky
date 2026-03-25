@@ -8,7 +8,6 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -54,16 +53,15 @@ def load_centre_collect(
     yield from bps.sleep(1)
 
 
-def clean_up_udc(
+def robot_unload(
     visit: str,
     cleanup_group: str = "cleanup",
     robot: BartRobot = inject("robot"),
     smargon: Smargon = inject("gonio"),
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     lower_gonio: XYZStage = inject("lower_gonio"),
-    detector_motion: DetectorMotion = inject("detector_motion"),
 ) -> MsgGenerator:
-    yield from publish_event("clean_up_udc")
+    yield from publish_event("robot_unload")
     match visit:
         case "raise_warning_error":
             raise WarningError("Test warning error")

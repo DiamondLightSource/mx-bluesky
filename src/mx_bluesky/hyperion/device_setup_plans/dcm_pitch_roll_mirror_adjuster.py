@@ -8,15 +8,11 @@ from dodal.devices.focusing_mirror import (
 from dodal.devices.util.adjuster_plans import lookup_table_adjuster
 from dodal.devices.util.lookup_tables import (
     linear_interpolation_lut,
-    parse_lookup_table,
 )
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import (
     energy_to_bragg_angle,
-)
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
 )
 
 MIRROR_VOLTAGE_GROUP = "MIRROR_VOLTAGE_GROUP"
@@ -28,12 +24,8 @@ def _apply_and_wait_for_voltages_to_settle(
     stripe: MirrorStripe,
     mirror_voltages: MirrorVoltages,
 ):
-    config_server = get_hyperion_config_client()
-    config_dict = config_server.get_file_contents(
-        mirror_voltages.voltage_lookup_table_path, dict
-    )
     # sample mode is the only mode supported
-    sample_data = config_dict["sample"]
+    sample_data = mirror_voltages.voltage_lookup_table["sample"]
     if stripe == MirrorStripe.BARE:
         stripe_key = "bare"
     elif stripe == MirrorStripe.RHODIUM:
@@ -116,12 +108,11 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
     d_spacing_a: float = yield from bps.rd(
         undulator_dcm.dcm_ref().crystal_metadata_d_spacing_a
     )
+
     bragg_deg = energy_to_bragg_angle(energy_kev, d_spacing_a)
     LOGGER.info(f"Target Bragg angle = {bragg_deg} degrees")
     dcm_pitch_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(
-            *parse_lookup_table(undulator_dcm.pitch_energy_table_path)
-        ),
+        linear_interpolation_lut(*undulator_dcm.pitch_energy_table.columns),
         dcm.xtal_1.pitch_in_mrad,
         bragg_deg,
     )
@@ -131,9 +122,7 @@ def adjust_dcm_pitch_roll_vfm_from_lut(
 
     # DCM Roll
     dcm_roll_adjuster = lookup_table_adjuster(
-        linear_interpolation_lut(
-            *parse_lookup_table(undulator_dcm.roll_energy_table_path)
-        ),
+        linear_interpolation_lut(*undulator_dcm.roll_energy_table.columns),
         dcm.xtal_1.roll_in_mrad,
         bragg_deg,
     )

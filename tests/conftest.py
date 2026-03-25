@@ -5,7 +5,6 @@ import logging
 import os
 import sys
 from collections.abc import Callable, Generator, Sequence
-from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
@@ -18,9 +17,14 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
+from daq_config_server import ConfigClient
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
-from dodal.common.beamlines.beamline_utils import clear_devices
+from dodal.common.beamlines.beamline_utils import (
+    clear_config_client,
+    clear_devices,
+    set_config_client,
+)
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
@@ -40,6 +44,7 @@ from dodal.devices.baton import Baton
 from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
 from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -64,7 +69,6 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
-from dodal.testing.fixtures.config_server import fake_config_server_get_file_contents
 from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ophyd_async.core import (
@@ -85,9 +89,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.beamlines.i04.external_interaction.config_server import (
-    get_i04_config_client,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -111,9 +112,6 @@ from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -121,7 +119,6 @@ from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridS
 
 pytest_plugins = ["tests.expeye_helpers"]
 
-i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
 TEST_VISIT = "cm1234-67"
@@ -224,13 +221,6 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
         "sample_id": _NO_SAMPLE_ID,
     }
-]
-
-MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
-mock_paths = [
-    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
 ]
 
 
@@ -374,35 +364,9 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    return fake_config_server_get_file_contents(
-        "tests/test_data/test_beamline_parameters.txt", dict
-    )
-
-
-@pytest.fixture(autouse=True)
-def i03_beamline_parameters():
-    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
-    with patch.dict(
-        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-        {"i03": "tests/test_data/test_beamline_parameters.txt"},
-    ) as params:
-        with ExitStack() as context_stack:
-            for context_mgr in [
-                patch(f"dodal.beamlines.i03.{name}", value, create=True)
-                for name, value in mock_paths
-            ]:
-                context_stack.enter_context(context_mgr)
-            yield params
-
-
-@pytest.fixture(autouse=True)
-def test_beamline_parameters():
-    """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
-    with patch.dict(
-        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-        {"test": "tests/test_data/test_beamline_parameters.txt"},
-    ) as params:
-        yield params
+    with Path("tests/test_data/test_beamline_parameters.txt").open("r") as f:
+        contents = f.read()
+    return json.loads(contents)
 
 
 @pytest.fixture
@@ -675,7 +639,6 @@ def lower_gonio(
 @pytest.fixture
 def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
-    voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
         vc.set = MagicMock(side_effect=lambda _: completed_status())
     for vc in voltages.horizontal_voltages.values():
@@ -685,8 +648,8 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(sim_run_engine, dcm, undulator):
-    undulator_dcm = i03.undulator_dcm.build(
+def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
+    undulator_dcm: UndulatorDCM = i03.undulator_dcm.build(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
@@ -1760,26 +1723,6 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
-    get_hyperion_config_client,
-    get_i04_config_client,
-]
-
-
-@pytest.fixture(autouse=True)
-def mock_mx_config_server():
-    # Don't actually talk to central service during unit tests, and reset caches between test
-
-    for client in IMPLEMENTED_CONFIG_CLIENTS:
-        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
-
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=fake_config_server_get_file_contents,
-    ):
-        yield
-
-
 @pytest.fixture(autouse=True)
 def mock_alert_service():
     with patch(
@@ -1791,4 +1734,11 @@ def mock_alert_service():
 
 @pytest.fixture()
 def patch_beamline_env_variable(monkeypatch):
-    monkeypatch.setenv("BEAMLINE", "dev")
+    monkeypatch.setenv("BEAMLINE", "test")
+
+
+@pytest.fixture(autouse=True)
+def reset_config_client():
+    set_config_client(ConfigClient(""))
+    yield
+    clear_config_client()

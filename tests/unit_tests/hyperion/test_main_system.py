@@ -77,13 +77,7 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
 
 @pytest.fixture(autouse=True)
 def beamline_i03():
-    with (
-        patch.dict(os.environ, {"BEAMLINE": "i03"}),
-        patch.dict(
-            "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-            {"i03": "tests/test_data/test_beamline_parameters.txt"},
-        ),
-    ):
+    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
         yield
 
 

@@ -17,7 +17,12 @@ from mx_bluesky.common.parameters.components import (
 )
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
-from mx_bluesky.hyperion._plan_runner_params import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.hyperion._plan_runner_params import (
+    RobotUnload,
+    UDCCleanup,
+    UDCDefaultState,
+    Wait,
+)
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
@@ -60,7 +65,7 @@ def runner(mock_bluesky_context, blueapi_config):
 
 
 @patch("mx_bluesky.hyperion.supervisor._supervisor.TaskMonitor")
-def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task(
+def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task_and_returns_the_visit(
     mock_task_monitor: MagicMock,
     mock_blueapi_client: MagicMock,
     runner: SupervisorRunner,
@@ -71,7 +76,7 @@ def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task(
     parent.attach_mock(mock_task_monitor, "TaskMonitor")
     parent.attach_mock(mock_task_monitor.return_value, "task_monitor")
 
-    runner.context.run_engine(
+    result = runner.context.run_engine(
         runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
     )
 
@@ -91,6 +96,8 @@ def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task(
             call.task_monitor.__exit__(None, None, None),
         ]
     )
+
+    assert result.plan_result == TEST_VISIT  # type: ignore
 
 
 def test_decode_and_execute_wait(
@@ -143,6 +150,21 @@ def test_decode_and_execute_default_state(
     )
 
 
+def test_decode_and_execute_robot_unload(
+    mock_blueapi_client: MagicMock, runner: SupervisorRunner
+):
+    runner.context.run_engine(runner.decode_and_execute(TEST_VISIT, [RobotUnload()]))
+
+    mock_blueapi_client.run_task.assert_called_once_with(
+        TaskRequest(
+            name="robot_unload",
+            params={"visit": TEST_VISIT},
+            instrument_session=TEST_VISIT,
+        ),
+        on_event=ANY,
+    )
+
+
 def test_decode_and_execute_udc_cleanup(
     mock_blueapi_client: MagicMock, runner: SupervisorRunner
 ):
@@ -160,7 +182,7 @@ def test_decode_and_execute_udc_cleanup(
     mock_blueapi_client.run_task.assert_called_once_with(
         TaskRequest(
             name="clean_up_udc",
-            params={"visit": TEST_VISIT},
+            params={},
             instrument_session=TEST_VISIT,
         ),
         on_event=ANY,
