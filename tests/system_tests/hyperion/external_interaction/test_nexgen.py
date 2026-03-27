@@ -41,6 +41,9 @@ def test_params(tmp_path):
     params.y_start_um = 0
     params.z_start_um = 0
     params.exposure_time_s = 0.004
+    params.det_dist_to_beam_converter_path = (
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+    )
     return params
 
 

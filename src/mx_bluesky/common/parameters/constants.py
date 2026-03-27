@@ -129,13 +129,6 @@ class DetectorParamConstants:
 
 
 @dataclass(frozen=True)
-class ExperimentParamConstants:
-    DETECTOR = DetectorParamConstants()
-    GRIDSCAN = GridscanParamConstants()
-    ROTATION = RotationParamConstants()
-
-
-@dataclass(frozen=True)
 class PlanGroupCheckpointConstants:
     # For places to synchronise / stop and wait in plans, use as bluesky group names
     GRID_READY_FOR_DC = "grid_ready_for_data_collection"
