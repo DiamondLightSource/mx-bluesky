@@ -12,13 +12,13 @@ from mx_bluesky.common.parameters.components import (
     IspybExperimentType,
 )
 from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion.blueapi.parameters import SingleSamplePinTypeParam
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _get_parameters_from_url,
     _get_pin_type_from_agamemnon_collect_parameters,
     create_parameters_from_agamemnon,
     get_agamemnon_url,
 )
-from mx_bluesky.hyperion.external_interaction.pin_type import SinglePin
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
@@ -92,8 +92,8 @@ def use_real_agamemnon(request):
 @pytest.mark.requires(external="agamemnon")
 def test_given_test_agamemnon_instruction_then_returns_none_loop_type():
     params = _get_parameters_from_url(get_agamemnon_url() + "/example/collect")
-    loop_type = _get_pin_type_from_agamemnon_collect_parameters(params["collect"])
-    assert loop_type == SinglePin()
+    pin_type = _get_pin_type_from_agamemnon_collect_parameters(params["collect"])
+    assert pin_type == SingleSamplePinTypeParam()
 
 
 @pytest.mark.requires(external="agamemnon")

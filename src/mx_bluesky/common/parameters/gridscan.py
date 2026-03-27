@@ -54,7 +54,7 @@ class GridCommon(
     """
 
     box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
-    grid_width_um: float = Field(default=GridscanParamConstants.WIDTH_UM)
+    grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
 
     ispyb_experiment_type: IspybExperimentType = Field(

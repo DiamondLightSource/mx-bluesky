@@ -103,7 +103,7 @@ class HardwareConstants:
 
 @dataclass(frozen=True)
 class GridscanParamConstants:
-    WIDTH_UM = 600.0
+    PIN_WIDTH_UM = 600.0
     EXPOSURE_TIME_S = 0.004
     USE_ROI = True
     BOX_WIDTH_UM = 20.0

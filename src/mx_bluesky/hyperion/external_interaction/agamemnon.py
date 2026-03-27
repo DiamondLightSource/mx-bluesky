@@ -1,16 +1,13 @@
 import json
 import os
 import re
-import traceback
 from collections.abc import Sequence
 from enum import StrEnum
 from os import path
 from typing import Any, TypeVar
 
 import requests
-from deepdiff.diff import DeepDiff
 from dodal.utils import get_beamline_name
-from jsonschema import ValidationError
 from pydantic import BaseModel
 
 from mx_bluesky.common.parameters.components import (
@@ -22,9 +19,12 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion._plan_runner_params import Wait
-from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
-from mx_bluesky.hyperion.external_interaction.pin_type import PinType, SinglePin
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
+from mx_bluesky.hyperion.blueapi.parameters import (
+    LoadCentreCollectParams,
+    MultiSamplePinTypeParam,
+    PinTypeParam,
+    SingleSamplePinTypeParam,
+)
 
 T = TypeVar("T", bound=WithVisit)
 MULTIPIN_PREFIX = "multipin"
@@ -62,66 +62,6 @@ def create_parameters_from_agamemnon() -> Sequence[BaseModel]:
     return []
 
 
-def compare_params(load_centre_collect_params: LoadCentreCollect):
-    """Compare the supplied parameters (as supplied from GDA) with those directly
-    created from agamemnon. Any differences are logged.
-    Args:
-        load_centre_collect_params: The parameters from GDA to compare."""
-    try:
-        lcc_requests = create_parameters_from_agamemnon()
-        # Log differences against GDA populated parameters
-        if not lcc_requests:
-            LOGGER.info("Agamemnon returned no instructions")
-        else:
-            differences = DeepDiff(
-                lcc_requests[0], load_centre_collect_params, math_epsilon=1e-5
-            )
-            if differences:
-                LOGGER.info(
-                    f"Different parameters found when directly reading from Hyperion: {differences}"
-                )
-    except (ValueError, KeyError):
-        LOGGER.warning(f"Failed to compare parameters: {traceback.format_exc()}")
-    except Exception:
-        LOGGER.warning(
-            f"Unexpected error occurred. Failed to compare parameters: {traceback.format_exc()}"
-        )
-
-
-def update_params_from_agamemnon(parameters: T) -> T:
-    """Update the supplied parameters with additional information from agamemnon.
-    This is currently necessary for multipin processing and called when Hyperion is invoked
-    from GDA.
-
-    Args:
-        parameters: The LoadCentreCollectParameters that will be updated with additional info,
-        such as multipin dimensions, number of crystals.
-    """
-    try:
-        beamline_name = get_beamline_name("i03")
-        agamemnon_params = _get_next_instruction(beamline_name)
-        instruction, collect_params = _instruction_and_data(agamemnon_params)
-        assert instruction == _InstructionType.COLLECT, (
-            "Unable to augment GDA parameters from agamemnon, agamemnon reports 'wait'"
-        )
-        pin_type = _get_pin_type_from_agamemnon_collect_parameters(collect_params)
-        if isinstance(parameters, LoadCentreCollect):
-            parameters.robot_load_then_centre.tip_offset_um = pin_type.full_width / 2
-            parameters.robot_load_then_centre.grid_width_um = pin_type.full_width
-            parameters.select_centres.n = pin_type.expected_number_of_crystals
-            if pin_type != SinglePin():
-                # Rotation snapshots will be generated from the gridscan snapshots,
-                # no need to specify snapshot omega.
-                parameters.multi_rotation_scan.snapshot_omegas_deg = []
-                parameters.multi_rotation_scan.use_grid_snapshots = True
-    except (ValueError, ValidationError) as e:
-        LOGGER.warning(f"Failed to update parameters: {e}")
-    except Exception as e:
-        LOGGER.warning(f"Unexpected error occurred. Failed to update parameters: {e}")
-
-    return parameters
-
-
 def _instruction_and_data(agamemnon_instruction: dict) -> tuple[str, Any]:
     instruction, data = next(iter(agamemnon_instruction.items()))
     if instruction not in _InstructionType.__members__.values():
@@ -139,13 +79,17 @@ def _get_parameters_from_url(url: str) -> dict:
 
 def _get_pin_type_from_agamemnon_collect_parameters(
     collect_parameters: dict,
-) -> PinType:
+) -> PinTypeParam:
     loop_type_name: str | None = collect_parameters["sample"]["loopType"]
     if loop_type_name:
         regex_search = re.search(MULTIPIN_REGEX, loop_type_name)
         if regex_search:
             wells, well_size, tip_to_first_well = regex_search.groups()
-            return PinType(int(wells), float(well_size), float(tip_to_first_well))
+            return MultiSamplePinTypeParam(
+                wells=int(wells),
+                well_size_um=float(well_size),
+                tip_to_first_well_um=float(tip_to_first_well),
+            )
         else:
             loop_type_message = (
                 f"Agamemnon loop type of {loop_type_name} not recognised"
@@ -153,7 +97,7 @@ def _get_pin_type_from_agamemnon_collect_parameters(
             if loop_type_name.startswith(MULTIPIN_PREFIX):
                 raise ValueError(f"{loop_type_message}. {MULTIPIN_FORMAT_DESC}")
             LOGGER.warning(f"{loop_type_message}, assuming single pin")
-    return SinglePin()
+    return SingleSamplePinTypeParam()
 
 
 def _get_next_instruction(beamline: str) -> dict:
@@ -219,14 +163,13 @@ def _populate_parameters_from_agamemnon(
                 "sample_pin": agamemnon_params["sample"]["position"],
                 "select_centres": {
                     "name": "TopNByMaxCount",
-                    "n": pin_type.expected_number_of_crystals,
+                    "n": pin_type.wells,
                 },
                 **with_energy_params,
                 "robot_load_then_centre": {
                     "storage_directory": str(visit_directory) + "/xraycentring",
                     "file_name": file_name,
-                    "tip_offset_um": pin_type.full_width / 2,
-                    "grid_width_um": pin_type.full_width,
+                    "pin_type": pin_type,
                     "omega_start_deg": 0.0,
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
