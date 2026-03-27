@@ -10,6 +10,7 @@ import pytest
 from aiohttp import ClientResponse
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
 from ophyd_async.core import AsyncStatus, set_mock_value
@@ -253,16 +254,9 @@ def config_client():
 
 
 @pytest.fixture(autouse=True)
-def patch_i03_config_client():
-    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
-    with patch.dict(
-        "dodal.common.beamlines.config_client.BEAMLINE_CONFIG_SERVER_ENDPOINTS",
-        {
-            "i03": LOCAL_CONFIG_SERVER_URL,
-            "test": LOCAL_CONFIG_SERVER_URL,
-        },
-    ):
-        yield
+def patch_config_client():
+    config_client = ConfigClient(LOCAL_CONFIG_SERVER_URL)
+    set_config_client(config_client)
 
 
 @pytest.fixture(autouse=True)
