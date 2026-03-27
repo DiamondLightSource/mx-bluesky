@@ -64,10 +64,11 @@ def pin_tip_centre_then_xray_centre(
         )
 
         if sample_ids_and_locations:
-            location = sample_ids_and_locations[0][1]
+            location = [pos_um / 1000 for pos_um in sample_ids_and_locations[0][1]]
             yield from bps.abs_set(
                 composite.gonio,
                 CombinedMove(x=location[0], y=location[1], z=location[2]),
+                wait=True,
             )
 
     yield from pin_centre_flyscan_then_fetch_results()
