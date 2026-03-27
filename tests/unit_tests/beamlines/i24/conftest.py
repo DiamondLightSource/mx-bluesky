@@ -12,7 +12,7 @@ from dodal.devices.beamlines.i24.focus_mirrors import (
 from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import (
     HUTCH_SAFE_FOR_OPERATIONS,
-    HutchShutter,
+    InterlockedHutchShutter,
     ShutterDemand,
     ShutterState,
 )
@@ -21,7 +21,7 @@ from ophyd_async.core import callback_on_mock_put, set_mock_value
 
 
 @pytest.fixture
-def shutter() -> HutchShutter:
+def shutter() -> InterlockedHutchShutter:
     shutter = i24.shutter.build(connect_immediately=True, mock=True)
     set_mock_value(
         shutter.interlock.status,  # type: ignore
@@ -77,5 +77,5 @@ def mirrors() -> FocusMirrorsMode:
 
 
 @pytest.fixture()
-def use_i24_beamline(monkeypatch):
+def use_i24_beamline(monkeypatch, patch_beamline_env_variable):
     monkeypatch.setenv("BEAMLINE", "i24")

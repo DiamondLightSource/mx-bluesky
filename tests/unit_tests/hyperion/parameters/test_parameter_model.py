@@ -192,7 +192,7 @@ def test_dev_shm_enabled_if_use_gpu_results_enabled(
         else "tests/test_data/test_domain_properties"
     )
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new=properties_path,
     ):
         grid_scan = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)

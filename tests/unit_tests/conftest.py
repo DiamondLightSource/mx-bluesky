@@ -2,6 +2,7 @@ import asyncio
 import pprint
 import sys
 from collections.abc import Generator
+from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from typing import Any, cast
@@ -77,8 +78,21 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.conftest import raw_params_from_file
+from tests.test_data.oav import TEST_DISPLAY_CONFIG, TEST_OAV_ZOOM_LEVELS
+
+pytest_plugins = ["dodal.testing.fixtures.config_server"]
+
+i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
+
+MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+
+mock_paths = [
+    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
+    ("ZOOM_PARAMS_FILE", TEST_OAV_ZOOM_LEVELS),
+    ("DISPLAY_CONFIG", TEST_DISPLAY_CONFIG),
+]
 
 
 def _error_and_kill_pending_tasks(
@@ -499,16 +513,6 @@ def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
     return detector
 
 
-@pytest.fixture(autouse=True)
-def use_fake_properites_for_config_server():
-    properties_path = "tests/test_data/test_domain_properties"
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
-        new=properties_path,
-    ):
-        yield
-
-
 @pytest.fixture
 async def beamstop_check_devices(
     aperture_scatterguard,
@@ -559,3 +563,39 @@ async def beamstop_check_devices(
 @pytest.fixture
 async def ipin():
     yield i03.ipin.build(connect_immediately=True, mock=True)
+
+
+@pytest.fixture(autouse=True)
+def i03_beamline_parameters():
+    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"i03": "tests/test_data/test_beamline_parameters.txt"},
+    ) as params:
+        with ExitStack() as context_stack:
+            for context_mgr in [
+                patch(f"dodal.beamlines.i03.{name}", value, create=True)
+                for name, value in mock_paths
+            ]:
+                context_stack.enter_context(context_mgr)
+            yield params
+
+
+@pytest.fixture(autouse=True)
+def test_beamline_parameters():
+    """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"test": "tests/test_data/test_beamline_parameters.txt"},
+    ) as params:
+        yield params
+
+
+@pytest.fixture(autouse=True)
+def patch_get_hyperion_feature_settings():
+    fake_path = "tests/test_data/test_domain_properties"
+    with patch(
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        str(fake_path),
+    ):
+        yield

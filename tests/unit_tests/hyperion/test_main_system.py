@@ -77,13 +77,7 @@ def test_cli_args_parse(arg_list, parsed_arg_values):
 
 @pytest.fixture(autouse=True)
 def beamline_i03():
-    with (
-        patch.dict(os.environ, {"BEAMLINE": "i03"}),
-        patch.dict(
-            "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-            {"i03": "tests/test_data/test_beamline_parameters.txt"},
-        ),
-    ):
+    with patch.dict(os.environ, {"BEAMLINE": "i03"}):
         yield
 
 
@@ -144,12 +138,12 @@ def test_hyperion_in_udc_mode_starts_logging(
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
-def test_hyperion_in_udc_mode_starts_udc_api(
+def test_hyperion_in_udc_mode_starts_udc_api_on_hyperion_port(
     mock_create_udc_server: MagicMock,
     mock_setup_context: MagicMock,
 ):
     main()
-    mock_create_udc_server.assert_called_once()
+    mock_create_udc_server.assert_called_once_with(ANY, HyperionConstants.HYPERION_PORT)
     assert isinstance(mock_create_udc_server.mock_calls[0].args[0], PlanRunner)
 
 
