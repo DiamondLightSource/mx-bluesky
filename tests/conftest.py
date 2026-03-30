@@ -490,7 +490,9 @@ def synchrotron():
 @pytest.fixture
 def oav(test_config_files):
     parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
