@@ -447,7 +447,6 @@ def test_pin_tip_centre_then_xray_centre_moves_to_xtal(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     run_engine: RunEngine,
-    null_plan: MsgGenerator,
 ):
     @bpp.set_run_key_decorator(PlanNameConstants.FLYSCAN_RESULTS)
     @bpp.run_decorator(
