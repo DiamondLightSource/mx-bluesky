@@ -1,6 +1,7 @@
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
+from dodal.common.maths import WrappedAxis
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
@@ -33,6 +34,7 @@ from ophyd_async.epics.motor import Motor
 @runtime_checkable
 class GonioWithOmega(Protocol):
     omega: Motor
+    omega_axis: WrappedAxis
 
 
 GonioWithOmegaType = TypeVar("GonioWithOmegaType", bound=GonioWithOmega)
