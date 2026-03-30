@@ -535,6 +535,11 @@ class TestFlyscanXrayCentrePlan:
             lambda msg: {"values": {"value": SynchrotronMode.USER}},
             "synchrotron-synchrotron_mode",
         )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda _: {"readback": np.array([0, 0])},
+            "gonio-omega_axis-offset_and_phase",
+        )
         msgs = sim_run_engine.simulate_plan(
             run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)
         )

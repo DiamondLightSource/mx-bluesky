@@ -231,7 +231,7 @@ def test_i04_grid_detect_then_xrc_closes_shutter_and_tidies_if_not_udc(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_and_move_to_xtal",
     new=MagicMock(),
 )
-def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_xbpm_feedback_before_run(
+def test_i04_default_grid_detect_and_xray_centre_sets_transmission_triggers_xbpm_feedback_and_does_not_pause_before_gridscan(
     mock_pause_feedback: MagicMock,
     mock_fix_transmission_and_exp_time: MagicMock,
     mock_create_parameters: MagicMock,
@@ -247,6 +247,11 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
     desired_transmission = 0.4
     mock_fix_transmission_and_exp_time.return_value = (desired_transmission, 1)
     mock_create_parameters.return_value = hyperion_fgs_params
+    sim_run_engine.add_handler(
+        "locate",
+        lambda msg: {"readback": np.array([0, 0])},
+        "gonio-omega_axis-offset_and_phase",
+    )
     simulate_xrc_result(
         sim_run_engine,
         zocalo,

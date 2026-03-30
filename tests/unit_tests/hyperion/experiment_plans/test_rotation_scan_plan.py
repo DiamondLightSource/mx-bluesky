@@ -951,12 +951,12 @@ def test_rotation_scan_moves_beamstop_into_place(
         # GDA behaviour is such that positive angles in the request result in
         # negative motor angles, but positive angles in the resulting nexus file
         # Should replicate GDA Output exactly
-        [True, RotationDirection.POSITIVE, -30, -29.85, RotationDirection.NEGATIVE],
+        [True, RotationDirection.POSITIVE, 330, 330.15, RotationDirection.NEGATIVE],
         # Should replicate GDA Output, except with /entry/data/transformation/omega
         # +1, 0, 0 instead of -1, 0, 0
-        [False, RotationDirection.NEGATIVE, 30, 30.15, RotationDirection.NEGATIVE],
-        [True, RotationDirection.NEGATIVE, -30, -30.15, RotationDirection.POSITIVE],
-        [False, RotationDirection.POSITIVE, 30, 29.85, RotationDirection.POSITIVE],
+        [False, RotationDirection.NEGATIVE, 390, 390.15, RotationDirection.NEGATIVE],
+        [True, RotationDirection.NEGATIVE, 330, 329.85, RotationDirection.POSITIVE],
+        [False, RotationDirection.POSITIVE, 390, 389.85, RotationDirection.POSITIVE],
     ],
 )
 @patch(
