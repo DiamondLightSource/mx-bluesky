@@ -52,10 +52,11 @@ class SupervisorRunner(PlanRunner):
             try:
                 for parameters in parameter_list:
                     LOGGER.info(
-                        f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
+                        f"Executing plan with parameters: {type(parameters)} {parameters.model_dump_json(indent=2)}"
                     )
                     match parameters:
                         case LoadCentreCollectParams():
+                            current_visit = parameters.visit
                             task_request = TaskRequest(
                                 name="load_centre_collect",
                                 params={"parameters": parameters},
