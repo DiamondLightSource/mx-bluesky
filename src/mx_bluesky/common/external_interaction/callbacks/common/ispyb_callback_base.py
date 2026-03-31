@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
-from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -131,13 +130,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params, "Event handled before activity_gated_start received params"
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
-            "ISPyB handler received event from read hardware"
+            f"ISPyB handler received event from read hardware: {doc}"
         )
         synchrotron_mode = doc["data"]["synchrotron-synchrotron_mode"]
-        assert isinstance(synchrotron_mode, SynchrotronMode)
         hwscan_data_collection_info = DataCollectionInfo(
             undulator_gap1=doc["data"]["undulator-current_gap"],
-            synchrotron_mode=synchrotron_mode.value,
+            synchrotron_mode=str(synchrotron_mode),
             slitgap_horizontal=doc["data"]["s4_slit_gaps-xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps-ygap"],
         )

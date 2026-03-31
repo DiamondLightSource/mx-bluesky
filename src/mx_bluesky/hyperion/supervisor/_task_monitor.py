@@ -28,7 +28,7 @@ class TaskMonitor:
     or whether it is unexpectedly stuck.
     """
 
-    DEFAULT_TIMEOUT_S = 600
+    DEFAULT_TIMEOUT_S = 1200
     FEEDBACK_STATUS_NAME = "xbpm_feedback-pos_stable"
 
     def __init__(self, blueapi_client: BlueapiClient, task_request: TaskRequest):
@@ -59,20 +59,25 @@ class TaskMonitor:
                 if feedback_statuses:
                     feedback_status = feedback_statuses[0]
                     waiting_for_beam = feedback_status.current != feedback_status.target
+                    LOGGER.debug(
+                        f"Waiting for beam {self._is_waiting_for_beam} -> {waiting_for_beam}, feedback_status = {feedback_status}"
+                    )
                     if self._is_waiting_for_beam != waiting_for_beam:
                         self._reset_timer()
                         self._is_waiting_for_beam = waiting_for_beam
-                    LOGGER.info(
-                        f"Hyperion blueapi reports feedback status = {self._is_waiting_for_beam}"
+                    LOGGER.debug(
+                        f"Hyperion blueapi reports waiting for feedback status: {self._is_waiting_for_beam}"
                     )
 
     def on_timeout_expiry(self):
+        LOGGER.debug("Timer expired")
         if not self._is_waiting_for_beam:
             self._cancel_request()
             self._raise_alert_collection_is_stuck()
         else:
-            self._raise_alert_collection_is_waiting_for_beam()
+            LOGGER.debug("Raising waiting for feedback alert")
             self._reset_timer()
+            self._raise_alert_collection_is_waiting_for_beam()
 
     def _reset_timer(self):
         if self._timer:
@@ -92,13 +97,17 @@ class TaskMonitor:
         now = time.monotonic()
         minutes = int((now - self._start_time) // 60)
         beamline = get_beamline_name("")
+        metadata = self._extract_metadata()
+        LOGGER.info(
+            f"Message is Hyperion is paused waiting for beam on {beamline}. Hyperion has been paused waiting for beam for {minutes} minutes."
+        )
         self._alerting_service.raise_alert(
             f"Hyperion is paused waiting for beam on {beamline}.",
             f"Hyperion has been paused waiting for beam for {minutes} minutes.",
-            self._extract_metadata(),
+            metadata,
         )
 
-    def _extract_metadata(self):
+    def _extract_metadata(self) -> dict[Metadata, str]:
         match self._task_request.params:
             case {"parameters": parameters}:
                 if isinstance(parameters, BaseModel):
@@ -109,9 +118,9 @@ class TaskMonitor:
                             "sample_puck": container,
                         }:
                             return {
-                                Metadata.SAMPLE_ID: sample_id,
-                                Metadata.VISIT: visit,
-                                Metadata.CONTAINER: container,
+                                Metadata.SAMPLE_ID: str(sample_id),
+                                Metadata.VISIT: str(visit),
+                                Metadata.CONTAINER: str(container),
                             }
         return {}
 

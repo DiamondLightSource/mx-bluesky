@@ -65,7 +65,7 @@ def runner(mock_bluesky_context, blueapi_config):
 
 
 @patch("mx_bluesky.hyperion.supervisor._supervisor.TaskMonitor")
-def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task_and_returns_the_visit(
+def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task_and_returns_the_new_visit(
     mock_task_monitor: MagicMock,
     mock_blueapi_client: MagicMock,
     runner: SupervisorRunner,
@@ -76,14 +76,18 @@ def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task_a
     parent.attach_mock(mock_task_monitor, "TaskMonitor")
     parent.attach_mock(mock_task_monitor.return_value, "task_monitor")
 
+    current_visit = TEST_VISIT
+    expected_visit = external_load_centre_collect_params.visit
+    assert expected_visit != current_visit
+
     result = runner.context.run_engine(
-        runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
+        runner.decode_and_execute(current_visit, [external_load_centre_collect_params])
     )
 
     expected_task_request = TaskRequest(
         name="load_centre_collect",
         params={"parameters": external_load_centre_collect_params},
-        instrument_session=TEST_VISIT,
+        instrument_session=expected_visit,
     )
     parent.assert_has_calls(
         [
@@ -97,7 +101,7 @@ def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task_a
         ]
     )
 
-    assert result.plan_result == TEST_VISIT  # type: ignore
+    assert result.plan_result == expected_visit  # type: ignore
 
 
 def test_decode_and_execute_wait(
