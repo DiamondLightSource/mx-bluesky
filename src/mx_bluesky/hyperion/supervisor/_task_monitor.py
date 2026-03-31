@@ -51,7 +51,6 @@ class TaskMonitor:
     def on_blueapi_event(self, event: AnyEvent):
         match event:
             case ProgressEvent(statuses=statuses):
-                LOGGER.info(f"Received progress event: {event}")
                 feedback_statuses = [
                     s
                     for s in statuses.values()
@@ -60,30 +59,28 @@ class TaskMonitor:
                 if feedback_statuses:
                     feedback_status = feedback_statuses[0]
                     waiting_for_beam = feedback_status.current != feedback_status.target
-                    LOGGER.info(
+                    LOGGER.debug(
                         f"Waiting for beam {self._is_waiting_for_beam} -> {waiting_for_beam}, feedback_status = {feedback_status}"
                     )
                     if self._is_waiting_for_beam != waiting_for_beam:
                         self._reset_timer()
                         self._is_waiting_for_beam = waiting_for_beam
-                    LOGGER.info(
+                    LOGGER.debug(
                         f"Hyperion blueapi reports waiting for feedback status: {self._is_waiting_for_beam}"
                     )
 
     def on_timeout_expiry(self):
-        LOGGER.info("Timer expired")
+        LOGGER.debug("Timer expired")
         if not self._is_waiting_for_beam:
             self._cancel_request()
             self._raise_alert_collection_is_stuck()
         else:
-            LOGGER.info("Raising waiting for feedback alert")
+            LOGGER.debug("Raising waiting for feedback alert")
             self._reset_timer()
             self._raise_alert_collection_is_waiting_for_beam()
 
     def _reset_timer(self):
-        LOGGER.info("Resetting timer")
         if self._timer:
-            LOGGER.info("Cancelling old timer")
             self._timer.cancel()
         self._timer = Timer(self.DEFAULT_TIMEOUT_S, self.on_timeout_expiry)
         self._timer.start()
@@ -98,15 +95,12 @@ class TaskMonitor:
 
     def _raise_alert_collection_is_waiting_for_beam(self):
         now = time.monotonic()
-        LOGGER.info(f"now={now}, start_time={self._start_time}")
         minutes = int((now - self._start_time) // 60)
         beamline = get_beamline_name("")
-        LOGGER.info("Calling raise_alert")
         metadata = self._extract_metadata()
         LOGGER.info(
             f"Message is Hyperion is paused waiting for beam on {beamline}. Hyperion has been paused waiting for beam for {minutes} minutes."
         )
-        LOGGER.info(f"metadata is {metadata}")
         self._alerting_service.raise_alert(
             f"Hyperion is paused waiting for beam on {beamline}.",
             f"Hyperion has been paused waiting for beam for {minutes} minutes.",

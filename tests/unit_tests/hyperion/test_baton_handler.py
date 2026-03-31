@@ -1147,9 +1147,10 @@ def test_baton_handler_ends_collections_if_synchrotron_machine_countdown_below_t
 
 
 def test_baton_handler_ignores_synchrotron_countdown_if_commissioning_mode_enabled(
-        bluesky_context: BlueskyContext,
-        udc_runner: PlanRunner,
-        mock_load_centre_collect: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    mock_load_centre_collect: MagicMock,
+    single_collection_agamemnon_request: MagicMock,
 ):
     synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
     set_mock_value(synchrotron.machine_user_countdown, 5)

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
-from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,

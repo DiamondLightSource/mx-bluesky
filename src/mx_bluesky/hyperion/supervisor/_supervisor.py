@@ -57,6 +57,7 @@ class SupervisorRunner(PlanRunner):
                     match parameters:
                         case LoadCentreCollectParams():
                             current_visit = parameters.visit
+                            instrument_session = current_visit
                             task_request = TaskRequest(
                                 name="load_centre_collect",
                                 params={"parameters": parameters},
