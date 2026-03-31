@@ -67,6 +67,9 @@ def patch_ensure_connected():
         yield p
 
 
+@pytest.mark.skip(
+    reason="Waiting for https://github.com/bluesky/ophyd-async/pull/1222 to make it into a stable release"
+)
 @pytest.mark.parametrize(
     "i, patch_setup_devices",
     [[i, True] for i in range(1, 101)],
