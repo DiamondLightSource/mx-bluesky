@@ -4,8 +4,17 @@ from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 from blueapi.client.event_bus import BlueskyStreamingError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    InvalidParametersError,
+    NoContentError,
+    ServiceUnavailableError,
+    UnauthorisedAccessError,
+    UnknownPlanError,
+)
 from blueapi.core import BlueskyContext
-from blueapi.service.model import TaskRequest
+from blueapi.service.model import TaskRequest, WorkerTask
 from blueapi.worker import TaskStatus, WorkerState
 from blueapi.worker.event import TaskError, TaskResult
 from bluesky import RunEngine, RunEngineInterrupted
@@ -376,3 +385,59 @@ def test_sample_error_skips_subsequent_instructions(
         )
     )
     mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
+
+
+@patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
+def test_supervisor_retries_service_unavailable_error(
+    mock_sleep: MagicMock,
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+):
+    mock_blueapi_client.run_task.side_effect = ServiceUnavailableError()
+    parent = MagicMock()
+    parent.attach_mock(mock_sleep, "sleep")
+    parent.attach_mock(mock_blueapi_client.run_task, "run_task")
+    with pytest.raises(PlanError, match="Unable to connect to hyperion-blueapi"):
+        runner.context.run_engine(
+            runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
+        )
+    parent.assert_has_calls(
+        [
+            call.run_task(ANY, on_event=ANY),
+            call.sleep(2),
+            call.run_task(ANY, on_event=ANY),
+            call.sleep(4),
+            call.run_task(ANY, on_event=ANY),
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "exception_to_raise",
+    [
+        BlueskyRemoteControlError(),
+        NoContentError(WorkerTask),
+        UnauthorisedAccessError(),
+        UnknownPlanError(),
+        InvalidParametersError([]),
+        BlueskyRequestError(422, "Test message"),
+    ],
+)
+@patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
+def test_supervisor_hands_back_baton_if_any_other_error(
+    mock_sleep: MagicMock,
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+    exception_to_raise: Exception,
+):
+    mock_blueapi_client.run_task.side_effect = exception_to_raise
+    with pytest.raises(
+        PlanError, match="Unexpected error communicating with hyperion-blueapi"
+    ):
+        runner.context.run_engine(
+            runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
+        )
+    mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
+    mock_sleep.assert_not_called()

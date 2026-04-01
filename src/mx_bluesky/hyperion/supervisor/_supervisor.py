@@ -1,7 +1,9 @@
+import time
 from collections.abc import Sequence
 
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import BlueskyStreamingError
+from blueapi.client.rest import ServiceUnavailableError
 from blueapi.config import ApplicationConfig
 from blueapi.core import BlueskyContext
 from blueapi.service.model import TaskRequest
@@ -22,6 +24,9 @@ from mx_bluesky.hyperion._plan_runner_params import (
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 from mx_bluesky.hyperion.supervisor._task_monitor import TaskMonitor
+
+MAX_TRIES = 3
+RETRY_INITIAL_DELAY_S = 2
 
 
 class SupervisorRunner(PlanRunner):
@@ -123,9 +128,31 @@ class SupervisorRunner(PlanRunner):
     def _run_task_remotely(self, task_request: TaskRequest):
         try:
             with TaskMonitor(self.blueapi_client, task_request) as task_monitor:
-                task_status = self.blueapi_client.run_task(
-                    task_request, on_event=task_monitor.on_blueapi_event
-                )
+                tries, task_status, delay = MAX_TRIES, None, RETRY_INITIAL_DELAY_S
+                while tries > 0:
+                    tries -= 1
+                    try:
+                        task_status = self.blueapi_client.run_task(
+                            task_request, on_event=task_monitor.on_blueapi_event
+                        )
+                        break
+                    except ServiceUnavailableError as e:
+                        LOGGER.warning(
+                            "Could not connect to blueapi client.", exc_info=e
+                        )
+                        time.sleep(delay)  # noqa
+                        delay += delay
+                    except BlueskyStreamingError:
+                        raise
+                    except Exception as e:
+                        raise PlanError(
+                            "Unexpected error communicating with hyperion-blueapi"
+                        ) from e
+                else:
+                    LOGGER.error("Max retries reached, ending UDC.")
+                    raise PlanError(
+                        f"Unable to connect to hyperion-blueapi after {MAX_TRIES} attempts, ending UDC"
+                    )
             LOGGER.info(
                 f"hyperion-blueapi completed task execution with task_status {task_status}"
             )
