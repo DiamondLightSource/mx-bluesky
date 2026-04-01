@@ -3,6 +3,8 @@ from enum import StrEnum
 from typing import Protocol
 from urllib.parse import quote, urlencode
 
+from dodal.utils import get_beamline_name
+
 
 class Metadata(StrEnum):
     """Metadata fields that can be specified by the caller when raising an alert."""
@@ -44,6 +46,20 @@ class AlertService(Protocol):
                 by default.
         """
         pass
+
+    def raise_error_alert(self, content: str, metadata: dict[Metadata, str]):
+        """
+        Raise an alert that will be forwarded to beamline staff and EHC controllers for out-of-hours
+            support.
+        Args:
+            content: Plain text content detailing the nature of the incident.
+            metadata: A dict of strings that can be included as metadata in the alert for
+                those backends that support it. The summary and content will be included
+                by default.
+
+        """
+        beamline = get_beamline_name("")
+        self.raise_alert(f"UDC encountered an error on {beamline}", content, metadata)
 
 
 _alert_service: AlertService

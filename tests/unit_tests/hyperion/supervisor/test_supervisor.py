@@ -393,6 +393,7 @@ def test_supervisor_retries_service_unavailable_error(
     runner: SupervisorRunner,
     external_load_centre_collect_params: LoadCentreCollectParams,
     mock_blueapi_client: MagicMock,
+    mock_alert_service: MagicMock,
 ):
     mock_blueapi_client.run_task.side_effect = ServiceUnavailableError()
     parent = MagicMock()
@@ -410,6 +411,10 @@ def test_supervisor_retries_service_unavailable_error(
             call.sleep(4),
             call.run_task(ANY, on_event=ANY),
         ]
+    )
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "hyperion-supervisor stopped UDC because unable to connect to hyperion-blueapi.",
+        {},
     )
 
 
@@ -431,6 +436,7 @@ def test_supervisor_hands_back_baton_if_any_other_error(
     external_load_centre_collect_params: LoadCentreCollectParams,
     mock_blueapi_client: MagicMock,
     exception_to_raise: Exception,
+    mock_alert_service: MagicMock,
 ):
     mock_blueapi_client.run_task.side_effect = exception_to_raise
     with pytest.raises(
@@ -441,3 +447,6 @@ def test_supervisor_hands_back_baton_if_any_other_error(
         )
     mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
     mock_sleep.assert_not_called()
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "Unexpected error communicating with hyperion-blueapi", {}
+    )

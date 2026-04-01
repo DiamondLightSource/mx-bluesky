@@ -230,8 +230,7 @@ def test_sample_handling_callback_raises_an_alert_when_beamline_error_occurs(
         run_engine(plan_with_general_exception(exception_type, message))
 
     if expect_alert:
-        mock_alert_service.raise_alert.assert_called_once_with(
-            "UDC encountered an error on i03",
+        mock_alert_service.raise_error_alert.assert_called_once_with(
             f"Hyperion encountered the following beamline error: {message}",
             {
                 Metadata.SAMPLE_ID: str(TEST_SAMPLE_ID),

@@ -16,6 +16,7 @@ from jsonschema import ValidationError
 from pydantic import BaseModel
 from requests import ConnectionError, HTTPError, Timeout
 
+from mx_bluesky.common.external_interaction.alerting import get_alerting_service
 from mx_bluesky.common.parameters.components import (
     WithVisit,
 )
@@ -187,9 +188,9 @@ def _get_parameters_from_url(url: str) -> dict:
                         f"Agamemnon returned server error status {response.status_code}, retries left {tries}: {str(e)}"
                     )
                 else:
-                    raise PlanError(
-                        f"Agamemnon returned unexpected HTTP response status code {response.status_code}"
-                    ) from e
+                    msg = f"Agamemnon returned unexpected HTTP response status code {response.status_code}"
+                    get_alerting_service().raise_error_alert(msg, {})
+                    raise PlanError(msg) from e
         except ConnectionError as e:
             LOGGER.warning(
                 f"Connection error attempting to connect to agamemnon, retries left {tries}",
@@ -203,9 +204,9 @@ def _get_parameters_from_url(url: str) -> dict:
             time.sleep(delay)  # noqa
             delay *= 2
     else:
-        raise PlanError(
-            f"Unable to fetch instruction from agamemnon after {MAX_TRIES} attempts, ending UDC."
-        )
+        msg = f"Unable to fetch instruction from agamemnon after {MAX_TRIES} attempts, ending UDC."
+        get_alerting_service().raise_error_alert(msg, {})
+        raise PlanError(msg)
     return json.loads(response.content)
 
 

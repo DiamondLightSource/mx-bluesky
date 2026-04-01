@@ -81,9 +81,7 @@ class TaskMonitor:
         self._timer.start()
 
     def _raise_alert_collection_is_stuck(self):
-        beamline = get_beamline_name("")
-        self._alerting_service.raise_alert(
-            f"UDC encountered an error on {beamline}",
+        self._alerting_service.raise_error_alert(
             f"Hyperion Supervisor detected that BlueAPI was stuck for {self.DEFAULT_TIMEOUT_S} seconds.",
             self._extract_metadata(),
         )

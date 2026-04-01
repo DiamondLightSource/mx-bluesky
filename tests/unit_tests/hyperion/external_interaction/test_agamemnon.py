@@ -619,6 +619,7 @@ def test_create_parameters_from_agamemnon_retries_on_connection_error(
 def test_create_parameters_from_agamemnon_retries_on_500_error(
     mock_requests_get: MagicMock,
     mock_sleep: MagicMock,
+    mock_alert_service: MagicMock,
 ):
     response = Mock(spec=Response)
     response.status_code = 500
@@ -651,6 +652,9 @@ def test_create_parameters_from_agamemnon_retries_on_500_error(
             call.response.raise_for_status(),
         ]
     )
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "Unable to fetch instruction from agamemnon after 3 attempts, ending UDC.", {}
+    )
 
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.time.sleep")
@@ -658,6 +662,7 @@ def test_create_parameters_from_agamemnon_retries_on_500_error(
 def test_create_parameters_from_agamemnon_fails_on_40x_error_and_ends_udc(
     mock_requests_get: MagicMock,
     mock_sleep: MagicMock,
+    mock_alert_service: MagicMock,
 ):
     response = Mock(spec=Response)
     response.status_code = 400
@@ -672,3 +677,6 @@ def test_create_parameters_from_agamemnon_fails_on_40x_error_and_ends_udc(
         create_parameters_from_agamemnon()
     mock_requests_get.assert_called_once()
     mock_sleep.assert_not_called()
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "Agamemnon returned unexpected HTTP response status code 400", {}
+    )

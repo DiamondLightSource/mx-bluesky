@@ -12,6 +12,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from pydantic import BaseModel
 
+from mx_bluesky.common.external_interaction.alerting import get_alerting_service
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
 from mx_bluesky.common.utils.log import LOGGER
@@ -145,11 +146,18 @@ class SupervisorRunner(PlanRunner):
                     except BlueskyStreamingError:
                         raise
                     except Exception as e:
+                        get_alerting_service().raise_error_alert(
+                            "Unexpected error communicating with hyperion-blueapi", {}
+                        )
                         raise PlanError(
                             "Unexpected error communicating with hyperion-blueapi"
                         ) from e
                 else:
                     LOGGER.error("Max retries reached, ending UDC.")
+                    get_alerting_service().raise_error_alert(
+                        "hyperion-supervisor stopped UDC because unable to connect to hyperion-blueapi.",
+                        {},
+                    )
                     raise PlanError(
                         f"Unable to connect to hyperion-blueapi after {MAX_TRIES} attempts, ending UDC"
                     )
