@@ -122,6 +122,8 @@ from tests.test_data.oav import (
     TEST_OAV_ZOOM_LEVELS,
 )
 
+TEST_BEAMLINE_PARAMETERS = "tests/test_data/test_beamline_parameters.txt"
+
 pytest_plugins = ["tests.expeye_helpers"]
 
 
@@ -376,7 +378,7 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    with Path("tests/test_data/test_beamline_parameters.txt").open("r") as f:
+    with Path(TEST_BEAMLINE_PARAMETERS).open("r") as f:
         contents = f.read()
     return json.loads(contents)
 
@@ -576,8 +578,8 @@ def beamstop_phase1(
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.beamlines.i03.get_beamline_parameters",
-        return_value=beamline_parameters,
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
     ):
         beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
 

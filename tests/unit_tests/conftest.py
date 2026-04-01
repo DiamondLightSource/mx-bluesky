@@ -77,7 +77,7 @@ from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGri
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
-from tests.conftest import raw_params_from_file
+from tests.conftest import TEST_BEAMLINE_PARAMETERS, raw_params_from_file
 from tests.test_data.oav import TEST_DISPLAY_CONFIG, TEST_OAV_ZOOM_LEVELS
 
 pytest_plugins = ["dodal.testing.fixtures.config_server"]
@@ -87,6 +87,7 @@ i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 _ALLOWED_PYTEST_TASKS = {"async_finalizer", "async_setup", "async_teardown"}
 
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+
 
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
@@ -570,7 +571,7 @@ def i03_beamline_parameters():
     """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
     with patch.dict(
         "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-        {"i03": "tests/test_data/test_beamline_parameters.txt"},
+        {"i03": TEST_BEAMLINE_PARAMETERS},
     ) as params:
         with ExitStack() as context_stack:
             for context_mgr in [
@@ -586,7 +587,7 @@ def test_beamline_parameters():
     """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
     with patch.dict(
         "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-        {"test": "tests/test_data/test_beamline_parameters.txt"},
+        {"test": TEST_BEAMLINE_PARAMETERS},
     ) as params:
         yield params
 
@@ -599,3 +600,15 @@ def patch_get_hyperion_feature_settings():
         str(fake_path),
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def patch_config_paths(monkeypatch):
+    monkeypatch.setattr(
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
+    )
+    monkeypatch.setattr(
+        "dodal.beamlines.i04.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
+    )
