@@ -206,7 +206,3 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
         )
-
-
-def test_oav_snapshot_plan_moves_omega_phase_regardless_of_absolute_position():
-    pass

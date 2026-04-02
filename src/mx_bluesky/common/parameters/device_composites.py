@@ -1,7 +1,7 @@
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
-from dodal.common.maths import WrappedAxis
+from dodal.common.wrapped_axis import WrappedAxis
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )

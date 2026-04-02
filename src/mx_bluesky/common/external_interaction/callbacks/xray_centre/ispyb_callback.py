@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
-from dodal.common.maths import AngleWithPhase
+from dodal.common.maths import reflect_phase
 from dodal.devices.zocalo import ZocaloStartInfo
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
@@ -256,13 +256,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return [scan_data_info]
 
     def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
-        if (
-            omega_offset_and_phase := doc.get("gonio-wrapped_omega-offset_and_phase")
-        ) is not None:
-            unwrapped_omega = AngleWithPhase.from_offset_and_phase(
-                omega_offset_and_phase
-            ).unwrap()
-            omega_in_gda_space = AngleWithPhase.wrap(-unwrapped_omega).phase
+        if (phase := doc.get("gonio-wrapped_omega-phase")) is not None:
+            omega_in_gda_space = reflect_phase(phase)
             data_collection_info.omega_start = omega_in_gda_space
             data_collection_info.axis_start = omega_in_gda_space
             data_collection_info.axis_end = omega_in_gda_space
