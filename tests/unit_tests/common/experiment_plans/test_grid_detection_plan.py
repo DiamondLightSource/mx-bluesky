@@ -377,8 +377,8 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
             "gonio-y": 234,
             "gonio-z": 467,
             "gonio-omega": 45,
-            "gonio-omega_axis-phase": 45,
-            "gonio-omega_axis-offset_and_phase": np.array([0, 45]),
+            "gonio-wrapped_omega-phase": 45,
+            "gonio-wrapped_omega-offset_and_phase": np.array([0, 45]),
         }
     }
 

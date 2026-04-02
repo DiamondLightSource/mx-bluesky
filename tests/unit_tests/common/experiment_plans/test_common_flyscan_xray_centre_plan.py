@@ -538,7 +538,7 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_handler(
             "locate",
             lambda _: {"readback": np.array([0, 0])},
-            "gonio-omega_axis-offset_and_phase",
+            "gonio-wrapped_omega-offset_and_phase",
         )
         msgs = sim_run_engine.simulate_plan(
             run_gridscan(fake_fgs_composite, test_fgs_params, beamline_specific)

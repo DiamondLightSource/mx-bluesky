@@ -34,7 +34,7 @@ from ophyd_async.epics.motor import Motor
 @runtime_checkable
 class GonioWithOmega(Protocol):
     omega: Motor
-    omega_axis: WrappedAxis
+    wrapped_omega: WrappedAxis
 
 
 GonioWithOmegaType = TypeVar("GonioWithOmegaType", bound=GonioWithOmega)

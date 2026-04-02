@@ -180,7 +180,7 @@ def run_gridscan(
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
     offset_and_phase: MotorOffsetAndPhase = yield from bps.rd(
-        fgs_composite.gonio.omega_axis.offset_and_phase
+        fgs_composite.gonio.wrapped_omega.offset_and_phase
     )
     wrapped_0 = AngleWithPhase.from_offset_and_phase(offset_and_phase).nearest_to_phase(
         0

@@ -135,7 +135,7 @@ def composite(
     sim_run_engine.add_handler(
         "locate",
         lambda _: Location(setpoint=np.array([0, 0]), readback=np.array([0, 0])),
-        "gonio-omega_axis-offset_and_phase",
+        "gonio-wrapped_omega-offset_and_phase",
     )
     sim_run_engine.add_read_handler_for(
         composite.synchrotron.synchrotron_mode, SynchrotronMode.USER

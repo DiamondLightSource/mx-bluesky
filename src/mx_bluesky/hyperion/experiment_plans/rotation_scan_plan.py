@@ -244,7 +244,7 @@ def _move_and_rotation(
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
 
-    current_omega_offset_and_phase = yield from bps.rd(composite.gonio.omega_axis)
+    current_omega_offset_and_phase = yield from bps.rd(composite.gonio.wrapped_omega)
     motion_values = calculate_motion_profile(
         params,
         motor_time_to_speed,

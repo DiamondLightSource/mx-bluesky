@@ -250,7 +250,7 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_triggers_xbpm
     sim_run_engine.add_handler(
         "locate",
         lambda msg: {"readback": np.array([0, 0])},
-        "gonio-omega_axis-offset_and_phase",
+        "gonio-wrapped_omega-offset_and_phase",
     )
     simulate_xrc_result(
         sim_run_engine,

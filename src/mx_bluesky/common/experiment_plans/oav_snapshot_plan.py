@@ -85,7 +85,7 @@ def _generate_oav_snapshots(composite: OavSnapshotComposite, params: WithSnapsho
 def _take_oav_snapshot(composite: OavSnapshotComposite, omega: float):
     """Create new snapshots by triggering the OAV"""
     yield from bps.abs_set(
-        composite.gonio.omega_axis.phase, omega, group=OAV_SNAPSHOT_SETUP_SHOT
+        composite.gonio.wrapped_omega.phase, omega, group=OAV_SNAPSHOT_SETUP_SHOT
     )
     filename = _snapshot_filename(omega)
     yield from bps.abs_set(

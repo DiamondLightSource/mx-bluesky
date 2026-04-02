@@ -814,7 +814,7 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj is composite.gonio.omega_axis.phase
+            and msg.obj is composite.gonio.wrapped_omega.phase
             and msg.args[0] == omega,
         )
         msgs = assert_message_and_return_remaining(

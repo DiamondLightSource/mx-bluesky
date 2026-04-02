@@ -257,7 +257,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
 
     def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
         if (
-            omega_offset_and_phase := doc.get("gonio-omega_axis-offset_and_phase")
+            omega_offset_and_phase := doc.get("gonio-wrapped_omega-offset_and_phase")
         ) is not None:
             unwrapped_omega = AngleWithPhase.from_offset_and_phase(
                 omega_offset_and_phase

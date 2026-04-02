@@ -154,7 +154,7 @@ def pin_tip_centre_plan(
     tip = yield from move_pin_into_view(pin_tip_detect, gonio)
     yield from offset_and_move(tip)
 
-    yield from bps.mvr(gonio.omega_axis.phase, -90)
+    yield from bps.mvr(gonio.wrapped_omega.phase, -90)
 
     # need to wait for the OAV image to update
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements

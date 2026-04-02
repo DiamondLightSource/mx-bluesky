@@ -68,7 +68,7 @@ class GridDetectionCallback(CallbackBase):
         top_left_y_px = data["oav-grid_snapshot-top_left_y"]
         y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
-        gonio_omega_phase = data["gonio-omega_axis-phase"]
+        gonio_omega_phase = data["gonio-wrapped_omega-phase"]
         current_xyz = np.array([data["gonio-x"], data["gonio-y"], data["gonio-z"]])
 
         centre_of_first_box = (
