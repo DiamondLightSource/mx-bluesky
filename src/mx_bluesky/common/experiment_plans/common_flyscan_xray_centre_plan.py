@@ -182,9 +182,7 @@ def run_gridscan(
     offset_and_phase: MotorOffsetAndPhase = yield from bps.rd(
         fgs_composite.gonio.wrapped_omega.offset_and_phase
     )
-    wrapped_0 = AngleWithPhase.from_offset_and_phase(offset_and_phase).nearest_to_phase(
-        0
-    )
+    wrapped_0 = AngleWithPhase(offset_and_phase).nearest_with_phase(0)
     with TRACER.start_span("moving_omega_to_0"):
         yield from bps.abs_set(fgs_composite.gonio.omega, wrapped_0.unwrap())
 
