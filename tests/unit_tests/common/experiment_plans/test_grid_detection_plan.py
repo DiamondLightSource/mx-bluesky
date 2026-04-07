@@ -8,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from daq_config_server import ConfigClient
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
@@ -58,7 +59,9 @@ def fake_devices(
     test_config_files: dict[str, str],
 ):
     params = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=params)
     set_mock_value(oav.zoom_controller.level, "5.0x")
@@ -459,15 +462,19 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-grid_snapshot-top_left_y"
-        and msg.args == (expected_min_y,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-grid_snapshot-top_left_y"
+            and msg.args == (expected_min_y,)
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-grid_snapshot-num_boxes_y"
-        and msg.args == (expected_y_steps,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-grid_snapshot-num_boxes_y"
+            and msg.args == (expected_y_steps,)
+        ),
     )
 
 

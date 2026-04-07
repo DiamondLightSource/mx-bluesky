@@ -8,7 +8,7 @@ from collections.abc import Callable, Generator, Sequence
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any, TypeVar
+from typing import Any, TypedDict, TypeVar
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -117,6 +117,13 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from tests.test_data.oav import (
+    TEST_DISPLAY_CONFIG,
+    TEST_OAV_CENTRING_JSON,
+    TEST_OAV_ZOOM_LEVELS,
+)
+
+TEST_BEAMLINE_PARAMETERS = "tests/test_data/test_beamline_parameters.txt"
 
 pytest_plugins = ["tests.expeye_helpers"]
 
@@ -222,6 +229,13 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
         "bounding_box": [[-1, -1, -1], [3, 4, 4]],
         "sample_id": _NO_SAMPLE_ID,
     }
+]
+
+MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
+mock_paths = [
+    ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
+    ("ZOOM_PARAMS_FILE", TEST_OAV_ZOOM_LEVELS),
+    ("DISPLAY_CONFIG", TEST_DISPLAY_CONFIG),
 ]
 
 
@@ -365,7 +379,7 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    with Path("tests/test_data/test_beamline_parameters.txt").open("r") as f:
+    with Path(TEST_BEAMLINE_PARAMETERS).open("r") as f:
         contents = f.read()
     return json.loads(contents)
 
@@ -479,7 +493,9 @@ def synchrotron():
 @pytest.fixture
 def oav(test_config_files):
     parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
@@ -563,8 +579,8 @@ def beamstop_phase1(
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.beamlines.i03.get_beamline_parameters",
-        return_value=beamline_parameters,
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
     ):
         beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
 
@@ -753,13 +769,19 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
     return Beamsize(aperture_scatterguard, name="beamsize")
 
 
+class ConfigFilesForTests(TypedDict):
+    zoom_params_file: str
+    oav_config_json: str
+    display_config: str
+
+
 @pytest.fixture()
 def test_config_files():
-    return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-        "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display.configuration",
-    }
+    return ConfigFilesForTests(
+        zoom_params_file=TEST_OAV_ZOOM_LEVELS,
+        oav_config_json=TEST_OAV_CENTRING_JSON,
+        display_config=TEST_DISPLAY_CONFIG,
+    )
 
 
 @pytest.fixture()
