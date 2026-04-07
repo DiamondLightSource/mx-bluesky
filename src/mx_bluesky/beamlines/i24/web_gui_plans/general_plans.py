@@ -87,7 +87,7 @@ def gui_stage_move_on_click(
 
 @bpp.run_decorator()
 def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
-    oav = i24.oav()
+    oav = i24.oav(i24.config_client())
     gonio = i24.vgonio()
 
     x_microns_per_pixel = yield from bps.rd(oav.microns_per_pixel_x)

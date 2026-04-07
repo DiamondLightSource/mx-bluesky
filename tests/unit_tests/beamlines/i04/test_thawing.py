@@ -6,6 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
+from daq_config_server import ConfigClient
 from dodal.beamlines import i04
 from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
@@ -29,9 +30,7 @@ from mx_bluesky.beamlines.i04.thawing_plan import (
     thaw_and_murko_centre,
     thaw_and_stream_to_redis,
 )
-
-DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
-ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
+from tests.conftest import ConfigFilesForTests
 
 
 class MyError(Exception):
@@ -39,8 +38,8 @@ class MyError(Exception):
 
 
 @pytest.fixture
-async def oav_full_screen() -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML)
+async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV(
             "", config=oav_config, name="oav_full_screen", mjpeg_prefix="XTAL"
@@ -52,8 +51,8 @@ async def oav_full_screen() -> OAV:
 
 
 @pytest.fixture
-async def oav_roi() -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML)
+async def oav_roi(test_config_files: ConfigFilesForTests) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="oav")
     set_mock_value(oav.zoom_controller.level, "5.0x")
@@ -296,14 +295,17 @@ def _test_plan_will_switch_murko_source_half_way_through_thaw(
     for source in [Source.FULL_SCREEN.value, Source.ROI.value]:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == "oav_to_redis_forwarder-selected_source"
-            and msg.args[0] == source,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == "oav_to_redis_forwarder-selected_source"
+                and msg.args[0] == source
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "kickoff"
-            and msg.obj.name == "oav_to_redis_forwarder",
+            lambda msg: (
+                msg.command == "kickoff" and msg.obj.name == "oav_to_redis_forwarder"
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
@@ -311,8 +313,9 @@ def _test_plan_will_switch_murko_source_half_way_through_thaw(
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "complete"
-            and msg.obj.name == "oav_to_redis_forwarder",
+            lambda msg: (
+                msg.command == "complete" and msg.obj.name == "oav_to_redis_forwarder"
+            ),
         )
 
 
@@ -522,9 +525,11 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "murko_results-sample_id"
-        and msg.args[0] == "1234",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "murko_results-sample_id"
+            and msg.args[0] == "1234"
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "murko_results"
