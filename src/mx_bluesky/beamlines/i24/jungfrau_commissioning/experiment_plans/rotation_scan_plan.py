@@ -4,7 +4,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
 from bluesky.utils import MsgGenerator
-from dodal.common.maths import AngleWithPhase
 from dodal.devices.beamlines.i24.aperture import AperturePositions
 from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
 from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
@@ -171,7 +170,7 @@ def single_rotation_plan(
         _max_velocity_deg_s = yield from bps.rd(composite.gonio.omega.max_velocity)
 
         motion_values = calculate_motion_profile(
-            params, _motor_time_to_speed, _max_velocity_deg_s, AngleWithPhase.wrap(0)
+            params, _motor_time_to_speed, _max_velocity_deg_s
         )
 
         # Callback which intercepts read documents and writes to json file,

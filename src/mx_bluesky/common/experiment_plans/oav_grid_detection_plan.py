@@ -7,6 +7,7 @@ import bluesky.plan_stubs as bps
 import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
+from dodal.common.maths import AngleWithPhase
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
@@ -53,9 +54,9 @@ def get_min_and_max_y_of_pin(
 def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
     """We need to match the 0 and -90 that the fast grid scan performs but the order in
     which we do the grid detection does not matter so we do the closest angle first."""
-    current_omega = yield from bps.rd(smargon.wrapped_omega.phase)
-    axis = smargon.wrapped_omega
-    if axis.distance(current_omega, -90) < axis.distance(current_omega, 0):
+    offset_and_phase = yield from bps.rd(smargon.wrapped_omega)
+    current_omega = AngleWithPhase(offset_and_phase)
+    if current_omega.phase_distance(-90) < current_omega.phase_distance(0):
         return [-90, 0]
     else:
         return [0, -90]
