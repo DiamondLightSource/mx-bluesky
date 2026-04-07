@@ -8,7 +8,6 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
-from dodal.common.maths import AngleWithPhase, MotorOffsetAndPhase
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -179,12 +178,8 @@ def run_gridscan(
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     # Currently gridscan only works for omega 0, see https://github.com/DiamondLightSource/mx-bluesky/issues/410
-    offset_and_phase: MotorOffsetAndPhase = yield from bps.rd(
-        fgs_composite.gonio.wrapped_omega.offset_and_phase
-    )
-    wrapped_0 = AngleWithPhase(offset_and_phase).nearest_with_phase(0)
     with TRACER.start_span("moving_omega_to_0"):
-        yield from bps.abs_set(fgs_composite.gonio.omega, wrapped_0.unwrap())
+        yield from bps.abs_set(fgs_composite.gonio.wrapped_omega.phase, 0)
 
     with TRACER.start_span("ispyb_hardware_readings"):
         yield from beamline_specific.read_pre_flyscan_plan()
