@@ -93,7 +93,7 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "gonio"
-        and msg.args[0] == CombinedMove(x=0, y=0, z=0, omega=0, chi=0, phi=0),
+        and msg.args[0] == CombinedMove(x=0, y=0, z=0, chi=0, phi=0),
     )
 
     assert_message_and_return_remaining(
