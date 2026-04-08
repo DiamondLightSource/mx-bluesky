@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.2.1.dev24+g35e6eed0b"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=mx-bluesky_1598_mod_360#35e6eed0be19fc961a958292851fe516b7d5455a" }
+version = "2.2.1.dev29+gc7b542534"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=1998_serialize_omega_combined_move#c7b54253438c998c029424d8f65d6e56876cd9e6" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2109,7 +2109,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.3.0" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=mx-bluesky_1598_mod_360" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=1998_serialize_omega_combined_move" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
