@@ -148,7 +148,7 @@ class BeamDrawingCallback(PlanReactiveCallback):
                 data.get("gonio-y", 0.0),
                 data.get("gonio-z", 0.0),
             ),
-            omega=round(data.get("gonio-omega", 0.0)),
+            omega=round(data.get("gonio-wrapped_omega-phase", 0.0)),
         )
 
     def _handle_grid_snapshot(self, doc: Event):

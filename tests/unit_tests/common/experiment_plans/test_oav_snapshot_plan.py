@@ -122,7 +122,7 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "gonio-omega"
+            and msg.obj.name == "gonio-wrapped_omega-phase"
             and msg.args[0] == expected["omega"]
             and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
