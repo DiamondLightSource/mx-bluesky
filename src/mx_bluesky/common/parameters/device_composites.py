@@ -1,7 +1,6 @@
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
-from dodal.common.wrapped_axis import WrappedAxis
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
@@ -23,6 +22,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.wrapped_axis import WrappedAxis
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
