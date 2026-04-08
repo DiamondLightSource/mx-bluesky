@@ -4,7 +4,7 @@ import bluesky.plan_stubs as bps
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.motors import XYZOmegaStage
+from dodal.devices.motors import XYZOmegaStage, XYZWrappedOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
@@ -33,7 +33,7 @@ class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     oav: OAV
-    gonio: XYZOmegaStage
+    gonio: XYZWrappedOmegaStage
     pin_tip_detection: PinTipDetection
 
 
@@ -126,7 +126,7 @@ def pin_tip_centre_plan(
                                     to be.
     """
     oav: OAV = composite.oav
-    gonio: XYZOmegaStage = composite.gonio
+    gonio: XYZWrappedOmegaStage = composite.gonio
     oav_params = OAVParameters("pinTipCentring", oav_config_file)
 
     pin_tip_setup = composite.pin_tip_detection
