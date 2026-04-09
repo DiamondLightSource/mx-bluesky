@@ -127,7 +127,7 @@ def load_centre_collect_msp_params(load_centre_collect_params: LoadCentreCollect
 @pytest.fixture
 def load_centre_collect_composite(
     grid_detect_then_xray_centre_composite,
-    beamstop_phase1,
+    beamstop_phase1_for_system_test,
     composite_for_rotation_scan,
     thawer,
     vfm,
@@ -144,7 +144,7 @@ def load_centre_collect_composite(
         backlight=composite_for_rotation_scan.backlight,
         baton=baton,
         beamsize=beamsize,
-        beamstop=beamstop_phase1,
+        beamstop=beamstop_phase1_for_system_test,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,

@@ -39,15 +39,11 @@ from dodal.devices.attenuator.filter_selections import (
     I24FilterOneSelections,
     I24FilterTwoSelections,
 )
-from dodal.devices.backlight import Backlight
 from dodal.devices.baton import Baton
-from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
 from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamlines.i04.transfocator import Transfocator
-from dodal.devices.detector.detector_motion import DetectorMotion
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import SampleLocation
@@ -58,7 +54,6 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
@@ -547,36 +542,6 @@ def attenuator():
 
 
 @pytest.fixture
-def beamstop_phase1(
-    beamline_parameters: dict[str, Any],
-    sim_run_engine: RunEngineSimulator,
-) -> Generator[Beamstop, Any, Any]:
-    with patch(
-        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
-        TEST_BEAMLINE_PARAMETERS,
-    ):
-        beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
-
-        set_mock_value(beamstop.x_mm.user_readback, 1.52)
-        set_mock_value(beamstop.y_mm.user_readback, 44.78)
-        set_mock_value(beamstop.z_mm.user_readback, 30.0)
-
-        # sim_run_engine.add_read_handler_for(
-        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
-        # )
-        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
-        def locate_beamstop(_):
-            return {"readback": BeamstopPositions.DATA_COLLECTION}
-
-        sim_run_engine.add_handler(
-            "locate", locate_beamstop, beamstop.selected_pos.name
-        )
-
-        yield beamstop
-        beamline_utils.clear_devices()
-
-
-@pytest.fixture
 def xbpm_feedback(
     baton: Baton,  # Ensure baton is cached with mock configuration
 ):
@@ -755,33 +720,6 @@ def test_config_files():
         oav_config_json=TEST_OAV_CENTRING_JSON,
         display_config=TEST_DISPLAY_CONFIG,
     )
-
-
-@pytest.fixture()
-def fake_create_devices(
-    beamstop_phase1: Beamstop,
-    eiger: EigerDetector,
-    smargon: Smargon,
-    zebra: Zebra,
-    detector_motion: DetectorMotion,
-    aperture_scatterguard: ApertureScatterguard,
-    backlight: Backlight,
-):
-    mock_omega_sets = MagicMock(side_effect=lambda _: completed_status())
-
-    smargon.omega.velocity.set = mock_omega_sets
-    smargon.omega.set = mock_omega_sets
-
-    devices = {
-        "beamstop": beamstop_phase1,
-        "eiger": eiger,
-        "gonio": smargon,
-        "zebra": zebra,
-        "detector_motion": detector_motion,
-        "backlight": backlight,
-        "ap_sg": aperture_scatterguard,
-    }
-    return devices
 
 
 @pytest.fixture

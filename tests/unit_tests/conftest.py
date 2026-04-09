@@ -11,8 +11,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.common.beamlines import beamline_utils
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
@@ -21,7 +23,7 @@ from dodal.devices.attenuator.attenuator import (
     BinaryFilterAttenuator,
 )
 from dodal.devices.backlight import Backlight
-from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamsize.beamsize import BeamsizeBase
@@ -703,3 +705,32 @@ def fake_create_rotation_devices(
         xbpm_feedback=xbpm_feedback,
         thawer=thawer,
     )
+
+
+@pytest.fixture
+def beamstop_phase1(
+    sim_run_engine: RunEngineSimulator,
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
+    ):
+        beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
+
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
+        )
+
+        yield beamstop
+        beamline_utils.clear_devices()
