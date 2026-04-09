@@ -33,6 +33,7 @@ from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 )
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging")
+@patch("mx_bluesky.hyperion.external_interaction.callbcaks.__main__.set_config_client")
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.set_alerting_service"
 )
@@ -42,6 +43,7 @@ def test_main_function(
     mock_proxy: MagicMock,
     mock_dispatcher: MagicMock,
     setup_alerting: MagicMock,
+    set_config_client: MagicMock,
     setup_logging: MagicMock,
     setup_callbacks: MagicMock,
     parse_callback_args: MagicMock,
@@ -60,10 +62,20 @@ def test_main_function(
     dispatcher_started.wait(0.5)
     mock_run_watchdog.wait(0.5)
     setup_logging.assert_called()
+    set_config_client.assert_called()
     setup_callbacks.assert_called()
     setup_alerting.assert_called_once()
     mock_run_watchdog.assert_called_once()
     assert isinstance(setup_alerting.mock_calls[0].args[0], LoggingAlertService)
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
+    MagicMock(return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT)),
+)
+def test_no_config_server_url_raises_exception():
+    with pytest.raises(ValueError, match="CONFIG_SERVER_URL must be specified"):
+        main()
 
 
 def test_setup_callbacks():
