@@ -551,27 +551,29 @@ def beamstop_phase1(
     beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
-    # with patch(
-    #     "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
-    #     TEST_BEAMLINE_PARAMETERS,
-    # ):
-    beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
+    with patch(
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
+    ):
+        beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
 
-    set_mock_value(beamstop.x_mm.user_readback, 1.52)
-    set_mock_value(beamstop.y_mm.user_readback, 44.78)
-    set_mock_value(beamstop.z_mm.user_readback, 30.0)
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
 
-    # sim_run_engine.add_read_handler_for(
-    #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
-    # )
-    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
-    def locate_beamstop(_):
-        return {"readback": BeamstopPositions.DATA_COLLECTION}
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
 
-    sim_run_engine.add_handler("locate", locate_beamstop, beamstop.selected_pos.name)
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
+        )
 
-    yield beamstop
-    beamline_utils.clear_devices()
+        yield beamstop
+        beamline_utils.clear_devices()
 
 
 @pytest.fixture
