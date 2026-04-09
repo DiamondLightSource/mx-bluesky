@@ -11,12 +11,44 @@ from aiohttp import ClientResponse
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import DISPLAY_CONFIG, ZOOM_PARAMS_FILE
-from dodal.common.beamlines.beamline_utils import set_config_client
+from dodal.common.beamlines.beamline_utils import (
+    set_config_client,
+)
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+)
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+)
+from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
+from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
-from ophyd_async.core import AsyncStatus, set_mock_value
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from ophyd_async.core import (
+    AsyncStatus,
+    completed_status,
+    set_mock_value,
+)
 from PIL import Image
 
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
 from tests.conftest import set_up_dcm
 
 # Map all the case-sensitive column names from their normalised versions
@@ -290,4 +322,51 @@ def oav_parameters_for_rotation(config_client) -> OAVParameters:
     return OAVParameters(
         config_client,
         oav_config_json="/dls_sw/i03/software/daq_configuration/json/OAVCentring.json",
+    )
+
+
+@pytest.fixture()
+def system_tests_rotation_devices(
+    beamstop_phase1: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: UndulatorInKeV,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav_for_system_test: OAV,
+    sample_shutter: ZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamsize=beamsize,
+        beamstop=beamstop_phase1,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        gonio=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav_for_system_test,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
     )
