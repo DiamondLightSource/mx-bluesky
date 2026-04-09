@@ -199,6 +199,11 @@ def dummy_params(tmp_path):
         "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
         tmp_path,
     )
+
+    # As system tests use real locally deployed config server
+    params_dict["det_dist_to_beam_converter_path"] = (
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+    )
     dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
     dummy_params.visit = SimConstants.ST_VISIT
     dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
@@ -259,7 +264,7 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
 def grid_detect_then_xray_centre_composite(
     fast_grid_scan,
     backlight,
-    beamstop_phase1,
+    beamstop_phase1_for_system_test,
     smargon,
     undulator_for_system_test,
     synchrotron,
@@ -286,7 +291,7 @@ def grid_detect_then_xray_centre_composite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
-        beamstop=beamstop_phase1,
+        beamstop=beamstop_phase1_for_system_test,
         panda_fast_grid_scan=panda_fast_grid_scan,
         gonio=smargon,
         undulator=undulator_for_system_test,
@@ -354,6 +359,79 @@ def grid_detect_then_xray_centre_composite(
 
 
 @pytest.fixture
+async def hyperion_flyscan_xrc_composite(
+    smargon: Smargon,
+    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    attenuator,
+    xbpm_feedback,
+    synchrotron,
+    aperture_scatterguard,
+    zocalo,
+    dcm,
+    panda,
+    backlight,
+    s4_slit_gaps,
+    fast_grid_scan,
+    panda_fast_grid_scan,
+    beamsize,
+) -> HyperionFlyScanXRayCentreComposite:
+    fake_composite = HyperionFlyScanXRayCentreComposite(
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        backlight=backlight,
+        dcm=dcm,
+        # We don't use the eiger fixture here because .unstage() is used in some tests
+        eiger=i03.eiger.build(mock=True),
+        zebra_fast_grid_scan=fast_grid_scan,
+        flux=i03.flux.build(connect_immediately=True, mock=True),
+        s4_slit_gaps=s4_slit_gaps,
+        gonio=smargon,
+        undulator=i03.undulator.build(connect_immediately=True, mock=True),
+        synchrotron=synchrotron,
+        xbpm_feedback=xbpm_feedback,
+        zebra=i03.zebra.build(connect_immediately=True, mock=True),
+        zocalo=zocalo,
+        panda=panda,
+        panda_fast_grid_scan=panda_fast_grid_scan,
+        robot=i03.robot.build(connect_immediately=True, mock=True),
+        sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
+        beamsize=beamsize,
+    )
+
+    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    # unstage should be mocked on a per-test basis because several rely on unstage
+    hyperion_fgs_params.det_dist_to_beam_converter_path = (
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
+    )
+    fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
+    fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
+    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
+
+    test_result = {
+        "centre_of_mass": [6, 6, 6],
+        "max_voxel": [5, 5, 5],
+        "max_count": 123456,
+        "n_voxels": 321,
+        "total_count": 999999,
+        "bounding_box": [[3, 3, 3], [9, 9, 9]],
+    }
+
+    @AsyncStatus.wrap
+    async def mock_complete(result):
+        await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
+
+    fake_composite.zocalo.trigger = MagicMock(
+        side_effect=partial(mock_complete, test_result)
+    )  # type: ignore
+    fake_composite.zocalo.timeout_s = 3
+    set_mock_value(fake_composite.gonio.x.max_velocity, 10)
+
+    set_mock_value(fake_composite.robot.barcode, "BARCODE")
+
+    return fake_composite
+
+
+@pytest.fixture
 def fgs_composite_for_fake_zocalo(
     hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
@@ -416,7 +494,7 @@ def params_for_rotation_scan(
 
 @pytest.fixture
 def composite_for_rotation_scan(
-    beamstop_phase1: Beamstop,
+    beamstop_phase1_for_system_test: Beamstop,
     eiger: EigerDetector,
     smargon: Smargon,
     zebra: Zebra,
@@ -444,7 +522,7 @@ def composite_for_rotation_scan(
     fake_create_rotation_devices = RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
-        beamstop=beamstop_phase1,
+        beamstop=beamstop_phase1_for_system_test,
         dcm=dcm,
         detector_motion=detector_motion,
         eiger=eiger,

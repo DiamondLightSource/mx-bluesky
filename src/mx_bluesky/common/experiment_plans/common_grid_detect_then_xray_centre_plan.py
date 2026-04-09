@@ -6,6 +6,7 @@ from typing import Protocol, TypeVar
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.backlight import InOut
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -69,7 +70,7 @@ def grid_detect_then_xray_centre(
 
     eiger.set_detector_parameters(parameters.detector_params)
 
-    oav_params = OAVParameters("xrayCentring", oav_config)
+    oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config)
 
     def plan_to_perform():
         yield from ispyb_activation_wrapper(

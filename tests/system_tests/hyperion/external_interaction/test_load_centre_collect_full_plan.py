@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -102,13 +103,19 @@ def load_centre_collect_params(tmp_path):
     )
     json_dict["visit"] = SimConstants.ST_VISIT
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
-    return LoadCentreCollect(**json_dict)
+    return LoadCentreCollect(
+        **json_dict,
+        det_dist_to_beam_converter_path="/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt",
+    )
 
 
 @pytest.fixture
-def load_centre_collect_msp_params(load_centre_collect_params):
+def load_centre_collect_msp_params(load_centre_collect_params: LoadCentreCollect):
     load_centre_collect_params.select_centres = TopNByMaxCountForEachSampleSelection(
         n=5
+    )
+    load_centre_collect_params.det_dist_to_beam_converter_path = (
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
     load_centre_collect_params.sample_id = SimConstants.ST_MSP_SAMPLE_IDS[0]
     load_centre_collect_params.robot_load_then_centre.sample_id = (
@@ -120,7 +127,7 @@ def load_centre_collect_msp_params(load_centre_collect_params):
 @pytest.fixture
 def load_centre_collect_composite(
     grid_detect_then_xray_centre_composite,
-    beamstop_phase1,
+    beamstop_phase1_for_system_test,
     composite_for_rotation_scan,
     thawer,
     vfm,
@@ -137,7 +144,7 @@ def load_centre_collect_composite(
         backlight=composite_for_rotation_scan.backlight,
         baton=baton,
         beamsize=beamsize,
-        beamstop=beamstop_phase1,
+        beamstop=beamstop_phase1_for_system_test,
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
@@ -1136,6 +1143,7 @@ class TestGenerateSnapshot:
         fetch_datacollection_ids_for_group_id: Callable[..., Any],
     ):
         oav_parameters = OAVParameters(
+            get_config_client(),
             oav_config_json=test_config_files["oav_config_json"],
             context="xrayCentring",
         )

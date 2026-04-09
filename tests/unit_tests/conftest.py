@@ -11,24 +11,42 @@ from unittest.mock import MagicMock, patch
 import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator
+from daq_config_server import ConfigClient
 from dodal.beamlines import i03
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.common.beamlines import beamline_utils
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+    ApertureValue,
+)
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+)
 from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
+from dodal.devices.fast_grid_scan import (
+    PandAFastGridScan,
+    ZebraFastGridScanThreeD,
+)
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
 from dodal.devices.zocalo import ZocaloResults
 from event_model import RunStart
 from event_model.documents import Event
@@ -74,6 +92,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
@@ -612,3 +633,104 @@ def patch_config_paths(monkeypatch):
         "dodal.beamlines.i04.BEAMLINE_PARAMETERS_PATH",
         TEST_BEAMLINE_PARAMETERS,
     )
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(
+        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
+    )
+
+
+@pytest.fixture
+def oav(test_config_files):
+    parameters = OAVConfigBeamCentre(
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
+    )
+    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
+
+    set_mock_value(oav.zoom_controller.level, "5.0x")
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
+
+    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    yield oav
+
+
+@pytest.fixture()
+def fake_create_rotation_devices(
+    beamstop_phase1: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: UndulatorInKeV,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav: OAV,
+    sample_shutter: ZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamsize=beamsize,
+        beamstop=beamstop_phase1,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        gonio=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
+    )
+
+
+@pytest.fixture
+def beamstop_phase1(
+    sim_run_engine: RunEngineSimulator,
+) -> Generator[Beamstop, Any, Any]:
+    with patch(
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
+    ):
+        beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
+
+        set_mock_value(beamstop.x_mm.user_readback, 1.52)
+        set_mock_value(beamstop.y_mm.user_readback, 44.78)
+        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+
+        # sim_run_engine.add_read_handler_for(
+        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+        # )
+        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+        def locate_beamstop(_):
+            return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+        sim_run_engine.add_handler(
+            "locate", locate_beamstop, beamstop.selected_pos.name
+        )
+
+        yield beamstop
+        beamline_utils.clear_devices()

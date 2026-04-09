@@ -8,13 +8,49 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
+from bluesky.simulators import RunEngineSimulator
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.beamlines.i03 import DISPLAY_CONFIG, ZOOM_PARAMS_FILE
+from dodal.common.beamlines import beamline_utils
+from dodal.common.beamlines.beamline_utils import (
+    set_config_client,
+)
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+)
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+)
+from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
-from ophyd_async.core import AsyncStatus, set_mock_value
+from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from ophyd_async.core import (
+    AsyncStatus,
+    completed_status,
+    set_mock_value,
+)
 from PIL import Image
 
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
 from tests.conftest import set_up_dcm
 
 # Map all the case-sensitive column names from their normalised versions
@@ -168,11 +204,11 @@ def next_oav_system_test_image():
 
 
 @pytest.fixture
-def oav_for_system_test(test_config_files, next_oav_system_test_image):
+def oav_for_system_test(config_client: ConfigClient, next_oav_system_test_image):
     parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"],
-        test_config_files["display_config"],
-        ConfigClient(""),
+        ZOOM_PARAMS_FILE,
+        DISPLAY_CONFIG,
+        config_client,
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
@@ -255,16 +291,9 @@ def config_client():
 
 
 @pytest.fixture(autouse=True)
-def patch_i03_config_client():
-    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
-    with patch.dict(
-        "dodal.common.beamlines.config_client.BEAMLINE_CONFIG_SERVER_ENDPOINTS",
-        {
-            "i03": LOCAL_CONFIG_SERVER_URL,
-            "test": LOCAL_CONFIG_SERVER_URL,
-        },
-    ):
-        yield
+def patch_config_client():
+    config_client = ConfigClient(LOCAL_CONFIG_SERVER_URL)
+    set_config_client(config_client)
 
 
 @pytest.fixture(autouse=True)
@@ -288,3 +317,81 @@ def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(config_client) -> OAVParameters:
+    return OAVParameters(
+        config_client,
+        oav_config_json="/dls_sw/i03/software/daq_configuration/json/OAVCentring.json",
+    )
+
+
+@pytest.fixture()
+def system_tests_rotation_devices(
+    beamstop_phase1_for_system_test: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: UndulatorInKeV,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav_for_system_test: OAV,
+    sample_shutter: ZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamsize=beamsize,
+        beamstop=beamstop_phase1_for_system_test,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        gonio=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav_for_system_test,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
+    )
+
+
+@pytest.fixture
+def beamstop_phase1_for_system_test(
+    sim_run_engine: RunEngineSimulator,
+) -> Generator[Beamstop, Any, Any]:
+    beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
+
+    set_mock_value(beamstop.x_mm.user_readback, 1.52)
+    set_mock_value(beamstop.y_mm.user_readback, 44.78)
+    set_mock_value(beamstop.z_mm.user_readback, 30.0)
+
+    # sim_run_engine.add_read_handler_for(
+    #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+    # )
+    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_beamstop(_):
+        return {"readback": BeamstopPositions.DATA_COLLECTION}
+
+    sim_run_engine.add_handler("locate", locate_beamstop, beamstop.selected_pos.name)
+
+    yield beamstop
+    beamline_utils.clear_devices()
