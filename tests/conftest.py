@@ -46,18 +46,14 @@ from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamlines.i04.transfocator import Transfocator
-from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
-from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot, SampleLocation
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.robot import SampleLocation
 from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
@@ -108,9 +104,6 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    RotationScanComposite,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -489,24 +482,6 @@ def synchrotron():
 
 
 @pytest.fixture
-def oav(test_config_files):
-    parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"],
-        test_config_files["display_config"],
-        ConfigClient(""),
-    )
-    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
-
-    set_mock_value(oav.zoom_controller.level, "5.0x")
-    set_mock_value(oav.grid_snapshot.x_size, 1024)
-    set_mock_value(oav.grid_snapshot.y_size, 768)
-
-    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    yield oav
-
-
-@pytest.fixture
 def flux():
     return i03.flux.build(connect_immediately=True, mock=True)
 
@@ -805,53 +780,6 @@ def fake_create_devices(
         "ap_sg": aperture_scatterguard,
     }
     return devices
-
-
-@pytest.fixture()
-def fake_create_rotation_devices(
-    beamstop_phase1: Beamstop,
-    eiger: EigerDetector,
-    smargon: Smargon,
-    zebra: Zebra,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    attenuator: BinaryFilterAttenuator,
-    flux: Flux,
-    undulator: UndulatorInKeV,
-    aperture_scatterguard: ApertureScatterguard,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    dcm: DCM,
-    robot: BartRobot,
-    oav: OAV,
-    sample_shutter: ZebraShutter,
-    xbpm_feedback: XBPMFeedback,
-    thawer: Thawer,
-    beamsize: BeamsizeBase,
-):
-    set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(side_effect=lambda _: completed_status())
-    return RotationScanComposite(
-        attenuator=attenuator,
-        backlight=backlight,
-        beamsize=beamsize,
-        beamstop=beamstop_phase1,
-        dcm=dcm,
-        detector_motion=detector_motion,
-        eiger=eiger,
-        flux=flux,
-        gonio=smargon,
-        undulator=undulator,
-        aperture_scatterguard=aperture_scatterguard,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        zebra=zebra,
-        robot=robot,
-        oav=oav,
-        sample_shutter=sample_shutter,
-        xbpm_feedback=xbpm_feedback,
-        thawer=thawer,
-    )
 
 
 @pytest.fixture
