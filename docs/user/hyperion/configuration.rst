@@ -57,3 +57,8 @@ ultimately it will be the source of all configuration and the remainder of the f
 moved over to it.
 
 .. _Config Server: https://github.com/DiamondLightSource/daq-config-server/
+
+
+See also `Advanced Configuration`_ for details of configuration performed at deployment time.
+
+.. _`Code Map`: advanced/advanced_configuration.rst
