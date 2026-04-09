@@ -11,9 +11,6 @@ from aiohttp import ClientResponse
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
 from dodal.beamlines.i03 import DISPLAY_CONFIG, ZOOM_PARAMS_FILE
-from dodal.common.beamlines.beamline_utils import (
-    set_config_client,
-)
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
@@ -161,7 +158,7 @@ DATA_COLLECTION_COLUMN_MAP = {
     ]
 }
 
-LOCAL_CONFIG_SERVER_URL = "http://0.0.0.0:8555"
+LOCAL_CONFIG_SERVER_URL = "http://127.0.0.1:8555"
 
 
 def _system_test_env_error_message(env_var: str):
@@ -278,20 +275,20 @@ def compare_comment(
     assert truncated_comment == expected_comment
 
 
-@pytest.fixture
-def config_client():
+@pytest.fixture(autouse=True)
+def config_client(monkeypatch):
     # Connects to real config server hosted locally
     # Test files are stored in the hyperion-system-tests repo under ./daq_config_server/config/
     # They have been mounted to match the paths in /dls_sw/i03/ so that the whitelist
     # and file converter map behave as expected with no mocking needed.
     # https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing/-/tree/add_daq_config_server/daq-config-server/config/?ref_type=heads
-    return ConfigClient(url=LOCAL_CONFIG_SERVER_URL)
-
-
-@pytest.fixture(autouse=True)
-def patch_config_client():
-    config_client = ConfigClient(LOCAL_CONFIG_SERVER_URL)
-    set_config_client(config_client)
+    config_server_url = os.getenv("CONFIG_SERVER_URL", default=LOCAL_CONFIG_SERVER_URL)
+    config_client = ConfigClient(url=config_server_url)
+    monkeypatch.setattr(
+        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT", config_client
+    )
+    monkeypatch.setenv("CONFIG_SERVER_URL", config_server_url)
+    return config_client
 
 
 @pytest.fixture(autouse=True)
