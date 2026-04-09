@@ -63,7 +63,8 @@ def prepare_for_robot_load(
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
 
-    yield from bps.mv(smargon, CombinedMove(x=0, y=0, z=0, chi=0, phi=0, omega=0))
+    yield from bps.mv(smargon.wrapped_omega.phase, 0)
+    yield from bps.mv(smargon, CombinedMove(x=0, y=0, z=0, chi=0, phi=0))
 
     yield from bps.wait("prepare_robot_load")
 
