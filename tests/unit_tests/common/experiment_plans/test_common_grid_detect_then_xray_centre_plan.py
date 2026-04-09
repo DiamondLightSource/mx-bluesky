@@ -6,6 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from daq_config_server import ConfigClient
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
@@ -168,7 +169,9 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
     yield from detect_grid_and_do_gridscan(
         composite,
         parameters=test_full_grid_scan_params,
-        oav_params=OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+        oav_params=OAVParameters(
+            ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
+        ),
         xrc_params_type=HyperionSpecifiedThreeDGridScan,
         construct_beamline_specific=construct_beamline_specific_xrc_features,
     )
@@ -189,7 +192,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     pin_tip_detection_with_found_pin: PinTipDetection,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
-    oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
+    oav_params = OAVParameters(
+        ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
+    )
 
     run_engine(
         ispyb_activation_wrapper(
@@ -257,7 +262,9 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
         detect_grid_and_do_gridscan(
             grid_detect_xrc_devices,
             test_full_grid_scan_params,
-            OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+            OAVParameters(
+                ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
+            ),
             xrc_params_type=HyperionSpecifiedThreeDGridScan,
             construct_beamline_specific=construct_beamline_specific,
         )
