@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
+from daq_config_server import ConfigClient
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import Backlight
@@ -23,6 +24,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -620,4 +622,11 @@ def patch_config_paths(monkeypatch):
     monkeypatch.setattr(
         "dodal.beamlines.i04.BEAMLINE_PARAMETERS_PATH",
         TEST_BEAMLINE_PARAMETERS,
+    )
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(
+        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
     )

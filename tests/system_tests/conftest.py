@@ -10,9 +10,10 @@ import pytest
 from aiohttp import ClientResponse
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.beamlines.i03 import DISPLAY_CONFIG, ZOOM_PARAMS_FILE
 from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
 from ophyd_async.core import AsyncStatus, set_mock_value
 from PIL import Image
 
@@ -169,11 +170,11 @@ def next_oav_system_test_image():
 
 
 @pytest.fixture
-def oav_for_system_test(test_config_files, next_oav_system_test_image):
+def oav_for_system_test(config_client: ConfigClient, next_oav_system_test_image):
     parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"],
-        test_config_files["display_config"],
-        ConfigClient(""),
+        ZOOM_PARAMS_FILE,
+        DISPLAY_CONFIG,
+        config_client,
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
@@ -282,3 +283,11 @@ def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(config_client) -> OAVParameters:
+    return OAVParameters(
+        config_client,
+        oav_config_json="/dls_sw/i03/software/daq_configuration/json/OAVCentring.json",
+    )
