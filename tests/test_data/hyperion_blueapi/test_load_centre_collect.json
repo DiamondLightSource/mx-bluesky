@@ -5,7 +5,6 @@
       "parameter_model_version": "5.0.0",
       "beamline": "BL03S",
       "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
-      "insertion_prefix": "SR03S",
       "visit": "cm31105-4",
       "detector_distance_mm": 255,
       "sample_id": 12345,
