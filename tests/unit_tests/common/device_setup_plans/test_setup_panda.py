@@ -2,9 +2,8 @@ from unittest.mock import MagicMock, patch
 
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
+from dodal.plans.load_panda_yaml import load_panda_from_yaml
 from ophyd_async.fastcs.panda import HDFPanda
-
-from mx_bluesky.common.device_setup_plans.setup_panda import load_panda_from_yaml
 
 
 def get_test_plan(*args):
@@ -12,9 +11,9 @@ def get_test_plan(*args):
     return "retrieved_settings"
 
 
-@patch("mx_bluesky.common.device_setup_plans.setup_panda.YamlSettingsProvider")
-@patch("mx_bluesky.common.device_setup_plans.setup_panda.retrieve_settings")
-@patch("mx_bluesky.common.device_setup_plans.setup_panda.apply_panda_settings")
+@patch("dodal.plans.load_panda_yaml.YamlSettingsProvider")
+@patch("dodal.plans.load_panda_yaml.retrieve_settings")
+@patch("dodal.plans.load_panda_yaml.apply_panda_settings")
 def test_load_panda_from_yaml(
     mock_apply_panda_settings: MagicMock,
     mock_retrieve_settings: MagicMock,
