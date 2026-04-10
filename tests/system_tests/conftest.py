@@ -170,7 +170,9 @@ def next_oav_system_test_image():
 @pytest.fixture
 def oav_for_system_test(test_config_files, next_oav_system_test_image):
     parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)

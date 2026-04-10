@@ -6,6 +6,7 @@ from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
+from tests.test_data.oav import TEST_OAV_CENTRING_JSON
 
 from mx_bluesky.definitions import ROOT_DIR
 
@@ -40,7 +41,7 @@ class DocDescriptorNames:
 
 def _get_oav_config_json_path():
     if TEST_MODE:
-        return "tests/test_data/test_OAVCentring.json"
+        return TEST_OAV_CENTRING_JSON
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
     elif BEAMLINE == "aithre":
