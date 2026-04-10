@@ -6,7 +6,6 @@
     "detector_distance_mm": 100.0,
     "demand_energy_ev": 100,
     "exposure_time_s": 0.1,
-    "insertion_prefix": "SR03S",
     "file_name": "file_name",
     "run_number": 0,
     "shutter_opening_time_s": 0.6,
