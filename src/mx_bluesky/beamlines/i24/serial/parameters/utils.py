@@ -43,10 +43,10 @@ def get_chip_format(
             defaults["x_blocks"] = defaults["y_blocks"] = 8
             defaults["b2b_horz"] = defaults["b2b_vert"] = 0.800
         case ChipType.OxfordInner:
-            defaults["x_num_steps"] = defaults["y_num_steps"] = 25
-            defaults["x_step_size"] = defaults["y_step_size"] = 0.600
-            defaults["x_blocks"] = defaults["y_blocks"] = 1
-            defaults["b2b_horz"] = defaults["b2b_vert"] = 0.0
+            defaults["x_num_steps"] = defaults["y_num_steps"] = 20
+            defaults["x_step_size"] = defaults["y_step_size"] = 0.125
+            defaults["x_blocks"] = defaults["y_blocks"] = 8
+            defaults["b2b_horz"] = defaults["b2b_vert"] = 0.800
         case ChipType.Minichip:
             defaults["x_num_steps"] = defaults["y_num_steps"] = 20
             defaults["x_step_size"] = defaults["y_step_size"] = 0.125

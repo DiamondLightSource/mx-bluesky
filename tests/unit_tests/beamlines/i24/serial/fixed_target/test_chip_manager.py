@@ -242,8 +242,8 @@ async def test_moveto_preset_with_pmac_move(
     [
         ("laser1on", " M712=1 M711=1"),
         ("laser1off", " M712=0 M711=1"),
-        ("laser2on", " M812=1 M811=1"),
-        ("laser2off", " M812=0 M811=1"),
+        ("laser2on", " M612=1 M611=1"),
+        ("laser2off", " M612=0 M611=1"),
     ],
 )
 async def test_laser_control_on_and_off(
@@ -288,8 +288,8 @@ def test_laser_control_burn_2_setting(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(" M812=1 M811=1"),
-            call(" M812=0 M811=1"),
+            call(" M612=1 M611=1"),
+            call(" M612=0 M611=1"),
         ]
     )
 
