@@ -860,7 +860,9 @@ async def panda():
         DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
-    return panda
+    with (patch("dodal.plans.load_panda_yaml.retrieve_settings"),
+        patch("dodal.plans.load_panda_yaml.apply_panda_settings")):
+        yield panda
 
 
 async def async_status_done():
