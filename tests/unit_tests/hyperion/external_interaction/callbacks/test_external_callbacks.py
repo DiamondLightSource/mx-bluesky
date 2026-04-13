@@ -33,7 +33,7 @@ from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 )
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging")
-@patch("mx_bluesky.hyperion.external_interaction.callbcaks.__main__.set_config_client")
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.set_config_client")
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.set_alerting_service"
 )
