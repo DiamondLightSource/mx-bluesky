@@ -7,8 +7,6 @@ import pytest
 # Ensure that the blueapi entry point is not invoked by doctest as this will fail
 collect_ignore = ["src/mx_bluesky/hyperion/blueapi/plans.py"]
 
-environ["HYPERION_TEST_MODE"] = "true"
-
 
 pytest_plugins = ["dodal.testing.fixtures.run_engine"]
 
