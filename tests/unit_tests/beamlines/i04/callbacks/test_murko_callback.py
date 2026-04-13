@@ -291,6 +291,7 @@ def test_if_redis_connection_fails_then_there_is_no_error(
     callback.stop(doc)  # type: ignore
 
 
+@pytest.mark.timeout(10)
 def test_warning_is_logged_if_redis_connection_fails(caplog):
     callback = MurkoCallback("", "")
     doc = {}
