@@ -200,6 +200,12 @@ def create_gridscan_callbacks() -> tuple[
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_default_beam_xy_lut():
+    with patch("mx_bluesky.common.parameters.constants.DetectorParamConstants.BEAM_XY_LUT_PATH", "tests/test_data/test_lookup_table.txt"):
+        yield
+
+
 @pytest.fixture
 def use_beamline_t01():
     """Beamline t01 is a beamline for unit tests that just contains a baton, so that

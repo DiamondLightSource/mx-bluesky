@@ -153,9 +153,6 @@ class WithOptionalEnergyChange(BaseModel):
 class WithVisit(BaseModel):
     beamline: str = Field(default="BL03I", pattern=r"BL\d{2}[BIJS]")
     visit: str = Field(min_length=1)
-    det_dist_to_beam_converter_path: str = Field(
-        default=DetectorParamConstants.BEAM_XY_LUT_PATH
-    )
     detector_distance_mm: float | None = Field(default=None, gt=0)
 
 

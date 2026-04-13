@@ -274,7 +274,6 @@ def test_params_with_different_energy_for_rotation_gridscan_rejected(tmp_path):
         ["beamline", "i03"],
         ["visit", "cm12345"],
         ["detector_distance_mm", 123],
-        ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
 def test_params_with_unexpected_info_in_robot_load_rejected(
@@ -303,7 +302,6 @@ def test_params_with_unexpected_info_in_robot_load_rejected(
         ["beamline", "i03"],
         ["visit", "cm12345"],
         ["detector_distance_mm", 123],
-        ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
 def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
@@ -555,9 +553,11 @@ def test_load_centre_collect_moves_beamstop_into_place(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "pin_tip_then_flyscan_plan"

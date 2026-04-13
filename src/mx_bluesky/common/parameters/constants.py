@@ -118,11 +118,7 @@ class RotationParamConstants:
 
 @dataclass(frozen=True)
 class DetectorParamConstants:
-    BEAM_XY_LUT_PATH = (
-        "tests/test_data/test_det_dist_converter.txt"
-        if TEST_MODE
-        else f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
-    )
+    BEAM_XY_LUT_PATH = f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     DETECTOR = EIGER2_X_16M_SIZE
 
 
