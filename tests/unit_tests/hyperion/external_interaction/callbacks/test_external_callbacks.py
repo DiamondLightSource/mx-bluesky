@@ -48,7 +48,9 @@ def test_main_function(
     setup_callbacks: MagicMock,
     parse_callback_args: MagicMock,
     mock_run_watchdog: MagicMock,
+    monkeypatch,
 ):
+    monkeypatch.setenv("CONFIG_SERVER_URL", "http://127.0.0.1:8555")
     proxy_started = Event()
     dispatcher_started = Event()
     watchdog_started = Event()
@@ -178,7 +180,9 @@ def test_launch_with_stomp_launches_stomp_backend(
     mock_setup_callbacks: MagicMock,
     mock_client_cls: MagicMock,
     mock_dispatcher_cls: MagicMock,
+    monkeypatch,
 ):
+    monkeypatch.setenv("CONFIG_SERVER_URL", "http://127.0.0.1:8555")
     stomp_client = mock_client_cls.for_broker.return_value
     dispatcher = mock_dispatcher_cls.return_value
     stomp_client.is_connected.side_effect = [True, False]
