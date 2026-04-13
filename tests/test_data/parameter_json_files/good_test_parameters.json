@@ -2,7 +2,6 @@
     "parameter_model_version": "5.0.0",
     "demand_energy_ev": 100,
     "comment": "test",
-    "det_dist_to_beam_converter_path": "tests/test_data/test_lookup_table.txt",
     "detector_distance_mm": 100.0,
     "visit": "cm31105-4",
     "exposure_time_s": 0.1,
