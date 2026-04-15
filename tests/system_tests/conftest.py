@@ -10,7 +10,7 @@ import pytest
 from aiohttp import ClientResponse
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
-from dodal.beamlines.i03 import DISPLAY_CONFIG, ZOOM_PARAMS_FILE
+from dodal.common.beamlines.beamline_utils import clear_config_client
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
@@ -185,6 +185,16 @@ def zocalo_env():
     yield zocalo_config
 
 
+@pytest.fixture(autouse=True)
+def test_beamline_parameters():
+    """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"test": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters"},
+    ) as params:
+        yield params
+
+
 @pytest.fixture
 def undulator_for_system_test(undulator):
     set_mock_value(undulator.current_gap, 1.11)
@@ -198,11 +208,23 @@ def next_oav_system_test_image():
     )
 
 
+@pytest.fixture()
+def test_config_files():
+    """Override the default system test config"""
+    return {
+        "zoom_params_file": "/dls_sw/i03/software/gda/configurations/i03-config/xml/jCameraManZoomLevels.xml",
+        "oav_config_json": "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json",
+        "display_config": "/dls_sw/i03/software/gda_versions/var/display.configuration",
+    }
+
+
 @pytest.fixture
-def oav_for_system_test(config_client: ConfigClient, next_oav_system_test_image):
+def oav_for_system_test(
+    config_client: ConfigClient, next_oav_system_test_image, test_config_files
+):
     parameters = OAVConfigBeamCentre(
-        ZOOM_PARAMS_FILE,
-        DISPLAY_CONFIG,
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
         config_client,
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=parameters)
@@ -276,19 +298,17 @@ def compare_comment(
 
 
 @pytest.fixture(autouse=True)
-def config_client(monkeypatch):
-    # Connects to real config server hosted locally
+def config_client():
+    # The system tests connect to a real config server hosted in a container
+    # The end point is determined by the CONFIG_SERVER_URL environment variable
     # Test files are stored in the hyperion-system-tests repo under ./daq_config_server/config/
     # They have been mounted to match the paths in /dls_sw/i03/ so that the whitelist
     # and file converter map behave as expected with no mocking needed.
     # https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing/-/tree/add_daq_config_server/daq-config-server/config/?ref_type=heads
-    config_server_url = os.getenv("CONFIG_SERVER_URL", default=LOCAL_CONFIG_SERVER_URL)
-    config_client = ConfigClient(url=config_server_url)
-    monkeypatch.setattr(
-        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT", config_client
-    )
-    monkeypatch.setenv("CONFIG_SERVER_URL", config_server_url)
-    return config_client
+    clear_config_client()
+    i03.config_client.cache_clear()
+    print("CONFIG_CLIENT CLEARED")
+    return i03.config_client()
 
 
 @pytest.fixture(autouse=True)
@@ -318,7 +338,7 @@ def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
 def oav_parameters_for_rotation(config_client) -> OAVParameters:
     return OAVParameters(
         config_client,
-        oav_config_json="/dls_sw/i03/software/daq_configuration/json/OAVCentring.json",
+        oav_config_json="/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json",
     )
 
 

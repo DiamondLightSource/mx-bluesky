@@ -200,10 +200,6 @@ def dummy_params(tmp_path):
         tmp_path,
     )
 
-    # As system tests use real locally deployed config server
-    params_dict["det_dist_to_beam_converter_path"] = (
-        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
-    )
     dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
     dummy_params.visit = SimConstants.ST_VISIT
     dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
@@ -368,14 +364,12 @@ def hyperion_fgs_params(tmp_path):
             )
         )
     )
-    params.det_dist_to_beam_converter_path = (
-        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
-    )
     return params
 
 
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
+    config_client,
     hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
 ) -> HyperionFlyScanXRayCentreComposite:

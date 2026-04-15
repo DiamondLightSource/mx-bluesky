@@ -28,7 +28,7 @@ DOCKER = environ.get("DOCKER", "docker")
 
 
 @pytest.fixture
-def test_params(tmp_path):
+def test_params(tmp_path, config_client):
     param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         tmp_path,
@@ -41,9 +41,6 @@ def test_params(tmp_path):
     params.y_start_um = 0
     params.z_start_um = 0
     params.exposure_time_s = 0.004
-    params.det_dist_to_beam_converter_path = (
-        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
-    )
     return params
 
 
