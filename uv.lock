@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.2.1.dev12+g8d903da68"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=improve_config_client_in_oav_params#8d903da68de3ed0b923a90b3c0804b8d7645852c" }
+version = "2.2.2.dev2+g81e0fd499"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=improve_config_client_in_oav_params#81e0fd4990d101aa67266c52735cd93c6780a98a" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
