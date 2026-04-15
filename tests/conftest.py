@@ -879,7 +879,18 @@ def panda_fast_grid_scan():
     scan = i03.panda_fast_grid_scan.build(connect_immediately=True, mock=True)
     for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
         set_mock_value(signal, 1)
-    return scan
+
+    def mock_trigger(*args, **kwargs):
+        set_mock_value(scan.status, 1)
+
+    get_mock_put(scan.run_cmd).side_effect = mock_trigger
+
+    def mock_complete():
+        set_mock_value(scan.status, 0)
+        return completed_status()
+
+    with patch.object(scan, "complete", side_effect=mock_complete):
+        yield scan
 
 
 @pytest.fixture
