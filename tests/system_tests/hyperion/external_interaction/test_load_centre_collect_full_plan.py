@@ -104,19 +104,19 @@ def load_centre_collect_params(tmp_path):
     )
     json_dict["visit"] = SimConstants.ST_VISIT
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
-    return LoadCentreCollect(
-        **json_dict,
-        det_dist_to_beam_converter_path="/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt",
-    )
+    with patch(
+        "mx_bluesky.common.parameters.gridscan.DetectorParamConstants.BEAM_XY_LUT_PATH",
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter_load_centre_collect.txt",
+    ):
+        yield LoadCentreCollect(
+            **json_dict,
+        )
 
 
 @pytest.fixture
 def load_centre_collect_msp_params(load_centre_collect_params: LoadCentreCollect):
     load_centre_collect_params.select_centres = TopNByMaxCountForEachSampleSelection(
         n=5
-    )
-    load_centre_collect_params.det_dist_to_beam_converter_path = (
-        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     )
     load_centre_collect_params.sample_id = SimConstants.ST_MSP_SAMPLE_IDS[0]
     load_centre_collect_params.robot_load_then_centre.sample_id = (
@@ -1129,6 +1129,15 @@ def grid_detect_for_snapshot_generation():
 
 
 class TestGenerateSnapshot:
+    @pytest.fixture()
+    def test_config_files(self):
+        """Override the default system test config"""
+        return {
+            "zoom_params_file": "/dls_sw/i03/software/gda/configurations/i03-config/xml/jCameraManZoomLevels.xml",
+            "oav_config_json": "/dls_sw/i03/software/daq_configuration/json/OAVCentring_snapshot.json",
+            "display_config": "/dls_sw/i03/software/gda_versions/var/snapshot_display.configuration",
+        }
+
     @pytest.mark.system_test
     def test_load_centre_collect_generate_rotation_snapshots(
         self,

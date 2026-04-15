@@ -17,13 +17,10 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
-from daq_config_server import ConfigClient
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_utils import (
-    clear_config_client,
     clear_devices,
-    set_config_client,
 )
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
@@ -860,8 +857,10 @@ async def panda():
         DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
-    with (patch("dodal.plans.load_panda_yaml.retrieve_settings"),
-        patch("dodal.plans.load_panda_yaml.apply_panda_settings")):
+    with (
+        patch("dodal.plans.load_panda_yaml.retrieve_settings"),
+        patch("dodal.plans.load_panda_yaml.apply_panda_settings"),
+    ):
         yield panda
 
 
@@ -1690,10 +1689,3 @@ def mock_alert_service():
 @pytest.fixture()
 def patch_beamline_env_variable(monkeypatch):
     monkeypatch.setenv("BEAMLINE", "test")
-
-
-@pytest.fixture(autouse=True)
-def reset_config_client():
-    set_config_client(ConfigClient(""))
-    yield
-    clear_config_client()
