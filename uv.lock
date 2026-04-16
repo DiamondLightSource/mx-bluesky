@@ -802,7 +802,7 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.2.2.dev3+g24812afd5"
+version = "2.2.3.dev1+g24812afd5"
 source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=fix_config_server_system_test_breakage#24812afd5cab3d8dd44406b2a0cc8405952ac790" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
