@@ -61,4 +61,4 @@ moved over to it.
 
 See also `Advanced Configuration`_ for details of configuration performed at deployment time.
 
-.. _`Code Map`: advanced/advanced_configuration.rst
+.. _`Advanced Configuration`: advanced/advanced_configuration.rst
