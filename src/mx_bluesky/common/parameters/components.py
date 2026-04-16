@@ -25,7 +25,6 @@ from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
     USE_NUMTRACKER,
-    DetectorParamConstants,
     GridscanParamConstants,
 )
 

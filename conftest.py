@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from os import environ
 from unittest.mock import patch
 
 import pytest

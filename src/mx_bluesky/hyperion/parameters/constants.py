@@ -1,5 +1,3 @@
-import os
-
 from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
