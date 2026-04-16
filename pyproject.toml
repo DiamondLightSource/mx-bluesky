@@ -187,6 +187,7 @@ commands = [
     [
         "pre-commit",
         "run",
+        "-v",
         "--all-files",
         "--show-diff-on-failure",
         { replace = "posargs", default = [
