@@ -802,8 +802,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.2.2.dev2+g81e0fd499"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=improve_config_client_in_oav_params#81e0fd4990d101aa67266c52735cd93c6780a98a" }
+version = "2.2.2.dev2+g8cf8dfb9c"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#8cf8dfb9ca0716f588d1c67695b07da442cec4ca" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2109,7 +2109,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.3.0" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=improve_config_client_in_oav_params" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
