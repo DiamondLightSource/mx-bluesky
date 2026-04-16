@@ -4336,12 +4336,12 @@ wheels = [
 
 [[package]]
 name = "uv"
-version = "0.9.28"
+version = "0.11.7"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c2/7d/005ab1cab03ca928cef75b424284d14d62c5f18775cf8114a63f210a0c9c/uv-0.9.28.tar.gz", hash = "sha256:253c04b26fb40f74c56ead12ce83db3c018bdefde1fcd1a542bcb88fdca4189c", size = 3834456, upload-time = "2026-01-29T20:15:49.794Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/7d/17750123a8c8e324627534fe1ae2e7a46689db8492f1a834ab4fd229a7d8/uv-0.11.7.tar.gz", hash = "sha256:46d971489b00bdb27e0aa715e4a5cd4ef2c28ea5b6ef78f2b67bf861eb44b405", size = 4083385, upload-time = "2026-04-15T21:42:55.474Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/fd/82561751105ed232f1781747bc336b20e8d57ee07b4d2ed3fa6cf2718d71/uv-0.9.28-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7b8460a2b624d8ab27cb293a2c9f2393f9efc4e36e0fb886a6c2360e23fb48be", size = 22685296, upload-time = "2026-01-29T20:16:13.857Z" },
-    { url = "https://files.pythonhosted.org/packages/26/cd/e848570be5c5be4e139b90237cc64f68d5d51e8e92c40a5ac7cf0c34ad4a/uv-0.9.28-py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:cbfa56c833caa37b1f14166327fcaf8aa87290451406921eb07296ffef17fef1", size = 22915580, upload-time = "2026-01-29T20:15:42.468Z" },
+    { url = "https://files.pythonhosted.org/packages/83/eb/4e1557daf6693cb446ed28185664ad6682fd98c6dbac9e433cbc35df450a/uv-0.11.7-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4e4d5e31bea86e1b6e0f5a0f95e14e80018e6f6c0129256d2915a4b3d793644d", size = 24933975, upload-time = "2026-04-15T21:42:18.828Z" },
+    { url = "https://files.pythonhosted.org/packages/13/ba/b87e358b629a68258527e3490e73b7b148770f4d2257842dea3b7981d4e8/uv-0.11.7-py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:0df59ab0c6a4b14a763e8445e1c303af9abeb53cdfa4428daf9ff9642c0a3cce", size = 25119850, upload-time = "2026-04-15T21:43:22.529Z" },
 ]
 
 [[package]]
