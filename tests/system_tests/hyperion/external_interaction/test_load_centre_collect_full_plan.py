@@ -12,6 +12,7 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
 from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -103,11 +104,17 @@ def load_centre_collect_params(tmp_path):
     )
     json_dict["visit"] = SimConstants.ST_VISIT
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
-    return LoadCentreCollect(**json_dict)
+    with patch(
+        "mx_bluesky.common.parameters.gridscan.DetectorParamConstants.BEAM_XY_LUT_PATH",
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter_load_centre_collect.txt",
+    ):
+        yield LoadCentreCollect(
+            **json_dict,
+        )
 
 
 @pytest.fixture
-def load_centre_collect_msp_params(load_centre_collect_params):
+def load_centre_collect_msp_params(load_centre_collect_params: LoadCentreCollect):
     load_centre_collect_params.select_centres = TopNByMaxCountForEachSampleSelection(
         n=5
     )
@@ -1122,6 +1129,15 @@ def grid_detect_for_snapshot_generation():
 
 
 class TestGenerateSnapshot:
+    @pytest.fixture()
+    def test_config_files(self):
+        """Override the default system test config"""
+        return {
+            "zoom_params_file": "/dls_sw/i03/software/gda/configurations/i03-config/xml/jCameraManZoomLevels.xml",
+            "oav_config_json": "/dls_sw/i03/software/daq_configuration/json/OAVCentring_snapshot.json",
+            "display_config": "/dls_sw/i03/software/gda_versions/var/snapshot_display.configuration",
+        }
+
     @pytest.mark.system_test
     def test_load_centre_collect_generate_rotation_snapshots(
         self,

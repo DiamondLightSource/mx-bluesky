@@ -17,13 +17,10 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
-from daq_config_server import ConfigClient
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_utils import (
-    clear_config_client,
     clear_devices,
-    set_config_client,
 )
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
@@ -46,19 +43,14 @@ from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamlines.i04.transfocator import Transfocator
-from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
-from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAV, OAVConfigBeamCentre
-from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from dodal.devices.robot import BartRobot, SampleLocation
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.robot import SampleLocation
 from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
@@ -109,9 +101,6 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    RotationScanComposite,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -490,24 +479,6 @@ def synchrotron():
 
 
 @pytest.fixture
-def oav(test_config_files):
-    parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"],
-        test_config_files["display_config"],
-        ConfigClient(""),
-    )
-    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
-
-    set_mock_value(oav.zoom_controller.level, "5.0x")
-    set_mock_value(oav.grid_snapshot.x_size, 1024)
-    set_mock_value(oav.grid_snapshot.y_size, 768)
-
-    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    yield oav
-
-
-@pytest.fixture
 def flux():
     return i03.flux.build(connect_immediately=True, mock=True)
 
@@ -577,29 +548,23 @@ def beamstop_phase1(
     beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
-    with patch(
-        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
-        TEST_BEAMLINE_PARAMETERS,
-    ):
-        beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
+    beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
 
-        set_mock_value(beamstop.x_mm.user_readback, 1.52)
-        set_mock_value(beamstop.y_mm.user_readback, 44.78)
-        set_mock_value(beamstop.z_mm.user_readback, 30.0)
+    set_mock_value(beamstop.x_mm.user_readback, 1.52)
+    set_mock_value(beamstop.y_mm.user_readback, 44.78)
+    set_mock_value(beamstop.z_mm.user_readback, 30.0)
 
-        # sim_run_engine.add_read_handler_for(
-        #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
-        # )
-        # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
-        def locate_beamstop(_):
-            return {"readback": BeamstopPositions.DATA_COLLECTION}
+    # sim_run_engine.add_read_handler_for(
+    #     beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION
+    # )
+    # Can uncomment and remove below when https://github.com/bluesky/bluesky/issues/1906 is fixed
+    def locate_beamstop(_):
+        return {"readback": BeamstopPositions.DATA_COLLECTION}
 
-        sim_run_engine.add_handler(
-            "locate", locate_beamstop, beamstop.selected_pos.name
-        )
+    sim_run_engine.add_handler("locate", locate_beamstop, beamstop.selected_pos.name)
 
-        yield beamstop
-        beamline_utils.clear_devices()
+    yield beamstop
+    beamline_utils.clear_devices()
 
 
 @pytest.fixture
@@ -810,53 +775,6 @@ def fake_create_devices(
     return devices
 
 
-@pytest.fixture()
-def fake_create_rotation_devices(
-    beamstop_phase1: Beamstop,
-    eiger: EigerDetector,
-    smargon: Smargon,
-    zebra: Zebra,
-    detector_motion: DetectorMotion,
-    backlight: Backlight,
-    attenuator: BinaryFilterAttenuator,
-    flux: Flux,
-    undulator: UndulatorInKeV,
-    aperture_scatterguard: ApertureScatterguard,
-    synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
-    dcm: DCM,
-    robot: BartRobot,
-    oav: OAV,
-    sample_shutter: ZebraShutter,
-    xbpm_feedback: XBPMFeedback,
-    thawer: Thawer,
-    beamsize: BeamsizeBase,
-):
-    set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(side_effect=lambda _: completed_status())
-    return RotationScanComposite(
-        attenuator=attenuator,
-        backlight=backlight,
-        beamsize=beamsize,
-        beamstop=beamstop_phase1,
-        dcm=dcm,
-        detector_motion=detector_motion,
-        eiger=eiger,
-        flux=flux,
-        gonio=smargon,
-        undulator=undulator,
-        aperture_scatterguard=aperture_scatterguard,
-        synchrotron=synchrotron,
-        s4_slit_gaps=s4_slit_gaps,
-        zebra=zebra,
-        robot=robot,
-        oav=oav,
-        sample_shutter=sample_shutter,
-        xbpm_feedback=xbpm_feedback,
-        thawer=thawer,
-    )
-
-
 @pytest.fixture
 def zocalo():
     zoc = i03.zocalo.build(connect_immediately=True, mock=True)
@@ -935,14 +853,11 @@ async def panda():
         DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64]),
     )
 
-    return panda
-
-
-@pytest.fixture
-def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
-    return OAVParameters(
-        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
-    )
+    with (
+        patch("dodal.plans.load_panda_yaml.retrieve_settings"),
+        patch("dodal.plans.load_panda_yaml.apply_panda_settings"),
+    ):
+        yield panda
 
 
 async def async_status_done():
@@ -959,7 +874,18 @@ def panda_fast_grid_scan():
     scan = i03.panda_fast_grid_scan.build(connect_immediately=True, mock=True)
     for signal in [scan.x_scan_valid, scan.y_scan_valid, scan.z_scan_valid]:
         set_mock_value(signal, 1)
-    return scan
+
+    def mock_trigger(*args, **kwargs):
+        set_mock_value(scan.status, 1)
+
+    get_mock_put(scan.run_cmd).side_effect = mock_trigger
+
+    def mock_complete():
+        set_mock_value(scan.status, 0)
+        return completed_status()
+
+    with patch.object(scan, "complete", side_effect=mock_complete):
+        yield scan
 
 
 @pytest.fixture
@@ -1759,10 +1685,3 @@ def mock_alert_service():
 @pytest.fixture()
 def patch_beamline_env_variable(monkeypatch):
     monkeypatch.setenv("BEAMLINE", "test")
-
-
-@pytest.fixture(autouse=True)
-def reset_config_client():
-    set_config_client(ConfigClient(""))
-    yield
-    clear_config_client()

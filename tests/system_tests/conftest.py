@@ -10,11 +10,42 @@ import pytest
 from aiohttp import ClientResponse
 from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.common.beamlines.beamline_utils import clear_config_client
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+)
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+)
+from dodal.devices.backlight import Backlight
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
-from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
-from ophyd_async.core import AsyncStatus, set_mock_value
+from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.eiger import EigerDetector
+from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
+from dodal.devices.robot import BartRobot
+from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from ophyd_async.core import (
+    AsyncStatus,
+    completed_status,
+    set_mock_value,
+)
 from PIL import Image
 
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
 from tests.conftest import set_up_dcm
 
 # Map all the case-sensitive column names from their normalised versions
@@ -127,7 +158,7 @@ DATA_COLLECTION_COLUMN_MAP = {
     ]
 }
 
-LOCAL_CONFIG_SERVER_URL = "http://0.0.0.0:8555"
+LOCAL_CONFIG_SERVER_URL = "http://127.0.0.1:8555"
 
 
 def _system_test_env_error_message(env_var: str):
@@ -154,6 +185,16 @@ def zocalo_env():
     yield zocalo_config
 
 
+@pytest.fixture(autouse=True)
+def test_beamline_parameters():
+    """Fix default test beamline parameters to refer to a test file not the /dls_sw folder"""
+    with patch.dict(
+        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
+        {"test": "/dls_sw/i03/software/daq_configuration/domain/beamlineParameters"},
+    ) as params:
+        yield params
+
+
 @pytest.fixture
 def undulator_for_system_test(undulator):
     set_mock_value(undulator.current_gap, 1.11)
@@ -167,12 +208,24 @@ def next_oav_system_test_image():
     )
 
 
+@pytest.fixture()
+def test_config_files():
+    """Override the default system test config"""
+    return {
+        "zoom_params_file": "/dls_sw/i03/software/gda/configurations/i03-config/xml/jCameraManZoomLevels.xml",
+        "oav_config_json": "/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json",
+        "display_config": "/dls_sw/i03/software/gda_versions/var/display.configuration",
+    }
+
+
 @pytest.fixture
-def oav_for_system_test(test_config_files, next_oav_system_test_image):
+def oav_for_system_test(
+    config_client: ConfigClient, next_oav_system_test_image, test_config_files
+):
     parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"],
         test_config_files["display_config"],
-        ConfigClient(""),
+        config_client,
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=parameters)
     set_mock_value(oav.cam.array_size_x, 1024)
@@ -244,27 +297,18 @@ def compare_comment(
     assert truncated_comment == expected_comment
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def config_client():
-    # Connects to real config server hosted locally
+    # The system tests connect to a real config server hosted in a container
+    # The end point is determined by the CONFIG_SERVER_URL environment variable
     # Test files are stored in the hyperion-system-tests repo under ./daq_config_server/config/
     # They have been mounted to match the paths in /dls_sw/i03/ so that the whitelist
     # and file converter map behave as expected with no mocking needed.
     # https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing/-/tree/add_daq_config_server/daq-config-server/config/?ref_type=heads
-    return ConfigClient(url=LOCAL_CONFIG_SERVER_URL)
-
-
-@pytest.fixture(autouse=True)
-def patch_i03_config_client():
-    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
-    with patch.dict(
-        "dodal.common.beamlines.config_client.BEAMLINE_CONFIG_SERVER_ENDPOINTS",
-        {
-            "i03": LOCAL_CONFIG_SERVER_URL,
-            "test": LOCAL_CONFIG_SERVER_URL,
-        },
-    ):
-        yield
+    clear_config_client()
+    i03.config_client.cache_clear()
+    print("CONFIG_CLIENT CLEARED")
+    return i03.config_client()
 
 
 @pytest.fixture(autouse=True)
@@ -288,3 +332,58 @@ def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(config_client) -> OAVParameters:
+    return OAVParameters(
+        config_client,
+        oav_config_json="/dls_sw/i03/software/daq_configuration/json/OAVCentring_hyperion.json",
+    )
+
+
+@pytest.fixture()
+def system_tests_rotation_devices(
+    beamstop_phase1: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: UndulatorInKeV,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav_for_system_test: OAV,
+    sample_shutter: ZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamsize=beamsize,
+        beamstop=beamstop_phase1,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        gonio=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav_for_system_test,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
+    )
