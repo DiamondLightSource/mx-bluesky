@@ -548,10 +548,6 @@ def beamstop_phase1(
     beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
-    # with patch(
-    #     "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
-    #     TEST_BEAMLINE_PARAMETERS,
-    # ):
     beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
 
     set_mock_value(beamstop.x_mm.user_readback, 1.52)
