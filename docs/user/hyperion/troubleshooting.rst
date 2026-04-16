@@ -40,7 +40,7 @@ following
 However on inspection the start log will not show any errors. Hyperion running can be verified as above `Verifying 
 that Hyperion is running`_
 
-.. _`Verifying that Hyperion is running`: advanced/install.rst
+.. _`Verifying that Hyperion is running`: advanced/install.html
 
 Smargon Motion
 ~~~~~~~~~~~~~~
