@@ -67,10 +67,6 @@ class RotationExperiment(DiffractionExperiment):
     def _detector_params_impl(
         self, omega_start_deg: float, num_images_per_trigger: int, num_triggers: int
     ) -> DetectorParams:
-        self.det_dist_to_beam_converter_path = (
-            self.det_dist_to_beam_converter_path
-            or DetectorParamConstants.BEAM_XY_LUT_PATH
-        )
         optional_args = {}
         if self.run_number:
             optional_args["run_number"] = self.run_number
@@ -88,7 +84,7 @@ class RotationExperiment(DiffractionExperiment):
             num_images_per_trigger=num_images_per_trigger,
             num_triggers=num_triggers,
             use_roi_mode=False,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
+            det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
             **optional_args,
         )
 

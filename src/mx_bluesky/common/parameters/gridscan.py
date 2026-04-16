@@ -78,10 +78,6 @@ class GridCommon(
 
     @property
     def detector_params(self):
-        self.det_dist_to_beam_converter_path = (
-            self.det_dist_to_beam_converter_path
-            or DetectorParamConstants.BEAM_XY_LUT_PATH
-        )
         optional_args = {}
         if self.run_number:
             optional_args["run_number"] = self.run_number
@@ -100,7 +96,7 @@ class GridCommon(
             num_images_per_trigger=1,
             num_triggers=self.num_images,
             use_roi_mode=self.use_roi_mode,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
+            det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
             trigger_mode=self.trigger_mode,
             **optional_args,
         )

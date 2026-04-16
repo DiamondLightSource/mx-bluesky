@@ -17,12 +17,6 @@ BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 ZEBRA_STATUS_TIMEOUT = 30
 
-GDA_DOMAIN_PROPERTIES_PATH = (
-    "tests/test_data/test_domain_properties"
-    if TEST_MODE
-    else (f"/dls_sw/{BEAMLINE}/software/daq_configuration/domain/domain.properties")
-)
-
 
 @dataclass(frozen=True)
 class DocDescriptorNames:
@@ -124,11 +118,7 @@ class RotationParamConstants:
 
 @dataclass(frozen=True)
 class DetectorParamConstants:
-    BEAM_XY_LUT_PATH = (
-        "tests/test_data/test_det_dist_converter.txt"
-        if TEST_MODE
-        else f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
-    )
+    BEAM_XY_LUT_PATH = f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     DETECTOR = EIGER2_X_16M_SIZE
 
 

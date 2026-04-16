@@ -29,19 +29,15 @@ def always_use_beamline_i03(use_beamline_i03): ...
 
 @pytest.fixture
 def load_centre_collect_params_with_panda(tmp_path, request):
-    with patch(
-        "mx_bluesky.common.parameters.constants.GDA_DOMAIN_PROPERTIES_PATH",
-        new="tests/test_data/test_domain_properties_with_panda",
-    ):
-        params = raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
-            tmp_path,
-        )
-        params["features"]["use_panda_for_gridscan"] = True
-        if params_dict := getattr(request, "param", {}):
-            for k, v in params_dict.items():
-                params.setdefault("features", {})[k] = v
-        return LoadCentreCollect(**params)
+    params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
+        tmp_path,
+    )
+    params["features"]["use_panda_for_gridscan"] = True
+    if params_dict := getattr(request, "param", {}):
+        for k, v in params_dict.items():
+            params.setdefault("features", {})[k] = v
+    return LoadCentreCollect(**params)
 
 
 @pytest.fixture()
