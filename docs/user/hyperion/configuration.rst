@@ -56,4 +56,10 @@ Note that currently the rest of the configuration files are not read from the co
 ultimately it will be the source of all configuration and the remainder of the files in ``daq_configuration`` will be
 moved over to it.
 
+See `Config Server`_ for details of the config server and how it is configured and deployed.
+
 .. _Config Server: https://github.com/DiamondLightSource/daq-config-server/
+
+See also `Advanced Configuration`_ for details of configuration performed at deployment time.
+
+.. _`Advanced Configuration`: advanced/advanced_configuration.html

@@ -1,4 +1,5 @@
 import logging
+import os
 from abc import abstractmethod
 from collections.abc import Callable
 from contextlib import AbstractContextManager
@@ -12,6 +13,8 @@ from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker
+from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
@@ -141,6 +144,15 @@ def setup_logging(dev_mode: bool):
     log_debug("nexgen logger added to nexus logger")
 
 
+def create_config_client() -> ConfigClient:
+    config_server_url = os.getenv("CONFIG_SERVER_URL")
+    if not config_server_url:
+        raise ValueError(
+            "CONFIG_SERVER_URL must be specified to run external callbacks."
+        )
+    return ConfigClient(config_server_url)
+
+
 def log_info(msg, *args, **kwargs):
     ISPYB_ZOCALO_CALLBACK_LOGGER.info(msg, *args, **kwargs)
     NEXUS_LOGGER.info(msg, *args, **kwargs)
@@ -157,6 +169,7 @@ class HyperionCallbackRunner:
     def __init__(self, callback_args: CallbackArgs) -> None:
         setup_logging(callback_args.dev_mode)
         log_info("Hyperion callback process started.")
+        set_config_client(create_config_client())
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()
