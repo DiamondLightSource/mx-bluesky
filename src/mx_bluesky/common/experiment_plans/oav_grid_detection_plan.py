@@ -55,7 +55,7 @@ def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
     """We need to match the 0 and -90 that the fast grid scan performs but the order in
     which we do the grid detection does not matter so we do the closest angle first."""
     offset_and_phase = yield from bps.rd(smargon.wrapped_omega)
-    current_omega = AngleWithPhase(offset_and_phase)
+    current_omega = AngleWithPhase.from_iterable(offset_and_phase)
     if current_omega.phase_distance(-90) < current_omega.phase_distance(0):
         return [-90, 0]
     else:

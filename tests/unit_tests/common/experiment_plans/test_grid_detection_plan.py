@@ -433,6 +433,8 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
                 10 if odd else 25
             )  # Ensure y steps comes out as even or odd
             return {"values": {"value": bottom_edge}}
+        elif msg.obj is composite.gonio.wrapped_omega:
+            return {"gonio-wrapped_omega-offset_and_phase": {"value": np.array([0, 0])}}
         else:
             pass
 

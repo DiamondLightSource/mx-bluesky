@@ -249,7 +249,7 @@ def _move_and_rotation(
         params,
         motor_time_to_speed,
         max_vel,
-        AngleWithPhase(current_omega_offset_and_phase),
+        AngleWithPhase.from_iterable(current_omega_offset_and_phase),
     )
 
     yield from rotation_scan_plan(composite, params, motion_values)
