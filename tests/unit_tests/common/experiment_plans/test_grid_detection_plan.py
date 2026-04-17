@@ -118,7 +118,9 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, image_save = fake_devices
 
     composite.oav.grid_snapshot._save_image = (mock_save := AsyncMock())
@@ -152,7 +154,9 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
         )
     )
 
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
 
     with pytest.raises(WarningError) as excinfo:
         run_engine(do_grid_and_edge_detect(composite, params, tmp_path))
@@ -171,7 +175,9 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     test_config_files: dict[str, str],
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     box_size_um = 0.2
     composite, _ = fake_devices
     microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
@@ -215,7 +221,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, _ = fake_devices
     cb = GridscanISPyBCallback(param_type=GridCommon)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
@@ -283,7 +291,9 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, _ = fake_devices
     box_size_um = 20
     cb = GridDetectionCallback()
@@ -323,7 +333,9 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     test_fgs_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, _ = fake_devices
 
     # This will cause the grid detect plan to take data at -90 first
@@ -405,7 +417,9 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
     tmp_path: Path,
 ):
     composite, _ = fake_devices
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     box_size_um = 20
     microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
     assert microns_per_pixel_y is not None
