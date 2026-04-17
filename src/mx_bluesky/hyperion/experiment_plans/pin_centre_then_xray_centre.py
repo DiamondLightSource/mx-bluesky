@@ -64,6 +64,7 @@ def pin_tip_centre_then_xray_centre(
         )
 
         if sample_ids_and_locations:
+            # Convert from um to mm since location is in motor coordinates.
             location = [pos_um / 1000 for pos_um in sample_ids_and_locations[0][1]]
             yield from bps.abs_set(
                 composite.gonio,

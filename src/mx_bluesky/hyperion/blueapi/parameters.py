@@ -111,27 +111,24 @@ def pin_tip_centre_then_xray_centre_to_internal(
     sample_puck: int,
     sample_pin: int,
 ) -> PinTipCentreThenXrayCentre:
-    params_as_dict: dict[str, Any] = {
-        "visit": visit,
-        "storage_directory": storage_directory,
-    }
-    params_as_dict["file_name"] = "xrc"
-    params_as_dict["parameter_model_version"] = get_param_version()
-    params_as_dict["demand_energy_ev"] = None
-    # TODO sample_id must not be none?
-    params_as_dict["sample_id"] = sample_id
-    params_as_dict["sample_puck"] = sample_puck
-    params_as_dict["sample_pin"] = sample_pin
-    params_as_dict["detector_distance_mm"] = (
-        HyperionConstants.DEFAULT_DETECTOR_DISTANCE_MM
-    )
     tip_offset, grid_width = pin_type_to_tip_offset_and_grid_width(
         SingleSamplePinTypeParam()
     )
-    params_as_dict["tip_offset_um"] = tip_offset
-    params_as_dict["grid_width_um"] = grid_width
-    params_as_dict["exposure_time_s"] = GridscanParamConstants.EXPOSURE_TIME_S
-    params_as_dict["transmission_frac"] = 1.0
+    params_as_dict: dict[str, Any] = {
+        "visit": visit,
+        "storage_directory": storage_directory,
+        "file_name": "xrc",
+        "parameter_model_version": get_param_version(),
+        "demand_energy_ev": None,
+        "sample_id": sample_id,
+        "sample_puck": sample_puck,
+        "sample_pin": sample_pin,
+        "detector_distance_mm": HyperionConstants.DEFAULT_DETECTOR_DISTANCE_MM,
+        "tip_offset_um": tip_offset,
+        "grid_width_um": grid_width,
+        "exposure_time_s": GridscanParamConstants.EXPOSURE_TIME_S,
+        "transmission_frac": 1.0,
+    }
 
     # gonio pos is as found
     return PinTipCentreThenXrayCentre(**params_as_dict)
