@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Create a New Release &#8212; mx-bluesky 1.6.8.dev2+g714255fe6 documentation</title>
+    <title>Create a New Release &#8212; mx-bluesky 1.6.8.dev3+gc3d081e3b documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=b9c29234"></script>
+    <script src="../../../_static/documentation_options.js?v=46e27c5d"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -527,7 +527,9 @@
 <h2>Release<a class="headerlink" href="#release" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
 <li><p>Create a new branch from main named pre followed by the release version e.g. pre_0.1.0. The release versions should look like <code class="docutils literal notranslate"><span class="pre">{major}.{minor}.{patch}</span></code>.</p></li>
-<li><p>On this branch pin the latest release of dodal, and nexgen if necessary, then push to GitHub. (e.g “dls-dodal == 1.63.0”)</p></li>
+<li><p>On this branch pin the latest release of dodal, and nexgen if necessary. (e.g “dls-dodal == 1.63.0”)</p></li>
+<li><p>Run a <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> to update the <code class="docutils literal notranslate"><span class="pre">uv.lock</span></code> file</p></li>
+<li><p>push to GitHub</p></li>
 <li><p>Make sure the CI is passing for this new pre-release branch.</p></li>
 <li><p>Go <a class="reference external" href="https://github.com/DiamondLightSource/mx-bluesky/releases/new">here</a>.</p></li>
 <li><p>Select Choose a new tag and type the version of the release, then select the branch created in step 1 as the target.</p></li>
