@@ -1,0 +1,34 @@
+comment:
+  layout: "header, diff, flags, components" # show component info in the PR comment
+
+component_management:
+  default_rules: # default rules that will be inherited by all components
+    statuses:
+      - type: project
+        target: 85%
+        threshold: 1%
+  individual_components:
+    - component_id: module_i24_ssx
+      name: i24 SSX
+      paths:
+        - src/mx_bluesky/beamlines/i24/serial/**
+        - tests/unit_tests/beamlines/i24/serial/**
+      statuses:
+        - type: project
+          target: 55%
+          threshold: 1%
+    - component_id: module_hyperion
+      name: hyperion
+      paths:
+        - src/mx_bluesky/hyperion/**
+        - tests/unit_tests//hyperion/**
+    - component_id: module_other
+      name: other
+      paths:
+        - "!src/mx_bluesky/hyperion/"
+        - "!tests/unit_tests//hyperion/**"
+        - "!src/mx_bluesky/beamlines/i24/serial/**"
+        - "!tests/unit_tests/beamlines/i24/serial/**"
+
+ignore:
+  - "**/conftest.py"

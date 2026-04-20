@@ -1,0 +1,16 @@
+# Before changing this BlueAPI version number, you should check that 
+# the BlueAPI pin in pyproject.toml is compatible, else the version will
+# be overridden
+FROM ghcr.io/diamondlightsource/blueapi:1.0.0-rc.2
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt update -y && apt upgrade -y
+# Needed for python cv2 dependency
+RUN apt install -y libgl1 libglib2.0-0
+
+RUN /venv/bin/pip install mx-bluesky
+
+# Needed so that Blueapi's setup-scratch stage has permission to modify dependencies installed 
+# in the above pip installation
+RUN mkdir -p /.cache/pip; chmod -R 777 /venv /.cache/pip

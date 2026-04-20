@@ -1,0 +1,10 @@
+
+# This file give the relationship between stage motor counts pos/neg lab
+# coordinate system
+
+# April 2023 @ i24
+# motor number * (dir) = positive chip direction
+
+mtr1_dir=1
+mtr2_dir=-1
+mtr3_dir=-1

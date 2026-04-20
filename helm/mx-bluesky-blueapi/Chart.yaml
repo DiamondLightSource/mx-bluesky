@@ -1,0 +1,16 @@
+apiVersion: v2
+name: mx-bluesky-blueapi
+description: A helm chart deploying a worker pod that runs Bluesky plans
+
+# This chart provides extra configuration to a BlueAPI application which is generic to all MX beamlines,
+# and does not startup an application by itself. A BlueAPI service in ixx-services should add this chart
+# as a dependency. It currently mounts zocalo and ispyb credentials as config maps, with the assumption 
+# that the beamline cluster have these secrets available. In the future, this helmchart may change to a 
+# library type
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+# This is updated automatically by CI, the appVersion is automatically inserted by CI
+version: 0.1.1

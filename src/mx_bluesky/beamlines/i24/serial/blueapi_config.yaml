@@ -1,0 +1,22 @@
+env:
+  sources:
+    - kind: dodal
+      module: dodal.beamlines.i24
+    - kind: planFunctions
+      module: mx_bluesky.beamlines.i24.serial
+  events:
+    broadcast_status_events: false
+api:
+  url: http://localhost:25565
+  cors:
+    allow_credentials: True
+    origins: 
+      - "*"
+stomp:
+  enabled: true
+  url: tcp://i24-control.diamond.ac.uk:61613
+logging:
+  level: "INFO"
+  graylog:
+    enabled: true
+    url: tcp://graylog-log-target.diamond.ac.uk:12231/

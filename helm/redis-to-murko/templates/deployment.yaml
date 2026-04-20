@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.application.name }}-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.application.name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.application.name }}
+        project: murko
+    spec:
+      securityContext:
+        runAsUser: {{  .Values.application.runAsUser }}
+        runAsGroup: {{ .Values.application.runAsGroup }}
+        supplementalGroups: {{ .Values.application.supplementalGroups }}
+      volumes:
+        - name: dls-sw-bl
+          hostPath:
+            path: "/dls_sw/{{ .Values.application.beamline }}"
+            type: Directory
+        # Bind some source folders for easier debugging        
+        - name: src
+          hostPath:
+            path: "{{ .Values.application.projectDir }}/src"
+            type: Directory
+        - name: tests
+          hostPath:
+            path: "{{ .Values.application.projectDir }}/tests"
+            type: Directory
+        - name: utility-scripts
+          hostPath:
+            path: "{{ .Values.application.projectDir }}/utility_scripts"
+            type: Directory
+        - name: dodal
+          hostPath:
+            path: "{{ .Values.dodal.projectDir | clean }}"
+            type: Directory
+      containers:
+      - name: {{ .Values.application.name }}
+        image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}    
+        command: ["redis_to_murko"]      
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        env:
+          - name: LOG_DIR
+            value: /var/log/bluesky
+          - name: BEAMLINE
+            value: "{{ .Values.application.beamline }}"
+          - name: VALKEY_PASSWORD
+            valueFrom:
+             secretKeyRef:
+               name: valkey-secret
+               key: requirepass
+        volumeMounts:
+          - mountPath: "/dls_sw/{{ .Values.application.beamline }}"
+            name: dls-sw-bl
+            readOnly: true
+            mountPropagation: HostToContainer
+          - mountPath: "/app/hyperion/src"
+            name: src
+          - mountPath: "/app/hyperion/tests"
+            name: tests
+          - mountPath: "/app/hyperion/utility_scripts"
+            name: utility-scripts
+          - mountPath: "/app/dodal"
+            name: dodal
+      hostNetwork: false

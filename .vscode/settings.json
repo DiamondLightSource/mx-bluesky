@@ -1,0 +1,27 @@
+{
+    "python.testing.pytestArgs": [
+        "--cov=mx_bluesky",
+        "--cov-report",
+        "xml:cov.xml"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.defaultInterpreterPath": ".venv/bin/python",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "files.insertFinalNewline": true,
+    "[python]": {
+        "editor.rulers": [
+            88
+        ],
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "terminal.integrated.gpuAcceleration": "off",
+    "python.analysis.typeCheckingMode": "basic",
+}

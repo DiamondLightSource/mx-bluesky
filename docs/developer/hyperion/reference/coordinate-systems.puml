@@ -1,0 +1,20 @@
+@startuml
+box "Request Coordinate Space"
+participant "GDA/Agamemnon"
+participant Hyperion
+end box
+
+boundary omega_flip
+
+box "Hardware Coordinate Space"
+participant "Ophyd Devices"
+participant "Nexus File"
+end box
+
+"GDA/Agamemnon" -> Hyperion: Hyperion Request\n(Request Coordinate Space)
+Hyperion -> "Ophyd Devices": Rotation Operations
+"Ophyd Devices" -> "Nexus File": PCAP Data 
+Hyperion -> "Nexus File": Write metadata\nRecord actual hardware coordinate system
+
+
+@enduml

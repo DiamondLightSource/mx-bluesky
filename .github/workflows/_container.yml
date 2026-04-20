@@ -1,0 +1,105 @@
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need this to get version number from last tag
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Docker Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and export to Docker local cache
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: Dockerfile.hyperion
+          load: true
+
+      - name: Build and export Dockerfile.blueapi to local cache
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: Dockerfile.blueapi
+          load: true
+
+      - name: Create tags for publishing Hyperion image
+        id: meta-hyperion
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.title=mx-bluesky
+            org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
+          annotations: |
+            org.opencontainers.image.title=mx-bluesky
+            org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Create tags for publishing BlueAPI image
+        id: meta-blueapi
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}-blueapi
+          labels: |
+            org.opencontainers.image.title=mx-bluesky-blueapi
+            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
+          annotations: |
+            org.opencontainers.image.title=mx-bluesky-blueapi
+            org.opencontainers.image.description=BlueAPI plans, stubs and utilities for MX beamlines
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Push cached Hyperion image to container registry
+        if: github.ref_type == 'tag'
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        # This does not build the image again, it will find the image in the
+        # Docker cache and publish it
+        with:
+          context: .
+          file: Dockerfile.hyperion
+          push: true
+          tags: ${{ steps.meta-hyperion.outputs.tags }}
+          labels: ${{ steps.meta-hyperion.outputs.labels }}
+          # Set the annotations to make the description appear in the GH repo page
+          annotations: ${{ steps.meta-hyperion.outputs.annotations }}
+
+      - name: Push cached BlueAPI image to container registry
+        if: github.ref_type == 'tag'
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: Dockerfile.blueapi
+          push: true
+          tags: ${{ steps.meta-blueapi.outputs.tags }}
+          labels: ${{ steps.meta-blueapi.outputs.labels }}
+          # Set the annotations to make the description appear in the GH repo page
+          annotations: ${{ steps.meta-blueapi.outputs.annotations }}

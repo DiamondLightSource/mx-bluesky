@@ -1,0 +1,6 @@
+apiVersion: v2
+name: redis-to-murko
+description: Redis to murko server
+type: application
+# version of the chart
+version: 0.0.1
