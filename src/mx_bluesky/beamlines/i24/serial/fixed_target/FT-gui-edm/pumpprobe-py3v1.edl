@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 830
-y 274
+x 5061
+y 706
 w 900
 h 700
 font "arial-medium-r-18.0"
@@ -212,8 +212,8 @@ beginObjectProperties
 major 4
 minor 6
 release 0
-x 422
-y 398
+x 718
+y 343
 w 75
 h 25
 controlPv "BL24I-MO-IOC-13:GP104"
@@ -233,8 +233,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 334
-y 400
+x 630
+y 345
 w 71
 h 21
 font "arial-medium-r-18.0"
@@ -254,8 +254,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 334
-y 433
+x 631
+y 373
 w 72
 h 21
 font "arial-medium-r-18.0"
@@ -275,8 +275,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 501
-y 400
+x 797
+y 345
 w 9
 h 21
 font "arial-medium-r-18.0"
@@ -296,8 +296,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 501
-y 433
+x 798
+y 373
 w 9
 h 21
 font "arial-medium-r-18.0"
@@ -317,8 +317,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 334
-y 465
+x 631
+y 405
 w 71
 h 21
 font "arial-medium-r-18.0"
@@ -338,8 +338,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 334
-y 498
+x 631
+y 438
 w 71
 h 21
 font "arial-medium-r-18.0"
@@ -359,8 +359,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 501
-y 465
+x 798
+y 405
 w 9
 h 21
 font "arial-medium-r-18.0"
@@ -380,8 +380,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 501
-y 498
+x 798
+y 438
 w 9
 h 21
 font "arial-medium-r-18.0"
@@ -401,8 +401,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 334
-y 529
+x 631
+y 469
 w 82
 h 21
 font "arial-medium-r-18.0"
@@ -422,8 +422,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 501
-y 529
+x 798
+y 469
 w 9
 h 21
 font "arial-medium-r-18.0"
@@ -443,11 +443,11 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 548
-y 398
-w 49
+x 458
+y 510
+w 48
 h 21
-font "arial-medium-r-18.0"
+font "arial-medium-i-18.0"
 fontAlign "center"
 fgColor index 14
 bgColor index 0
@@ -464,83 +464,21 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 557
-y 423
-w 308
-h 108
+x 568
+y 500
+w 272
+h 72
 font "arial-medium-r-16.0"
 fgColor index 13
 bgColor index 0
 useDisplayBg
 value {
-  "The repeat is the number of pairs"
-  "of lines in a repeat"
   "Currently X-ray shutter always open"
-  "Timings assume apertures 125 um apart"
   "Mapping lite will be used"
   "Repeat3 misses some chip rows"
+  "Short Repeat 1 -4 are BETA"
 }
 autoSize
-endObjectProperties
-
-# (Circle)
-object activeCircleClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 542
-y 428
-w 10
-h 10
-lineColor index 12
-fill
-fillColor index 12
-endObjectProperties
-
-# (Circle)
-object activeCircleClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 542
-y 462
-w 10
-h 10
-lineColor index 12
-fill
-fillColor index 12
-endObjectProperties
-
-# (Circle)
-object activeCircleClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 542
-y 480
-w 10
-h 10
-lineColor index 12
-fill
-fillColor index 12
-endObjectProperties
-
-# (Circle)
-object activeCircleClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 542
-y 499
-w 10
-h 10
-lineColor index 12
-fill
-fillColor index 12
 endObjectProperties
 
 # (Text Monitor)
@@ -549,8 +487,8 @@ beginObjectProperties
 major 4
 minor 6
 release 0
-x 422
-y 431
+x 719
+y 371
 w 75
 h 25
 controlPv "BL24I-MO-IOC-13:GP105"
@@ -570,8 +508,8 @@ beginObjectProperties
 major 4
 minor 6
 release 0
-x 422
-y 464
+x 719
+y 404
 w 75
 h 25
 controlPv "BL24I-MO-IOC-13:GP106"
@@ -591,8 +529,8 @@ beginObjectProperties
 major 4
 minor 6
 release 0
-x 422
-y 495
+x 719
+y 435
 w 75
 h 25
 controlPv "BL24I-MO-IOC-13:GP107"
@@ -612,8 +550,8 @@ beginObjectProperties
 major 4
 minor 6
 release 0
-x 422
-y 526
+x 719
+y 466
 w 75
 h 25
 controlPv "BL24I-MO-IOC-13:GP108"
@@ -681,8 +619,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 542
-y 517
+x 540
+y 504
 w 10
 h 10
 lineColor index 12
@@ -909,8 +847,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 412
-y 571
+x 564
+y 580
 w 179
 h 27
 font "arial-bold-r-24.0"
@@ -951,10 +889,10 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 313
-y 365
-w 207
-h 191
+x 369
+y 338
+w 454
+h 159
 lineColor index 14
 fillColor index 0
 endObjectProperties
@@ -1073,11 +1011,11 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 347
-y 368
-w 150
+x 429
+y 344
+w 162
 h 21
-font "arial-medium-r-18.0"
+font "arial-bold-r-18.0"
 fgColor index 14
 bgColor index 0
 useDisplayBg
@@ -1737,6 +1675,303 @@ bgColor index 0
 useDisplayBg
 value {
   "Beta"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 401
+y 373
+w 120
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Short Repeat1"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 607
+y 372
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 401
+y 404
+w 121
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Short Repeat2"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 401
+y 437
+w 120
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Short Repeat3"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 607
+y 404
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 607
+y 437
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 528
+y 370
+w 75
+h 25
+controlPv "BL24I-MO-IOC-13:GP113"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 528
+y 403
+w 75
+h 25
+controlPv "BL24I-MO-IOC-13:GP114"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 528
+y 434
+w 75
+h 25
+controlPv "BL24I-MO-IOC-13:GP115"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 540
+y 522
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 540
+y 540
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Circle)
+object activeCircleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 540
+y 558
+w 10
+h 10
+lineColor index 12
+fill
+fillColor index 12
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 606
+y 467
+w 9
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "s"
+}
+autoSize
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 527
+y 464
+w 75
+h 25
+controlPv "BL24I-MO-IOC-13:GP116"
+font "arial-medium-r-16.0"
+fgColor index 16
+bgColor index 10
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 400
+y 467
+w 120
+h 21
+font "arial-medium-r-18.0"
+fontAlign "center"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Short Repeat4"
 }
 autoSize
 endObjectProperties
