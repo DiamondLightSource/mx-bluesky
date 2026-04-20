@@ -461,7 +461,7 @@ def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, run_engine
     fake_caget.side_effect = [0.01, 0.005]
     run_engine(pumpprobe_calc())
     assert fake_caget.call_count == 2
-    assert fake_caput.call_count == 5
+    assert fake_caput.call_count == 9
     fake_caput.assert_has_calls(
         [
             call(ANY, 0.86),
