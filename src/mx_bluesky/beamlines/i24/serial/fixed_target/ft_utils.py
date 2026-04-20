@@ -41,6 +41,10 @@ class PumpProbeSetting(IntEnum):
     Repeat5 = 6
     Repeat10 = 7
     Medium1 = 8
+    ShortRepeat1 = 9
+    ShortRepeat2 = 10
+    ShortRepeat3 = 11
+    ShortRepeat4 = 12
 
     def __str__(self) -> str:
         """Returns the pump-probe setting name."""
