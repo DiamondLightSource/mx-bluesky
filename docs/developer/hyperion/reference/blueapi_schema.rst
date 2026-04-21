@@ -1,4 +1,4 @@
 BlueAPI Schema
 ==============
 
-.. jsonchema:: blueapi_schema.json
+.. jsonschema:: blueapi_schema.json
