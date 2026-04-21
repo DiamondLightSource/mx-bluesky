@@ -59,8 +59,8 @@ def load_centre_collect(
         * Move to the specified goniometer start angles
         * Perform optical centring, then X-ray centring
         * If X-ray centring finds one or more diffracting centres then for each centre
-    that satisfies the chosen selection function,
-    move to that centre and do a collection with the specified parameters.
+          that satisfies the chosen selection function,
+          move to that centre and do a collection with the specified parameters.
     """
     yield from _load_centre_collect_full(
         composite, load_centre_collect_to_internal(parameters)

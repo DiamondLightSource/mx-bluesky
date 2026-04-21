@@ -6,13 +6,11 @@ from itertools import accumulate
 from typing import Annotated, Any, Self
 
 from annotated_types import Len
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import DetectorParams
 from dodal.devices.zebra.zebra import (
     RotationDirection,
 )
-from dodal.log import LOGGER
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -90,18 +88,6 @@ class RotationExperiment(DiffractionExperiment):
 
     def _detector_params(self, omega_start_deg: float) -> DetectorParams:
         return self._detector_params_impl(omega_start_deg, self.num_images, 1)
-
-    @field_validator("selected_aperture")
-    @classmethod
-    def _set_default_aperture_position(cls, aperture_position: ApertureValue | None):
-        if not aperture_position:
-            default_aperture = RotationParamConstants.DEFAULT_APERTURE_POSITION
-            LOGGER.warning(
-                f"No aperture position selected. Defaulting to {default_aperture}"
-            )
-            return default_aperture
-        else:
-            return aperture_position
 
 
 class SingleRotationScan(

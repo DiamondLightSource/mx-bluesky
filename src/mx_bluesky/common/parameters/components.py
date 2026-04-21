@@ -7,7 +7,6 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Self, SupportsInt
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
     DetectorParams,
     TriggerMode,
@@ -155,6 +154,30 @@ class WithVisit(BaseModel):
     detector_distance_mm: float | None = Field(default=None, gt=0)
 
 
+class AperturePolicy(StrEnum):
+    """Defines the aperture that will be selected for the experiment.
+    The precise meanings of small, medium and large are relative and may be
+    specific to particular beamlines and/or experiments.
+    At some point in the future we may define additional AUTO_ values to allow requests to choose
+    from of a range of different ways to automatically determine an aperture.
+    In the longer term, it may be that we want to specify beam size more generally in parameters rather than
+    specifying a particular mechanism such as aperture as this would make plan parameters more portable across
+    beamlines.
+    Attributes:
+        SMALL: Select the small aperture
+        MEDIUM: Select the medium aperture
+        LARGE: Select the large aperture
+        AUTO: Automatically select an aperture based on an implementation-dependent methodology.
+        CURRENT_POSITION: Do not move the aperture and instead collect in whatever position it is in currently
+    """
+
+    SMALL = "SMALL_APERTURE"
+    MEDIUM = "MEDIUM_APERTURE"
+    LARGE = "LARGE_APERTURE"
+    AUTO = "AUTO_UNSPECIFIED"
+    CURRENT_POSITION = "CURRENT_POSITION"
+
+
 class DiffractionExperiment(
     MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
 ):
@@ -165,7 +188,7 @@ class DiffractionExperiment(
     comment: str = Field(default="")
     trigger_mode: TriggerMode = Field(default=TriggerMode.FREE_RUN)
     run_number: int | None = Field(default=None, ge=0)
-    selected_aperture: ApertureValue | None = Field(default=None)
+    selected_aperture: AperturePolicy = Field(default=AperturePolicy.AUTO)
     transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str

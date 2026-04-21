@@ -60,7 +60,12 @@ def load_centre_collect_full(
      that satisfies the chosen selection function,
      move to that centre and do a collection with the specified parameters.
     """
-
+    LOGGER.info(
+        f"aperture from parameters ROBOT LOAD is {parameters.robot_load_then_centre.selected_aperture}"
+    )
+    LOGGER.info(
+        f"aperture from parameters ROTATION is {parameters.multi_rotation_scan.selected_aperture}"
+    )
     if not oav_params:
         oav_params = OAVParameters(get_config_client(), context="xrayCentring")
     oav_config_file = oav_params.oav_config_json

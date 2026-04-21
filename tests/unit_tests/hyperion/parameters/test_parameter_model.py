@@ -3,12 +3,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
@@ -81,6 +81,7 @@ def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
     assert test_params.scan_indices == [0, 35]
     assert test_params.num_images == (5 * 7 + 5 * 9)
     assert test_params.exposure_time_s == GridscanParamConstants.EXPOSURE_TIME_S
+    assert test_params.selected_aperture == AperturePolicy.AUTO
 
 
 def test_cant_do_panda_fgs_with_odd_y_steps(minimal_3d_gridscan_params):
@@ -160,14 +161,14 @@ def test_osc_is_used(tmp_path):
         assert params.num_images == int(params.scan_width_deg / osc)
 
 
-def test_selected_aperture_uses_default(tmp_path):
+def test_rotation_selected_aperture_default_is_auto(tmp_path):
     raw_params = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         tmp_path,
     )
-    raw_params["selected_aperture"] = None
+    del raw_params["selected_aperture"]
     params = SingleRotationScan(**raw_params)
-    assert params.selected_aperture == ApertureValue.LARGE
+    assert params.selected_aperture == AperturePolicy.AUTO
 
 
 @pytest.mark.parametrize(
