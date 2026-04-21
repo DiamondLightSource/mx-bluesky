@@ -51,6 +51,8 @@ extensions = [
     "myst_parser",
     # For plantUML diagrams
     "plantweb.directive",
+    # For rendering the Hyperion BlueAPI json schema
+    "sphinx-jsonschema",
 ]
 
 myst_enable_extensions = [

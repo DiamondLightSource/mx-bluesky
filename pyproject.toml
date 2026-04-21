@@ -91,6 +91,7 @@ dev = [
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
+    "sphinx-jsonschema",
     "tox-uv",
     "types-mock",
     "types-requests",

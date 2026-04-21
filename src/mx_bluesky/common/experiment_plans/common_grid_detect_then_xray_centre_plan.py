@@ -7,6 +7,7 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
+from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -35,6 +36,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
@@ -139,7 +141,7 @@ def detect_grid_and_do_gridscan(
         # Start moving the aperture/scatterguard into position without moving it in
         yield from bps.prepare(
             composite.aperture_scatterguard,
-            parameters.selected_aperture,
+            _xrc_aperture_value_from_policy(parameters.selected_aperture),
             group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
         )
 
@@ -158,7 +160,7 @@ def detect_grid_and_do_gridscan(
     yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
     yield from move_aperture_if_required(
         composite.aperture_scatterguard,
-        parameters.selected_aperture,
+        _xrc_aperture_value_from_policy(parameters.selected_aperture),
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
     xrc_params = create_parameters_for_flyscan_xray_centre(
@@ -190,3 +192,15 @@ def create_parameters_for_flyscan_xray_centre(
     flyscan_xray_centre_parameters = xrc_params_type(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
     return flyscan_xray_centre_parameters
+
+
+def _xrc_aperture_value_from_policy(policy: AperturePolicy) -> ApertureValue:
+    match policy:
+        case AperturePolicy.SMALL | AperturePolicy.AUTO:
+            return ApertureValue.SMALL
+        case AperturePolicy.MEDIUM:
+            return ApertureValue.MEDIUM
+        case AperturePolicy.LARGE:
+            return ApertureValue.LARGE
+        case _:
+            raise ValueError(f"Unsupported aperture policy {policy}")
