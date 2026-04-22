@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from typing import Any
 
 from mx_bluesky.common.parameters.components import PARAMETER_VERSION, get_param_version
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
@@ -22,11 +23,16 @@ TEST_PUCK = 5
 TEST_PIN = 15
 
 
-def test_map_external_to_internal_parameters(tmp_path):
-    raw_params = raw_params_from_file(
+@pytest.fixture
+def load_centre_collect_params_raw(tmp_path) -> dict[str, Any]:
+    return raw_params_from_file(
         "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
         tmp_path,
     )
+
+
+def test_map_external_to_internal_parameters(load_centre_collect_params_raw):
+    raw_params = load_centre_collect_params_raw
     external_params = LoadCentreCollectParams(**raw_params)
     raw_params["robot_load_then_centre"]["tip_offset_um"] = 300.0
     expected_internal = LoadCentreCollect(
@@ -103,3 +109,15 @@ def test_pin_tip_centre_then_xray_centre_to_internal(tmp_path: Path):
         visit=TEST_VISIT,
         storage_directory=str(tmp_path),
     )
+
+
+def test_load_centre_collect_current_position_aperture_not_supported(
+    load_centre_collect_params_raw,
+):
+    load_centre_collect_params_raw["multi_rotation_scan"]["selected_aperture"] = (
+        "CURRENT_POSITION"
+    )
+    with pytest.raises(
+        ValueError, match="selected_aperture of CURRENT_POSITION is not supported"
+    ):
+        LoadCentreCollectParams(**load_centre_collect_params_raw)
