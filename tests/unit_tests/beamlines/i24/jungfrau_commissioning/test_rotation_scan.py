@@ -91,7 +91,9 @@ async def test_rotation_scan_plan_in_re(
         rotation_composite, DEFAULT_DETECTOR_DISTANCE_MM, 0.1
     )
     mock_calc_motion_profile.assert_called_once_with(
-        params, 1, await rotation_composite.gonio.omega.max_velocity.get_value()
+        params,
+        1,
+        await rotation_composite.gonio.omega.max_velocity.get_value(),
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()

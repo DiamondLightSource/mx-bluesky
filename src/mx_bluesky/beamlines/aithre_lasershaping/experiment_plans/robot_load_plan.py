@@ -6,7 +6,7 @@ from pathlib import Path
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
-from dodal.devices.motors import XYZOmegaStage, XYZStage
+from dodal.devices.motors import XYZStage, XYZWrappedOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -34,7 +34,7 @@ class RobotLoadComposite:
     robot: BartRobot
     lower_gonio: XYZStage
     oav: OAV
-    gonio: XYZOmegaStage
+    gonio: XYZWrappedOmegaStage
 
 
 def _move_gonio_to_home_position(
