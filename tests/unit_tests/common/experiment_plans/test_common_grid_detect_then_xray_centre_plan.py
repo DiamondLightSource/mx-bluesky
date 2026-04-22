@@ -431,6 +431,55 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
     )
 
 
+@pytest.mark.parametrize(
+    "current_aperture",
+    [
+        ApertureValue.LARGE,
+        ApertureValue.MEDIUM,
+        ApertureValue.SMALL,
+    ],
+)
+def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
+    current_aperture: ApertureValue,
+    grid_detect_then_xrc_simulator: RunEngineSimulator,
+    grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    test_config_files: dict[str, str],
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+):
+    test_full_grid_scan_params.selected_aperture = AperturePolicy.CURRENT_POSITION
+    grid_detect_then_xrc_simulator.add_read_handler_for_multiple(
+        grid_detect_xrc_devices.aperture_scatterguard,
+        **{"aperture_scatterguard-selected_aperture": current_aperture},
+    )
+    msgs = grid_detect_then_xrc_simulator.simulate_plan(
+        grid_detect_then_xray_centre(
+            grid_detect_xrc_devices,
+            test_full_grid_scan_params,
+            xrc_params_type=SpecifiedThreeDGridScan,
+            construct_beamline_specific=construct_beamline_specific,
+            oav_config=test_config_files["oav_config_json"],
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "prepare"
+            and msg.obj is grid_detect_xrc_devices.aperture_scatterguard
+        ),
+    )
+
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj
+            is grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
+            and msg.args[0]
+        ),
+    )
+
+
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.detect_grid_and_do_gridscan"
 )

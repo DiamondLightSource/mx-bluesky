@@ -39,7 +39,7 @@ def setup_sample_environment(
     yield from bps.abs_set(thawer, OnOff.OFF, group=group)
 
 
-def prepare_aperture_if_required(
+def prepare_aperture_for_rotation_if_required(
     aperture_scatterguard: ApertureScatterguard,
     aperture_policy: AperturePolicy,
 ):
