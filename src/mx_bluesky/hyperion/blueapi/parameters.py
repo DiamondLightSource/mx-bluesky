@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
 from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
     get_param_version,
 )
 from mx_bluesky.hyperion.blueapi.mixins import WithCentreSelection
@@ -44,6 +45,7 @@ class MultiRotationScanParams(HyperionParam):
     snapshot_omegas_deg: list[float]
     rotation_scans: list[SingleRotationScanParams]
     transmission_frac: float
+    selected_aperture: AperturePolicy
     ispyb_experiment_type: str
 
 

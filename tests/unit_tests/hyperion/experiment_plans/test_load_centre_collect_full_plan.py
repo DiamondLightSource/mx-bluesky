@@ -1,14 +1,17 @@
 import dataclasses
 from collections.abc import Sequence
+from functools import partial
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy as np
 import pytest
+from _pytest.fixtures import FixtureRequest
+from bluesky import plan_stubs as bps
 from bluesky.protocols import Location
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from bluesky.utils import Msg
+from bluesky.utils import Msg, MsgGenerator
 from dodal.devices.baton import Baton
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -18,6 +21,7 @@ from dodal.devices.zebra.zebra import RotationDirection
 from ophyd_async.core import completed_status, set_mock_value
 from pydantic import ValidationError
 
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
@@ -27,6 +31,7 @@ from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
 )
+from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
 )
@@ -84,6 +89,18 @@ POS_MED = {
         ([0.05, 0.02, 0.03], 5),
     ]
 ]
+
+FLYSCAN_RESULT_MED_APERTURE = dataclasses.replace(
+    FLYSCAN_RESULT_MED,
+    bounding_box_mm=(np.array([0.020, 0.020, 0.020]), np.array([0.040, 0.040, 0.040])),
+    centre_of_mass_mm=np.array([0.030, 0.030, 0.030]),
+)
+
+FLYSCAN_RESULT_LARGE_APERTURE = dataclasses.replace(
+    FLYSCAN_RESULT_MED,
+    bounding_box_mm=(np.array([1.020, 1.000, 1.000]), np.array([1.060, 1.020, 1.020])),
+    centre_of_mass_mm=np.array([1.040, 1.010, 1.010]),
+)
 
 
 @pytest.fixture
@@ -200,6 +217,16 @@ def mock_multi_rotation_scan():
         ) as mock_rotation,
     ):
         yield mock_rotation
+
+
+def plan_returning_xrc_results(xrc_results: Sequence[XRayCentreResult]) -> MsgGenerator:
+    yield from bps.open_run(
+        md={
+            "run": CONST.PLAN.FLYSCAN_RESULTS,
+            "xray_centre_results": [dataclasses.asdict(r) for r in xrc_results],
+        }
+    )
+    yield from bps.close_run()
 
 
 def test_can_serialize_load_centre_collect_params(load_centre_collect_params):
@@ -377,28 +404,6 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
         msgs,
         lambda msg: msg.command == "open_run" and "xray_centre_results" in msg.kwargs,
     )
-    # TODO re-enable tests see mx-bluesky 561
-    # msgs = assert_message_and_return_remaining(
-    #     msgs, lambda msg: msg.command == "set" and msg.args[0] == ApertureValue.MEDIUM
-    # )
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "gonio-x"
-    #     and msg.args[0] == 0.1,
-    # )
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "gonio-y"
-    #     and msg.args[0] == 0.2,
-    # )
-    # msgs = assert_message_and_return_remaining(
-    #     msgs,
-    #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "gonio-z"
-    #     and msg.args[0] == 0.3,
-    # )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "multi_rotation_scan"
     )
@@ -1132,3 +1137,62 @@ def test_load_centre_collect_full_activates_beam_drawing_callback(
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "robot_load_then_xray_centre"
     )
+
+
+@pytest.fixture
+def mock_gridscan_results(request: FixtureRequest):
+    results = request.param
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
+        MagicMock(
+            return_value=partial(plan_returning_xrc_results, xrc_results=results)()
+        ),
+    ):
+        yield results
+
+
+@pytest.mark.parametrize(
+    "mock_gridscan_results, requested_aperture, expected_aperture",
+    [
+        [[FLYSCAN_RESULT_MED_APERTURE], AperturePolicy.AUTO, AperturePolicy.MEDIUM],
+        [[FLYSCAN_RESULT_MED_APERTURE], AperturePolicy.SMALL, AperturePolicy.SMALL],
+        [[FLYSCAN_RESULT_MED_APERTURE], AperturePolicy.LARGE, AperturePolicy.LARGE],
+        [[FLYSCAN_RESULT_LARGE_APERTURE], AperturePolicy.AUTO, AperturePolicy.LARGE],
+        [
+            [FLYSCAN_RESULT_MED_APERTURE, FLYSCAN_RESULT_LARGE_APERTURE],
+            AperturePolicy.AUTO,
+            AperturePolicy.LARGE,
+        ],
+    ],
+    indirect=["mock_gridscan_results"],
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal"
+)
+def test_load_centre_collect_applies_aperture_for_single_result_based_on_xtal_size(
+    mock_rotation_scan_internal: MagicMock,
+    mock_gridscan_results: list[XRayCentreResult],
+    requested_aperture: AperturePolicy,
+    expected_aperture: AperturePolicy,
+    sim_run_engine: RunEngineSimulator,
+    load_centre_collect_with_top_n_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+    composite: LoadCentreCollectComposite,
+):
+    load_centre_collect_with_top_n_params.multi_rotation_scan.selected_aperture = (
+        requested_aperture
+    )
+    mock_rotation_scan_internal.return_value = iter([])
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
+    sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite,
+            load_centre_collect_with_top_n_params,
+            oav_parameters_for_rotation,
+        )
+    )
+    rotation_scan_calls = mock_rotation_scan_internal.mock_calls
+    assert len(rotation_scan_calls) == 1
+    params = rotation_scan_calls[0].args[1]
+    assert params.selected_aperture == expected_aperture
