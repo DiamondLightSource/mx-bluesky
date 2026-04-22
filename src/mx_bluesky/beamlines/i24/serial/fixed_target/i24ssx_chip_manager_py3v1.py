@@ -887,12 +887,20 @@ def pumpprobe_calc() -> MsgGenerator:
     repeat3 = 6 * 20 * (movetime + (pumpexptime + exptime) / 2)
     repeat5 = 10 * 20 * (movetime + (pumpexptime + exptime) / 2)
     repeat10 = 20 * 20 * (movetime + (pumpexptime + exptime) / 2)
+    shortrepeat1 = 2 * 2 * (movetime + (pumpexptime + exptime) / 2)
+    shortrepeat2 = 2 * 4 * (movetime + (pumpexptime + exptime) / 2)
+    shortrepeat3 = 4 * 4 * (movetime + (pumpexptime + exptime) / 2)
+    shortrepeat4 = 5 * 5 * (movetime + (pumpexptime + exptime) / 2)
     for pv_name, repeat in (
         (pv.ioc13_gp104, repeat1),
         (pv.ioc13_gp105, repeat2),
         (pv.ioc13_gp106, repeat3),
         (pv.ioc13_gp107, repeat5),
         (pv.ioc13_gp108, repeat10),
+        (pv.ioc13_gp113, shortrepeat1),
+        (pv.ioc13_gp114, shortrepeat2),
+        (pv.ioc13_gp115, shortrepeat3),
+        (pv.ioc13_gp116, shortrepeat4),
     ):
         rounded = round(repeat, 4)
         caput(pv_name, rounded)

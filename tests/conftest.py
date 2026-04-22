@@ -949,7 +949,9 @@ async def panda():
 
 @pytest.fixture
 def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
-    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
+    return OAVParameters(
+        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
+    )
 
 
 async def async_status_done():

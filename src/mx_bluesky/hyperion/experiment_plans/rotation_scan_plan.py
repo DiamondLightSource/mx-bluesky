@@ -2,6 +2,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.common.maths import AngleWithPhase
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
@@ -261,7 +262,7 @@ def rotation_scan_internal(
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     if not oav_params:
-        oav_params = OAVParameters(context="xrayCentring")
+        oav_params = OAVParameters(get_config_client(), context="xrayCentring")
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
 

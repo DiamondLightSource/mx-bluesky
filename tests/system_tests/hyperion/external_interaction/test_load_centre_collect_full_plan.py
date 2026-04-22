@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from daq_config_server import ConfigClient
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -1147,8 +1148,10 @@ class TestGenerateSnapshot:
         test_config_files: dict,
         fetch_datacollection_attribute: Callable[..., Any],
         fetch_datacollection_ids_for_group_id: Callable[..., Any],
+        config_client: ConfigClient,
     ):
         oav_parameters = OAVParameters(
+            config_client,
             oav_config_json=test_config_files["oav_config_json"],
             context="xrayCentring",
         )

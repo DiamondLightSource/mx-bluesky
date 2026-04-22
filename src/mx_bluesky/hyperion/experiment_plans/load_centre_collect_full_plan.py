@@ -8,6 +8,7 @@ import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
@@ -61,7 +62,7 @@ def load_centre_collect_full(
     """
 
     if not oav_params:
-        oav_params = OAVParameters(context="xrayCentring")
+        oav_params = OAVParameters(get_config_client(), context="xrayCentring")
     oav_config_file = oav_params.oav_config_json
 
     @set_run_key_decorator(CONST.PLAN.LOAD_CENTRE_COLLECT)
