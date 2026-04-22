@@ -8,6 +8,7 @@ import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.smargon import Smargon
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 
 from mx_bluesky.common.utils import xrc_result as flyscan_result
 from mx_bluesky.common.utils.log import LOGGER
@@ -17,6 +18,7 @@ from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
     TopNByMaxCountSelection,
 )
+from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 def top_n_by_max_count(
@@ -52,19 +54,18 @@ def resolve_selection_fn(
     raise ValueError(f"Invalid selection function {params.name}")
 
 
-def samples_and_locations_to_collect(
-    selection_params: MultiXtalSelection,
+def samples_and_hits_to_collect(
+    parameters: LoadCentreCollect,
     gonio: Smargon,
-    default_sample_id: int,
     xrc_results: Sequence[flyscan_result.XRayCentreResult] | None,
-) -> MsgGenerator[list[tuple[int, np.ndarray]]]:
+) -> MsgGenerator[list[tuple[int, flyscan_result.XRayCentreResult]]]:
     """
     Determine the sample IDs and positions to collect given the specified selection parameters.
     If no centres are present, return the default sample ID and current position,
     so that a collection can be performed without XRC should this be required.
     """
     if xrc_results:
-        selection_func = resolve_selection_fn(selection_params)
+        selection_func = resolve_selection_fn(parameters.selection_params)
         hits = selection_func(xrc_results)
         hits_to_collect = []
         for hit in hits:
@@ -89,9 +90,21 @@ def samples_and_locations_to_collect(
         initial_y_mm = yield from bps.rd(gonio.y.user_readback)
         initial_z_mm = yield from bps.rd(gonio.z.user_readback)
 
+        com_mm = np.array([initial_x_mm, initial_y_mm, initial_z_mm])
+        box_width_mm = GridscanParamConstants.BOX_WIDTH_UM / 1000
+
         return [
             (
-                default_sample_id,
-                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000,
+                parameters.sample_id,
+                flyscan_result.XRayCentreResult(
+                    centre_of_mass_mm=com_mm,
+                    bounding_box_mm=(
+                        com_mm - box_width_mm / 2,
+                        com_mm + box_width_mm / 2,
+                    ),
+                    max_count=1000,
+                    total_count=1000,
+                    sample_id=parameters.sample_id,
+                ),
             )
         ]
