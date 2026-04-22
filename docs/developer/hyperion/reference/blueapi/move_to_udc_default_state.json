@@ -1,1 +1,0 @@
-{"$schema": "https://json-schema.org/draft/2020-12/schema", "description": "Move beamline hardware to known positions prior to UDC start.", "additionalProperties": false, "properties": {}, "title": "move_to_udc_default_state", "type": "object"}
