@@ -1,5 +1,6 @@
 import os
 from enum import Enum, StrEnum
+from pathlib import Path
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
@@ -40,7 +41,10 @@ class DocDescriptorNames:
 
 def _get_oav_config_json_path():
     if TEST_MODE:
-        return "tests/test_data/test_OAVCentring.json"
+        return str(
+            Path(__file__).parent.parent.parent.parent.parent
+            / "tests/test_data/oav/test_OAVCentring.json"
+        )
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
     elif BEAMLINE == "aithre":
