@@ -30,6 +30,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
+    prepare_aperture_for_rotation_if_required,
     setup_sample_environment,
 )
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
@@ -238,10 +239,8 @@ def _move_and_rotation(
             )
 
         if params.selected_aperture:
-            yield from bps.prepare(
-                composite.aperture_scatterguard,
-                params.selected_aperture,
-                group=CONST.WAIT.PREPARE_APERTURE,
+            yield from prepare_aperture_for_rotation_if_required(
+                composite.aperture_scatterguard, params.selected_aperture
             )
         yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(composite, params, motion_values)

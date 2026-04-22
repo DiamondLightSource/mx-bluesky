@@ -20,6 +20,7 @@
     "file_name": "protk",
     "storage_directory": "{tmp_data}/123457/",
     "transmission_frac": 0.05,
+    "selected_aperture": "AUTO",
     "exposure_time_s": 0.004,
     "rotation_increment_deg": 0.1,
     "ispyb_experiment_type": "SAD",

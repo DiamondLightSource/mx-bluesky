@@ -14,10 +14,12 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 
 import mx_bluesky.common.utils.xrc_result as flyscan_result
 import mx_bluesky.hyperion.utils.centre_selection
-from mx_bluesky.common.parameters.components import WithSnapshot
+from mx_bluesky.common.parameters.components import AperturePolicy, WithSnapshot
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
 )
+from mx_bluesky.common.utils.aperture_selection import select_aperture_for_bbox_mm
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
@@ -60,7 +62,12 @@ def load_centre_collect_full(
      that satisfies the chosen selection function,
      move to that centre and do a collection with the specified parameters.
     """
-
+    LOGGER.info(
+        f"aperture from parameters ROBOT LOAD is {parameters.robot_load_then_centre.selected_aperture}"
+    )
+    LOGGER.info(
+        f"aperture from parameters ROTATION is {parameters.multi_rotation_scan.selected_aperture}"
+    )
     if not oav_params:
         oav_params = OAVParameters(get_config_client(), context="xrayCentring")
     oav_config_file = oav_params.oav_config_json
@@ -98,14 +105,15 @@ def load_centre_collect_full(
             else:
                 raise
 
-        sample_ids_and_locations = yield from (
-            _samples_and_locations_to_collect(
+        sample_ids_and_hits = yield from (
+            _samples_and_hits_to_collect(
                 flyscan_event_handler.xray_centre_results, parameters, composite
             )
         )
-        sample_ids_and_locations.sort(key=_x_coordinate)
+        sample_ids_and_hits.sort(key=_x_coordinate)
 
         multi_rotation = parameters.multi_rotation_scan
+        _update_aperture_selection(multi_rotation, sample_ids_and_hits)
         rotation_template = multi_rotation.rotation_scans.copy()
 
         multi_rotation.rotation_scans.clear()
@@ -114,9 +122,11 @@ def load_centre_collect_full(
 
         generator = rotation_scan_generator(is_alternating)
         next(generator)
-        for sample_id, location in sample_ids_and_locations:
+        for sample_id, xray_centre_result in sample_ids_and_hits:
             for rot in rotation_template:
-                combination = generator.send((rot, location, sample_id))
+                combination = generator.send(
+                    (rot, xray_centre_result.centre_of_mass_mm * 1000, sample_id)
+                )
                 multi_rotation.rotation_scans.append(combination)
         multi_rotation = RotationScan.model_validate(multi_rotation)
 
@@ -129,11 +139,29 @@ def load_centre_collect_full(
     yield from plan_with_callback_subs()
 
 
-def _samples_and_locations_to_collect(
+def _update_aperture_selection(
+    multi_rotation_scan: RotationScan,
+    sample_ids_and_hits: list[tuple[int, flyscan_result.XRayCentreResult]],
+):
+    """Select aperture if auto selection is specified. If more than one crystal is found (i.e. multipin),
+    select the large aperture, otherwise select based on crystal dimensions."""
+    assert len(sample_ids_and_hits) > 0
+    if multi_rotation_scan.selected_aperture == AperturePolicy.AUTO:
+        if len(sample_ids_and_hits) > 1:
+            multi_rotation_scan.selected_aperture = AperturePolicy.LARGE
+        else:
+            first_hit = sample_ids_and_hits[0][1]
+            bbox_size = first_hit.bounding_box_mm[1] - first_hit.bounding_box_mm[0]
+            multi_rotation_scan.selected_aperture = select_aperture_for_bbox_mm(
+                bbox_size, I03Constants.APERTURE_SELECTION_XTAL_WIDTH_THRESHOLD_MM
+            )
+
+
+def _samples_and_hits_to_collect(
     xrc_results: Sequence[flyscan_result.XRayCentreResult] | None,
     parameters: LoadCentreCollect,
     composite: LoadCentreCollectComposite,
-) -> MsgGenerator[list[tuple[int, np.ndarray]]]:
+) -> MsgGenerator[list[tuple[int, flyscan_result.XRayCentreResult]]]:
     if xrc_results:
         selection_func = (
             mx_bluesky.hyperion.utils.centre_selection.resolve_selection_fn(
@@ -150,13 +178,11 @@ def _samples_and_locations_to_collect(
             else:
                 hits_to_collect.append(hit)
 
-        samples_and_locations = [
-            (hit.sample_id, hit.centre_of_mass_mm * 1000) for hit in hits_to_collect
-        ]
+        samples_and_hits = [(hit.sample_id, hit) for hit in hits_to_collect]
         LOGGER.info(
             f"Selected hits {hits_to_collect} using {selection_func}, args={parameters.selection_params}"
         )
-        return samples_and_locations
+        return samples_and_hits
     else:
         # If the xray centring hasn't found a result but has not thrown an error it
         # means that we do not need to recentre and can collect where we are
@@ -164,16 +190,30 @@ def _samples_and_locations_to_collect(
         initial_y_mm = yield from bps.rd(composite.gonio.y.user_readback)
         initial_z_mm = yield from bps.rd(composite.gonio.z.user_readback)
 
+        com_mm = np.array([initial_x_mm, initial_y_mm, initial_z_mm])
+        box_width_mm = GridscanParamConstants.BOX_WIDTH_UM / 1000
         return [
             (
                 parameters.sample_id,
-                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000,
+                flyscan_result.XRayCentreResult(
+                    centre_of_mass_mm=com_mm,
+                    bounding_box_mm=(
+                        com_mm - box_width_mm / 2,
+                        com_mm + box_width_mm / 2,
+                    ),
+                    max_count=1000,
+                    total_count=1000,
+                    sample_id=parameters.sample_id,
+                ),
             )
         ]
 
 
-def _x_coordinate(sample_and_location: tuple[int, np.ndarray]) -> float:
-    return sample_and_location[1][0]  # type: ignore
+def _x_coordinate(
+    sample_id_and_xrc_result: tuple[int, flyscan_result.XRayCentreResult],
+) -> float:
+    location = sample_id_and_xrc_result[1].centre_of_mass_mm
+    return location[0]  # type: ignore
 
 
 def rotation_scan_generator(

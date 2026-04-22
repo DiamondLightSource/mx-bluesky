@@ -115,6 +115,17 @@ mock_paths = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def patch_config_server():
+    # This client isn't used but enables get_config_client to return a client with patched calls
+    with patch(
+        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
+        ConfigClient(""),
+        create=True,
+    ):
+        yield
+
+
 def _error_and_kill_pending_tasks(
     loop: asyncio.AbstractEventLoop, test_name: str, test_passed: bool
 ) -> set[asyncio.Task]:
