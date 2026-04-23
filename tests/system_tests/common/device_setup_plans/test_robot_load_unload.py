@@ -10,12 +10,12 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
 from ophyd_async.core import set_mock_value
 from requests import get
-from tests.conftest import SimConstants
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
 )
+from tests.conftest import SimConstants
 
 
 @pytest.mark.system_test

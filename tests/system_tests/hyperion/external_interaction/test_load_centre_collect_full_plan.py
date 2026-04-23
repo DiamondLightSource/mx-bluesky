@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from daq_config_server import ConfigClient
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -1119,14 +1120,6 @@ def grid_detect_for_snapshot_generation():
 
 
 class TestGenerateSnapshot:
-    @pytest.fixture()
-    def test_config_files(self):
-        return {
-            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
-            "display_config": "tests/test_data/test_daq_configuration/display.configuration",
-        }
-
     @pytest.mark.system_test
     def test_load_centre_collect_generate_rotation_snapshots(
         self,
@@ -1140,8 +1133,10 @@ class TestGenerateSnapshot:
         test_config_files: dict,
         fetch_datacollection_attribute: Callable[..., Any],
         fetch_datacollection_ids_for_group_id: Callable[..., Any],
+        config_client: ConfigClient,
     ):
         oav_parameters = OAVParameters(
+            config_client,
             oav_config_json=test_config_files["oav_config_json"],
             context="xrayCentring",
         )

@@ -37,14 +37,14 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from pydantic import BaseModel
 
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
-    get_i04_config_client,
+    get_i04_feature_settings,
 )
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
-    get_results_then_change_aperture_and_move_to_xtal,
+    get_results_and_move_to_xtal,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -231,7 +231,7 @@ def i04_default_grid_detect_and_xray_centre(
             assert isinstance(
                 grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
             ), "Specified grid params couldn't be found after grid detection"
-            yield from get_results_then_change_aperture_and_move_to_xtal(
+            yield from get_results_and_move_to_xtal(
                 composite,
                 grid_common_params.specified_grid_params,
                 flyscan_event_handler,
@@ -340,15 +340,10 @@ def _get_generic_grid_params(
     _current_wavelength_a: float, parameters: I04AutoXrcParams
 ) -> GenericGrid:
     """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
-    _assumed_wavelength_a = (
-        get_i04_config_client().get_feature_flags().ASSUMED_WAVELENGTH_IN_A
-    )
-    _unscaled_transmission = (
-        get_i04_config_client().get_feature_flags().XRC_UNSCALED_TRANSMISSION_FRAC
-    )
-    _unscaled_exposure_time_s = (
-        get_i04_config_client().get_feature_flags().XRC_UNSCALED_EXPOSURE_TIME_S
-    )
+    feature_settings = get_i04_feature_settings()
+    _assumed_wavelength_a = feature_settings.ASSUMED_WAVELENGTH_IN_A
+    _unscaled_transmission = feature_settings.XRC_UNSCALED_TRANSMISSION_FRAC
+    _unscaled_exposure_time_s = feature_settings.XRC_UNSCALED_EXPOSURE_TIME_S
     transmission_frac, exposure_time_s = (
         fix_transmission_and_exposure_time_for_current_wavelength(
             _current_wavelength_a,

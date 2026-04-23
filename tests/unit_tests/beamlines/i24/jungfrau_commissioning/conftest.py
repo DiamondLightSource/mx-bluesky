@@ -6,7 +6,7 @@ from dodal.devices.beamlines.i24.beamstop import Beamstop
 from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
-from dodal.devices.hutch_shutter import HutchShutter
+from dodal.devices.hutch_shutter import HutchInterlock, InterlockedHutchShutter
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -29,7 +29,7 @@ def rotation_composite(
         synchrotron = Synchrotron("")
         sample_shutter = ZebraShutter("")
         xbpm_feedback = XBPMFeedback("")
-        hutch_shutter = HutchShutter("")
+        hutch_shutter = InterlockedHutchShutter("", HutchInterlock(""))
         beamstop = Beamstop("")
         det_stage = YZStage(
             "",
@@ -55,3 +55,7 @@ def rotation_composite(
     )
 
     return composite
+
+
+@pytest.fixture(autouse=True)
+def always_use_i24_beamline(use_i24_beamline): ...

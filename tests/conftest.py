@@ -5,11 +5,10 @@ import logging
 import os
 import sys
 from collections.abc import Callable, Generator, Sequence
-from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
 from types import ModuleType
-from typing import Any, TypeVar
+from typing import Any, TypedDict, TypeVar
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -18,12 +17,14 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
+from daq_config_server import ConfigClient
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines import beamline_utils
-from dodal.common.beamlines.beamline_parameters import (
-    GDABeamlineParameters,
+from dodal.common.beamlines.beamline_utils import (
+    clear_config_client,
+    clear_devices,
+    set_config_client,
 )
-from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
     AperturePosition,
@@ -43,6 +44,7 @@ from dodal.devices.baton import Baton
 from dodal.devices.beamlines.i03 import Beamstop, BeamstopPositions
 from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -87,9 +89,6 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from mx_bluesky.beamlines.i04.external_interaction.config_server import (
-    get_i04_config_client,
-)
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
     GridscanPlane,
 )
@@ -113,17 +112,20 @@ from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
-from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
-)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from tests.test_data.oav import (
+    TEST_DISPLAY_CONFIG,
+    TEST_OAV_CENTRING_JSON,
+    TEST_OAV_ZOOM_LEVELS,
+)
+
+TEST_BEAMLINE_PARAMETERS = "tests/test_data/test_beamline_parameters.txt"
 
 pytest_plugins = ["tests.expeye_helpers"]
 
-i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
 TEST_GRAYLOG_PORT = 5555
 TEST_VISIT = "cm1234-67"
@@ -231,8 +233,8 @@ TEST_RESULT_OUT_OF_BOUNDS_BB = [
 MOCK_DAQ_CONFIG_PATH = "tests/test_data/test_daq_configuration"
 mock_paths = [
     ("DAQ_CONFIGURATION_PATH", MOCK_DAQ_CONFIG_PATH),
-    ("ZOOM_PARAMS_FILE", "tests/test_data/test_jCameraManZoomLevels.xml"),
-    ("DISPLAY_CONFIG", f"{MOCK_DAQ_CONFIG_PATH}/display.configuration"),
+    ("ZOOM_PARAMS_FILE", TEST_OAV_ZOOM_LEVELS),
+    ("DISPLAY_CONFIG", TEST_DISPLAY_CONFIG),
 ]
 
 
@@ -349,6 +351,12 @@ def pytest_runtest_setup(item):
     else:
         print("Skipping log setup for log test - deleting existing handlers")
         _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        )
+        DODAL_LOGGER.addHandler(handler)
 
 
 def pytest_runtest_teardown(item):
@@ -370,25 +378,9 @@ def pass_on_mock(motor: Motor, call_log: MagicMock | None = None):
 
 @pytest.fixture
 def beamline_parameters():
-    return GDABeamlineParameters.from_file(
-        "tests/test_data/test_beamline_parameters.txt"
-    )
-
-
-@pytest.fixture(autouse=True)
-def i03_beamline_parameters():
-    """Fix default i03 beamline parameters to refer to a test file not the /dls_sw folder"""
-    with patch.dict(
-        "dodal.common.beamlines.beamline_parameters.BEAMLINE_PARAMETER_PATHS",
-        {"i03": "tests/test_data/test_beamline_parameters.txt"},
-    ) as params:
-        with ExitStack() as context_stack:
-            for context_mgr in [
-                patch(f"dodal.beamlines.i03.{name}", value, create=True)
-                for name, value in mock_paths
-            ]:
-                context_stack.enter_context(context_mgr)
-            yield params
+    with Path(TEST_BEAMLINE_PARAMETERS).open("r") as f:
+        contents = f.read()
+    return json.loads(contents)
 
 
 @pytest.fixture
@@ -404,7 +396,7 @@ def hyperion_fgs_params(tmp_path):
 
 
 @pytest.fixture
-def test_three_d_grid_params(tmp_path):
+def test_three_d_grid_params(tmp_path, patch_beamline_env_variable):
     return SpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
@@ -510,7 +502,9 @@ def synchrotron():
 @pytest.fixture
 def oav(test_config_files):
     parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
@@ -590,12 +584,12 @@ def attenuator():
 
 @pytest.fixture
 def beamstop_phase1(
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     sim_run_engine: RunEngineSimulator,
 ) -> Generator[Beamstop, Any, Any]:
     with patch(
-        "dodal.beamlines.i03.get_beamline_parameters",
-        return_value=beamline_parameters,
+        "dodal.beamlines.i03.BEAMLINE_PARAMETERS_PATH",
+        TEST_BEAMLINE_PARAMETERS,
     ):
         beamstop = i03.beamstop.build(connect_immediately=True, mock=True)
 
@@ -671,7 +665,6 @@ def lower_gonio(
 @pytest.fixture
 def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
-    voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
     for vc in voltages.vertical_voltages.values():
         vc.set = MagicMock(side_effect=lambda _: completed_status())
     for vc in voltages.horizontal_voltages.values():
@@ -681,8 +674,8 @@ def mirror_voltages():
 
 
 @pytest.fixture
-def undulator_dcm(sim_run_engine, dcm, undulator):
-    undulator_dcm = i03.undulator_dcm.build(
+def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
+    undulator_dcm: UndulatorDCM = i03.undulator_dcm.build(
         connect_immediately=True,
         mock=True,
         daq_configuration_path="tests/test_data/test_daq_configuration",
@@ -785,13 +778,19 @@ async def beamsize(aperture_scatterguard: ApertureScatterguard):
     return Beamsize(aperture_scatterguard, name="beamsize")
 
 
+class ConfigFilesForTests(TypedDict):
+    zoom_params_file: str
+    oav_config_json: str
+    display_config: str
+
+
 @pytest.fixture()
 def test_config_files():
-    return {
-        "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-        "oav_config_json": "tests/test_data/test_OAVCentring.json",
-        "display_config": "tests/test_data/test_display.configuration",
-    }
+    return ConfigFilesForTests(
+        zoom_params_file=TEST_OAV_ZOOM_LEVELS,
+        oav_config_json=TEST_OAV_CENTRING_JSON,
+        display_config=TEST_DISPLAY_CONFIG,
+    )
 
 
 @pytest.fixture()
@@ -951,7 +950,9 @@ async def panda():
 
 @pytest.fixture
 def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
-    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
+    return OAVParameters(
+        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
+    )
 
 
 async def async_status_done():
@@ -1357,6 +1358,9 @@ _UID_GRIDSCAN_OUTER = "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3"
 _UID_GRID_DETECT_AND_DO_GRIDSCAN = "41b82023-c271-449d-9543-260da8d85641"
 _UID_ROTATION_MAIN = "2093c941-ded1-42c4-ab74-ea99980fbbfd"
 _UID_DO_FGS = "636490db-83da-462c-a537-70e6fe416843"
+_UID_ROBOT_UNLOAD = "9920cdec-0f13-442c-b985-3c076eeec61f"
+
+_UID_ROBOT_UNLOAD_DESCRIPTOR = "34551604-5bfb-48e4-9eaa-9508261db03c"
 
 
 class _TestEventData(OavGridSnapshotTestEvents):
@@ -1407,6 +1411,15 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
             "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+        }
+
+    @property
+    def test_robot_unload_start_document(self):
+        return {
+            "uid": _UID_ROBOT_UNLOAD,
+            "subplan_name": PlanNameConstants.ROBOT_UNLOAD,
+            "metadata": {"visit": TEST_VISIT, "sample_id": TEST_SAMPLE_ID},
+            "activate_callbacks": ["RobotLoadISPyBCallback"],
         }
 
     @property
@@ -1489,6 +1502,27 @@ class _TestEventData(OavGridSnapshotTestEvents):
         return {
             "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
             "name": DocDescriptorNames.ZOCALO_HW_READ,
+        }  # type: ignore
+
+    @property
+    def test_descriptor_document_robot_unload(self) -> EventDescriptor:
+        return {
+            "uid": _UID_ROBOT_UNLOAD_DESCRIPTOR,
+            "name": DocDescriptorNames.ROBOT_UPDATE,
+        }  # type: ignore
+
+    @property
+    def test_event_document_robot_unload(self) -> Event:
+        return {
+            "descriptor": _UID_ROBOT_UNLOAD_DESCRIPTOR,
+            "time": 1666604299.828203,
+            "data": {
+                "robot-barcode": "123456",
+                "robot-current_pin": 1,
+                "robot-current_puck": 2,
+                "webcam-last_saved_path": "blah",
+                "oav-snapshot-last_saved_path": "blah",
+            },
         }  # type: ignore
 
     @property
@@ -1610,6 +1644,16 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "num_events": {"fake_ispyb_params": 1, "primary": 1},
         }
 
+    @property
+    def test_robot_unload_stop_document(self) -> RunStop:
+        return {
+            "run_start": _UID_ROBOT_UNLOAD,
+            "time": 1666604300.0310638,
+            "uid": "863e29d5-0b4e-4a54-bd78-02b23f79309e",
+            "exit_status": "success",
+            "reason": "",
+        }
+
 
 class TestData(OavGridSnapshotTestEvents):
     DUMMY_TIME_STRING: str = "1970-01-01 00:00:00"
@@ -1713,41 +1757,6 @@ def assert_images_pixelwise_equal(actual, expected):
             )
 
 
-def _fake_config_server_read(
-    filepath: str | Path,
-    desired_return_type: type[str] | type[dict] = str,
-    reset_cached_result=False,
-):
-    filepath = Path(filepath)
-    # Minimal logic required for unit tests
-    with filepath.open("r") as f:
-        contents = f.read()
-        if desired_return_type is str:
-            return contents
-        elif desired_return_type is dict:
-            return json.loads(contents)
-
-
-IMPLEMENTED_CONFIG_CLIENTS: list[Callable] = [
-    get_hyperion_config_client,
-    get_i04_config_client,
-]
-
-
-@pytest.fixture(autouse=True)
-def mock_config_server():
-    # Don't actually talk to central service during unit tests, and reset caches between test
-
-    for client in IMPLEMENTED_CONFIG_CLIENTS:
-        client.cache_clear()  # type: ignore - currently no option for "cachable" static type
-
-    with patch(
-        "mx_bluesky.common.external_interaction.config_server.MXConfigClient.get_file_contents",
-        side_effect=_fake_config_server_read,
-    ):
-        yield
-
-
 @pytest.fixture(autouse=True)
 def mock_alert_service():
     with patch(
@@ -1755,3 +1764,15 @@ def mock_alert_service():
         create=True,
     ) as service:
         yield service
+
+
+@pytest.fixture()
+def patch_beamline_env_variable(monkeypatch):
+    monkeypatch.setenv("BEAMLINE", "test")
+
+
+@pytest.fixture(autouse=True)
+def reset_config_client():
+    set_config_client(ConfigClient(""))
+    yield
+    clear_config_client()

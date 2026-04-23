@@ -19,6 +19,18 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_call
     RobotLoadISPyBCallback,
 )
 
+TEST_PUCK = 1
+TEST_PIN = 2
+TEST_SAMPLE_ID = 123456
+
+
+@pytest.fixture
+def loaded_robot(robot: BartRobot):
+    set_mock_value(robot.current_pin, TEST_PIN)
+    set_mock_value(robot.current_puck, TEST_PUCK)
+    set_mock_value(robot.sample_id, TEST_SAMPLE_ID)
+    return robot
+
 
 # Remove when in bluesky proper, see https://github.com/bluesky/bluesky/issues/1924
 def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], bool]]):
@@ -207,7 +219,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
 
 def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     run_engine: RunEngine,
-    robot: BartRobot,
+    loaded_robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
     lower_gonio: XYZStage,
@@ -217,7 +229,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
     run_engine.subscribe(callback)
-    robot.set = MagicMock(side_effect=TestError("Bad Error"))
+    loaded_robot.set = MagicMock(side_effect=TestError("Bad Error"))
 
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id
@@ -225,7 +237,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     with pytest.raises(TestError):
         run_engine(
             robot_unload(
-                robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"
+                loaded_robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"
             )
         )
 

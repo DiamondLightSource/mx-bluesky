@@ -13,8 +13,10 @@ from bluesky import Msg
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.devices.baton import Baton
 from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.synchrotron import Synchrotron
 from dodal.utils import get_beamline_based_on_environment_variable
 from ophyd_async.core import get_mock_put, set_mock_value
 
@@ -33,7 +35,7 @@ from mx_bluesky.common.utils.exceptions import (
     WarningError,
 )
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion._plan_runner_params import RobotUnload, UDCCleanup, Wait
 from mx_bluesky.hyperion.baton_handler import (
     HYPERION_USER,
     NO_USER,
@@ -110,6 +112,7 @@ def bluesky_context(
     lower_gonio,
     baton,
     detector_motion,
+    synchrotron,
     use_beamline_t01,
 ):
     # Baton for real run engine
@@ -125,24 +128,26 @@ def bluesky_context(
             lower_gonio,
             baton,
             detector_motion,
+            synchrotron,
         ]
         for device in devices:
             context.register_device(device)
         return {d.name: d for d in devices}, {}
 
-    context.with_device_manager(
-        get_beamline_based_on_environment_variable().devices,
-        mock=True,
-    )
-
-    baton_with_requested_user(context, HYPERION_USER)
     with patch.object(context, "with_device_manager", mock_load_module):
+        context.with_device_manager(
+            get_beamline_based_on_environment_variable().devices,
+            mock=True,
+        )
+        synchrotron_with_countdown(context)
+        baton_with_requested_user(context, HYPERION_USER)
         yield context
 
 
 @pytest.fixture
 def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
     baton_requested_user = HYPERION_USER
+    countdown = 1200
 
     # Baton for sim run engine
     def get_requested_user(msg):
@@ -153,11 +158,19 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
         nonlocal baton_requested_user
         baton_requested_user = msg.args[0]
 
+    def machine_user_countdown_read(msg):
+        return {msg.obj.name: {"value": countdown}}
+
     sim_run_engine.add_handler("locate", get_requested_user, "baton-requested_user")
     sim_run_engine.add_handler(
         "set",
         set_requested_user,  # type: ignore
         "baton-requested_user",
+    )
+    sim_run_engine.add_handler(
+        "read",
+        machine_user_countdown_read,
+        "synchrotron-machine_user_countdown",
     )
 
     msgs = []
@@ -222,6 +235,14 @@ def baton_with_requested_user(
     baton = find_device_in_context(bluesky_context, "baton", Baton)
     set_mock_value(baton.requested_user, user)
     return baton
+
+
+def synchrotron_with_countdown(
+    bluesky_context: BlueskyContext, seconds: int = 1200
+) -> Synchrotron:
+    synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
+    set_mock_value(synchrotron.machine_user_countdown, seconds)
+    return synchrotron
 
 
 @pytest.fixture()
@@ -893,6 +914,88 @@ def test_run_udc_when_requested_raises_baton_release_event_when_baton_requested_
     )
 
 
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    return_value=[],
+)
+def test_run_udc_when_requested_calls_robot_unload_with_no_visit(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    udc_runner.decode_and_execute = MagicMock()
+    run_udc_when_requested(bluesky_context, udc_runner)
+    udc_runner.decode_and_execute.assert_any_call(None, [RobotUnload()])
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
+)
+def test_run_udc_when_requested_calls_robot_unload_with_visit(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    def dummy_plan_with_visit_return(_, __) -> MsgGenerator:
+        yield from bps.null()
+        return "cm12345-12"
+
+    udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan_with_visit_return)
+    run_udc_when_requested(bluesky_context, udc_runner)
+    udc_runner.decode_and_execute.assert_any_call("cm12345-12", [RobotUnload()])
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
+)
+def test_robot_unload_is_not_called_after_plan_error_raised_but_udc_cleanup_is_called(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    def dummy_plan_with_exception(_, parameter_list) -> MsgGenerator:
+        if isinstance(parameter_list[0], Wait):
+            raise PlanError("Simulated exception")
+        else:
+            yield from bps.null()
+
+    udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan_with_exception)
+
+    with pytest.raises(PlanError, match="Simulated exception"):
+        run_udc_when_requested(bluesky_context, udc_runner)
+
+    udc_runner.decode_and_execute.assert_has_calls(
+        [call(None, [AGAMEMNON_WAIT_INSTRUCTION]), call(None, [UDCCleanup()])]
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    side_effect=[[AGAMEMNON_WAIT_INSTRUCTION], []],
+)
+def test_robot_unload_is_called_after_normal_completion_and_udc_cleanup_is_called(
+    mock_create_params: MagicMock,
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+):
+    def dummy_plan(_, __) -> MsgGenerator:
+        yield from bps.null()
+
+    udc_runner.decode_and_execute = MagicMock(side_effect=dummy_plan)
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+
+    udc_runner.decode_and_execute.assert_has_calls(
+        [
+            call(None, [AGAMEMNON_WAIT_INSTRUCTION]),
+            call(None, [RobotUnload()]),
+            call(None, [UDCCleanup()]),
+        ]
+    )
+
+
 @patch("mx_bluesky.hyperion.blueapi.in_process._robot_unload")
 def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     mock_robot_unload,
@@ -1024,3 +1127,20 @@ def test_hyperion_doesnt_exit_if_udc_default_state_fails_a_check(
     mock_move_to_udc_default_state.assert_called_once()
     assert get_mock_put(baton.requested_user).mock_calls[-1] == call(NO_USER)
     assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER)
+
+
+def test_baton_handler_ends_collections_if_synchrotron_machine_countdown_below_threshold(
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    dont_patch_clear_devices,
+    caplog,
+    mock_load_centre_collect,
+):
+    synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
+    set_mock_value(synchrotron.machine_user_countdown, 5)
+
+    with caplog.at_level("INFO"):
+        run_udc_when_requested(bluesky_context, udc_runner)
+
+    mock_load_centre_collect.assert_not_called()
+    assert "Synchrotron machine countdown too low" in caplog.text

@@ -10,7 +10,7 @@ from mx_bluesky.common.parameters.gridscan import (
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
-    get_hyperion_config_client,
+    get_hyperion_feature_settings,
 )
 
 
@@ -22,9 +22,7 @@ class GenericGridWithHyperionDetectorParams(GenericGrid):
     @property
     def detector_params(self):
         params = super().detector_params
-        params.enable_dev_shm = (
-            get_hyperion_config_client().get_feature_flags().USE_GPU_RESULTS
-        )
+        params.enable_dev_shm = get_hyperion_feature_settings().USE_GPU_RESULTS
         return params
 
 
@@ -37,9 +35,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
     @property
     def detector_params(self):
         params = super().detector_params
-        params.enable_dev_shm = (
-            get_hyperion_config_client().get_feature_flags().USE_GPU_RESULTS
-        )
+        params.enable_dev_shm = get_hyperion_feature_settings().USE_GPU_RESULTS
         return params
 
     # Relative to common grid scan, stub offsets are defined by config server
@@ -61,9 +57,7 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
             z1_start_mm=self.z_starts_um[0] / 1000,
             y2_start_mm=self.y_starts_um[1] / 1000,
             z2_start_mm=self.z_starts_um[1] / 1000,
-            set_stub_offsets=get_hyperion_config_client()
-            .get_feature_flags()
-            .SET_STUB_OFFSETS,
+            set_stub_offsets=get_hyperion_feature_settings().SET_STUB_OFFSETS,
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
         )
@@ -87,12 +81,8 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
             z1_start_mm=self.z_starts_um[0] / 1000,
             y2_start_mm=self.y_starts_um[1] / 1000,
             z2_start_mm=self.z_starts_um[1] / 1000,
-            set_stub_offsets=get_hyperion_config_client()
-            .get_feature_flags()
-            .SET_STUB_OFFSETS,
-            run_up_distance_mm=get_hyperion_config_client()
-            .get_feature_flags()
-            .PANDA_RUNUP_DISTANCE_MM,
+            set_stub_offsets=get_hyperion_feature_settings().SET_STUB_OFFSETS,
+            run_up_distance_mm=get_hyperion_feature_settings().PANDA_RUNUP_DISTANCE_MM,
             transmission_fraction=self.transmission_frac,
         )
 

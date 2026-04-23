@@ -109,7 +109,7 @@ def calculate_motion_profile(
     )
 
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/1224
-    if get_beamline_name("i03") == "i24":
+    if get_beamline_name() == "i24":
         acceleration_offset_deg = 10
 
     return RotationMotionProfile(

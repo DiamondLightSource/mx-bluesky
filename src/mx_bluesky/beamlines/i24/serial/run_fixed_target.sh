@@ -44,7 +44,7 @@ if [[ $NO_PROCESERV_TEST == true ]]; then
 fi
 
 echo "Set up logging configuration"
-blueapi -c "${current}/blueapi_config.yaml" controller run setup_collection_logs '{"expt":"Serial Fixed"}'
+blueapi -c "${current}/blueapi_config.yaml" -i $INSTRUMENT_SESSION controller run setup_collection_logs '{"expt":"Serial Fixed"}'
 
 # Open the edm screen for a fixed target serial collection
 echo "Starting fixed target edm screen."
@@ -53,7 +53,7 @@ edm -x "${edm_path}/FT-gui/DiamondChipI24-py3v1.edl"
 echo "Edm screen closed"
 
 echo "Clean up log configuration"
-blueapi -c "${current}/blueapi_config.yaml" controller run clean_up_log_config_at_end
+blueapi -c "${current}/blueapi_config.yaml" -i $INSTRUMENT_SESSION controller run clean_up_log_config_at_end
 
 if [[ $NO_PROCESERV_TEST == true ]]; then
     # In this case blueapi server needs to be killed.

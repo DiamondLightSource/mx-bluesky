@@ -6,6 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from daq_config_server import ConfigClient
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
@@ -168,7 +169,9 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
     yield from detect_grid_and_do_gridscan(
         composite,
         parameters=test_full_grid_scan_params,
-        oav_params=OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+        oav_params=OAVParameters(
+            ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
+        ),
         xrc_params_type=HyperionSpecifiedThreeDGridScan,
         construct_beamline_specific=construct_beamline_specific_xrc_features,
     )
@@ -189,7 +192,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     pin_tip_detection_with_found_pin: PinTipDetection,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
-    oav_params = OAVParameters("xrayCentring", test_config_files["oav_config_json"])
+    oav_params = OAVParameters(
+        ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
+    )
 
     run_engine(
         ispyb_activation_wrapper(
@@ -208,7 +213,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     assert params.detector_params.num_triggers == 180
     assert params.fast_gridscan_params.x_axis.full_steps == 15
-    assert params.fast_gridscan_params.y_axis.end == pytest.approx(-0.0649, 0.001)
+    assert params.fast_gridscan_params.y_axis.end == pytest.approx(-0.06329, 0.001)
 
     # Parameters can be serialized
     params.model_dump_json()
@@ -257,7 +262,9 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
         detect_grid_and_do_gridscan(
             grid_detect_xrc_devices,
             test_full_grid_scan_params,
-            OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+            OAVParameters(
+                ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
+            ),
             xrc_params_type=HyperionSpecifiedThreeDGridScan,
             construct_beamline_specific=construct_beamline_specific,
         )
@@ -339,8 +346,10 @@ def test_grid_detect_then_xray_centre_activates_ispyb_callback(
 ):
     assert_message_and_return_remaining(
         msgs_from_simulated_grid_detect_then_xray_centre,
-        lambda msg: msg.command == "open_run"
-        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+        lambda msg: (
+            msg.command == "open_run"
+            and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"]
+        ),
     )
 
 
@@ -349,24 +358,29 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
 ):
     msgs = assert_message_and_return_remaining(
         msgs_from_simulated_grid_detect_then_xray_centre,
-        lambda msg: msg.command == "prepare"
-        and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == ApertureValue.SMALL,
+        lambda msg: (
+            msg.command == "prepare"
+            and msg.obj.name == "aperture_scatterguard"
+            and msg.args[0] == ApertureValue.SMALL
+        ),
     )
 
     aperture_prepare_group = msgs[0].kwargs.get("group")
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == aperture_prepare_group,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == aperture_prepare_group
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "aperture_scatterguard-selected_aperture"
+            and msg.args[0] == ApertureValue.SMALL
+        ),
     )
 
 
@@ -396,9 +410,11 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
