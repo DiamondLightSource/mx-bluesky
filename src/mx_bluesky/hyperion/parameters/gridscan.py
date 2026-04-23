@@ -6,7 +6,7 @@ from dodal.devices.fast_grid_scan import (
 )
 
 from mx_bluesky.common.parameters.gridscan import (
-    GridCommon,
+    GenericGrid,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
@@ -14,7 +14,7 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 )
 
 
-class GridCommonWithHyperionDetectorParams(GridCommon):
+class GenericGridWithHyperionDetectorParams(GenericGrid):
     """Used by models which require detector parameters but have no specifications of the grid"""
 
     # These detector params only exist so that we can properly select enable_dev_shm. Remove in
@@ -41,18 +41,22 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
     # Relative to common grid scan, stub offsets are defined by config server
     @property
     def fast_gridscan_params(self) -> ZebraGridScanParamsThreeD:
+        """During 3D grid scans, there is an omega rotation before the second grid,
+        transforming Y -> Z axes, so use the second element of the Y params to set
+        Z params on the 3D grid scan device.
+        """
         return ZebraGridScanParamsThreeD(
             x_steps=self.x_steps,
-            y_steps=self.y_steps,
-            z_steps=self.z_steps,
+            y_steps=self.y_steps[0],
+            z_steps=self.y_steps[1],
             x_step_size_mm=self.x_step_size_um / 1000,
-            y_step_size_mm=self.y_step_size_um / 1000,
-            z_step_size_mm=self.z_step_size_um / 1000,
+            y_step_size_mm=self.y_step_sizes_um[0] / 1000,
+            z_step_size_mm=self.y_step_sizes_um[1] / 1000,
             x_start_mm=self.x_start_um / 1000,
-            y1_start_mm=self.y_start_um / 1000,
-            z1_start_mm=self.z_start_um / 1000,
-            y2_start_mm=self.y2_start_um / 1000,
-            z2_start_mm=self.z2_start_um / 1000,
+            y1_start_mm=self.y_starts_um[0] / 1000,
+            z1_start_mm=self.z_starts_um[0] / 1000,
+            y2_start_mm=self.y_starts_um[1] / 1000,
+            z2_start_mm=self.z_starts_um[1] / 1000,
             set_stub_offsets=get_hyperion_feature_settings().SET_STUB_OFFSETS,
             dwell_time_ms=self.exposure_time_s * 1000,
             transmission_fraction=self.transmission_frac,
@@ -60,23 +64,23 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
 
     @property
     def panda_fast_gridscan_params(self) -> PandAGridScanParams:
-        if self.y_steps % 2 and self.z_steps > 0:
+        if self.y_steps[0] % 2 and self.y_steps[1] > 0:
             # See https://github.com/DiamondLightSource/hyperion/issues/1118 for explanation
             raise OddYStepsError(
                 "The number of Y steps must be even for a PandA gridscan"
             )
         return PandAGridScanParams(
             x_steps=self.x_steps,
-            y_steps=self.y_steps,
-            z_steps=self.z_steps,
+            y_steps=self.y_steps[0],
+            z_steps=self.y_steps[1],
             x_step_size_mm=self.x_step_size_um / 1000,
-            y_step_size_mm=self.y_step_size_um / 1000,
-            z_step_size_mm=self.z_step_size_um / 1000,
+            y_step_size_mm=self.y_step_sizes_um[0] / 1000,
+            z_step_size_mm=self.y_step_sizes_um[1] / 1000,
             x_start_mm=self.x_start_um / 1000,
-            y1_start_mm=self.y_start_um / 1000,
-            z1_start_mm=self.z_start_um / 1000,
-            y2_start_mm=self.y2_start_um / 1000,
-            z2_start_mm=self.z2_start_um / 1000,
+            y1_start_mm=self.y_starts_um[0] / 1000,
+            z1_start_mm=self.z_starts_um[0] / 1000,
+            y2_start_mm=self.y_starts_um[1] / 1000,
+            z2_start_mm=self.z_starts_um[1] / 1000,
             set_stub_offsets=get_hyperion_feature_settings().SET_STUB_OFFSETS,
             run_up_distance_mm=get_hyperion_feature_settings().PANDA_RUNUP_DISTANCE_MM,
             transmission_fraction=self.transmission_frac,
@@ -86,9 +90,9 @@ class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
 class OddYStepsError(Exception): ...
 
 
-class PinTipCentreThenXrayCentre(GridCommonWithHyperionDetectorParams):
+class PinTipCentreThenXrayCentre(GenericGridWithHyperionDetectorParams):
     tip_offset_um: float = 0
 
 
-class GridScanWithEdgeDetect(GridCommonWithHyperionDetectorParams):
+class GridScanWithEdgeDetect(GenericGridWithHyperionDetectorParams):
     pass

@@ -388,9 +388,19 @@ def hyperion_fgs_params(tmp_path):
     return HyperionSpecifiedThreeDGridScan(
         **(
             raw_params_from_file(
-                "tests/test_data/parameter_json_files/good_test_parameters.json",
+                "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
                 tmp_path,
             )
+        )
+    )
+
+
+@pytest.fixture
+def test_three_d_grid_params(tmp_path, patch_beamline_env_variable):
+    return SpecifiedThreeDGridScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
+            tmp_path,
         )
     )
 

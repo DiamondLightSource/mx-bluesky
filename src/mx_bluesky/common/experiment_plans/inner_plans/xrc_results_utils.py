@@ -70,7 +70,23 @@ def fetch_xrc_results_from_zocalo(
 
 
 def _generate_dummy_xrc_result(params: SpecifiedThreeDGridScan) -> XRayCentreResult:
-    com = [params.x_steps / 2, params.y_steps / 2, params.z_steps / 2]
+    coms = []
+    assert params.num_grids % 2 == 0, (
+        "XRC results in commissioning mode currently only works for an even number of grids"
+    )
+
+    for grid in range(int(params.num_grids / 2)):
+        # For even number of grids, Z steps are actually the even indexed y steps
+        coms.append(
+            [
+                params.x_steps / 2,
+                params.y_steps[2 * grid] / 2,
+                params.y_steps[2 * grid + 1] / 2,
+            ]
+        )
+
+    com = [sum(x) / len(x) for x in zip(*coms, strict=True)]  # Get average
+
     max_voxel = [round(p) for p in com]
     return _xrc_result_in_boxes_to_result_in_mm(
         XrcResult(

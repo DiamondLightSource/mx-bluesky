@@ -17,9 +17,6 @@ from scanspec.core import AxesPoints, Axis
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanPlane,
-)
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
@@ -68,6 +65,7 @@ def kickoff_and_complete_gridscan(
     detector: EigerDetector,  # Once Eiger inherits from StandardDetector, use that type instead
     synchrotron: Synchrotron,
     scan_points: list[AxesPoints[Axis]],
+    omega_starts_deg: list[float],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
@@ -95,8 +93,9 @@ def kickoff_and_complete_gridscan(
             "omega_to_scan_spec": {
                 # These have to be cast to strings due to a bug in orsjon. See
                 # https://github.com/ijl/orjson/issues/414
-                str(GridscanPlane.OMEGA_XY): scan_points[0],
-                str(GridscanPlane.OMEGA_XZ): scan_points[1],
+                # See https://github.com/DiamondLightSource/mx-bluesky/issues/1631 regarding integer cast
+                str(int(omega_starts_deg[i])): scan_points[i]
+                for i in range(len(omega_starts_deg))
             },
         }
     )
