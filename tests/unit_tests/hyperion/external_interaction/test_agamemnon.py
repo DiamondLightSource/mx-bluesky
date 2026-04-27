@@ -8,10 +8,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from dodal.devices.zebra.zebra import RotationDirection
 
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion._plan_runner_params import Wait
 from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
+    MultiSamplePinTypeParam,
+    PinTypeParam,
+    SingleSamplePinTypeParam,
     load_centre_collect_to_internal,
 )
 from mx_bluesky.hyperion.external_interaction.agamemnon import (
@@ -20,28 +22,8 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _get_withenergy_parameters_from_agamemnon,
     _get_withvisit_parameters_from_agamemnon,
     _instruction_and_data,
-    _PinType,
-    _SinglePin,
-    compare_params,
     create_parameters_from_agamemnon,
-    update_params_from_agamemnon,
 )
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-
-
-@pytest.mark.parametrize(
-    "num_wells, well_width, buffer, expected_width",
-    [
-        (3, 500, 0, 1000),
-        (6, 50, 100, 450),
-        (2, 800, 50, 900),
-    ],
-)
-def test_given_various_pin_formats_then_pin_width_as_expected(
-    num_wells, well_width, buffer, expected_width
-):
-    pin = _PinType(num_wells, well_width, buffer)
-    assert pin.full_width == expected_width
 
 
 def set_up_agamemnon_params(
@@ -60,20 +42,31 @@ def set_up_agamemnon_params(
 def test_given_no_loop_type_in_parameters_then_single_pin_returned():
     assert (
         _get_pin_type_from_agamemnon_collect_parameters(set_up_agamemnon_params())
-        == _SinglePin()
+        == SingleSamplePinTypeParam()
     )
 
 
 @pytest.mark.parametrize(
     "loop_name, expected_loop",
     [
-        ("multipin_6x50+9", _PinType(6, 50, 9)),
-        ("multipin_6x25.8+8.6", _PinType(6, 25.8, 8.6)),
-        ("multipin_9x31+90", _PinType(9, 31, 90)),
+        (
+            "multipin_6x50+9",
+            MultiSamplePinTypeParam(wells=6, well_size_um=50, tip_to_first_well_um=9),
+        ),
+        (
+            "multipin_6x25.8+8.6",
+            MultiSamplePinTypeParam(
+                wells=6, well_size_um=25.8, tip_to_first_well_um=8.6
+            ),
+        ),
+        (
+            "multipin_9x31+90",
+            MultiSamplePinTypeParam(wells=9, well_size_um=31, tip_to_first_well_um=90),
+        ),
     ],
 )
 def test_given_multipin_loop_type_in_parameters_then_expected_pin_returned(
-    loop_name: str, expected_loop: _PinType
+    loop_name: str, expected_loop: PinTypeParam
 ):
     assert (
         _get_pin_type_from_agamemnon_collect_parameters(
@@ -99,7 +92,7 @@ def test_given_completely_unrecognised_loop_type_in_parameters_then_warning_logg
         _get_pin_type_from_agamemnon_collect_parameters(
             set_up_agamemnon_params(loop_name)
         )
-        == _SinglePin()
+        == SingleSamplePinTypeParam()
     )
     mock_logger.warning.assert_called_once()
 
@@ -165,81 +158,9 @@ def test_given_agamemnon_returns_multipin_when_get_next_pin_type_from_agamemnon_
 ):
     configure_mock_agamemnon(mock_requests, "multipin_6x50+98.1")
     instruction, params = _instruction_and_data(_get_next_instruction("i03"))
-    assert _get_pin_type_from_agamemnon_collect_parameters(params) == _PinType(
-        6, 50, 98.1
-    )
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_update_params_from_agamemnon_leaves_parameters_unchanged_when_agamemnon_fails(
-    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
-):
-    mock_requests.get.side_effect = Exception("Bad")
-    old_grid_width = load_centre_collect_params.robot_load_then_centre.grid_width_um
-    params = update_params_from_agamemnon(load_centre_collect_params)
-    assert params.robot_load_then_centre.grid_width_um == old_grid_width
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.compare_params")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_update_params_from_agamemnon_changes_params_to_single_pin_when_agamemnon_gives_single_pin(
-    mock_requests: MagicMock,
-    mock_compare_params: MagicMock,
-    load_centre_collect_params: LoadCentreCollect,
-):
-    configure_mock_agamemnon(mock_requests, None)
-    load_centre_collect_params.robot_load_then_centre.grid_width_um = 0
-    load_centre_collect_params.select_centres.n = 0
-    params = update_params_from_agamemnon(load_centre_collect_params)
-    assert (
-        params.robot_load_then_centre.grid_width_um == GridscanParamConstants.WIDTH_UM
-    )
-    assert params.select_centres.n == 1
-    assert params.multi_rotation_scan.snapshot_omegas_deg
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.compare_params")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_update_params_from_agamemnon_applies_multipin_attribs_given_agamemnon_returns_multipin(
-    mock_requests: MagicMock,
-    mock_compare_params: MagicMock,
-    load_centre_collect_params: LoadCentreCollect,
-):
-    configure_mock_agamemnon(mock_requests, "multipin_6x50+10")
-    params = update_params_from_agamemnon(load_centre_collect_params)
-    assert params.robot_load_then_centre.grid_width_um == 270
-    assert params.select_centres.n == 6
-    assert params.robot_load_then_centre.tip_offset_um == 135
-    assert not params.multi_rotation_scan.snapshot_omegas_deg
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_update_params_from_agamemnon_deduces_correct_url_given_set_of_parameters(
-    mock_requests: MagicMock, load_centre_collect_params: LoadCentreCollect
-):
-    update_params_from_agamemnon(load_centre_collect_params)
-    mock_requests.get.assert_called_once_with(
-        "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
-        headers={"Accept": "application/json"},
-    )
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-def test_update_params_from_agamemnon_logs_warning_when_exception_occurs(
-    mock_requests: MagicMock,
-    mock_logger: MagicMock,
-    load_centre_collect_params: LoadCentreCollect,
-):
-    configure_mock_agamemnon(mock_requests, "multipin_unknown")
-
-    update_params_from_agamemnon(load_centre_collect_params)
-
-    mock_logger.warning.assert_called_once()
-    assert (
-        "Failed to update parameters: Agamemnon loop type of multipin_unknown "
-        "not recognised" in mock_logger.warning.mock_calls[0].args[0]
-    )
+    assert _get_pin_type_from_agamemnon_collect_parameters(
+        params
+    ) == MultiSamplePinTypeParam(wells=6, well_size_um=50, tip_to_first_well_um=98.1)
 
 
 @pytest.mark.parametrize(
@@ -280,48 +201,6 @@ def test_no_prefix_raises_exception():
     assert "Unexpected json from agamemnon" in str(e.value)
 
 
-@pytest.mark.parametrize(
-    "mock_error, mock_log",
-    [
-        (ValueError(), "Failed to compare parameters: "),
-        (Exception(), "Unexpected error occurred. Failed to compare parameters: "),
-    ],
-)
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch(
-    "mx_bluesky.hyperion.external_interaction.agamemnon._populate_parameters_from_agamemnon"
-)
-def test_compare_params_logs_exception_if_fails_to_populate_parameters_from_hyperion(
-    mock_populate_params,
-    mock_logger,
-    mock_requests,
-    mock_error,
-    mock_log,
-    load_centre_collect_params: LoadCentreCollect,
-):
-    configure_mock_agamemnon(mock_requests, None)
-    mock_populate_params.side_effect = mock_error
-    compare_params(
-        load_centre_collect_params,
-    )
-    assert mock_log in mock_logger.mock_calls[0][1][0]
-
-
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch(
-    "mx_bluesky.hyperion.external_interaction.agamemnon.create_parameters_from_agamemnon",
-    MagicMock(return_value=[]),
-)
-def test_compare_params_logs_message_if_agamemnon_returns_no_instructions(
-    mock_logger: MagicMock, load_centre_collect_params: LoadCentreCollect
-):
-    compare_params(
-        load_centre_collect_params,
-    )
-    mock_logger.info.assert_called_once_with("Agamemnon returned no instructions")
-
-
 @pytest.fixture
 def agamemnon_response(request) -> Generator[str, None, None]:
     with (
@@ -334,27 +213,6 @@ def agamemnon_response(request) -> Generator[str, None, None]:
         example_json = json_file.read()
         mock_requests.get.return_value.content = example_json
         yield example_json
-
-
-@pytest.mark.parametrize(
-    "agamemnon_response",
-    [
-        "tests/test_data/agamemnon/example_native.json",
-        "tests/test_data/agamemnon/example_collect_multipin.json",
-    ],
-    indirect=True,
-)
-@patch("mx_bluesky.hyperion.external_interaction.agamemnon.LOGGER")
-@patch("mx_bluesky.common.parameters.rotation.os", new=MagicMock())
-@patch("dodal.devices.detector.detector.Path", new=MagicMock())
-@patch("dodal.utils.os", new=MagicMock())
-def test_compare_params_causes_no_warning_when_compared_to_gda_params(
-    mock_logger: MagicMock,
-    agamemnon_response: str,
-    load_centre_collect_params: LoadCentreCollect,
-):
-    compare_params(load_centre_collect_params)
-    mock_logger.warning.assert_not_called()
 
 
 @pytest.mark.parametrize(

@@ -43,6 +43,7 @@ class HyperionConstants:
     LOG_FILE_NAME = "hyperion.log"
     SUPERVISOR_LOG_FILE_NAME = "hyperion-supervisor.log"
     DEVICE_SETTINGS_CONSTANTS = DeviceSettingsConstants()
+    DEFAULT_DETECTOR_DISTANCE_MM = 264.5
 
 
 CONST = HyperionConstants()

@@ -2,18 +2,38 @@
 This module contains the parameter models exported via the hyperion-blueapi REST interface.
 """
 
-from pydantic import BaseModel
+from typing import Any, Literal, TypeAlias
+
+from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.hyperion.blueapi.mixins import WithCentreSelection
+from mx_bluesky.hyperion.parameters.constants import HyperionConstants
+from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 class HyperionParam(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class SingleSamplePinTypeParam(BaseModel):
+    name: Literal["ssp"] = "ssp"
+    wells: Literal[1] = Field(exclude=True, default=1)
+
+
+class MultiSamplePinTypeParam(BaseModel):
+    name: Literal["msp"] = "msp"
+    wells: int
+    well_size_um: float
+    tip_to_first_well_um: float
+
+
+PinTypeParam: TypeAlias = SingleSamplePinTypeParam | MultiSamplePinTypeParam
 
 
 class RobotLoadThenCentreParams(HyperionParam):
@@ -23,8 +43,9 @@ class RobotLoadThenCentreParams(HyperionParam):
     exposure_time_s: float
     omega_start_deg: float
     chi_start_deg: float
-    tip_offset_um: float
-    grid_width_um: float
+    pin_type: SingleSamplePinTypeParam | MultiSamplePinTypeParam = Field(
+        discriminator="name", default=SingleSamplePinTypeParam()
+    )
 
 
 class SingleRotationScanParams(HyperionParam):
@@ -73,4 +94,78 @@ def load_centre_collect_to_internal(
 ) -> LoadCentreCollect:
     params_as_dict = external_params.model_dump()
     params_as_dict["parameter_model_version"] = get_param_version()
+    tip_offset, grid_width = pin_type_to_tip_offset_and_grid_width(
+        external_params.robot_load_then_centre.pin_type
+    )
+    params_as_dict["robot_load_then_centre"]["grid_width_um"] = grid_width
+    params_as_dict["robot_load_then_centre"]["tip_offset_um"] = tip_offset
+    del params_as_dict["robot_load_then_centre"]["pin_type"]
+
     return LoadCentreCollect(**params_as_dict)
+
+
+def pin_tip_centre_then_xray_centre_to_internal(
+    visit: str,
+    storage_directory: str,
+    sample_id: int,
+    sample_puck: int,
+    sample_pin: int,
+) -> PinTipCentreThenXrayCentre:
+    tip_offset, grid_width = pin_type_to_tip_offset_and_grid_width(
+        SingleSamplePinTypeParam()
+    )
+    params_as_dict: dict[str, Any] = {
+        "visit": visit,
+        "storage_directory": storage_directory,
+        "file_name": "xrc",
+        "parameter_model_version": get_param_version(),
+        "demand_energy_ev": None,
+        "sample_id": sample_id,
+        "sample_puck": sample_puck,
+        "sample_pin": sample_pin,
+        "detector_distance_mm": HyperionConstants.DEFAULT_DETECTOR_DISTANCE_MM,
+        "tip_offset_um": tip_offset,
+        "grid_width_um": grid_width,
+        "exposure_time_s": GridscanParamConstants.EXPOSURE_TIME_S,
+        "transmission_frac": 1.0,
+    }
+
+    # gonio pos is as found
+    return PinTipCentreThenXrayCentre(**params_as_dict)
+
+
+def pin_type_to_tip_offset_and_grid_width(
+    pin_type: PinTypeParam,
+) -> tuple[float, float]:
+    """
+    Obtain the tip offset and grid width for the given pin type.
+
+    The grid width is the "width" of the area where there may be samples and is used
+    to construct the grid for gridscans.
+
+    From a pin perspective this is along the length of the pin but we use width here as
+    we mount the sample at 90 deg to the optical camera.
+
+    We calculate the full width by adding all the gaps between wells then assuming
+    there is a buffer of {tip_to_first_well_um} either side too. In reality the
+    calculation does not need to be very exact as long as we get a width that's good
+    enough to use for optical centring and XRC grid size.
+
+    Args:
+        pin_type (PinTypeParam): The pin type which may describe a single or multi sample pin
+    Returns:
+        tuple[float, float]: the tip offset, which is used for the pin-tip detection initial
+        positioning, and the grid width.
+    """
+    match pin_type:
+        case SingleSamplePinTypeParam():
+            return (
+                GridscanParamConstants.PIN_WIDTH_UM / 2,
+                GridscanParamConstants.PIN_WIDTH_UM,
+            )
+        case MultiSamplePinTypeParam() as pin_type:
+            full_width = (
+                pin_type.wells - 1
+            ) * pin_type.well_size_um + 2 * pin_type.tip_to_first_well_um
+            return full_width / 2, full_width
+    raise ValueError(f"Unexpected pin type {pin_type}")

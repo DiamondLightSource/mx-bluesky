@@ -68,7 +68,7 @@ def load_centre_collect(
 
 
 def robot_unload(
-    visit: str,
+    visit: str | None,
     robot: BartRobot = inject("robot"),
     smargon: Smargon = inject("gonio"),
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
