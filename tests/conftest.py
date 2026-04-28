@@ -1255,7 +1255,7 @@ def default_raw_gridscan_params(
     return raw_params_from_file(json_file, tmp_path)
 
 
-def _dummy_params(tmp_path):
+def dummy_params(tmp_path):
     dummy_params = SpecifiedThreeDGridScan(
         **raw_params_from_file(
             "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
@@ -1366,7 +1366,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "scan_id": 1,
             "plan_type": "generator",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+            "mx_bluesky_parameters": dummy_params(self._tmp_path).model_dump_json(),
         }
 
     @property
@@ -1400,7 +1400,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-            "mx_bluesky_parameters": _dummy_params(self._tmp_path).model_dump_json(),
+            "mx_bluesky_parameters": dummy_params(self._tmp_path).model_dump_json(),
         }
 
     @property

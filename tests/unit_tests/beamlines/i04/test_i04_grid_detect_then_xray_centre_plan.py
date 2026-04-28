@@ -50,7 +50,12 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
-from tests.conftest import TEST_RESULT_LARGE, fake_generator, simulate_xrc_result
+from tests.conftest import (
+    TEST_RESULT_LARGE,
+    dummy_params,
+    fake_generator,
+    simulate_xrc_result,
+)
 from tests.unit_tests.common.experiment_plans.test_common_flyscan_xray_centre_plan import (
     CompleteError,
 )
@@ -153,9 +158,11 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "detector_motion-shutter"
-        and msg.args[0] == 0,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "detector_motion-shutter"
+            and msg.args[0] == 0
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "wait"
@@ -259,9 +266,11 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (desired_transmission,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args == (desired_transmission,)
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -270,14 +279,16 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_and_triggers_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "open_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "close_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "close_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
     mock_pause_feedback.assert_not_called()
@@ -399,6 +410,10 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
 
 
 @patch(
+    "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_and_move_to_xtal",
+    autospec=True,
+)
+@patch(
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_ready_for_oav_and_close_shutter",
     autospec=True,
 )
@@ -409,16 +424,23 @@ async def test_i04_grid_detect_then_xrc_sets_beamsize_before_grid_detect_then_re
 async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sample_to_initial_position(
     mock_grid_detect_then_xray_centre: MagicMock,
     mock_get_ready_for_oav_and_close_shutter: MagicMock,
+    mock_get_results_and_move_to_xtal: MagicMock,
     run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     smargon: Smargon,
+    tmp_path,
 ):
     initial_x, initial_y, initial_z = 1, 2, 3
     set_mock_value(smargon.x.user_readback, initial_x)
     set_mock_value(smargon.y.user_readback, initial_y)
     set_mock_value(smargon.z.user_readback, initial_z)
 
-    mock_grid_detect_then_xray_centre.side_effect = CrystalNotFoundError
+    def fake_xray_centre(parameters: GridCommon, **__):
+        parameters.set_specified_grid_params(dummy_params(tmp_path))
+        yield Msg(command="open_run")
+
+    mock_grid_detect_then_xray_centre.side_effect = fake_xray_centre
+    mock_get_results_and_move_to_xtal.side_effect = CrystalNotFoundError
 
     with pytest.raises(CrystalNotFoundError):
         run_engine(i04_grid_detect_then_xrc_default_params())
@@ -539,9 +561,11 @@ def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "stage"
-        and msg.obj.name == "zocalo"
-        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+        predicate=lambda msg: (
+            msg.command == "stage"
+            and msg.obj.name == "zocalo"
+            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
