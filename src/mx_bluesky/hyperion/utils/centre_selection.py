@@ -9,6 +9,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils import xrc_result as flyscan_result
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
@@ -52,12 +53,12 @@ def resolve_selection_fn(
     raise ValueError(f"Invalid selection function {params.name}")
 
 
-def samples_and_locations_to_collect(
+def samples_and_hits_to_collect(
     selection_params: MultiXtalSelection,
     gonio: Smargon,
     default_sample_id: int,
     xrc_results: Sequence[flyscan_result.XRayCentreResult] | None,
-) -> MsgGenerator[list[tuple[int, np.ndarray]]]:
+) -> MsgGenerator[list[tuple[int, flyscan_result.XRayCentreResult]]]:
     """
     Determine the sample IDs and positions to collect given the specified selection parameters.
     If no centres are present, return the default sample ID and current position,
@@ -75,9 +76,7 @@ def samples_and_locations_to_collect(
             else:
                 hits_to_collect.append(hit)
 
-        samples_and_locations = [
-            (hit.sample_id, hit.centre_of_mass_mm * 1000) for hit in hits_to_collect
-        ]
+        samples_and_locations = [(hit.sample_id, hit) for hit in hits_to_collect]
         LOGGER.info(
             f"Selected hits {hits_to_collect} using {selection_func}, args={selection_params}"
         )
@@ -89,9 +88,21 @@ def samples_and_locations_to_collect(
         initial_y_mm = yield from bps.rd(gonio.y.user_readback)
         initial_z_mm = yield from bps.rd(gonio.z.user_readback)
 
+        com_mm = np.array([initial_x_mm, initial_y_mm, initial_z_mm])
+        box_width_mm = GridscanParamConstants.BOX_WIDTH_UM / 1000
+
         return [
             (
                 default_sample_id,
-                np.array([initial_x_mm, initial_y_mm, initial_z_mm]) * 1000,
+                flyscan_result.XRayCentreResult(
+                    centre_of_mass_mm=com_mm,
+                    bounding_box_mm=(
+                        com_mm - box_width_mm / 2,
+                        com_mm + box_width_mm / 2,
+                    ),
+                    max_count=1000,
+                    total_count=1000,
+                    sample_id=default_sample_id,
+                ),
             )
         ]

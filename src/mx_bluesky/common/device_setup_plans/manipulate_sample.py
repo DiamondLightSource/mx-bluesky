@@ -10,6 +10,7 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.thawer import OnOff, Thawer
 
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -18,7 +19,7 @@ LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
 def setup_sample_environment(
     aperture_scatterguard: ApertureScatterguard,
-    aperture_position_gda_name: str | None,
+    aperture_policy: AperturePolicy,
     backlight: Backlight,
     thawer: Thawer,
     group="setup_senv",
@@ -29,16 +30,26 @@ def setup_sample_environment(
 
     yield from bps.abs_set(backlight, InOut.OUT, group=group)
 
-    aperture_value = (
-        None
-        if not aperture_position_gda_name
-        else ApertureValue(aperture_position_gda_name)
-    )
+    aperture_value = _rotation_aperture_value_from_policy(aperture_policy)
+
     yield from move_aperture_if_required(
         aperture_scatterguard, aperture_value, group=group
     )
 
     yield from bps.abs_set(thawer, OnOff.OFF, group=group)
+
+
+def prepare_aperture_for_rotation_if_required(
+    aperture_scatterguard: ApertureScatterguard,
+    aperture_policy: AperturePolicy,
+):
+    aperture_value = _rotation_aperture_value_from_policy(aperture_policy)
+    if aperture_value:
+        yield from bps.prepare(
+            aperture_scatterguard,
+            aperture_value,
+            group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
+        )
 
 
 def move_aperture_if_required(
@@ -110,3 +121,19 @@ def move_phi_chi_omega(
     )
     if wait:
         yield from bps.wait(group)
+
+
+def _rotation_aperture_value_from_policy(
+    policy: AperturePolicy,
+) -> ApertureValue | None:
+    match policy:
+        case AperturePolicy.SMALL:
+            return ApertureValue.SMALL
+        case AperturePolicy.MEDIUM:
+            return ApertureValue.MEDIUM
+        case AperturePolicy.LARGE | AperturePolicy.AUTO:
+            return ApertureValue.LARGE
+        case AperturePolicy.CURRENT_POSITION:
+            return None
+        case _:
+            raise ValueError(f"Unsupported aperture policy {policy}")

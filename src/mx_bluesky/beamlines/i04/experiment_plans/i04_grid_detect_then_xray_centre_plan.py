@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beamsize import Beamsize
@@ -69,7 +69,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
 from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import AperturePolicy, get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     OavConstants,
@@ -112,7 +112,7 @@ def _change_beamsize(
     An aperture is needed to reduce scatter but the transfocator is best used for beamsize
     changes as it gives more flux compared to a bigger beam with a small aperture.
     """
-    parameters.selected_aperture = ApertureValue.LARGE
+    parameters.selected_aperture = AperturePolicy.LARGE
     yield from bps.abs_set(
         transfocator, beamsize, group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC
     )

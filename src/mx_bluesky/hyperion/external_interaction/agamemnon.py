@@ -11,6 +11,7 @@ from dodal.utils import get_beamline_name
 from pydantic import BaseModel
 
 from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -153,6 +154,11 @@ def _populate_parameters_from_agamemnon(
     collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
 
+    aperture_policy = (
+        AperturePolicy.AUTO
+        if isinstance(pin_type, SingleSamplePinTypeParam)
+        else AperturePolicy.LARGE
+    )
     return [
         LoadCentreCollectParams.model_validate(
             {
@@ -181,6 +187,7 @@ def _populate_parameters_from_agamemnon(
                     "exposure_time_s": collection["exposure_time"],
                     "file_name": file_name,
                     "transmission_frac": collection["transmission"],
+                    "selected_aperture": aperture_policy,
                     "rotation_increment_deg": collection["omega_increment"],
                     "ispyb_experiment_type": collection["experiment_type"],
                     "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],

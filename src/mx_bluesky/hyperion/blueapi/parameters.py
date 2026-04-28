@@ -2,12 +2,15 @@
 This module contains the parameter models exported via the hyperion-blueapi REST interface.
 """
 
+from typing import Self
+
+from pydantic import BaseModel, model_validator, Field
 from typing import Any, Literal, TypeAlias
 
-from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
     get_param_version,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
@@ -65,6 +68,7 @@ class MultiRotationScanParams(HyperionParam):
     snapshot_omegas_deg: list[float]
     rotation_scans: list[SingleRotationScanParams]
     transmission_frac: float
+    selected_aperture: AperturePolicy
     ispyb_experiment_type: str
 
 
@@ -87,6 +91,17 @@ class LoadCentreCollectParams(WithCentreSelection, HyperionParam):
     demand_energy_ev: float
     robot_load_then_centre: RobotLoadThenCentreParams
     multi_rotation_scan: MultiRotationScanParams
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> Self:
+        if (
+            self.multi_rotation_scan.selected_aperture
+            == AperturePolicy.CURRENT_POSITION
+        ):
+            raise ValueError(
+                "selected_aperture of CURRENT_POSITION is not supported for LoadCentreCollectParams"
+            )
+        return self
 
 
 def load_centre_collect_to_internal(
