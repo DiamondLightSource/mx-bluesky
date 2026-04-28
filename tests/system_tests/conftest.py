@@ -306,7 +306,7 @@ def config_client():
     # and file converter map behave as expected with no mocking needed.
     # https://gitlab.diamond.ac.uk/MX-GDA/hyperion-system-testing/-/tree/add_daq_config_server/daq-config-server/config/?ref_type=heads
     clear_config_client()
-    i03.config_client.cache_clear()
+    i03.config_client.cache_clear()  # type: ignore
     print("CONFIG_CLIENT CLEARED")
     return i03.config_client()
 
