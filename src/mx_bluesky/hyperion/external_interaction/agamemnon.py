@@ -159,7 +159,7 @@ def _populate_parameters_from_agamemnon(
     use_roi_mode = get_hyperion_feature_settings().XRC_USE_ROI_MODE
     aperture_policy = (
         AperturePolicy.AUTO
-        if pin_type.expected_number_of_crystals == 1
+        if isinstance(pin_type, SingleSamplePinTypeParam)
         else AperturePolicy.LARGE
     )
 

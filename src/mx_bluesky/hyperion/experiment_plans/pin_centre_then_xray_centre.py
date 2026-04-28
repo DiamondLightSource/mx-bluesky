@@ -15,7 +15,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
-from mx_bluesky.hyperion.utils.centre_selection import samples_and_locations_to_collect
+from mx_bluesky.hyperion.utils.centre_selection import samples_and_hits_to_collect
 
 
 def pin_tip_centre_then_xray_centre(
@@ -59,13 +59,13 @@ def pin_tip_centre_then_xray_centre(
         yield from pin_centre_then_gridscan_plan(composite, parameters, oav_config_file)
 
         results = xrc_event_handler.xray_centre_results
-        sample_ids_and_locations = yield from samples_and_locations_to_collect(
+        sample_ids_and_hits = yield from samples_and_hits_to_collect(
             centre_selection, composite.gonio, parameters.sample_id, results
         )
 
-        if sample_ids_and_locations:
+        if sample_ids_and_hits:
             # Convert from um to mm since location is in motor coordinates.
-            location = [pos_um / 1000 for pos_um in sample_ids_and_locations[0][1]]
+            location = sample_ids_and_hits[0][1].centre_of_mass_mm
             yield from bps.abs_set(
                 composite.gonio,
                 CombinedMove(x=location[0], y=location[1], z=location[2]),
