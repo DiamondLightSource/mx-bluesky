@@ -8,8 +8,8 @@ import numpy as np
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.smargon import Smargon
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
 
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils import xrc_result as flyscan_result
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
@@ -18,7 +18,6 @@ from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
     TopNByMaxCountSelection,
 )
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 
 def top_n_by_max_count(
@@ -55,8 +54,9 @@ def resolve_selection_fn(
 
 
 def samples_and_hits_to_collect(
-    parameters: LoadCentreCollect,
+    selection_params: MultiXtalSelection,
     gonio: Smargon,
+    default_sample_id: int,
     xrc_results: Sequence[flyscan_result.XRayCentreResult] | None,
 ) -> MsgGenerator[list[tuple[int, flyscan_result.XRayCentreResult]]]:
     """
@@ -65,7 +65,7 @@ def samples_and_hits_to_collect(
     so that a collection can be performed without XRC should this be required.
     """
     if xrc_results:
-        selection_func = resolve_selection_fn(parameters.selection_params)
+        selection_func = resolve_selection_fn(selection_params)
         hits = selection_func(xrc_results)
         hits_to_collect = []
         for hit in hits:
@@ -76,9 +76,7 @@ def samples_and_hits_to_collect(
             else:
                 hits_to_collect.append(hit)
 
-        samples_and_locations = [
-            (hit.sample_id, hit.centre_of_mass_mm * 1000) for hit in hits_to_collect
-        ]
+        samples_and_locations = [(hit.sample_id, hit) for hit in hits_to_collect]
         LOGGER.info(
             f"Selected hits {hits_to_collect} using {selection_func}, args={selection_params}"
         )
@@ -95,7 +93,7 @@ def samples_and_hits_to_collect(
 
         return [
             (
-                parameters.sample_id,
+                default_sample_id,
                 flyscan_result.XRayCentreResult(
                     centre_of_mass_mm=com_mm,
                     bounding_box_mm=(
@@ -104,7 +102,7 @@ def samples_and_hits_to_collect(
                     ),
                     max_count=1000,
                     total_count=1000,
-                    sample_id=parameters.sample_id,
+                    sample_id=default_sample_id,
                 ),
             )
         ]

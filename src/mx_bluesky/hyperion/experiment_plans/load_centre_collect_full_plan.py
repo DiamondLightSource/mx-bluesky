@@ -104,8 +104,9 @@ def load_centre_collect_full(
 
         sample_ids_and_hits = yield from (
             samples_and_hits_to_collect(
-                parameters,
+                parameters.select_centres,
                 composite.gonio,
+                parameters.sample_id,
                 flyscan_event_handler.xray_centre_results,
             )
         )

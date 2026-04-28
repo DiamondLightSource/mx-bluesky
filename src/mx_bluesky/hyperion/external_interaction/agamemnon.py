@@ -156,7 +156,7 @@ def _populate_parameters_from_agamemnon(
 
     aperture_policy = (
         AperturePolicy.AUTO
-        if pin_type.expected_number_of_crystals == 1
+        if isinstance(pin_type, SingleSamplePinTypeParam)
         else AperturePolicy.LARGE
     )
     return [
