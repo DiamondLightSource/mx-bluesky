@@ -136,8 +136,7 @@ def test_task_monitor_alerts_with_no_metadata_and_cancels_request_if_stuck_on_ot
     with monitor:
         sleep(0.5)
     blueapi_client.abort.assert_called_with(ANY)
-    mock_alerting_service.raise_alert.assert_called_once_with(
-        "UDC encountered an error on i03",
+    mock_alerting_service.raise_error_alert.assert_called_once_with(
         "Hyperion Supervisor detected that BlueAPI was stuck for 0.25 seconds.",
         {},
     )
