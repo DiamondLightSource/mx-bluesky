@@ -280,6 +280,15 @@ def composite_with_no_diffraction(
         yield load_centre_collect_composite
 
 
+@pytest.mark.parametrize(
+    "initial_omega",
+    [
+        0,
+        360,
+        -800,
+        1120,
+    ],
+)
 @pytest.mark.system_test
 def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
@@ -290,6 +299,7 @@ def test_execute_load_centre_collect_full(
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
     fetch_blsample: Callable[[int], BLSample],
+    initial_omega: float,
     tmp_path,
     robot_load_cb: RobotLoadISPyBCallback,
 ):
@@ -304,13 +314,16 @@ def test_execute_load_centre_collect_full(
     run_engine.subscribe(ispyb_gridscan_cb)
     run_engine.subscribe(snapshot_cb)
     run_engine.subscribe(robot_load_cb)
-    run_engine(
-        load_centre_collect_full(
+
+    def move_to_omega_then_collect():
+        yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
+        yield from load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
             oav_parameters_for_rotation,
         )
-    )
+
+    run_engine(move_to_omega_then_collect())
 
     expected_proposal, expected_visit = get_proposal_and_session_from_visit_string(
         load_centre_collect_params.visit
