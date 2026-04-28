@@ -1,12 +1,12 @@
 import os
 from enum import Enum, StrEnum
+from pathlib import Path
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import EIGER2_X_16M_SIZE
 from dodal.devices.zocalo.zocalo_constants import ZOCALO_ENV as ZOCALO_ENV_FROM_DODAL
 from dodal.utils import get_beamline_name
 from pydantic.dataclasses import dataclass
-from tests.test_data.oav import TEST_OAV_CENTRING_JSON
 
 from mx_bluesky.definitions import ROOT_DIR
 
@@ -41,7 +41,10 @@ class DocDescriptorNames:
 
 def _get_oav_config_json_path():
     if TEST_MODE:
-        return TEST_OAV_CENTRING_JSON
+        return str(
+            Path(__file__).parent.parent.parent.parent.parent
+            / "tests/test_data/oav/test_OAVCentring.json"
+        )
     elif BEAMLINE == "i03":
         return f"/dls_sw/{BEAMLINE}/software/daq_configuration/json/OAVCentring_hyperion.json"
     elif BEAMLINE == "aithre":
@@ -72,6 +75,7 @@ class PlanNameConstants:
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     DO_FGS = "do_fgs"
     FLYSCAN_RESULTS = "xray_centre_results"
+    PIN_TIP_CENTRE_THEN_XRC = "pin_tip_centre_then_xray_centre"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
@@ -102,7 +106,7 @@ class HardwareConstants:
 
 @dataclass(frozen=True)
 class GridscanParamConstants:
-    WIDTH_UM = 600.0
+    PIN_WIDTH_UM = 600.0
     EXPOSURE_TIME_S = 0.004
     USE_ROI = True
     BOX_WIDTH_UM = 20.0

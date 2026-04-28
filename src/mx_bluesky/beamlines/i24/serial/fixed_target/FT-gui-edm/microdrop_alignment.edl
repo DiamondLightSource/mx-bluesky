@@ -549,7 +549,7 @@ onColor index 4
 offColor index 3
 topShadowColor index 1
 botShadowColor index 11
-controlPv "BL24I-EA-DET-01:Z.TWR"
+controlPv "BL24I-MO-DET-01:Z.TWR"
 pressValue "1"
 onLabel "-"
 offLabel "-"
@@ -569,7 +569,7 @@ x 362
 y 577
 w 83
 h 30
-controlPv "BL24I-EA-DET-01:Z.VAL"
+controlPv "BL24I-MO-DET-01:Z.VAL"
 displayMode "decimal"
 precision 4
 fgColor index 25
@@ -594,7 +594,7 @@ onColor index 4
 offColor index 3
 topShadowColor index 1
 botShadowColor index 11
-controlPv "BL24I-EA-DET-01:Z.TWF"
+controlPv "BL24I-MO-DET-01:Z.TWF"
 pressValue "1"
 onLabel "+"
 offLabel "+"
@@ -674,7 +674,7 @@ x 450
 y 583
 w 86
 h 18
-controlPv "BL24I-EA-DET-01:Z.RBV"
+controlPv "BL24I-MO-DET-01:Z.RBV"
 format "decimal"
 font "arial-medium-r-16.0"
 fgColor index 16
@@ -697,7 +697,7 @@ x 365
 y 636
 w 83
 h 30
-controlPv "BL24I-EA-DET-01:Z.TWV"
+controlPv "BL24I-MO-DET-01:Z.TWV"
 displayMode "decimal"
 precision 4
 fgColor index 25
