@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
