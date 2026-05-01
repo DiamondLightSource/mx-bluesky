@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+import redis.exceptions
 from event_model import Event
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
@@ -291,8 +292,10 @@ def test_if_redis_connection_fails_then_there_is_no_error(
     callback.stop(doc)  # type: ignore
 
 
-def test_warning_is_logged_if_redis_connection_fails(caplog):
-    callback = MurkoCallback("localhost", "")
+@patch("mx_bluesky.beamlines.i04.callbacks.murko_callback.StrictRedis")
+def test_warning_is_logged_if_redis_connection_fails(mock_redis: MagicMock, caplog):
+    mock_redis.return_value.ping.side_effect = redis.exceptions.ConnectionError()
+    callback = MurkoCallback("ubuntu.com", "")
     doc = {}
     callback.start(doc)  # type: ignore
     log_message = caplog.records[-1]
