@@ -84,28 +84,35 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == aperture_scatterguard.selected_aperture.name
-        and msg.args[0] == ApertureValue.OUT_OF_BEAM,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == aperture_scatterguard.selected_aperture.name
+            and msg.args[0] == ApertureValue.OUT_OF_BEAM
+        ),
     )
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio"
-        and msg.args[0] == CombinedMove(x=0, y=0, z=0, omega=0, chi=0, phi=0),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio"
+            and msg.args[0] == CombinedMove(x=0, y=0, z=0, omega=0, chi=0, phi=0)
+        ),
     )
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is robot
-        and msg.args[0] == SAMPLE_LOCATION_EMPTY,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is robot
+            and msg.args[0] == SAMPLE_LOCATION_EMPTY
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs.get("group") == msgs[0].kwargs["group"],
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs.get("group") == msgs[0].kwargs["group"]
+        ),
     )
 
 
@@ -133,26 +140,32 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
     msgs = assert_messages_any_order(
         msgs,
         [
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args[0] == 0
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"lower_gonio-{axis}"
+                and msg.args[0] == 0
+            )
             for axis in ["x", "y", "z"]
         ],
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is robot
-        and msg.args[0] == SAMPLE_LOCATION_EMPTY,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is robot
+            and msg.args[0] == SAMPLE_LOCATION_EMPTY
+        ),
     )
 
     msgs = assert_messages_any_order(
         msgs,
         [
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args[0] == 0.1
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"lower_gonio-{axis}"
+                and msg.args[0] == 0.1
+            )
             for axis in ["x", "y", "z"]
         ],
     )

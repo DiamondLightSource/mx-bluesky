@@ -102,7 +102,8 @@ def test_read_hardware_correct_messages(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj.name == "eiger_odin_file_writer_id",
+        lambda msg: (
+            msg.command == "read" and msg.obj.name == "eiger_odin_file_writer_id"
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")

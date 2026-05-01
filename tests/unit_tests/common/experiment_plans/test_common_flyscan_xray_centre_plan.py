@@ -552,8 +552,9 @@ class TestFlyscanXrayCentrePlan:
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "kickoff"
-            and msg.obj == beamline_specific.fgs_motors,
+            lambda msg: (
+                msg.command == "kickoff" and msg.obj == beamline_specific.fgs_motors
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "create"
