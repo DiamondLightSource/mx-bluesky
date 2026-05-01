@@ -292,7 +292,7 @@ def test_if_redis_connection_fails_then_there_is_no_error(
 
 
 def test_warning_is_logged_if_redis_connection_fails(caplog):
-    callback = MurkoCallback("", "")
+    callback = MurkoCallback("localhost", "")
     doc = {}
     callback.start(doc)  # type: ignore
     log_message = caplog.records[-1]
