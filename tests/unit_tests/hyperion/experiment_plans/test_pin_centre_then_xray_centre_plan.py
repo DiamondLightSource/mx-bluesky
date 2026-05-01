@@ -176,8 +176,10 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+        lambda msg: (
+            msg.command == "open_run"
+            and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"]
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "pin_tip_centre_plan"
@@ -223,18 +225,22 @@ def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args == (InOut.IN,)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "backlight"
+            and msg.args == (InOut.IN,)
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj
-        == hyperion_grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
-        and msg.args == (ApertureValue.OUT_OF_BEAM,)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj
+            == hyperion_grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
+            and msg.args == (ApertureValue.OUT_OF_BEAM,)
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -281,10 +287,13 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio"
-        and msg.args[0] == CombinedMove(phi=expected_phi, chi=expected_chi, omega=None)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio"
+            and msg.args[0]
+            == CombinedMove(phi=expected_phi, chi=expected_chi, omega=None)
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -334,27 +343,33 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.PAUSE,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.PAUSE
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == transmission_frac,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args[0] == transmission_frac
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.RUN,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.RUN
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == 1.0,
+        predicate=lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args[0] == 1.0
+        ),
     )
 
 
@@ -384,9 +399,11 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "stage"
-        and msg.obj.name == "zocalo"
-        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+        predicate=lambda msg: (
+            msg.command == "stage"
+            and msg.obj.name == "zocalo"
+            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
