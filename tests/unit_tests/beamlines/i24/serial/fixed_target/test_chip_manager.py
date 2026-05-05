@@ -242,8 +242,8 @@ async def test_moveto_preset_with_pmac_move(
     [
         ("laser1on", " M712=1 M711=1"),
         ("laser1off", " M712=0 M711=1"),
-        ("laser2on", " M812=1 M811=1"),
-        ("laser2off", " M812=0 M811=1"),
+        ("laser2on", " M612=1 M611=1"),
+        ("laser2off", " M612=0 M611=1"),
     ],
 )
 async def test_laser_control_on_and_off(
@@ -288,8 +288,8 @@ def test_laser_control_burn_2_setting(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(" M812=1 M811=1"),
-            call(" M812=0 M811=1"),
+            call(" M612=1 M611=1"),
+            call(" M612=0 M611=1"),
         ]
     )
 
@@ -461,7 +461,7 @@ def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, run_engine
     fake_caget.side_effect = [0.01, 0.005]
     run_engine(pumpprobe_calc())
     assert fake_caget.call_count == 2
-    assert fake_caput.call_count == 5
+    assert fake_caput.call_count == 9
     fake_caput.assert_has_calls(
         [
             call(ANY, 0.86),

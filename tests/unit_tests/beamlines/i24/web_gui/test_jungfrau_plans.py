@@ -10,7 +10,7 @@ from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJung
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
-from dodal.devices.hutch_shutter import HutchShutter
+from dodal.devices.hutch_shutter import InterlockedHutchShutter
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
@@ -41,7 +41,7 @@ def test_run_jf_rotation(
     backlight: DualBacklight,
     dcm: DCM,
     synchrotron: Synchrotron,
-    shutter: HutchShutter,
+    shutter: InterlockedHutchShutter,
     sample_shutter: ZebraShutter,
     xbpm_feedback: XBPMFeedback,
     run_engine: RunEngine,

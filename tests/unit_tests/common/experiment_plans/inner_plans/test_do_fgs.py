@@ -71,8 +71,9 @@ def test_kickoff_and_complete_gridscan_correct_messages(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj.name == "grid_scan_device-expected_images",
+        lambda msg: (
+            msg.command == "read" and msg.obj.name == "grid_scan_device-expected_images"
+        ),
     )
 
     msgs = assert_message_and_return_remaining(

@@ -4083,7 +4083,7 @@ x 415
 y 880
 w 68
 h 18
-controlPv "BL24I-EA-DET-01:Z.RBV"
+controlPv "BL24I-MO-DET-01:Z.RBV"
 font "arial-medium-r-16.0"
 fgColor index 16
 bgColor index 10

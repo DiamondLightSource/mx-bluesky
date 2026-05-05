@@ -25,7 +25,7 @@ rm -rf .venv
 fi
 
 module load python/3.11 && module load uv
-uv sync --editable --group dev
+uv sync --editable --group dev --python $PYTHON_HOME
 source .venv/bin/activate
 pre-commit install
 module unload python && module unload uv

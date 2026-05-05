@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from daq_config_server import ConfigClient
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -281,6 +282,15 @@ def composite_with_no_diffraction(
         yield load_centre_collect_composite
 
 
+@pytest.mark.parametrize(
+    "initial_omega",
+    [
+        0,
+        360,
+        -800,
+        1120,
+    ],
+)
 @pytest.mark.system_test
 def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
@@ -291,6 +301,7 @@ def test_execute_load_centre_collect_full(
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
     fetch_blsample: Callable[[int], BLSample],
+    initial_omega: float,
     tmp_path,
     robot_load_cb: RobotLoadISPyBCallback,
 ):
@@ -305,13 +316,16 @@ def test_execute_load_centre_collect_full(
     run_engine.subscribe(ispyb_gridscan_cb)
     run_engine.subscribe(snapshot_cb)
     run_engine.subscribe(robot_load_cb)
-    run_engine(
-        load_centre_collect_full(
+
+    def move_to_omega_then_collect():
+        yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
+        yield from load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
             oav_parameters_for_rotation,
         )
-    )
+
+    run_engine(move_to_omega_then_collect())
 
     expected_proposal, expected_visit = get_proposal_and_session_from_visit_string(
         load_centre_collect_params.visit
@@ -1119,14 +1133,6 @@ def grid_detect_for_snapshot_generation():
 
 
 class TestGenerateSnapshot:
-    @pytest.fixture()
-    def test_config_files(self):
-        return {
-            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
-            "display_config": "tests/test_data/test_daq_configuration/display.configuration",
-        }
-
     @pytest.mark.system_test
     def test_load_centre_collect_generate_rotation_snapshots(
         self,
@@ -1140,8 +1146,10 @@ class TestGenerateSnapshot:
         test_config_files: dict,
         fetch_datacollection_attribute: Callable[..., Any],
         fetch_datacollection_ids_for_group_id: Callable[..., Any],
+        config_client: ConfigClient,
     ):
         oav_parameters = OAVParameters(
+            config_client,
             oav_config_json=test_config_files["oav_config_json"],
             context="xrayCentring",
         )

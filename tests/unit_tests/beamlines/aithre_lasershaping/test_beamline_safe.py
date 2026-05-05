@@ -42,9 +42,11 @@ async def test_beamline_safe_reads_unsafe_correctly(
     msgs = sim_run_engine.simulate_plan(set_beamline_safe_on_robot(robot, aithre_gonio))
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "robot-set_beamline_safe"
-        and msg.args[0] == "No",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "robot-set_beamline_safe"
+            and msg.args[0] == "No"
+        ),
     )
 
 
@@ -57,9 +59,11 @@ async def test_beamline_safe_reads_safe_correctly(
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "robot-set_beamline_safe"
-        and msg.args[0] == "On",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "robot-set_beamline_safe"
+            and msg.args[0] == "On"
+        ),
     )
 
 
@@ -72,10 +76,12 @@ async def test_go_to_zero_gives_expected_result(
     for name in ["omega", "x", "y", "z", "sampy", "sampz"]:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"goniometer-{name}"
-            and msg.args[0] == 0
-            and msg.kwargs["group"] == "move_to_zero",
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"goniometer-{name}"
+                and msg.args[0] == 0
+                and msg.kwargs["group"] == "move_to_zero"
+            ),
         )
     if wait:
         assert_message_and_return_remaining(

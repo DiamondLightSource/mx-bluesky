@@ -47,9 +47,10 @@ These are currently shared with GDA, so changes to these files will affect both 
 Config Server
 =============
 
-If the `Config Server`_ is deployed and running, Hyperion is configured to use it in preference to reading the 
-``domain.properties`` file directly. However in the event of the config server being unavailable Hyperion will fall
-back to reading it from the filesystem.
+Hyperion is configured to use the daq-config-server to read the ``domain.properties`` and ``beamlineParameters`` files.
+These are read through a client that caches requests to reduce load on the server. When either of these files is changed,
+the cache needs to be cleared before the changes will be picked up. To do this, when in in-process UDC mode, restart
+Hyperion. When in blueapi mode, restart the blueapi environment.
 
 Note that currently the rest of the configuration files are not read from the config server, but the intention is that 
 ultimately it will be the source of all configuration and the remainder of the files in ``daq_configuration`` will be

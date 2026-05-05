@@ -4,7 +4,8 @@ import bluesky.plan_stubs as bps
 import pydantic
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
-from dodal.devices.motors import XYZOmegaStage
+from dodal.common.beamlines.beamline_utils import get_config_client
+from dodal.devices.motors import XYZOmegaStage, XYZWrappedOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAV_CONFIG_JSON, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection, Tip
@@ -33,7 +34,7 @@ class PinTipCentringComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     oav: OAV
-    gonio: XYZOmegaStage
+    gonio: XYZWrappedOmegaStage
     pin_tip_detection: PinTipDetection
 
 
@@ -126,8 +127,8 @@ def pin_tip_centre_plan(
                                     to be.
     """
     oav: OAV = composite.oav
-    gonio: XYZOmegaStage = composite.gonio
-    oav_params = OAVParameters("pinTipCentring", oav_config_file)
+    gonio: XYZWrappedOmegaStage = composite.gonio
+    oav_params = OAVParameters(get_config_client(), "pinTipCentring", oav_config_file)
 
     pin_tip_setup = composite.pin_tip_detection
     pin_tip_detect = composite.pin_tip_detection
@@ -154,7 +155,7 @@ def pin_tip_centre_plan(
     tip = yield from move_pin_into_view(pin_tip_detect, gonio)
     yield from offset_and_move(tip)
 
-    yield from bps.mvr(gonio.omega, -90)
+    yield from bps.mvr(gonio.wrapped_omega.phase, -90)
 
     # need to wait for the OAV image to update
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/416 for improvements

@@ -65,6 +65,10 @@ FLYSCAN_RESULT_HIGH_NO_SAMPLE_ID = XRayCentreResult(
 )
 
 
+@pytest.fixture(autouse=True)
+def always_use_i03_beamline(use_beamline_i03): ...
+
+
 @pytest.fixture
 def sim_run_engine_for_rotation(sim_run_engine):
     sim_run_engine.add_handler(

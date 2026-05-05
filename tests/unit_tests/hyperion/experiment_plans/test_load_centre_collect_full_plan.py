@@ -132,6 +132,11 @@ def composite(
     sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-x-high_limit_travel")
     sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-y-high_limit_travel")
     sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-z-high_limit_travel")
+    sim_run_engine.add_handler(
+        "locate",
+        lambda _: Location(setpoint=np.array([0, 0]), readback=np.array([0, 0])),
+        "gonio-wrapped_omega-offset_and_phase",
+    )
     sim_run_engine.add_read_handler_for(
         composite.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
@@ -557,9 +562,11 @@ def test_load_centre_collect_moves_beamstop_into_place(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "pin_tip_then_flyscan_plan"

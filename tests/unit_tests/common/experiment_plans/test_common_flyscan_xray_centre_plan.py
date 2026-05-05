@@ -1,6 +1,6 @@
 import types
 from functools import partial
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -144,7 +144,11 @@ class TestFlyscanXrayCentrePlan:
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
             "fail",
-            "Test Exception",
+            ANY,
+        )
+        assert (
+            "Test Exception"
+            in ispyb_callback.ispyb.end_deposition.mock_calls[0].args[2]  # type: ignore
         )
 
     @patch("bluesky.plan_stubs.abs_set", autospec=True)
@@ -543,6 +547,11 @@ class TestFlyscanXrayCentrePlan:
             lambda msg: {"values": {"value": SynchrotronMode.USER}},
             "synchrotron-synchrotron_mode",
         )
+        sim_run_engine.add_handler(
+            "locate",
+            lambda _: {"readback": np.array([0, 0])},
+            "gonio-wrapped_omega-offset_and_phase",
+        )
         msgs = sim_run_engine.simulate_plan(
             run_gridscan(
                 fake_fgs_composite, test_three_d_grid_params, beamline_specific
@@ -553,8 +562,9 @@ class TestFlyscanXrayCentrePlan:
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "kickoff"
-            and msg.obj == beamline_specific.fgs_motors,
+            lambda msg: (
+                msg.command == "kickoff" and msg.obj == beamline_specific.fgs_motors
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "create"

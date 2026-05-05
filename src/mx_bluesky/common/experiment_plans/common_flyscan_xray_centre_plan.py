@@ -181,7 +181,9 @@ def run_gridscan(
 ):
     with TRACER.start_span("moving_omega_to_0"):
         yield from bps.abs_set(
-            fgs_composite.gonio.omega, parameters.omega_starts_deg[0], wait=True
+            fgs_composite.gonio.wrapped_omega.phase,
+            parameters.omega_starts_deg[0],
+            wait=True,
         )
 
     with TRACER.start_span("ispyb_hardware_readings"):

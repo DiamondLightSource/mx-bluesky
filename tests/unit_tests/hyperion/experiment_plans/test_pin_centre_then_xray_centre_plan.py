@@ -1,6 +1,9 @@
+import dataclasses
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import plan_stubs as bps
+from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg, MsgGenerator
@@ -9,13 +12,18 @@ from dodal.devices.backlight import InOut
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.xbpm_feedback import Pause
+from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
-from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     create_parameters_for_grid_detection,
     pin_centre_then_gridscan_plan,
+)
+from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre import (
+    pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -27,9 +35,10 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 from tests.unit_tests.beamlines.i24.serial.conftest import fake_generator
 
 from ...conftest import raw_params_from_file
+from .conftest import FLYSCAN_RESULT_MED
 
 
-def pin_tip_centre_then_xray_centre(
+def pin_tip_centre_then_gridscan_plan_wrapper(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
@@ -148,8 +157,10 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+        lambda msg: (
+            msg.command == "open_run"
+            and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"]
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "pin_tip_centre_plan"
@@ -195,18 +206,22 @@ def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args == (InOut.IN,)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "backlight"
+            and msg.args == (InOut.IN,)
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj
-        == hyperion_grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
-        and msg.args == (ApertureValue.OUT_OF_BEAM,)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj
+            == hyperion_grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
+            and msg.args == (ApertureValue.OUT_OF_BEAM,)
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -253,10 +268,13 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio"
-        and msg.args[0] == CombinedMove(phi=expected_phi, chi=expected_chi, omega=None)
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio"
+            and msg.args[0]
+            == CombinedMove(phi=expected_phi, chi=expected_chi, omega=None)
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -291,34 +309,40 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     test_pin_centre_then_xray_centre_params.transmission_frac = transmission_frac
 
     msgs = sim_run_engine.simulate_plan(
-        pin_tip_centre_then_xray_centre(
+        pin_tip_centre_then_gridscan_plan_wrapper(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
         )
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.PAUSE,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.PAUSE
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == transmission_frac,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args[0] == transmission_frac
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.RUN,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.RUN
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == 1.0,
+        predicate=lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args[0] == 1.0
+        ),
     )
 
 
@@ -340,7 +364,7 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
     pin_centre_then_xray_centre_params_with_patched_create_params: PinTipCentreThenXrayCentre,
 ):
     msgs = sim_run_engine.simulate_plan(
-        pin_tip_centre_then_xray_centre(
+        pin_tip_centre_then_gridscan_plan_wrapper(
             hyperion_grid_detect_xrc_devices,
             pin_centre_then_xray_centre_params_with_patched_create_params,
         )
@@ -348,9 +372,11 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "stage"
-        and msg.obj.name == "zocalo"
-        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+        predicate=lambda msg: (
+            msg.command == "stage"
+            and msg.obj.name == "zocalo"
+            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -401,3 +427,33 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     )
     mock_fetch_xrc_results.assert_called_once()
     assert mock_fetch_xrc_results.call_args[0][1] == test_three_d_grid_params
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre.pin_centre_then_gridscan_plan"
+)
+def test_pin_tip_centre_then_xray_centre_moves_to_xtal(
+    mock_pin_centre_then_gridscan_plan: MagicMock,
+    test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    run_engine: RunEngine,
+):
+    @bpp.set_run_key_decorator(PlanNameConstants.FLYSCAN_RESULTS)
+    @bpp.run_decorator(
+        md={PlanNameConstants.FLYSCAN_RESULTS: [dataclasses.asdict(FLYSCAN_RESULT_MED)]}
+    )
+    def fire_xrc_xtal_event(*args, **kwargs):
+        yield from bps.null()
+
+    mock_pin_centre_then_gridscan_plan.side_effect = fire_xrc_xtal_event
+    run_engine(
+        pin_tip_centre_then_xray_centre(
+            hyperion_grid_detect_xrc_devices,
+            test_pin_centre_then_xray_centre_params,
+            TopNByMaxCountSelection(n=1),
+        )
+    )
+    gonio = hyperion_grid_detect_xrc_devices.gonio
+    get_mock_put(gonio.x.user_setpoint).assert_any_call(0.4)
+    get_mock_put(gonio.y.user_setpoint).assert_any_call(0.5)
+    get_mock_put(gonio.z.user_setpoint).assert_any_call(0.6)

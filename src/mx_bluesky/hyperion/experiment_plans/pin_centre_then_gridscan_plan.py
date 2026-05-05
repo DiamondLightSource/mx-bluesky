@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
@@ -59,7 +60,7 @@ def pin_centre_then_gridscan_plan(
     parameters: PinTipCentreThenXrayCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
-    """Plan that performs a pin tip centre followed by a gridscan to determine the centres of interest"""
+    """Plan that performs a pin tip centre followed by a gridscan to determine the centre of interest."""
 
     pin_tip_centring_composite = PinTipCentringComposite(
         oav=composite.oav,
@@ -87,7 +88,7 @@ def pin_centre_then_gridscan_plan(
         )
 
         grid_detect_params = create_parameters_for_grid_detection(parameters)
-        oav_params = OAVParameters("xrayCentring", oav_config_file)
+        oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config_file)
 
         @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
             composite,

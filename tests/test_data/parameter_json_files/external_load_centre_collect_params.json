@@ -14,9 +14,7 @@
       0,
       90
     ],
-    "chi_start_deg": 30,
-    "tip_offset_um": 25,
-    "grid_width_um": 20
+    "chi_start_deg": 30
   },
   "multi_rotation_scan": {
     "comment": "Hyperion Rotation Scan - ",
