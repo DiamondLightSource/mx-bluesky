@@ -8,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
+from daq_config_server import ConfigClient
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
@@ -22,6 +23,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
     grid_detection_plan,
+    optimum_grid_detect_angles,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -57,7 +59,9 @@ def fake_devices(
     test_config_files: dict[str, str],
 ):
     params = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=params)
     set_mock_value(oav.zoom_controller.level, "5.0x")
@@ -115,7 +119,9 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, image_save = fake_devices
 
     composite.oav.grid_snapshot._save_image = (mock_save := AsyncMock())
@@ -149,7 +155,9 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
         )
     )
 
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
 
     with pytest.raises(WarningError) as excinfo:
         run_engine(do_grid_and_edge_detect(composite, params, tmp_path))
@@ -168,7 +176,9 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     test_config_files: dict[str, str],
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     box_size_um = 0.2
     composite, _ = fake_devices
     microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
@@ -216,7 +226,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, _ = fake_devices
     cb = GridDetectAndScanISPyBCallback(param_type=GenericGrid)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
@@ -284,7 +296,9 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, _ = fake_devices
     box_size_um = 20
     cb = GridDetectionCallback()
@@ -324,11 +338,13 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     composite, _ = fake_devices
 
     # This will cause the grid detect plan to take data at -90 first
-    set_mock_value(composite.gonio.omega.user_readback, -90)
+    set_mock_value(composite.gonio.omega.user_readback, -90)  # type: ignore
     composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         side_effect=[X_Z_EDGE_DATA, X_Y_EDGE_DATA]
     )
@@ -380,6 +396,8 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
             "gonio-y": 234,
             "gonio-z": 467,
             "gonio-omega": 45,
+            "gonio-wrapped_omega-phase": 45,
+            "gonio-wrapped_omega-offset_and_phase": np.array([0, 45]),
         }
     }
 
@@ -406,7 +424,9 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
     tmp_path: Path,
 ):
     composite, _ = fake_devices
-    params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
+    params = OAVParameters(
+        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+    )
     box_size_um = 20
     microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()
     assert microns_per_pixel_y is not None
@@ -431,6 +451,8 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
                 10 if odd else 25
             )  # Ensure y steps comes out as even or odd
             return {"values": {"value": bottom_edge}}
+        elif msg.obj is composite.gonio.wrapped_omega:
+            return {"gonio-wrapped_omega-offset_and_phase": {"value": np.array([0, 0])}}
         else:
             pass
 
@@ -460,15 +482,19 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-grid_snapshot-top_left_y"
-        and msg.args == (expected_min_y,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-grid_snapshot-top_left_y"
+            and msg.args == (expected_min_y,)
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-grid_snapshot-num_boxes_y"
-        and msg.args == (expected_y_steps,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-grid_snapshot-num_boxes_y"
+            and msg.args == (expected_y_steps,)
+        ),
     )
 
 
@@ -527,3 +553,32 @@ def test_given_array_with_all_invalid_top_and_bottom_sections_then_min_and_max_i
     min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
     assert min_y == expected_min
     assert max_y == expected_max
+
+
+@pytest.mark.parametrize(
+    "omega, expected_sequence",
+    [
+        [0, [0, -90]],
+        [5, [0, -90]],
+        [-5, [0, -90]],
+        [-44, [0, -90]],
+        [-46, [-90, -0]],
+        [-90, [-90, -0]],
+        [-135, [-90, -0]],
+        [-224, [-90, -0]],
+        [-225, [0, -90]],
+        [-226, [0, -90]],
+        [90, [0, -90]],
+        [134, [0, -90]],
+        [135, [0, -90]],
+        [136, [-90, 0]],
+        [180, [-90, -0]],
+        [270, [-90, 0]],
+        [290, [-90, 0]],
+        [330, [0, -90]],
+    ],
+)
+def test_optimum_grid_detect_angles(smargon, run_engine, omega, expected_sequence):
+    set_mock_value(smargon.omega.user_readback, omega)
+    result = run_engine(optimum_grid_detect_angles(smargon))
+    assert result.plan_result == expected_sequence

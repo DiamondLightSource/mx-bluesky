@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from daq_config_server import ConfigClient
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.areadetector.plugins.cam import ColorMode
 from dodal.devices.backlight import Backlight
@@ -20,7 +21,7 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 
-from ....conftest import raw_params_from_file
+from ....conftest import ConfigFilesForTests, raw_params_from_file
 
 
 @pytest.fixture
@@ -63,51 +64,67 @@ def fixed_datetime() -> Generator[str, None, None]:
 
 
 def test_oav_snapshot_plan_issues_rotations_and_generates_events(
-    fixed_datetime, oav_snapshot_params, oav_snapshot_composite, sim_run_engine
+    fixed_datetime,
+    oav_snapshot_params,
+    oav_snapshot_composite,
+    sim_run_engine,
+    test_config_files: ConfigFilesForTests,
 ):
     msgs = sim_run_engine.simulate_plan(
         oav_snapshot_plan(
             oav_snapshot_composite,
             oav_snapshot_params,
-            OAVParameters(oav_config_json="tests/test_data/test_OAVCentring.json"),
+            OAVParameters(
+                ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
+            ),
         )
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-cam-color_mode"
-        and msg.args[0] == ColorMode.RGB1,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-cam-color_mode"
+            and msg.args[0] == ColorMode.RGB1
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-cam-acquire_period"
-        and msg.args[0] == 0.05,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-cam-acquire_period"
+            and msg.args[0] == 0.05
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-cam-acquire_time"
-        and msg.args[0] == 0.075,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-cam-acquire_time"
+            and msg.args[0] == 0.075
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-cam-gain"
-        and msg.args[0] == 1,
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "oav-cam-gain" and msg.args[0] == 1
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-zoom_controller"
-        and msg.args[0] == "5.0x",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-zoom_controller"
+            and msg.args[0] == "5.0x"
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-snapshot-directory"
-        and msg.args[0] == "/tmp/my_snapshots",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-snapshot-directory"
+            and msg.args[0] == "/tmp/my_snapshots"
+        ),
     )
     for expected in [
         {"omega": 0, "filename": "10062312_oav_snapshot_0"},
@@ -117,22 +134,28 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
     ]:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == "gonio-omega"
-            and msg.args[0] == expected["omega"]
-            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == "gonio-wrapped_omega-phase"
+                and msg.args[0] == expected["omega"]
+                and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == "oav-snapshot-filename"
-            and msg.args[0] == expected["filename"],
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == "oav-snapshot-filename"
+                and msg.args[0] == expected["filename"]
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "trigger"
-            and msg.obj.name == "oav-snapshot"
-            and msg.kwargs["group"] is None,
+            lambda msg: (
+                msg.command == "trigger"
+                and msg.obj.name == "oav-snapshot"
+                and msg.kwargs["group"] is None
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
@@ -140,9 +163,11 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "create"
-            and msg.kwargs["name"]
-            == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+            lambda msg: (
+                msg.command == "create"
+                and msg.kwargs["name"]
+                == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav"
@@ -190,9 +215,11 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
     for _ in 0, 90:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "create"
-            and msg.kwargs["name"]
-            == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+            lambda msg: (
+                msg.command == "create"
+                and msg.kwargs["name"]
+                == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
@@ -200,8 +227,9 @@ def test_oav_snapshot_plan_generates_snapshots_events_without_triggering_oav_whe
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "read"
-            and msg.obj is oav_snapshot_composite.gonio,
+            lambda msg: (
+                msg.command == "read" and msg.obj is oav_snapshot_composite.gonio
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"

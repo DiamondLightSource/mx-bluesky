@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_resolution import resolution
-from dodal.devices.synchrotron import SynchrotronMode
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -133,10 +132,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
         assert self.params, "Event handled before activity_gated_start received params"
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
-            "ISPyB handler received event from read hardware"
+            f"ISPyB handler received event from read hardware: {doc}"
         )
         synchrotron_mode = _data["synchrotron-synchrotron_mode"]
-        assert isinstance(synchrotron_mode, SynchrotronMode)
 
         # We should improve slit PV name to give consistency, or come up with a way
         # to get better typing on the _data dict
@@ -151,7 +149,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         elif _data["s4_slit_gaps-x_gap"]:
             hwscan_data_collection_info = DataCollectionInfo(
                 undulator_gap1=_data["undulator-current_gap"],
-                synchrotron_mode=synchrotron_mode.value,
+                synchrotron_mode=str(synchrotron_mode),
                 slitgap_horizontal=_data["s4_slit_gaps-x_gap"],
                 slitgap_vertical=_data["s4_slit_gaps-y_gap"],
             )

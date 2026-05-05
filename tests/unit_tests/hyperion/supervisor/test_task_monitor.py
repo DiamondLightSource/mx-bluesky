@@ -27,6 +27,15 @@ def task_request(external_load_centre_collect_params) -> TaskRequest:
 
 
 @pytest.fixture
+def robot_unload_task() -> TaskRequest:
+    return TaskRequest(
+        name="robot_unload",
+        params={"visit": TEST_VISIT},
+        instrument_session=TEST_VISIT,
+    )
+
+
+@pytest.fixture
 def mock_alerting_service():
     with patch(
         "mx_bluesky.hyperion.supervisor._task_monitor.get_alerting_service"
@@ -61,9 +70,9 @@ def test_task_monitor_alerts_if_waiting_for_beam(mock_alerting_service, task_req
         "Hyperion is paused waiting for beam on i03.",
         "Hyperion has been paused waiting for beam for 0 minutes.",
         {
-            Metadata.SAMPLE_ID: 5461074,
+            Metadata.SAMPLE_ID: "5461074",
             Metadata.VISIT: "cm31105-4",
-            Metadata.CONTAINER: 2,
+            Metadata.CONTAINER: "2",
         },
     )
 
@@ -110,8 +119,26 @@ def test_task_monitor_alerts_and_cancels_request_if_stuck_not_waiting_for_beam(
         "UDC encountered an error on i03",
         "Hyperion Supervisor detected that BlueAPI was stuck for 0.25 seconds.",
         {
-            Metadata.SAMPLE_ID: 5461074,
+            Metadata.SAMPLE_ID: "5461074",
             Metadata.VISIT: "cm31105-4",
-            Metadata.CONTAINER: 2,
+            Metadata.CONTAINER: "2",
         },
+    )
+
+
+@patch(
+    "mx_bluesky.hyperion.supervisor._task_monitor.TaskMonitor.DEFAULT_TIMEOUT_S", 0.25
+)
+def test_task_monitor_alerts_with_no_metadata_and_cancels_request_if_stuck_on_other_task(
+    mock_alerting_service, robot_unload_task
+):
+    blueapi_client = Mock(spec=BlueapiClient)
+    monitor = TaskMonitor(blueapi_client, robot_unload_task)
+    with monitor:
+        sleep(0.5)
+    blueapi_client.abort.assert_called_with(ANY)
+    mock_alerting_service.raise_alert.assert_called_once_with(
+        "UDC encountered an error on i03",
+        "Hyperion Supervisor detected that BlueAPI was stuck for 0.25 seconds.",
+        {},
     )

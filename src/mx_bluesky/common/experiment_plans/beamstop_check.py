@@ -1,7 +1,8 @@
+from typing import Any
+
 import pydantic
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.common.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
@@ -50,7 +51,7 @@ class BeamObstructedError(BeamlineCheckFailureError): ...
 
 def move_beamstop_in_and_verify_using_diode(
     devices: BeamstopCheckDevices,
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     detector_min_z_mm: float,
     detector_max_z_mm: float,
 ) -> MsgGenerator:

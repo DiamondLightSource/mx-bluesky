@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from time import time
 
+from dodal.common.maths import reflect_phase
 from dodal.devices.zocalo import ZocaloStartInfo
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
@@ -74,8 +75,8 @@ def generate_start_info_from_num_grids(
 
 
 def common_populate_axis_info(data_collection_info: DataCollectionInfo, doc: dict):
-    if (omega_start := doc.get("gonio-omega")) is not None:
-        omega_in_gda_space = -omega_start
+    if (phase := doc.get("gonio-wrapped_omega-phase")) is not None:
+        omega_in_gda_space = reflect_phase(phase)
         data_collection_info.omega_start = omega_in_gda_space
         data_collection_info.axis_start = omega_in_gda_space
         data_collection_info.axis_end = omega_in_gda_space

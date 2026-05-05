@@ -44,7 +44,7 @@ def main():
     """Main application entry point."""
     args = parse_cli_args()
     initialise_globals(args)
-
+    server_port = HyperionConstants.HYPERION_PORT
     match args.mode:
         case HyperionMode.UDC:
             context = setup_context(dev_mode=args.dev_mode)
@@ -63,7 +63,8 @@ def main():
             supervisor_config = _load_config_from_yaml(Path(args.supervisor_config))
             context = BlueskyContext(configuration=supervisor_config)
             plan_runner = SupervisorRunner(context, client_config, args.dev_mode)
-    create_server_for_udc(plan_runner, HyperionConstants.SUPERVISOR_PORT)
+            server_port = HyperionConstants.SUPERVISOR_PORT
+    create_server_for_udc(plan_runner, server_port)
     _register_sigterm_handler(plan_runner)
     run_forever(plan_runner)
 

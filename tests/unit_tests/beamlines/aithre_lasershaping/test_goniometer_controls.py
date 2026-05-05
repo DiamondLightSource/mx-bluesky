@@ -22,9 +22,11 @@ def test_goniometer_relative_rotation(
     msgs = sim_run_engine.simulate_plan(rotate_goniometer_relative(15, aithre_gonio))
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-omega"
-        and msg.args[0] == 15,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "goniometer-omega"
+            and msg.args[0] == 15
+        ),
     )
 
 
@@ -34,9 +36,11 @@ def test_change_goniometer_turn_speed(
     msgs = sim_run_engine.simulate_plan(change_goniometer_turn_speed(40, aithre_gonio))
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-omega-velocity"
-        and msg.args[0] == 40,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "goniometer-omega-velocity"
+            and msg.args[0] == 40
+        ),
     )
 
 

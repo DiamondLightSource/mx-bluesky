@@ -176,14 +176,18 @@ class TestFlyscanXrayCentrePlan:
 
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj is hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable
-            and msg.args[0] == 0,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj
+                is hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable
+                and msg.args[0] == 0
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == msgs[0].kwargs["group"],
+            lambda msg: (
+                msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+            ),
         )
 
     @patch(
@@ -274,12 +278,15 @@ class TestFlyscanXrayCentrePlan:
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "unstage"
-            and msg.obj.name == "panda"
-            and msg.kwargs["group"] == "panda_flyscan_tidy",
+            lambda msg: (
+                msg.command == "unstage"
+                and msg.obj.name == "panda"
+                and msg.kwargs["group"] == "panda_flyscan_tidy"
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == "panda_flyscan_tidy",
+            lambda msg: (
+                msg.command == "wait" and msg.kwargs["group"] == "panda_flyscan_tidy"
+            ),
         )

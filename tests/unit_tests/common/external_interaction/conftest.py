@@ -48,3 +48,7 @@ def get_test_plan(callback_name):
         yield from bps.save()
 
     return test_plan, s
+
+
+@pytest.fixture(autouse=True)
+def always_patch_beamline_env_variable(patch_beamline_env_variable): ...

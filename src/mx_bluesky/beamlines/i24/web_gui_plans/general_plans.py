@@ -15,7 +15,7 @@ from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 from dodal.devices.beamlines.i24.pmac import PMAC
-from dodal.devices.hutch_shutter import HutchShutter
+from dodal.devices.hutch_shutter import InterlockedHutchShutter
 from dodal.devices.motors import YZStage
 from dodal.devices.oav.oav_detector import OAVBeamCentreFile
 from dodal.devices.zebra.zebra import Zebra
@@ -87,7 +87,7 @@ def gui_stage_move_on_click(
 
 @bpp.run_decorator()
 def gui_gonio_move_on_click(position_px: tuple[int, int]) -> MsgGenerator:
-    oav = i24.oav()
+    oav = i24.oav(i24.config_client())
     gonio = i24.vgonio()
 
     x_microns_per_pixel = yield from bps.rd(oav.microns_per_pixel_x)
@@ -140,7 +140,7 @@ def gui_run_chip_collection(
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
     detector_stage: YZStage = inject("detector_motion"),
-    shutter: HutchShutter = inject("shutter"),
+    shutter: InterlockedHutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
@@ -256,7 +256,7 @@ def gui_run_extruder_collection(
     backlight: DualBacklight = inject("backlight"),
     beamstop: Beamstop = inject("beamstop"),
     detector_stage: YZStage = inject("detector_motion"),
-    shutter: HutchShutter = inject("shutter"),
+    shutter: InterlockedHutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: EnumFilterAttenuator = inject("attenuator"),

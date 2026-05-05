@@ -14,6 +14,10 @@ from ....conftest import (
 )
 
 
+@pytest.fixture(autouse=True)
+def always_use_i03_beamline(use_beamline_i03): ...
+
+
 @pytest.fixture
 def test_rotation_params(tmp_path):
     param_dict = raw_params_from_file(
