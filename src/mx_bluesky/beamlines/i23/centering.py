@@ -1,6 +1,6 @@
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.aithre_lasershaping.goniometer import Goniometer
+from dodal.devices.motors import XYZOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 
@@ -12,7 +12,7 @@ from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
 
 def optical_centering_plan(
     oav: OAV = inject("OAV"),
-    gonio: Goniometer = inject("gonio"),
+    gonio: XYZOmegaStage = inject("gonio"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
     tip_offset_microns: float = 0,
     oav_config_file: str = "/dls/science/groups/i23/aithre/daq_configuration/json/OAVCentring.json",
