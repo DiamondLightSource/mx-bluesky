@@ -11,13 +11,17 @@ def test_goniometer_omega_performance_check(
     assert len(msgs) == 132
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-omega-velocity"
-        and msg.args[0] == 5,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "goniometer-omega-velocity"
+            and msg.args[0] == 5
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "goniometer-omega"
-        and msg.args[0] == 300,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "goniometer-omega"
+            and msg.args[0] == 300
+        ),
     )

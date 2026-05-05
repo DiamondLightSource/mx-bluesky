@@ -31,7 +31,9 @@ class AlertService(Protocol):
     as email, SMS, instant messaging, etc etc.
     """
 
-    def raise_alert(self, summary: str, content: str, metadata: dict[Metadata, str]):
+    def raise_alert(
+        self, summary: str, content: str, metadata: dict[Metadata, str]
+    ) -> None:
         """
         Raise an alert that will be forwarded to beamline support staff, which might
         for example be used as the basis for an incident in an incident reporting system.

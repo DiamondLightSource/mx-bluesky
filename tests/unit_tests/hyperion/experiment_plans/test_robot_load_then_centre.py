@@ -241,10 +241,12 @@ def test_when_plan_run_then_detector_positioned(
     )
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj is robot_load_composite.detector_motion.z
-        and msg.args[0]
-        == robot_load_then_centre_params.detector_params.detector_distance,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is robot_load_composite.detector_motion.z
+            and msg.args[0]
+            == robot_load_then_centre_params.detector_params.detector_distance
+        ),
     )
     assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
 
@@ -499,9 +501,11 @@ def test_robot_load_then_centre_moves_beamstop_into_place(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "pin_centre_then_gridscan_plan"

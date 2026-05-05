@@ -4,7 +4,10 @@ from blueapi.core.context import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, RunEngineInterrupted
-from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
+from dodal.common.beamlines.commissioning_mode import (
+    read_commissioning_mode,
+    set_commissioning_signal,
+)
 from dodal.devices.baton import Baton
 from dodal.devices.synchrotron import Synchrotron
 from pydantic import BaseModel
@@ -233,14 +236,16 @@ def _abort_if_countdown_too_low(
 ) -> MsgGenerator[bool]:
     synchrotron = _get_synchrotron(context)
     countdown = yield from bps.rd(synchrotron.machine_user_countdown)
-
     LOGGER.info(f"Synchrotron beam countdown is {countdown} seconds")
 
     if countdown < COUNTDOWN_THRESHOLD_SECONDS:
         LOGGER.info("Synchrotron machine countdown too low")
-        yield from _release_baton_on_completed_alert(baton)
-        return True
-
+        commissioning_mode = yield from read_commissioning_mode()
+        if commissioning_mode:
+            LOGGER.info("Ignoring beam countdown due to commissioning mode.")
+        else:
+            yield from _release_baton_on_completed_alert(baton)
+            return True
     return False
 
 
