@@ -153,9 +153,11 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "detector_motion-shutter"
-        and msg.args[0] == 0,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "detector_motion-shutter"
+            and msg.args[0] == 0
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "wait"
@@ -264,9 +266,11 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_triggers_xbpm
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (desired_transmission,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args == (desired_transmission,)
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -275,14 +279,16 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_triggers_xbpm
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "open_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "close_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "close_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
     mock_pause_feedback.assert_not_called()
@@ -544,9 +550,11 @@ def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "stage"
-        and msg.obj.name == "zocalo"
-        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+        predicate=lambda msg: (
+            msg.command == "stage"
+            and msg.obj.name == "zocalo"
+            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP
+        ),
     )
 
     msgs = assert_message_and_return_remaining(

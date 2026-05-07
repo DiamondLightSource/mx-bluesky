@@ -126,15 +126,19 @@ def test_single_rotation_plan_in_simulator(
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.run == "OUTER SINGLE ROTATION SCAN",
+        lambda msg: (
+            msg.command == "open_run" and msg.run == "OUTER SINGLE ROTATION SCAN"
+        ),
     )
 
     # Wait for rotation devices to be ready before reading metadata
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"]
+            == PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC
+        ),
     )
 
     # Set omega axis then wait for JF to complete
@@ -154,8 +158,10 @@ def test_single_rotation_plan_in_simulator(
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "close_run"
-        and msg.run == PlanNameConstants.SINGLE_ROTATION_SCAN,
+        lambda msg: (
+            msg.command == "close_run"
+            and msg.run == PlanNameConstants.SINGLE_ROTATION_SCAN
+        ),
     )
 
 

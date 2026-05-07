@@ -125,9 +125,11 @@ def test_zocalo_stage_wrapper(
     msgs = sim_run_engine.simulate_plan(test_plan())
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "stage"
-        and msg.obj.name == "zocalo"
-        and msg.kwargs["group"] == ZOCALO_STAGE_GROUP,
+        predicate=lambda msg: (
+            msg.command == "stage"
+            and msg.obj.name == "zocalo"
+            and msg.kwargs["group"] == ZOCALO_STAGE_GROUP
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
