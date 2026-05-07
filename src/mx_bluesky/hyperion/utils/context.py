@@ -1,6 +1,6 @@
 from blueapi.core import BlueskyContext
-from dodal.common.beamlines.beamline_utils import clear_devices, get_config_client
-from dodal.utils import collect_factories, get_beamline_based_on_environment_variable
+from dodal.common.beamlines.beamline_utils import get_config_client
+from dodal.utils import get_beamline_based_on_environment_variable
 
 
 def setup_context(dev_mode: bool = False) -> BlueskyContext:
@@ -11,12 +11,6 @@ def setup_context(dev_mode: bool = False) -> BlueskyContext:
 
 def clear_all_device_caches(context: BlueskyContext):
     context.unregister_all_devices()
-    clear_devices()
-
-    for f in collect_factories(get_beamline_based_on_environment_variable()).values():
-        if hasattr(f, "cache_clear"):
-            f.cache_clear()  # type: ignore
-
     get_config_client().reset_cache()
 
 
