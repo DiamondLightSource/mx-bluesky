@@ -14,6 +14,7 @@ from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker
 from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_parameters import CONFIG_SERVER_URL_ENV_VAR
 from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
@@ -145,10 +146,10 @@ def setup_logging(dev_mode: bool):
 
 
 def create_config_client() -> ConfigClient:
-    config_server_url = os.getenv("CONFIG_SERVER_URL")
+    config_server_url = os.getenv(CONFIG_SERVER_URL_ENV_VAR)
     if not config_server_url:
         raise ValueError(
-            "CONFIG_SERVER_URL must be specified to run external callbacks."
+            f"{CONFIG_SERVER_URL_ENV_VAR} must be specified to run external callbacks."
         )
     return ConfigClient(config_server_url)
 

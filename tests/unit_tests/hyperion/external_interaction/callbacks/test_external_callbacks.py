@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky_stomp.models import Broker
+from dodal.common.beamlines.beamline_parameters import CONFIG_SERVER_URL_ENV_VAR
 from dodal.log import LOGGER as DODAL_LOGGER
 
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
@@ -50,7 +51,7 @@ def test_main_function(
     mock_run_watchdog: MagicMock,
     monkeypatch,
 ):
-    monkeypatch.setenv("CONFIG_SERVER_URL", "http://127.0.0.1:8555")
+    monkeypatch.setenv(CONFIG_SERVER_URL_ENV_VAR, "http://127.0.0.1:8555")
     proxy_started = Event()
     dispatcher_started = Event()
     watchdog_started = Event()
@@ -182,7 +183,7 @@ def test_launch_with_stomp_launches_stomp_backend(
     mock_dispatcher_cls: MagicMock,
     monkeypatch,
 ):
-    monkeypatch.setenv("CONFIG_SERVER_URL", "http://127.0.0.1:8555")
+    monkeypatch.setenv(CONFIG_SERVER_URL_ENV_VAR, "http://127.0.0.1:8555")
     stomp_client = mock_client_cls.for_broker.return_value
     dispatcher = mock_dispatcher_cls.return_value
     stomp_client.is_connected.side_effect = [True, False]
