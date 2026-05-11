@@ -86,20 +86,20 @@ END
 done
 
 kill_active_apps () {
-    if [ $MODE = "blueapi" ]; then
+    if [[ $MODE = "blueapi" || $STOP == 1 ]]; then
         echo "Killing vanilla hyperion instances"
-        pkill -e -f "mx-bluesky/.venv/bin/python .*--mode (gda|udc)"
+        pkill -e -f "\.venv/bin/python3? .*--mode (gda|udc)"
     fi
-    if [[ $START_HYPERION_SUPERVISOR == 1 || $MODE = "udc" ]]; then
+    if [[ $START_HYPERION_SUPERVISOR == 1 || $MODE = "udc" || $STOP == 1 ]]; then
       # supervisor mode kills only supervisor
       echo "Killing active instances of hyperion supervisor..."
-      pkill -e -f "mx-bluesky/.venv/bin/python .*--mode supervisor"
+      pkill -e -f "\.venv/bin/python3? .*--mode supervisor"
     fi
-    if [[ $START_HYPERION_BLUEAPI == 1 || $MODE = "udc" ]]; then
+    if [[ $START_HYPERION_BLUEAPI == 1 || $MODE = "udc" || $STOP == 1 ]]; then
       echo "Killing active instances of hyperion-blueapi"
-      pkill -e -f "python .*mx-bluesky/.venv/bin/blueapi .*serve"
+      pkill -e -f "python3? .*/\.venv/bin/blueapi .*serve"
       echo "Killing hyperion-callbacks"
-      pkill -e -f "mx-bluesky/.venv/bin/python .*hyperion-callbacks"
+      pkill -e -f "\.venv/bin/python3? .*hyperion-callbacks"
     fi
 }
 
