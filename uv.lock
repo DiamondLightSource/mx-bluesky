@@ -807,8 +807,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.2.4.dev11+g1e7382932"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=2024_decouple_interlock_from_shutter#1e73829328535132cd869389c0663e2538ad93ac" }
+version = "2.3.1.dev6+g428401116"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=2024_decouple_interlock_from_shutter#4284011163f509535cfadd63f5bc03dccd449666" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
