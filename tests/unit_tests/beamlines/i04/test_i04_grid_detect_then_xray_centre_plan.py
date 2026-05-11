@@ -29,7 +29,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
@@ -79,7 +79,7 @@ def i04_grid_detect_then_xrc_default_params(
     xbpm_feedback: XBPMFeedback,
     zebra: Zebra,
     robot: BartRobot,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
     eiger: EigerDetector,
     synchrotron: Synchrotron,
     zocalo: ZocaloResults,

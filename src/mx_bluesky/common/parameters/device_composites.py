@@ -25,7 +25,7 @@ from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.wrapped_axis import WrappedAxis
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.epics.motor import Motor
 
@@ -78,4 +78,4 @@ class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
     xbpm_feedback: XBPMFeedback
     zebra: Zebra
     robot: BartRobot
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter

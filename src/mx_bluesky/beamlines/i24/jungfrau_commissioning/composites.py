@@ -13,7 +13,7 @@ from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -25,7 +25,7 @@ class RotationScanComposite:
     jungfrau: CommissioningJungfrau
     gonio: VerticalGoniometer
     synchrotron: Synchrotron
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     zebra: Zebra
     xbpm_feedback: XBPMFeedback
     hutch_shutter: InterlockedHutchShutter

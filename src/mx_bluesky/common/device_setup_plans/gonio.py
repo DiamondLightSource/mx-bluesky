@@ -26,3 +26,8 @@ def move_gonio_warn_on_out_of_range(
             ) from fs.__cause__
         else:
             raise fs
+
+
+def find_nearest_omega_360(gonio: XYZOmegaStage):
+    current_omega = yield from bps.rd(gonio.omega.user_readback)
+    return round(current_omega / 360) * 360

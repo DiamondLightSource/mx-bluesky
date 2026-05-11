@@ -29,7 +29,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
@@ -136,7 +136,7 @@ def i04_default_grid_detect_and_xray_centre(
     xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
     zebra: Zebra = inject("zebra"),
     robot: BartRobot = inject("robot"),
-    sample_shutter: ZebraShutter = inject("sample_shutter"),
+    sample_shutter: MXZebraShutter = inject("sample_shutter"),
     eiger: EigerDetector = inject("eiger"),
     synchrotron: Synchrotron = inject("synchrotron"),
     zocalo: ZocaloResults = inject("zocalo"),
