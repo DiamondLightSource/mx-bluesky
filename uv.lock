@@ -807,8 +807,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.2.4.dev8+g7cad07c52"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=cryst_bluesky_10_fast_shutter#7cad07c52fda3e2f00a45ea60e06361364b7470f" }
+version = "2.3.1.dev3+g3a2fbb935"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=cryst_bluesky_10_fast_shutter#3a2fbb935987349d952abb0c5d71cf1b145370bb" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
