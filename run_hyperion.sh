@@ -86,10 +86,8 @@ END
 done
 
 kill_active_apps () {
-    if [[ $MODE = "blueapi" || $STOP == 1 ]]; then
-        echo "Killing vanilla hyperion instances"
-        pkill -e -f "\.venv/bin/python3? .*--mode (gda|udc)"
-    fi
+    echo "Killing vanilla hyperion instances"
+    pkill -e -f "\.venv/bin/python3? .*--mode (gda|udc)"
     if [[ $START_HYPERION_SUPERVISOR == 1 || $MODE = "udc" || $STOP == 1 ]]; then
       # supervisor mode kills only supervisor
       echo "Killing active instances of hyperion supervisor..."

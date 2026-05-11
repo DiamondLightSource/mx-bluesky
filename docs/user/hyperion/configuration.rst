@@ -30,6 +30,7 @@ Also note that some of these configuration properties will be removed in a futur
     "gda.mx.hyperion.xrc.use_roi_mode", "boolean", "If true then ROI mode is used."
     "gda.mx.udc.hyperion.enable", "boolean",  "Enables Hyperion UDC mode in GDA - with this turned off, legacy UDC is performed by GDA."
     "gda.mx.hyperion.enable_beamstop_diode_check", "boolean", "If true, enables an extended beamstop position check
+    "gda.mx.hyperion.blueapi.enabled", "boolean", "If true then enables blueapi + supervisor, otherwise monolithic UDC is used."
  during UDC default state script measuring the diode current out-of and in beam. Otherwise the beamstop position is
  moved to the data collection position."
 
