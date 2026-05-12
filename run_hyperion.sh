@@ -220,17 +220,17 @@ if [[ $START == 1 ]]; then
     if [[ $START_HYPERION_SUPERVISOR == 1 ]]; then
       h_commands+="--mode supervisor --client-config ${CLIENT_CONFIG} --supervisor-config ${SUPERVISOR_CONFIG} "
       echo "Starting hyperion-supervisor with hyperion $h_commands, start_log is $start_log_path"
-      hyperion `echo $h_commands;`>$start_log_path  2>&1 &
+      ( set -m; hyperion `echo $h_commands;`>$start_log_path  2>&1 & )
       wait_for_healthcheck hyperion-supervisor $SUPERVISOR_HEALTHCHECK_PORT status
     elif [[ $MODE = "udc" ]]; then
         h_commands+="--mode udc "
         echo "Starting hyperion udc with hyperion $h_commands, start_log is $start_log_path"
-        hyperion `echo $h_commands;`>$start_log_path  2>&1 &
+        ( set -m; hyperion `echo $h_commands;`>$start_log_path  2>&1 & )
         wait_for_healthcheck hyperion $HEALTHCHECK_PORT status
     fi
     if [[ $START_HYPERION_BLUEAPI == 1 || $MODE = "udc" ]]; then
       echo "Starting hyperion-callbacks with hyperion-callbacks $cb_commands, start_log is $callback_start_log_path"
-      hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
+      ( set -m; hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 & )
     fi
 fi
 
