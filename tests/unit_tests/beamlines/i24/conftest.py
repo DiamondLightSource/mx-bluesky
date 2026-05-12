@@ -11,11 +11,11 @@ from dodal.devices.beamlines.i24.focus_mirrors import (
 )
 from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import (
-    HUTCH_SAFE_FOR_OPERATIONS,
     InterlockedHutchShutter,
     ShutterDemand,
     ShutterState,
 )
+from dodal.devices.interlocks import PSS_SAFE_FOR_OPERATIONS
 from dodal.devices.motors import YZStage
 from ophyd_async.core import callback_on_mock_put, set_mock_value
 
@@ -25,7 +25,7 @@ def shutter() -> InterlockedHutchShutter:
     shutter = i24.shutter.build(connect_immediately=True, mock=True)
     set_mock_value(
         shutter.interlock.status,  # type: ignore
-        HUTCH_SAFE_FOR_OPERATIONS,
+        PSS_SAFE_FOR_OPERATIONS,
     )
 
     def set_status(value: ShutterDemand, *args, **kwargs):
