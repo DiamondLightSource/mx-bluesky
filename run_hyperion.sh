@@ -212,7 +212,9 @@ if [[ $START == 1 ]]; then
     unset PYEPICS_LIBCA
     if [[ $START_HYPERION_BLUEAPI == 1 ]]; then
       echo "Starting hyperion-blueapi, start log is $start_log_path"
-      blueapi --config $BLUEAPI_CONFIG serve > $start_log_path 2>&1 &
+      # start in a separate process group to avoid GDA sending it a SIGINT on
+      # GDA server shutdown
+      ( set -m; nohup blueapi --config $BLUEAPI_CONFIG serve > $start_log_path 2>&1 & )
       wait_for_healthcheck hyperion-blueapi $HEALTHCHECK_PORT healthz
     fi
     if [[ $START_HYPERION_SUPERVISOR == 1 ]]; then
