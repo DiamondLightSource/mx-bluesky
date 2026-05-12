@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 from abc import abstractmethod
 from collections.abc import Callable
@@ -122,6 +123,7 @@ def setup_callbacks() -> list[CallbackBase]:
 
 
 def setup_logging(dev_mode: bool):
+    multiprocessing.current_process().name = "hyperion-callbacks"
     for logger, filename in [
         (ISPYB_ZOCALO_CALLBACK_LOGGER, "hyperion_ispyb_callback.log"),
         (NEXUS_LOGGER, "hyperion_nexus_callback.log"),
