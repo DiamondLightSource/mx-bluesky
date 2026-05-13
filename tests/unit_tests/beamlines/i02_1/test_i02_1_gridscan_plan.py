@@ -15,7 +15,7 @@ from dodal.devices.zebra.zebra import Zebra
 from pydantic import ValidationError
 
 from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import (
-    FlyScanXRayCentreComposite,
+    I021FlyScanXRayCentreComposite,
     construct_i02_1_specific_features,
     i02_1_gridscan_plan,
 )
@@ -63,8 +63,8 @@ def fgs_composite(
     undulator: BaseUndulator,
     s4_slit_gaps: S4SlitGaps,
     zebra: Zebra,
-) -> FlyScanXRayCentreComposite:
-    return FlyScanXRayCentreComposite(
+) -> I021FlyScanXRayCentreComposite:
+    return I021FlyScanXRayCentreComposite(
         eiger,
         synchrotron,
         smargon,
@@ -136,7 +136,7 @@ def test_i02_1_flyscan_xray_centre_in_re(
     mock_create_features: MagicMock,
     run_engine: RunEngine,
     fgs_params_two_d: SpecifiedTwoDGridScan,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: I021FlyScanXRayCentreComposite,
 ):
     expected_features = construct_i02_1_specific_features(
         fgs_composite, fgs_params_two_d
