@@ -444,6 +444,9 @@ class TestXrayCentreISPyBCallback:
         [91.001, AssertionError],
         [90.999, GridscanPlane.OMEGA_XZ],
         [89.999, GridscanPlane.OMEGA_XZ],
+        [179.999, GridscanPlane.OMEGA_XY],
+        [359.999, GridscanPlane.OMEGA_XY],
+        [-1079.999, GridscanPlane.OMEGA_XY],
     ],
 )
 def test_smargon_omega_to_xyxz_plane(omega, expected_plane):

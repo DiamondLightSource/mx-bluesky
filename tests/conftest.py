@@ -3,11 +3,9 @@ import gzip
 import json
 import logging
 import os
-import sys
 from collections.abc import Callable, Generator, Sequence
 from functools import partial
 from pathlib import Path
-from types import ModuleType
 from typing import Any, TypedDict, TypeVar
 from unittest.mock import MagicMock, patch
 
@@ -20,10 +18,8 @@ from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
 from daq_config_server import ConfigClient
 from dodal.beamlines import aithre, i03
-from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_utils import (
     clear_config_client,
-    clear_devices,
     set_config_client,
 )
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
@@ -70,7 +66,6 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
-from dodal.utils import AnyDeviceFactory, collect_factories
 from event_model.documents import Event, EventDescriptor, RunStart, RunStop
 from ophyd_async.core import (
     AsyncStatus,
@@ -258,29 +253,6 @@ def ispyb_config_path():
         yield ispyb_config_path
 
 
-@pytest.fixture(scope="session")
-def active_device_factories() -> set[AnyDeviceFactory]:
-    """Obtain the set of device factories that should have their caches cleared
-    after every test invocation.
-    Override this in sub-packages for the specific beamlines under test."""
-    return device_factories_for_beamline(i03)
-
-
-def device_factories_for_beamline(beamline_module: ModuleType) -> set[AnyDeviceFactory]:
-    return {
-        f
-        for f in collect_factories(beamline_module, include_skipped=True).values()
-        if hasattr(f, "cache_clear")
-    }
-
-
-@pytest.fixture(scope="function", autouse=True)
-def clear_device_factory_caches_after_every_test(active_device_factories):
-    yield None
-    for f in active_device_factories:
-        f.cache_clear()  # type: ignore
-
-
 def replace_all_tmp_paths(d: dict[str, Any], tmp_path: Path):
     d = d.copy()
     for k, v in d.items():
@@ -361,8 +333,6 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_teardown(item):
-    if "dodal.common.beamlines.beamline_utils" in sys.modules:
-        sys.modules["dodal.common.beamlines.beamline_utils"].clear_devices()
     markers = [m.name for m in item.own_markers]
     if "skip_log_setup" in markers:
         _reset_loggers([*ALL_LOGGERS, DODAL_LOGGER])
@@ -421,7 +391,6 @@ def smargon() -> Generator[Smargon, None, None]:
     # Initial positions, needed for stub_offsets
     set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
     yield smargon
-    clear_devices()
 
 
 @pytest.fixture
@@ -610,7 +579,6 @@ def beamstop_phase1(
         )
 
         yield beamstop
-        beamline_utils.clear_devices()
 
 
 @pytest.fixture
@@ -620,7 +588,6 @@ def xbpm_feedback(
     xbpm = i03.xbpm_feedback.build(connect_immediately=True, mock=True)
     xbpm.trigger = MagicMock(side_effect=lambda: completed_status())
     yield xbpm
-    beamline_utils.clear_devices()
 
 
 def set_up_dcm(dcm: DCM, sim_run_engine: RunEngineSimulator):
@@ -671,7 +638,6 @@ def mirror_voltages():
     for vc in voltages.horizontal_voltages.values():
         vc.set = MagicMock(side_effect=lambda _: completed_status())
     yield voltages
-    beamline_utils.clear_devices()
 
 
 @pytest.fixture
@@ -685,7 +651,6 @@ def undulator_dcm(sim_run_engine, dcm, undulator) -> Generator[UndulatorDCM]:
     )
     set_up_dcm(undulator_dcm.dcm_ref(), sim_run_engine)
     yield undulator_dcm
-    # beamline_utils.clear_devices()
 
 
 @pytest.fixture

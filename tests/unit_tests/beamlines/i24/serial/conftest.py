@@ -8,7 +8,6 @@ from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.zebra.zebra import Zebra
-from dodal.utils import AnyDeviceFactory
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import ChipType
@@ -18,8 +17,6 @@ from mx_bluesky.beamlines.i24.serial.parameters import (
     get_chip_format,
 )
 from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
-
-from .....conftest import device_factories_for_beamline
 
 TEST_PATH = Path("tests/test_data/test_daq_configuration")
 
@@ -31,11 +28,6 @@ TEST_LUT = {
 def fake_generator(value):
     yield from bps.null()
     return value
-
-
-@pytest.fixture(scope="session")
-def active_device_factories(active_device_factories) -> set[AnyDeviceFactory]:
-    return active_device_factories | device_factories_for_beamline(i24)
 
 
 @pytest.fixture
