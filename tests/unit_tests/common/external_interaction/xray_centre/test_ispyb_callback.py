@@ -16,7 +16,9 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     _smargon_omega_to_xyxz_plane,
 )
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GenericGridWithHyperionDetectorParams,
+)
 
 from .....conftest import (
     EXPECTED_START_TIME,
@@ -72,7 +74,7 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
 class TestXrayCentreISPyBCallback:
     def test_activity_gated_start_3d(self, mock_ispyb_conn, test_event_data, tmp_path):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -115,7 +117,7 @@ class TestXrayCentreISPyBCallback:
         self, mock_update_data_collection_group_table, mock_ispyb_conn, test_event_data
     ):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -136,7 +138,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn, test_event_data):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -165,7 +167,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_flux_read_events_3d(self, mock_ispyb_conn, test_event_data):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -230,7 +232,7 @@ class TestXrayCentreISPyBCallback:
         first_comment: str,
     ):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -333,7 +335,7 @@ class TestXrayCentreISPyBCallback:
         self, run_engine, mock_ispyb_conn, dummy_rotation_data_collection_group_info
     ):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback._handle_ispyb_hardware_read = MagicMock()
         callback._handle_ispyb_transmission_flux_read = MagicMock()
@@ -380,7 +382,7 @@ class TestXrayCentreISPyBCallback:
         test_event_data,
     ):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.activity_gated_descriptor(
             test_event_data.test_descriptor_document_oav_snapshot
@@ -399,7 +401,7 @@ class TestXrayCentreISPyBCallback:
         self, test_event_data, mock_ispyb_conn
     ):
         callback = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+            param_type=GenericGridWithHyperionDetectorParams
         )
         callback.active = True
         callback.start(test_event_data.test_grid_detect_and_gridscan_start_document)  # type: ignore

@@ -1,9 +1,9 @@
 {
-    "parameter_model_version": "5.0.0",
+    "parameter_model_version": "6.0.0",
     "beamline": "BL03S",
     "insertion_prefix": "SR03S",
     "snapshot_directory": "/tmp/",
-    "storage_directory":"/tmp/",
+    "storage_directory": "/tmp/",
     "visit": "cm31105-4",
     "demand_energy_ev": 11100,
     "sample_id": 12345,

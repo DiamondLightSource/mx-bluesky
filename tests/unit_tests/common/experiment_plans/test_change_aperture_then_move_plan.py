@@ -96,14 +96,16 @@ def test_get_results_then_change_aperture_and_move_to_xtal_calls_expected_plans(
     mock__get_xrc_results: MagicMock,
     run_engine: RunEngine,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
 ):
     mock_flyscan_event_handler = MagicMock(spec=XRayCentreEventHandler)
     mock_flyscan_event_handler.xray_centre_results = [0]
 
     run_engine(
         get_results_then_change_aperture_and_move_to_xtal(
-            grid_detect_xrc_devices, test_fgs_params, mock_flyscan_event_handler
+            grid_detect_xrc_devices,
+            test_three_d_grid_params,
+            mock_flyscan_event_handler,
         )
     )
     mock__get_xrc_results.assert_called_once()

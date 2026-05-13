@@ -67,7 +67,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import 
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
+    GenericGridWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
 )
 
@@ -84,7 +84,7 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams,
+            param_type=GenericGridWithHyperionDetectorParams,
             emit=ZocaloCallback(
                 CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV, generate_start_info_from_omega_map
             ),

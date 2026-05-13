@@ -13,7 +13,7 @@ from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 
 def test_visit_extracted_from_numtracker(
-    run_engine: RunEngine, test_fgs_params: SpecifiedThreeDGridScan
+    run_engine: RunEngine, test_three_d_grid_params: SpecifiedThreeDGridScan
 ):
     test_visit = "test_visit"
 
@@ -22,8 +22,8 @@ def test_visit_extracted_from_numtracker(
 
     callback = BaseISPyBCallback()
     callback.activity_gated_stop = MagicMock()
-    test_fgs_params.visit = USE_NUMTRACKER
-    callback.params = test_fgs_params
+    test_three_d_grid_params.visit = USE_NUMTRACKER
+    callback.params = test_three_d_grid_params
     run_engine.subscribe(callback)
 
     @bpp.run_decorator(
@@ -40,12 +40,12 @@ def test_visit_extracted_from_numtracker(
 
 
 def test_exception_when_instrument_session_doesnt_exist(
-    run_engine: RunEngine, test_fgs_params: SpecifiedThreeDGridScan
+    run_engine: RunEngine, test_three_d_grid_params: SpecifiedThreeDGridScan
 ):
     callback = BaseISPyBCallback()
     callback.activity_gated_stop = MagicMock()
-    test_fgs_params.visit = USE_NUMTRACKER
-    callback.params = test_fgs_params
+    test_three_d_grid_params.visit = USE_NUMTRACKER
+    callback.params = test_three_d_grid_params
     run_engine.subscribe(callback)
 
     @bpp.run_decorator(
