@@ -31,6 +31,7 @@ from mx_bluesky.common.parameters.constants import (
     HardwareConstants,
 )
 
+# TODO Remove this https://github.com/DiamondLightSource/mx-bluesky/issues/1748
 DETECTOR_SIZE_PER_BEAMLINE = {
     "test": EIGER2_X_16M_SIZE,
     "i02-1": EIGER2_X_4M_SIZE,
