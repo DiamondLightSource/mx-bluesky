@@ -807,8 +807,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.3.1.dev6+g428401116"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=2024_decouple_interlock_from_shutter#4284011163f509535cfadd63f5bc03dccd449666" }
+version = "2.3.1.dev4+gdd687cce0"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#dd687cce03e1a18ba9a0698d7ebc1e8f6b460ad9" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2118,7 +2118,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.3.0" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=2024_decouple_interlock_from_shutter" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
