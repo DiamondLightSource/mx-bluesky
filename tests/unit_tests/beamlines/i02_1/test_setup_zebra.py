@@ -22,15 +22,20 @@ async def test_zebra_set_up_for_gridscan(
     msgs = sim_run_engine.simulate_plan(setup_zebra_for_gridscan(zebra))
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == f"zebra-output-out_pvs-{zebra.mapping.outputs.TTL_EIGER}"
-        and msg.args[0] == zebra.mapping.sources.IN1_TTL,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name
+            == f"zebra-output-out_pvs-{zebra.mapping.outputs.TTL_EIGER}"
+            and msg.args[0] == zebra.mapping.sources.IN1_TTL
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"]
-        == PlanGroupCheckpointConstants.SETUP_ZEBRA_FOR_GRIDSCAN,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"]
+            == PlanGroupCheckpointConstants.SETUP_ZEBRA_FOR_GRIDSCAN
+        ),
     )
 
 
@@ -41,13 +46,18 @@ async def test_tidy_up_zebra_after_gridscan(
     msgs = sim_run_engine.simulate_plan(tidy_up_zebra_after_gridscan(zebra, wait=True))
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == f"zebra-output-out_pvs-{zebra.mapping.outputs.TTL_EIGER}"
-        and msg.args[0] == zebra.mapping.sources.OR1,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name
+            == f"zebra-output-out_pvs-{zebra.mapping.outputs.TTL_EIGER}"
+            and msg.args[0] == zebra.mapping.sources.OR1
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"]
-        == PlanGroupCheckpointConstants.TIDY_ZEBRA_AFTER_GRIDSCAN,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"]
+            == PlanGroupCheckpointConstants.TIDY_ZEBRA_AFTER_GRIDSCAN
+        ),
     )
