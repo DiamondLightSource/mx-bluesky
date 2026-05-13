@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import (
     ExternalGridScanParams,
-    FlyScanXRayCentreComposite,
+    I021FlyScanXRayCentreComposite,
     construct_i02_1_specific_features,
     i02_1_gridscan_plan,
 )
@@ -30,7 +30,10 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     ScanDataInfo,
 )
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import (
+    IspybExperimentType,
+    get_param_version,
+)
 from mx_bluesky.common.parameters.device_composites import (
     GonioWithOmega,
 )
@@ -46,8 +49,8 @@ def zebra_fgs_two_d() -> ZebraFastGridScanTwoD:
 @pytest.fixture
 def entry_params(tmp_path) -> ExternalGridScanParams:
     return ExternalGridScanParams(
-        visit="visit",
-        file_name="file_name",
+        visit="cm0000-0",
+        file_name="test_file",
         storage_directory=str(tmp_path),
         exposure_time_s=0.004,
         snapshot_directory=tmp_path,
@@ -55,7 +58,7 @@ def entry_params(tmp_path) -> ExternalGridScanParams:
         y_start_um=0,
         z_start_um=0,
         x_steps=5,
-        y_steps=5,
+        y_steps=3,
         beam_size_x=5,
         beam_size_y=5,
         microns_per_pixel_x=1,
@@ -63,7 +66,10 @@ def entry_params(tmp_path) -> ExternalGridScanParams:
         upper_left_x=1,
         upper_left_y=2,
         detector_distance_mm=100,
-        sample_id=1,
+        sample_id=0,
+        x_step_size_um=20,
+        y_step_sizes_um=[10],
+        omega_start_deg=10,
     )
 
 
@@ -93,8 +99,8 @@ def fgs_composite(
     undulator: BaseUndulator,
     slits: Slits,
     zebra: Zebra,
-) -> FlyScanXRayCentreComposite:
-    return FlyScanXRayCentreComposite(
+) -> I021FlyScanXRayCentreComposite:
+    return I021FlyScanXRayCentreComposite(
         eiger,
         synchrotron,
         smargon,
@@ -170,17 +176,26 @@ def test_i02_1_flyscan_xray_centre_in_re(
     mock_create_features: MagicMock,
     run_engine: RunEngine,
     fgs_params_two_d: I02_1FgsParams,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: I021FlyScanXRayCentreComposite,
     entry_params: ExternalGridScanParams,
 ):
-    expected_features = construct_i02_1_specific_features(
-        fgs_composite, fgs_params_two_d
+    expected_fgs_params = fgs_params_two_d
+    expected_fgs_params.omega_starts_deg = [10]
+    expected_fgs_params.ispyb_experiment_type = IspybExperimentType.SAD
+    expected_fgs_params.use_roi_mode = False
+    expected_fgs_params.beam_size_x = 5
+    expected_fgs_params.beam_size_y = 5
+    expected_fgs_params.upper_left_x = 1
+    expected_fgs_params.upper_left_y = 2
+    specific_features = construct_i02_1_specific_features(
+        fgs_composite, expected_fgs_params
     )
+    mock_create_features.return_value = specific_features
 
-    mock_create_features.return_value = expected_features
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
+
     mock_common_scan.assert_called_once_with(
-        fgs_composite, fgs_params_two_d, expected_features
+        fgs_composite, expected_fgs_params, specific_features
     )
 
 
@@ -203,7 +218,7 @@ def test_ispyb_activated_correct_params(
     mock_get_internal_params: MagicMock,
     run_engine: RunEngine,
     fgs_params_two_d: I02_1FgsParams,
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: I021FlyScanXRayCentreComposite,
     entry_params: ExternalGridScanParams,
 ):
     mock_ispyb = MagicMock()
@@ -218,9 +233,9 @@ def test_ispyb_activated_correct_params(
     mock_create_features.return_value = expected_features
 
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
-    initial_group_info = populate_data_collection_group(fgs_params_two_d)
-    initial_group_info.comments = f"Diffraction grid scan of {fgs_params_two_d.x_steps} by {fgs_params_two_d.y_steps[0]}.Zocalo processing took 0.00 s."
-    initial_scan_info = ScanDataInfo(
+    expected_group_info = populate_data_collection_group(fgs_params_two_d)
+    expected_group_info.comments = f"Diffraction grid scan of {fgs_params_two_d.x_steps} by {fgs_params_two_d.y_steps[0]}.Zocalo processing took 0.00 s."
+    expected_scan_info = ScanDataInfo(
         data_collection_info=populate_remaining_data_collection_info(
             "MX-Bluesky: Xray centring 1/1 -",
             None,
@@ -229,5 +244,5 @@ def test_ispyb_activated_correct_params(
         )
     )
     mock_ispyb.begin_deposition.assert_called_once_with(
-        initial_group_info, [initial_scan_info]
+        expected_group_info, [expected_scan_info]
     )

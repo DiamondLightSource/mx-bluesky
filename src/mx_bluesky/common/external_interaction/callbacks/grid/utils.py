@@ -75,12 +75,18 @@ def generate_start_info_from_num_grids(
 
 
 def common_populate_axis_info(data_collection_info: DataCollectionInfo, doc: dict):
+    omega_in_gda_space = None
     if (phase := doc.get("gonio-wrapped_omega-phase")) is not None:
         omega_in_gda_space = reflect_phase(phase)
+    elif (omega := doc.get("gonio-omega")) is not None:
+        # Gonio does not support wrapped omega - use absolute coordinates
+        omega_in_gda_space = -omega
+    if omega_in_gda_space is not None:
         data_collection_info.omega_start = omega_in_gda_space
         data_collection_info.axis_start = omega_in_gda_space
         data_collection_info.axis_end = omega_in_gda_space
         data_collection_info.axis_range = 0
+
     if (chi_start := doc.get("gonio-chi")) is not None:
         data_collection_info.chi_start = chi_start
 

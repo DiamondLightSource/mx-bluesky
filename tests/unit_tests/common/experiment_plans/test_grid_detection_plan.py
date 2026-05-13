@@ -108,10 +108,6 @@ def do_grid_and_edge_detect(composite, parameters, tmp_dir):
     )
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_runs_and_triggers_snapshots(
     run_engine: RunEngine,
@@ -132,10 +128,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     assert mock_save.call_count == 2
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     run_engine: RunEngine,
@@ -165,10 +157,6 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     assert "No pin found" in excinfo.value.args[0]
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
@@ -213,10 +201,6 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     assert gridscan_params["z_starts_um"] == [pytest.approx(-534, abs=1)] * 2
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
@@ -284,10 +268,6 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         )
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
@@ -326,10 +306,6 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detection_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
@@ -408,10 +384,6 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
 @pytest.mark.parametrize(
     "odd",
     [(True), (False)],
-)
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch("mx_bluesky.common.experiment_plans.oav_grid_detection_plan.LOGGER")

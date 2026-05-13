@@ -18,8 +18,8 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
 
 def _get_expected_scan_info(params: I02_1FgsParams, dcid: int):
     dc_grid_info = DataCollectionGridInfo(
-        params.x_step_size_um * 1000,
-        params.y_step_sizes_um[0] * 1000,
+        params.x_step_size_um / 1000,
+        params.y_step_sizes_um[0] / 1000,
         params.x_steps,
         params.y_steps[0],
         params.microns_per_pixel_x,

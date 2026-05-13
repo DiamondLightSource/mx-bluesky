@@ -136,9 +136,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         synchrotron_mode = _data["synchrotron-synchrotron_mode"]
 
-        # We should improve slit PV name to give consistency, or come up with a way
-        # to get better typing on the _data dict
-        if _data["s4_slit_gaps-xgap"]:
+        # TODO remove this abomination
+        # https://github.com/DiamondLightSource/mx-bluesky/issues/1555
+        if "s4_slit_gaps-xgap" in _data:
             hwscan_data_collection_info = DataCollectionInfo(
                 undulator_gap1=_data["undulator-current_gap"],
                 synchrotron_mode=synchrotron_mode.value,
@@ -146,7 +146,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
                 slitgap_vertical=_data["s4_slit_gaps-ygap"],
             )
 
-        elif _data["s4_slit_gaps-x_gap"]:
+        elif "s4_slit_gaps-x_gap" in _data:
             hwscan_data_collection_info = DataCollectionInfo(
                 undulator_gap1=_data["undulator-current_gap"],
                 synchrotron_mode=str(synchrotron_mode),

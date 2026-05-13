@@ -78,7 +78,7 @@ def create_gridscan_callbacks(
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanXRayCentreComposite(FlyScanEssentialDevices[GonioWithOmegaType]):
+class I021FlyScanXRayCentreComposite(FlyScanEssentialDevices[GonioWithOmegaType]):
     """All devices which are directly or indirectly required by this plan"""
 
     zebra: Zebra
@@ -91,7 +91,7 @@ class FlyScanXRayCentreComposite(FlyScanEssentialDevices[GonioWithOmegaType]):
 
 
 def construct_i02_1_specific_features(
-    fgs_composite: FlyScanXRayCentreComposite,
+    fgs_composite: I021FlyScanXRayCentreComposite,
     parameters: SpecifiedTwoDGridScan,
 ) -> BeamlineSpecificFGSFeatures:
     signals_to_read_pre_flyscan = [
@@ -125,12 +125,12 @@ def construct_i02_1_specific_features(
     )
 
 
-def _zebra_triggering_setup(fgs_composite: FlyScanXRayCentreComposite, _):
+def _zebra_triggering_setup(fgs_composite: I021FlyScanXRayCentreComposite, _):
     yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
 
 def _tidy_plan(
-    fgs_composite: FlyScanXRayCentreComposite, group, wait=True
+    fgs_composite: I021FlyScanXRayCentreComposite, group, wait=True
 ) -> MsgGenerator:
     LOGGER.info("Tidying up Zebra")
     yield from tidy_up_zebra_after_gridscan(fgs_composite.zebra)
@@ -199,7 +199,7 @@ def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
 
 def i02_1_gridscan_plan(
     parameters: ExternalGridScanParams,
-    composite: FlyScanXRayCentreComposite = inject(""),
+    composite: I021FlyScanXRayCentreComposite = inject(""),
 ) -> MsgGenerator:
     """BlueAPI entry point for i02-1 grid scans"""
 

@@ -326,7 +326,9 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback):
 
 def _smargon_omega_to_xyxz_plane(smargon_omega: float) -> GridscanPlane:
     modulo_180 = abs(smargon_omega) % 180
-    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE)
+    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE) or isclose(
+        modulo_180, 180, abs_tol=OMEGA_TOLERANCE
+    )
     assert is_xy or isclose(modulo_180, 90, abs_tol=OMEGA_TOLERANCE), (
         f"Smargon snapshot omega not in tolerance of compass point {smargon_omega}"
     )

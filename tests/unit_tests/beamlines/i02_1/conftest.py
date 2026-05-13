@@ -28,3 +28,8 @@ def fgs_params_two_d(tmp_path) -> I02_1FgsParams:
         upper_left_y=0,
         detector_distance_mm=100,
     )
+
+
+@pytest.fixture(autouse=True)
+def always_use_i02_1_beamline(monkeypatch, patch_beamline_env_variable):
+    monkeypatch.setenv("BEAMLINE", "i02-1")
