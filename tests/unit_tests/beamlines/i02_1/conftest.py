@@ -1,4 +1,5 @@
 import pytest
+from dodal.beamlines import i02_1
 
 from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.common.parameters.components import get_param_version
@@ -33,3 +34,8 @@ def fgs_params_two_d(tmp_path) -> I02_1FgsParams:
 @pytest.fixture(autouse=True)
 def always_use_i02_1_beamline(monkeypatch, patch_beamline_env_variable):
     monkeypatch.setenv("BEAMLINE", "i02-1")
+
+
+@pytest.fixture()
+def goniometer():
+    return i02_1.goniometer.build(connect_immediately=True, mock=True)

@@ -12,6 +12,7 @@ from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params as set_flyscan_params_plan,
 )
+from dodal.devices.motors import XYZWrappedOmegaStage
 from dodal.devices.slits import Slits
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
@@ -55,7 +56,6 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
-    GonioWithOmegaType,
 )
 from mx_bluesky.common.parameters.gridscan import PositiveFloat
 from mx_bluesky.common.utils.log import LOGGER
@@ -78,7 +78,7 @@ def create_gridscan_callbacks(
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I021FlyScanXRayCentreComposite(FlyScanEssentialDevices[GonioWithOmegaType]):
+class I021FlyScanXRayCentreComposite(FlyScanEssentialDevices[XYZWrappedOmegaStage]):
     """All devices which are directly or indirectly required by this plan"""
 
     zebra: Zebra

@@ -8,6 +8,7 @@ from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
 from dodal.devices.beamlines.i02_1.flux import Flux
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.motors import XYZWrappedOmegaStage
 from dodal.devices.slits import Slits
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import BaseUndulator
@@ -33,9 +34,6 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 from mx_bluesky.common.parameters.components import (
     IspybExperimentType,
     get_param_version,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    GonioWithOmega,
 )
 
 
@@ -91,7 +89,7 @@ def flux() -> Flux:
 def fgs_composite(
     eiger: EigerDetector,
     synchrotron: Synchrotron,
-    smargon: GonioWithOmega,
+    goniometer: XYZWrappedOmegaStage,
     zebra_fgs_two_d: ZebraFastGridScanTwoD,
     dcm: DoubleCrystalMonochromatorBase,
     attenuator: ReadOnlyAttenuator,
@@ -103,7 +101,7 @@ def fgs_composite(
     return I021FlyScanXRayCentreComposite(
         eiger,
         synchrotron,
-        smargon,
+        goniometer,
         zebra,
         zebra_fgs_two_d,
         dcm,
