@@ -181,13 +181,7 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
 
     faked_run_engine = MagicMock(spec=RunEngine, side_effect=run_plan_in_sim)  # type: ignore
 
-    # wait_for_connection in ensure_connected creates a bunch of awaitables
-    # that will never be awaited by the simulator, let's not create them
-    def dont_connect(*args, **kwargs):
-        yield from bps.null()
-
     with (
-        patch("blueapi.utils.connect_devices.ensure_connected", dont_connect),
         patch.dict(os.environ, {"BEAMLINE": "i03"}),
     ):
         context = BlueskyContext(run_engine=faked_run_engine)

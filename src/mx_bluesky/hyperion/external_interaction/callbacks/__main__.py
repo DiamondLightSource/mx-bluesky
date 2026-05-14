@@ -1,4 +1,5 @@
 import logging
+import os
 from abc import abstractmethod
 from collections.abc import Callable
 from contextlib import AbstractContextManager
@@ -12,6 +13,9 @@ from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker
+from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_parameters import CONFIG_SERVER_URL_ENV_VAR
+from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
@@ -63,7 +67,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import 
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
+    GenericGridWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
 )
 
@@ -80,7 +84,7 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
         GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams,
+            param_type=GenericGridWithHyperionDetectorParams,
             emit=ZocaloCallback(
                 CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV, generate_start_info_from_omega_map
             ),
@@ -141,6 +145,15 @@ def setup_logging(dev_mode: bool):
     log_debug("nexgen logger added to nexus logger")
 
 
+def create_config_client() -> ConfigClient:
+    config_server_url = os.getenv(CONFIG_SERVER_URL_ENV_VAR)
+    if not config_server_url:
+        raise ValueError(
+            f"{CONFIG_SERVER_URL_ENV_VAR} must be specified to run external callbacks."
+        )
+    return ConfigClient(config_server_url)
+
+
 def log_info(msg, *args, **kwargs):
     ISPYB_ZOCALO_CALLBACK_LOGGER.info(msg, *args, **kwargs)
     NEXUS_LOGGER.info(msg, *args, **kwargs)
@@ -157,6 +170,7 @@ class HyperionCallbackRunner:
     def __init__(self, callback_args: CallbackArgs) -> None:
         setup_logging(callback_args.dev_mode)
         log_info("Hyperion callback process started.")
+        set_config_client(create_config_client())
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
         self.callbacks = setup_callbacks()

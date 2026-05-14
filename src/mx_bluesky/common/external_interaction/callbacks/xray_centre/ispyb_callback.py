@@ -39,7 +39,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
@@ -58,7 +58,7 @@ class GridscanPlane(StrEnum):
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
-T = TypeVar("T", bound="GridCommon")
+T = TypeVar("T", bound="GenericGrid")
 ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
 
 
@@ -361,7 +361,9 @@ def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
 
 def _smargon_omega_to_xyxz_plane(smargon_omega: float) -> GridscanPlane:
     modulo_180 = abs(smargon_omega) % 180
-    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE)
+    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE) or isclose(
+        modulo_180, 180, abs_tol=OMEGA_TOLERANCE
+    )
     assert is_xy or isclose(modulo_180, 90, abs_tol=OMEGA_TOLERANCE), (
         f"Smargon snapshot omega not in tolerance of compass point {smargon_omega}"
     )

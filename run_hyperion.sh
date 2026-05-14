@@ -110,6 +110,8 @@ if [ -z "${BEAMLINE}" ]; then
     exit 1
 fi
 
+export CONFIG_SERVER_URL="https://${BEAMLINE}-daq-config.diamond.ac.uk"
+
 if [[ $STOP == 1 ]]; then
     if [ $IN_DEV == false ]; then
         check_user
