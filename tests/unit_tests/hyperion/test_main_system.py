@@ -103,7 +103,7 @@ def test_initialise_configures_logging(
     initialise_globals(args)
 
     mock_logging_setup.assert_called_once_with(
-        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True, process_name="hyperion"
     )
 
 
@@ -131,7 +131,7 @@ def test_hyperion_in_udc_mode_starts_logging(
     main()
 
     mock_do_default_logging_setup.assert_called_once_with(
-        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False, process_name="hyperion"
     )
 
 

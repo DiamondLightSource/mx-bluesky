@@ -28,13 +28,16 @@ from mx_bluesky.hyperion.utils.context import setup_context
 
 
 def initialise_globals(args: HyperionArgs):
-    """Do all early main low-level application initialisation."""
+    """Do all early main low-level application initialization."""
     do_default_logging_setup(
         CONST.SUPERVISOR_LOG_FILE_NAME
         if args.mode == HyperionMode.SUPERVISOR
         else CONST.LOG_FILE_NAME,
         CONST.GRAYLOG_PORT,
         dev_mode=args.dev_mode,
+        process_name="hyperion-supervisor"
+        if args.mode == HyperionMode.SUPERVISOR
+        else "hyperion",
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
