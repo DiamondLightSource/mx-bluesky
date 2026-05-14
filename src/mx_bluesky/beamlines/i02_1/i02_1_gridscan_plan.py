@@ -60,6 +60,8 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import PositiveFloat
 from mx_bluesky.common.utils.log import LOGGER
 
+DEFAULT_BOX_SIZE_UM = 2
+
 
 def create_gridscan_callbacks(
     params: I02_1FgsParams,
@@ -194,6 +196,7 @@ def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
         x_step_size_um=params.x_step_size_um,
         y_step_sizes_um=params.y_step_sizes_um,
         use_roi_mode=False,
+        box_size_um=DEFAULT_BOX_SIZE_UM,
     )
 
 
