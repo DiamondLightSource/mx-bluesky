@@ -30,16 +30,12 @@ class GridParamUpdate(TypedDict):
     """
 
     x_start_um: float
-    y_start_um: float
-    y2_start_um: float
-    z_start_um: float
-    z2_start_um: float
+    y_starts_um: list[float]
+    z_starts_um: list[float]
     x_steps: int
-    y_steps: int
-    z_steps: int
+    y_steps: list[int]
     x_step_size_um: float
-    y_step_size_um: float
-    z_step_size_um: float
+    y_step_sizes_um: list[float]
 
 
 class XYZParams(TypedDict, Generic[T]):
@@ -68,7 +64,7 @@ class GridDetectionCallback(CallbackBase):
         top_left_y_px = data["oav-grid_snapshot-top_left_y"]
         y_of_centre_of_first_box_px = top_left_y_px + box_width_px / 2
 
-        gonio_omega = data["gonio-omega"]
+        gonio_omega_phase = data["gonio-wrapped_omega-phase"]
         current_xyz = np.array([data["gonio-x"], data["gonio-y"], data["gonio-z"]])
 
         centre_of_first_box = (
@@ -87,7 +83,7 @@ class GridDetectionCallback(CallbackBase):
 
         position_grid_start_mm = calculate_x_y_z_of_pixel(
             current_xyz,
-            gonio_omega,
+            gonio_omega_phase,
             centre_of_first_box,
             (beam_x, beam_y),
             (microns_per_pixel_x, microns_per_pixel_y),
@@ -96,19 +92,20 @@ class GridDetectionCallback(CallbackBase):
         LOGGER.info(f"Calculated start position {position_grid_start_mm}")
 
         # If data is taken at omega=~0 then it gives us x-y info, at omega=~-90 it is x-z
-        if abs(gonio_omega) < self.OMEGA_TOLERANCE:
+
+        if abs(gonio_omega_phase) < self.OMEGA_TOLERANCE:
             self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
             self.start_positions_um["y"] = position_grid_start_mm[1] * 1000
             self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
             self.box_numbers["y"] = data["oav-grid_snapshot-num_boxes_y"]
-        elif abs(gonio_omega + 90) < self.OMEGA_TOLERANCE:
+        elif abs(gonio_omega_phase - 270) < self.OMEGA_TOLERANCE:
             self.start_positions_um["x"] = position_grid_start_mm[0] * 1000
             self.start_positions_um["z"] = position_grid_start_mm[2] * 1000
             self.box_numbers["x"] = data["oav-grid_snapshot-num_boxes_x"]
             self.box_numbers["z"] = data["oav-grid_snapshot-num_boxes_y"]
         else:
             raise ValueError(
-                f"Grid detection only works at omegas of 0 or -90, omega of {gonio_omega} given."
+                f"Grid detection only works at omegas of 0 or -90 / 270, omega of {gonio_omega_phase} given."
             )
 
         self.x_step_size_um = box_width_px * microns_per_pixel_x
@@ -119,14 +116,10 @@ class GridDetectionCallback(CallbackBase):
     def get_grid_parameters(self) -> GridParamUpdate:
         return {
             "x_start_um": self.start_positions_um["x"],
-            "y_start_um": self.start_positions_um["y"],
-            "y2_start_um": self.start_positions_um["y"],
-            "z_start_um": self.start_positions_um["z"],
-            "z2_start_um": self.start_positions_um["z"],
+            "y_starts_um": [self.start_positions_um["y"], self.start_positions_um["y"]],
+            "z_starts_um": [self.start_positions_um["z"], self.start_positions_um["z"]],
             "x_steps": self.box_numbers["x"],
-            "y_steps": self.box_numbers["y"],
-            "z_steps": self.box_numbers["z"],
+            "y_steps": [self.box_numbers["y"], self.box_numbers["z"]],
             "x_step_size_um": self.x_step_size_um,
-            "y_step_size_um": self.y_step_size_um,
-            "z_step_size_um": self.z_step_size_um,
+            "y_step_sizes_um": [self.y_step_size_um, self.z_step_size_um],
         }

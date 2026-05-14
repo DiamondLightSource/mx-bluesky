@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 from dodal.beamlines import i24
 from dodal.devices.beamlines.i24.aperture import Aperture
@@ -11,7 +13,6 @@ from dodal.devices.beamlines.i24.focus_mirrors import (
 )
 from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.hutch_shutter import (
-    HUTCH_SAFE_FOR_OPERATIONS,
     InterlockedHutchShutter,
     ShutterDemand,
     ShutterState,
@@ -23,10 +24,7 @@ from ophyd_async.core import callback_on_mock_put, set_mock_value
 @pytest.fixture
 def shutter() -> InterlockedHutchShutter:
     shutter = i24.shutter.build(connect_immediately=True, mock=True)
-    set_mock_value(
-        shutter.interlock.status,  # type: ignore
-        HUTCH_SAFE_FOR_OPERATIONS,
-    )
+    shutter.interlock._safe_to_operate = MagicMock(return_value=True)
 
     def set_status(value: ShutterDemand, *args, **kwargs):
         value_sta = ShutterState.OPEN if value == "Open" else ShutterState.CLOSED

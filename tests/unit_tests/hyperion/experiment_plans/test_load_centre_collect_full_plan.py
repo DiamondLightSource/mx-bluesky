@@ -89,13 +89,13 @@ POS_MED = {
 @pytest.fixture
 def load_centre_collect_params_with_patched_create_params(
     load_centre_collect_params: LoadCentreCollect,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
 ):
     with patch(
         "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.create_parameters_for_grid_detection"
     ) as mock_create_params:
         load_centre_collect_params.robot_load_then_centre.set_specified_grid_params(
-            test_fgs_params
+            test_three_d_grid_params
         )
         mock_create_params.return_value = (
             load_centre_collect_params.robot_load_then_centre
@@ -132,6 +132,11 @@ def composite(
     sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-x-high_limit_travel")
     sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-y-high_limit_travel")
     sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-z-high_limit_travel")
+    sim_run_engine.add_handler(
+        "locate",
+        lambda _: Location(setpoint=np.array([0, 0]), readback=np.array([0, 0])),
+        "gonio-wrapped_omega-offset_and_phase",
+    )
     sim_run_engine.add_read_handler_for(
         composite.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
@@ -557,9 +562,11 @@ def test_load_centre_collect_moves_beamstop_into_place(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "pin_tip_then_flyscan_plan"
@@ -1060,7 +1067,7 @@ def test_box_size_passed_through_to_gridscan(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     run_engine: RunEngine,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     load_centre_collect_params_with_patched_create_params,
 ):
     run_engine(
@@ -1069,7 +1076,7 @@ def test_box_size_passed_through_to_gridscan(
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == test_fgs_params.box_size_um
+    assert detect_grid_call.args[1].box_size_um == test_three_d_grid_params.box_size_um
 
 
 @patch(

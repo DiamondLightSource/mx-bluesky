@@ -11,9 +11,10 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 import h5py
 import numpy as np
 import pytest
-from bluesky import Msg
+from bluesky import FailedStatus, Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.common.maths import AngleWithPhase
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.beamlines.i03 import BeamstopPositions
@@ -175,7 +176,7 @@ def setup_and_run_rotation_plan_for_tests_nomove(
 
 
 @patch(
-    "mx_bluesky.common.parameters.constants.RotationParamConstants.OMEGA_FLIP",
+    "mx_bluesky.common.experiment_plans.rotation.rotation_utils.RotationParamConstants.OMEGA_FLIP",
     new=False,
 )
 def test_rotation_scan_calculations(test_rotation_params: RotationScan):
@@ -205,10 +206,61 @@ def test_rotation_scan_calculations(test_rotation_params: RotationScan):
     assert motion_values.distance_to_move_deg == -180.3075
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
+@pytest.mark.parametrize(
+    "initial_omega, expected_start, expected_acceleration_offset,  omega_flip",
+    [
+        [0, 10, 10.00375, False],
+        [90, 10, 10.00375, False],
+        [375, 370, 370.00375, False],
+        [-150, 10, 10.00375, False],
+        [0, -10, -10.00375, True],
+        [90, -10, -10.00375, True],
+        [375, 350, 349.99625, True],
+        [-150, -10, -10.00375, True],
+    ],
 )
+def test_calculate_motion_profile_computes_values_for_wrapped_axis(
+    test_rotation_params: RotationScan,
+    initial_omega: float,
+    expected_start: float,
+    expected_acceleration_offset: float,
+    omega_flip: bool,
+):
+    with patch(
+        "mx_bluesky.common.experiment_plans.rotation.rotation_utils.RotationParamConstants.OMEGA_FLIP",
+        new=omega_flip,
+    ):
+        params = next(test_rotation_params.single_rotation_scans)
+        params.exposure_time_s = 0.2
+        params.omega_start_deg = 10
+
+        reference_angle = AngleWithPhase.wrap(initial_omega)
+        motion_values = calculate_motion_profile(
+            params,
+            0.005,  # time for acceleration
+            224,
+            reference_angle,
+        )
+
+        sign = -1 if omega_flip else 1
+
+        # Params request negative motion
+        assert motion_values.direction == "Positive" if omega_flip else "Negative"
+        assert motion_values.start_scan_deg == expected_start
+
+        assert motion_values.speed_for_rotation_deg_s == 0.5  # 0.1 deg per 0.2 sec
+        assert motion_values.shutter_time_s == 0.6
+        assert motion_values.shutter_opening_deg == 0.3  # distance moved in 0.6 s
+
+        # 1.5 * distance moved in time for accel (fudge)
+        assert motion_values.acceleration_offset_deg == 0.00375
+        assert motion_values.start_motion_deg == expected_acceleration_offset
+
+        assert motion_values.total_exposure_s == 360
+        assert motion_values.scan_width_deg == 180
+        assert motion_values.distance_to_move_deg == 180.3075 * -sign
+
+
 @patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan",
     autospec=True,
@@ -261,8 +313,8 @@ async def test_full_rotation_plan_smargon_settings(
 
     test_max_velocity = await smargon.omega.max_velocity.get_value()
 
-    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)
-    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)
+    omega_set: MagicMock = get_mock_put(smargon.omega.user_setpoint)  # type: ignore
+    omega_velocity_set: MagicMock = get_mock_put(smargon.omega.velocity)  # type: ignore
     rotation_speed = params.rotation_increment_deg / params.exposure_time_s
 
     assert await smargon.phi.user_setpoint.get_value() == params.phi_start_deg
@@ -342,7 +394,7 @@ def test_cleanup_happens(
             )
         cleanup_plan.assert_not_called()
         # check that failure is handled in composite plan
-        with pytest.raises(MyTestError) as exc:
+        with pytest.raises(FailedStatus) as exc:
             run_engine(
                 rotation_scan_internal(
                     fake_create_rotation_devices,
@@ -350,7 +402,7 @@ def test_cleanup_happens(
                     oav_parameters_for_rotation,
                 )
             )
-        assert "Experiment fails because this is a test" in exc.value.args[0]
+        assert "Experiment fails because this is a test" in str(exc.value)
         cleanup_plan.assert_called_once()
 
 
@@ -370,8 +422,10 @@ def test_rotation_plan_reads_hardware(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == CONST.DESCRIPTORS.HARDWARE_READ_PRE,
+        lambda msg: (
+            msg.command == "create"
+            and msg.kwargs["name"] == CONST.DESCRIPTORS.HARDWARE_READ_PRE
+        ),
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     assert_message_and_return_remaining(
@@ -403,22 +457,28 @@ def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "set"
-        and msg.args[0] == test_rotation_params.detector_distance_mm
-        and msg.obj.name == "detector_motion-z"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.args[0] == test_rotation_params.detector_distance_mm
+            and msg.obj.name == "detector_motion-z"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.args[0] == ShutterState.OPEN
-        and msg.obj.name == "detector_motion-shutter"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.args[0] == ShutterState.OPEN
+            and msg.obj.name == "detector_motion-shutter"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
 
 
@@ -432,15 +492,19 @@ def test_rotation_scan_triggers_xbpm_then_pauses_xbpm_and_sets_transmission(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.PAUSE.value,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.PAUSE.value
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == test_rotation_params.transmission_frac,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args[0] == test_rotation_params.transmission_frac
+        ),
     )
 
 
@@ -454,15 +518,17 @@ def test_rotation_scan_does_not_change_transmission_back_until_after_data_collec
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.RUN.value,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.RUN.value
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == 1.0,
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args[0] == 1.0
+        ),
     )
 
 
@@ -471,13 +537,16 @@ def test_rotation_scan_moves_gonio_to_start_before_snapshots(
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.MOVE_GONIO_TO_START,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == CONST.WAIT.MOVE_GONIO_TO_START
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
 
 
@@ -486,28 +555,36 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+        lambda msg: (
+            msg.command == "create"
+            and msg.kwargs["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == InOut.OUT
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "backlight"
+            and msg.args[0] == InOut.OUT
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "aperture_scatterguard-selected_aperture"
+            and msg.args[0] == ApertureValue.SMALL
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
 
 
@@ -516,22 +593,27 @@ def test_rotation_scan_waits_on_aperture_being_prepared_before_moving_in(
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "prepare"
-        and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == ApertureValue.SMALL
-        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+        lambda msg: (
+            msg.command == "prepare"
+            and msg.obj.name == "aperture_scatterguard"
+            and msg.args[0] == ApertureValue.SMALL
+            and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == CONST.WAIT.PREPARE_APERTURE
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.SMALL
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "aperture_scatterguard-selected_aperture"
+            and msg.args[0] == ApertureValue.SMALL
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
 
 
@@ -540,15 +622,19 @@ def test_rotation_scan_waits_on_thawing_being_off_before_collection(
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "set"
-        and msg.args[0] == OnOff.OFF
-        and msg.obj.name == "thawer"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.args[0] == OnOff.OFF
+            and msg.obj.name == "thawer"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
 
 
@@ -558,26 +644,34 @@ def test_rotation_scan_resets_omega_waits_for_sample_env_complete_after_snapshot
     params = next(test_rotation_params.single_rotation_scans)
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+        lambda msg: (
+            msg.command == "create"
+            and msg.kwargs["name"] == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio-omega"
-        and msg.args[0] == params.omega_start_deg
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio-omega"
+            and msg.args[0] == params.omega_start_deg
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == CONST.DESCRIPTORS.ZOCALO_HW_READ,
+        lambda msg: (
+            msg.command == "create"
+            and msg.kwargs["name"] == CONST.DESCRIPTORS.ZOCALO_HW_READ
+        ),
     )
 
 
@@ -586,22 +680,27 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
 ):
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == InOut.IN
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "backlight"
+            and msg.args[0] == InOut.IN
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "aperture_scatterguard-selected_aperture"
-        and msg.args[0] == ApertureValue.OUT_OF_BEAM
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "aperture_scatterguard-selected_aperture"
+            and msg.args[0] == ApertureValue.OUT_OF_BEAM
+            and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == CONST.WAIT.READY_FOR_OAV
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "oav-snapshot"
@@ -708,29 +807,39 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter-control_mode"
-        and msg.args[0] == ZebraShutterControl.AUTO,  # type:ignore
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter-control_mode"
+            and msg.args[0] == ZebraShutterControl.AUTO
+        ),  # type:ignore
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-1"
-        and msg.args[0] == fake_create_rotation_devices.zebra.mapping.sources.SOFT_IN1,  # type:ignore
-    )
-
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-2"
-        and msg.args[0] == fake_create_rotation_devices.zebra.mapping.sources.PC_GATE,  # type:ignore
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-1"
+            and msg.args[0]
+            == fake_create_rotation_devices.zebra.mapping.sources.SOFT_IN1
+        ),  # type:ignore
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter-control_mode"
-        and msg.args[0] == ZebraShutterControl.MANUAL,  # type:ignore
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "zebra-logic_gates-and_gates-2-sources-2"
+            and msg.args[0]
+            == fake_create_rotation_devices.zebra.mapping.sources.PC_GATE
+        ),  # type:ignore
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter-control_mode"
+            and msg.args[0] == ZebraShutterControl.MANUAL
+        ),  # type:ignore
     )
 
 
@@ -743,29 +852,37 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
     composite = fake_create_rotation_devices
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "eiger_do_arm"
-        and msg.args[0] == 1
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "eiger_do_arm"
+            and msg.args[0] == 1
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is composite.oav.snapshot.directory
-        and msg.args[0] == str(test_rotation_params.snapshot_directory),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is composite.oav.snapshot.directory
+            and msg.args[0] == str(test_rotation_params.snapshot_directory)
+        ),
     )
     for omega in test_rotation_params.snapshot_omegas_deg:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj is composite.gonio.omega
-            and msg.args[0] == omega,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj is composite.gonio.wrapped_omega.phase
+                and msg.args[0] == omega
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj is composite.oav.snapshot.filename
-            and f"_oav_snapshot_{omega:.0f}" in msg.args[0],
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj is composite.oav.snapshot.filename
+                and f"_oav_snapshot_{omega:.0f}" in msg.args[0]
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
@@ -773,9 +890,11 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "create"
-            and msg.kwargs["name"]
-            == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
+            lambda msg: (
+                msg.command == "create"
+                and msg.kwargs["name"]
+                == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "read" and msg.obj is composite.oav
@@ -785,8 +904,10 @@ def test_rotation_scan_arms_detector_and_takes_snapshots_whilst_arming(
         )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC
+        ),
     )
 
 
@@ -877,9 +998,11 @@ def test_rotation_scan_moves_beamstop_into_place(
         )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "rotation_scan_plan"
@@ -895,12 +1018,12 @@ def test_rotation_scan_moves_beamstop_into_place(
         # GDA behaviour is such that positive angles in the request result in
         # negative motor angles, but positive angles in the resulting nexus file
         # Should replicate GDA Output exactly
-        [True, RotationDirection.POSITIVE, -30, -29.85, RotationDirection.NEGATIVE],
+        [True, RotationDirection.POSITIVE, 330, 330.15, RotationDirection.NEGATIVE],
         # Should replicate GDA Output, except with /entry/data/transformation/omega
         # +1, 0, 0 instead of -1, 0, 0
-        [False, RotationDirection.NEGATIVE, 30, 30.15, RotationDirection.NEGATIVE],
-        [True, RotationDirection.NEGATIVE, -30, -30.15, RotationDirection.POSITIVE],
-        [False, RotationDirection.POSITIVE, 30, 29.85, RotationDirection.POSITIVE],
+        [False, RotationDirection.NEGATIVE, 390, 390.15, RotationDirection.NEGATIVE],
+        [True, RotationDirection.NEGATIVE, 330, 329.85, RotationDirection.POSITIVE],
+        [False, RotationDirection.POSITIVE, 390, 389.85, RotationDirection.POSITIVE],
     ],
 )
 @patch(
@@ -931,8 +1054,13 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             scan.omega_start_deg = 30
         mock_callback = Mock(spec=RotationISPyBCallback)
         run_engine.subscribe(mock_callback)
-        omega_put = get_mock_put(fake_create_rotation_devices.gonio.omega.user_setpoint)
-        set_mock_value(fake_create_rotation_devices.gonio.omega.acceleration_time, 0.1)
+        omega_put = get_mock_put(
+            fake_create_rotation_devices.gonio.omega.user_setpoint  # type: ignore
+        )
+        set_mock_value(
+            fake_create_rotation_devices.gonio.omega.acceleration_time,  # type: ignore
+            0.1,
+        )
         with (
             patch("bluesky.plan_stubs.wait", autospec=True),
             patch(
@@ -967,8 +1095,10 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
         )
         rotation_outer_start_event = next(
             dropwhile(
-                lambda _: _.args[0] != "start"
-                or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER,
+                lambda _: (
+                    _.args[0] != "start"
+                    or _.args[1].get("subplan_name") != CONST.PLAN.ROTATION_OUTER
+                ),
                 mock_callback.mock_calls,
             )
         )
@@ -1039,8 +1169,9 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
 
     msgs_within_arming = list(
         takewhile(
-            lambda msg: msg.command != "unstage"
-            and (not msg.obj or msg.obj.name != "eiger"),
+            lambda msg: (
+                msg.command != "unstage" and (not msg.obj or msg.obj.name != "eiger")
+            ),
             msgs,
         )
     )
@@ -1054,15 +1185,17 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         # moving to the start position
         msgs_within_arming = assert_message_and_return_remaining(
             msgs_within_arming,
-            lambda msg: msg.command == "set"
-            and msg.obj == smargon
-            and msg.args[0]
-            == CombinedMove(
-                x=scan.x_start_um / 1000,  # type: ignore
-                y=scan.y_start_um / 1000,  # type: ignore
-                z=scan.z_start_um / 1000,  # type: ignore
-                phi=scan.phi_start_deg,
-                chi=scan.chi_start_deg,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj == smargon
+                and msg.args[0]
+                == CombinedMove(
+                    x=scan.x_start_um / 1000,  # type: ignore
+                    y=scan.y_start_um / 1000,  # type: ignore
+                    z=scan.z_start_um / 1000,  # type: ignore
+                    phi=scan.phi_start_deg,
+                    chi=scan.chi_start_deg,
+                )
             ),
         )
         # arming the zebra
@@ -1073,12 +1206,14 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         # the final rel_set of omega to trigger the scan
         assert_message_and_return_remaining(
             msgs_within_arming,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == "gonio-omega"
-            and msg.args
-            == (
-                (scan.scan_width_deg + motion_values.shutter_opening_deg)
-                * motion_values.direction.multiplier,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == "gonio-omega"
+                and msg.args
+                == (
+                    (scan.scan_width_deg + motion_values.shutter_opening_deg)
+                    * motion_values.direction.multiplier,
+                )
             ),
         )
 
@@ -1674,15 +1809,17 @@ def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args[0] == Pause.RUN.value,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args[0] == Pause.RUN.value
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == 1.0,
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args[0] == 1.0
+        ),
     )
 
 

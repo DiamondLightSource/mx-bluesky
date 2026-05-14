@@ -23,6 +23,7 @@ from mx_bluesky.common.experiment_plans.oav_grid_detection_plan import (
     OavGridDetectionComposite,
     get_min_and_max_y_of_pin,
     grid_detection_plan,
+    optimum_grid_detect_angles,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
@@ -31,7 +32,7 @@ from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback
     GridscanISPyBCallback,
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
 from mx_bluesky.common.utils.exceptions import WarningError
 
 from ...conftest import assert_event
@@ -107,10 +108,6 @@ def do_grid_and_edge_detect(composite, parameters, tmp_dir):
     )
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_grid_detection_plan_runs_and_triggers_snapshots(
     run_engine: RunEngine,
@@ -131,10 +128,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     assert mock_save.call_count == 2
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     run_engine: RunEngine,
@@ -164,10 +157,6 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     assert "No pin found" in excinfo.value.args[0]
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_given_when_grid_detect_then_start_position_as_expected(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
@@ -202,22 +191,22 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     gridscan_params = grid_param_cb.get_grid_parameters()
 
     assert gridscan_params["x_start_um"] == pytest.approx(-804, abs=1)
-    assert gridscan_params["y_start_um"] == pytest.approx(
-        -550 - ((box_size_y_pixels / 2) * microns_per_pixel_y), abs=1
+    assert (
+        gridscan_params["y_starts_um"]
+        == [
+            pytest.approx(-550 - ((box_size_y_pixels / 2) * microns_per_pixel_y), abs=1)
+        ]
+        * 2
     )
-    assert gridscan_params["z_start_um"] == pytest.approx(-534, abs=1)
+    assert gridscan_params["z_starts_um"] == [pytest.approx(-534, abs=1)] * 2
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
@@ -225,7 +214,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, _ = fake_devices
-    cb = GridscanISPyBCallback(param_type=GridCommon)
+    cb = GridscanISPyBCallback(param_type=GenericGrid)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     run_engine.subscribe(cb)
 
@@ -233,7 +222,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         run_engine(
             ispyb_activation_wrapper(
                 do_grid_and_edge_detect(composite, params, tmp_path),
-                test_fgs_params,
+                test_three_d_grid_params,
             )
         )
 
@@ -279,16 +268,12 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         )
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters(
@@ -301,36 +286,32 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 
     run_engine(
         ispyb_activation_wrapper(
-            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+            do_grid_and_edge_detect(composite, params, tmp_path),
+            test_three_d_grid_params,
         )
     )
 
     my_grid_params = cb.get_grid_parameters()
 
     assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
-    assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
-    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
+    assert (
+        my_grid_params["y_starts_um"]
+        == [pytest.approx(-539.84 - (box_size_um / 2))] * 2
+    )
+    assert my_grid_params["z_starts_um"] == [pytest.approx(-524.04)] * 2
     assert my_grid_params["x_step_size_um"] == box_size_um
-    assert my_grid_params["y_step_size_um"] == box_size_um
-    assert my_grid_params["z_step_size_um"] == box_size_um
+    assert my_grid_params["y_step_sizes_um"] == [box_size_um] * 2
     assert my_grid_params["x_steps"] == pytest.approx(9)
-    assert my_grid_params["y_steps"] == pytest.approx(2)
-    assert my_grid_params["z_steps"] == pytest.approx(3)
+    assert my_grid_params["y_steps"] == [pytest.approx(2), pytest.approx(3)]
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detection_callback_gets_correct_values(
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     tmp_path: Path,
 ):
     params = OAVParameters(
@@ -339,7 +320,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     composite, _ = fake_devices
 
     # This will cause the grid detect plan to take data at -90 first
-    set_mock_value(composite.gonio.omega.user_readback, -90)
+    set_mock_value(composite.gonio.omega.user_readback, -90)  # type: ignore
     composite.pin_tip_detection._get_tip_and_edge_data = AsyncMock(
         side_effect=[X_Z_EDGE_DATA, X_Y_EDGE_DATA]
     )
@@ -350,23 +331,23 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
 
     run_engine(
         ispyb_activation_wrapper(
-            do_grid_and_edge_detect(composite, params, tmp_path), test_fgs_params
+            do_grid_and_edge_detect(composite, params, tmp_path),
+            test_three_d_grid_params,
         )
     )
 
     my_grid_params = cb.get_grid_parameters()
 
     assert my_grid_params["x_start_um"] == pytest.approx(-794.22)
-    assert my_grid_params["y_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["y2_start_um"] == pytest.approx(-539.84 - (box_size_um / 2))
-    assert my_grid_params["z_start_um"] == pytest.approx(-524.04)
-    assert my_grid_params["z2_start_um"] == pytest.approx(-524.04)
+    assert (
+        my_grid_params["y_starts_um"]
+        == [pytest.approx(-539.84 - (box_size_um / 2))] * 2
+    )
+    assert my_grid_params["z_starts_um"] == [pytest.approx(-524.04)] * 2
     assert my_grid_params["x_step_size_um"] == box_size_um
-    assert my_grid_params["y_step_size_um"] == box_size_um
-    assert my_grid_params["z_step_size_um"] == box_size_um
+    assert my_grid_params["y_step_sizes_um"] == [box_size_um] * 2
     assert my_grid_params["x_steps"] == pytest.approx(9)
-    assert my_grid_params["y_steps"] == pytest.approx(2)
-    assert my_grid_params["z_steps"] == pytest.approx(3)
+    assert my_grid_params["y_steps"] == [pytest.approx(2), pytest.approx(3)]
     assert cb.x_step_size_um == cb.y_step_size_um == cb.z_step_size_um == box_size_um
 
 
@@ -391,6 +372,8 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
             "gonio-y": 234,
             "gonio-z": 467,
             "gonio-omega": 45,
+            "gonio-wrapped_omega-phase": 45,
+            "gonio-wrapped_omega-offset_and_phase": np.array([0, 45]),
         }
     }
 
@@ -401,10 +384,6 @@ def test_given_unexpected_omega_then_grid_detect_raises(tmp_path: Path):
 @pytest.mark.parametrize(
     "odd",
     [(True), (False)],
-)
-@patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
 @patch("mx_bluesky.common.experiment_plans.oav_grid_detection_plan.LOGGER")
@@ -444,6 +423,8 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
                 10 if odd else 25
             )  # Ensure y steps comes out as even or odd
             return {"values": {"value": bottom_edge}}
+        elif msg.obj is composite.gonio.wrapped_omega:
+            return {"gonio-wrapped_omega-offset_and_phase": {"value": np.array([0, 0])}}
         else:
             pass
 
@@ -544,3 +525,32 @@ def test_given_array_with_all_invalid_top_and_bottom_sections_then_min_and_max_i
     min_y, max_y = get_min_and_max_y_of_pin(top, bottom, 100)
     assert min_y == expected_min
     assert max_y == expected_max
+
+
+@pytest.mark.parametrize(
+    "omega, expected_sequence",
+    [
+        [0, [0, -90]],
+        [5, [0, -90]],
+        [-5, [0, -90]],
+        [-44, [0, -90]],
+        [-46, [-90, -0]],
+        [-90, [-90, -0]],
+        [-135, [-90, -0]],
+        [-224, [-90, -0]],
+        [-225, [0, -90]],
+        [-226, [0, -90]],
+        [90, [0, -90]],
+        [134, [0, -90]],
+        [135, [0, -90]],
+        [136, [-90, 0]],
+        [180, [-90, -0]],
+        [270, [-90, 0]],
+        [290, [-90, 0]],
+        [330, [0, -90]],
+    ],
+)
+def test_optimum_grid_detect_angles(smargon, run_engine, omega, expected_sequence):
+    set_mock_value(smargon.omega.user_readback, omega)
+    result = run_engine(optimum_grid_detect_angles(smargon))
+    assert result.plan_result == expected_sequence

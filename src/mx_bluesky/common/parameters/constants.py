@@ -75,6 +75,7 @@ class PlanNameConstants:
     GRIDSCAN_OUTER = "run_gridscan_move_and_tidy"
     DO_FGS = "do_fgs"
     FLYSCAN_RESULTS = "xray_centre_results"
+    PIN_TIP_CENTRE_THEN_XRC = "pin_tip_centre_then_xray_centre"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
@@ -105,12 +106,12 @@ class HardwareConstants:
 
 @dataclass(frozen=True)
 class GridscanParamConstants:
-    WIDTH_UM = 600.0
+    PIN_WIDTH_UM = 600.0
     EXPOSURE_TIME_S = 0.004
     USE_ROI = True
     BOX_WIDTH_UM = 20.0
-    OMEGA_1 = 0.0
-    OMEGA_2 = 90.0
+    OMEGA_1 = 0
+    OMEGA_2 = 90
     PANDA_RUN_UP_DISTANCE_MM = 0.2
     ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
 
@@ -148,6 +149,8 @@ class PlanGroupCheckpointConstants:
     READY_FOR_OAV = "ready_for_oav"
     PREPARE_APERTURE = "prepare_aperture"
     SETUP_ZEBRA_FOR_ROTATION = "setup_zebra_for_rotation"
+    SETUP_ZEBRA_FOR_GRIDSCAN = "setup_zebra_for_gridscan"
+    TIDY_ZEBRA_AFTER_GRIDSCAN = "tidy_zebra_after_gridscan"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

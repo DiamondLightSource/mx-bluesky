@@ -47,9 +47,11 @@ def test_move_x_y_z_no_wait(
     msgs = sim_run_engine.simulate_plan(move_x_y_z(smargon, 10.0, 5.0, None))
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == smargon.name
-        and msg.args[0] == CombinedMove(x=10.0, y=5.0, z=None),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == smargon.name
+            and msg.args[0] == CombinedMove(x=10.0, y=5.0, z=None)
+        ),
     )
     assert len(msgs) == 1
 
@@ -61,9 +63,11 @@ def test_move_x_y_z_wait(
     msgs = sim_run_engine.simulate_plan(move_x_y_z(smargon, 10.0, 5.0, None, wait=True))
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == smargon.name
-        and msg.args[0] == CombinedMove(x=10.0, y=5.0, z=None),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == smargon.name
+            and msg.args[0] == CombinedMove(x=10.0, y=5.0, z=None)
+        ),
     )
     group = msgs[0].kwargs["group"]
     assert_message_and_return_remaining(
@@ -79,9 +83,11 @@ def test_move_phi_chi_omega_no_wait(
     msgs = sim_run_engine.simulate_plan(move_phi_chi_omega(smargon, 10.0, 5.0, None))
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == smargon.name
-        and msg.args[0] == CombinedMove(phi=10.0, chi=5.0, omega=None),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == smargon.name
+            and msg.args[0] == CombinedMove(phi=10.0, chi=5.0, omega=None)
+        ),
     )
     assert len(msgs) == 1
 
@@ -95,9 +101,11 @@ def test_move_phi_chi_omega_wait(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == smargon.name
-        and msg.args[0] == CombinedMove(phi=10.0, chi=5.0, omega=None),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == smargon.name
+            and msg.args[0] == CombinedMove(phi=10.0, chi=5.0, omega=None)
+        ),
     )
     group = msgs[0].kwargs["group"]
     assert_message_and_return_remaining(

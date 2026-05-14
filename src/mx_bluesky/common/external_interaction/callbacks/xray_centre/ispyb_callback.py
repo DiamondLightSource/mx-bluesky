@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
+from dodal.common.maths import reflect_phase
 from dodal.devices.zocalo import ZocaloStartInfo
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
@@ -38,7 +39,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
@@ -57,7 +58,7 @@ class GridscanPlane(StrEnum):
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
-T = TypeVar("T", bound="GridCommon")
+T = TypeVar("T", bound="GenericGrid")
 ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
 
 
@@ -255,8 +256,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return [scan_data_info]
 
     def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
-        if (omega_start := doc.get("gonio-omega")) is not None:
-            omega_in_gda_space = -omega_start
+        if (phase := doc.get("gonio-wrapped_omega-phase")) is not None:
+            omega_in_gda_space = reflect_phase(phase)
             data_collection_info.omega_start = omega_in_gda_space
             data_collection_info.axis_start = omega_in_gda_space
             data_collection_info.axis_end = omega_in_gda_space
@@ -360,7 +361,9 @@ def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
 
 def _smargon_omega_to_xyxz_plane(smargon_omega: float) -> GridscanPlane:
     modulo_180 = abs(smargon_omega) % 180
-    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE)
+    is_xy = isclose(modulo_180, 0, abs_tol=OMEGA_TOLERANCE) or isclose(
+        modulo_180, 180, abs_tol=OMEGA_TOLERANCE
+    )
     assert is_xy or isclose(modulo_180, 90, abs_tol=OMEGA_TOLERANCE), (
         f"Smargon snapshot omega not in tolerance of compass point {smargon_omega}"
     )

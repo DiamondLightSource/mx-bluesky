@@ -181,13 +181,7 @@ def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
 
     faked_run_engine = MagicMock(spec=RunEngine, side_effect=run_plan_in_sim)  # type: ignore
 
-    # wait_for_connection in ensure_connected creates a bunch of awaitables
-    # that will never be awaited by the simulator, let's not create them
-    def dont_connect(*args, **kwargs):
-        yield from bps.null()
-
     with (
-        patch("blueapi.utils.connect_devices.ensure_connected", dont_connect),
         patch.dict(os.environ, {"BEAMLINE": "i03"}),
     ):
         context = BlueskyContext(run_engine=faked_run_engine)
@@ -1144,3 +1138,18 @@ def test_baton_handler_ends_collections_if_synchrotron_machine_countdown_below_t
 
     mock_load_centre_collect.assert_not_called()
     assert "Synchrotron machine countdown too low" in caplog.text
+
+
+def test_baton_handler_ignores_synchrotron_countdown_if_commissioning_mode_enabled(
+    bluesky_context: BlueskyContext,
+    udc_runner: PlanRunner,
+    mock_load_centre_collect: MagicMock,
+    single_collection_agamemnon_request: MagicMock,
+):
+    synchrotron = find_device_in_context(bluesky_context, "synchrotron", Synchrotron)
+    set_mock_value(synchrotron.machine_user_countdown, 5)
+    baton = find_device_in_context(udc_runner.context, "baton", Baton)
+    set_mock_value(baton.commissioning, True)
+
+    run_udc_when_requested(bluesky_context, udc_runner)
+    mock_load_centre_collect.assert_called_once()

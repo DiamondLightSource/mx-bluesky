@@ -2,6 +2,7 @@
 A minimal test beamline that contains only a baton, for use in tests which need a beamline
 but not all the devices, so that test execution isn't slowed down by loading lots of
 python modules/creating objects.
+
 See Also:
     use_beamline_t01()
 """

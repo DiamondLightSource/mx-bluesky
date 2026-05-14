@@ -40,22 +40,26 @@ def test_set_energy(
     )
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args == (Pause.PAUSE,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args == (Pause.PAUSE,)
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (0.1,),
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args == (0.1,)
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "undulator_dcm"
-        and msg.args == (11.1,)
-        and msg.kwargs["group"] == "UNDULATOR_GROUP",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "undulator_dcm"
+            and msg.args == (11.1,)
+            and msg.kwargs["group"] == "UNDULATOR_GROUP"
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:], lambda msg: msg.command == "adjust_dcm_pitch_roll_vfm_from_lut"
@@ -66,15 +70,17 @@ def test_set_energy(
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "xbpm_feedback-pause_feedback"
-        and msg.args == (Pause.RUN,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "xbpm_feedback-pause_feedback"
+            and msg.args == (Pause.RUN,)
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (1.0,),
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args == (1.0,)
+        ),
     )
 
 

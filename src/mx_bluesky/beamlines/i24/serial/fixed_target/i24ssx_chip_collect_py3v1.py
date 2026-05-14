@@ -108,6 +108,14 @@ def get_chip_prog_values(
         pump_repeat_pvar = 5
     elif parameters.pump_repeat == PumpProbeSetting.Repeat10:
         pump_repeat_pvar = 10
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat1:
+        pump_repeat_pvar = 21
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat2:
+        pump_repeat_pvar = 22
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat3:
+        pump_repeat_pvar = 23
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat4:
+        pump_repeat_pvar = 24
     else:
         raise ValueError(f"Unknown pump_repeat, pump_repeat = {parameters.pump_repeat}")
 
