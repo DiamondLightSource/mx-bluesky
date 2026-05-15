@@ -232,21 +232,22 @@ def i04_default_grid_detect_and_xray_centre(
                 oav_config=oav_config,
             )
 
-        try:
-            yield from grid_detect_then_xray_centre_with_callbacks()
-            assert isinstance(
-                grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
-            ), "Specified grid params couldn't be found after grid detection"
-            yield from get_results_and_move_to_xtal(
-                composite,
-                grid_common_params.specified_grid_params,
-                flyscan_event_handler,
-            )
-        except CrystalNotFoundError:
-            yield from bps.mv(
-                smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
-            )
-            raise
+            try:
+                assert isinstance(
+                    grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
+                ), "Specified grid params couldn't be found after grid detection"
+                yield from get_results_and_move_to_xtal(
+                    composite,
+                    grid_common_params.specified_grid_params,
+                    flyscan_event_handler,
+                )
+            except CrystalNotFoundError:
+                yield from bps.mv(
+                    smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
+                )
+                raise
+
+        yield from grid_detect_then_xray_centre_with_callbacks()
 
     yield from _change_beamsize(
         transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, grid_common_params
