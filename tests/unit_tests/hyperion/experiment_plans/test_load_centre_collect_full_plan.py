@@ -278,9 +278,7 @@ def test_params_with_different_energy_for_rotation_gridscan_rejected(tmp_path):
         # WithVisit
         ["beamline", "i03"],
         ["visit", "cm12345"],
-        ["insertion_prefix", "SR03"],
         ["detector_distance_mm", 123],
-        ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
 def test_params_with_unexpected_info_in_robot_load_rejected(
@@ -308,9 +306,7 @@ def test_params_with_unexpected_info_in_robot_load_rejected(
         # WithVisit
         ["beamline", "i03"],
         ["visit", "cm12345"],
-        ["insertion_prefix", "SR03"],
         ["detector_distance_mm", 123],
-        ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
 def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
