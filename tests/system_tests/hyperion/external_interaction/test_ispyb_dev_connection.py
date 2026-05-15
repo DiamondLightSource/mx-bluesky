@@ -21,10 +21,10 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -55,7 +55,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
+    GenericGridWithHyperionDetectorParams,
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
@@ -169,9 +169,9 @@ def scan_xy_data_info_for_update(
     assert dummy_params is not None
     scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=dummy_params.x_step_size_um,
-        dy_in_mm=dummy_params.y_step_size_um,
+        dy_in_mm=dummy_params.y_step_sizes_um[0],
         steps_x=dummy_params.x_steps,
-        steps_y=dummy_params.y_steps,
+        steps_y=dummy_params.y_steps[0],
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -202,9 +202,9 @@ def scan_data_infos_for_update_3d(
     assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
         dx_in_mm=dummy_params.x_step_size_um,
-        dy_in_mm=dummy_params.z_step_size_um,
+        dy_in_mm=dummy_params.y_step_sizes_um[1],
         steps_x=dummy_params.x_steps,
-        steps_y=dummy_params.z_steps,
+        steps_y=dummy_params.y_steps[1],
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -416,7 +416,9 @@ def test_ispyb_deposition_in_gridscan(
     set_mock_value(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
     )
-    ispyb_callback = GridscanISPyBCallback(GridCommonWithHyperionDetectorParams)
+    ispyb_callback = GridDetectAndScanISPyBCallback(
+        GenericGridWithHyperionDetectorParams
+    )
     run_engine.subscribe(ispyb_callback)
     run_engine(
         grid_detect_then_xray_centre(

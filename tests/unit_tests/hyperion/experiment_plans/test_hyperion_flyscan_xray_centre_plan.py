@@ -18,10 +18,10 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     common_flyscan_xray_centre,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -47,7 +47,9 @@ from ...conftest import (
     modified_store_grid_scan_mock,
 )
 
-ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback, GridscanISPyBCallback]]
+ReWithSubs = tuple[
+    RunEngine, tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback]
+]
 
 
 class CompleteError(Exception):
@@ -70,7 +72,7 @@ def fgs_composite_with_panda_pcap(
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb",
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
 )
 class TestFlyscanXrayCentrePlan:
@@ -174,14 +176,18 @@ class TestFlyscanXrayCentrePlan:
 
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj is hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable
-            and msg.args[0] == 0,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj
+                is hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable
+                and msg.args[0] == 0
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == msgs[0].kwargs["group"],
+            lambda msg: (
+                msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+            ),
         )
 
     @patch(
@@ -272,12 +278,15 @@ class TestFlyscanXrayCentrePlan:
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "unstage"
-            and msg.obj.name == "panda"
-            and msg.kwargs["group"] == "panda_flyscan_tidy",
+            lambda msg: (
+                msg.command == "unstage"
+                and msg.obj.name == "panda"
+                and msg.kwargs["group"] == "panda_flyscan_tidy"
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == "panda_flyscan_tidy",
+            lambda msg: (
+                msg.command == "wait" and msg.kwargs["group"] == "panda_flyscan_tidy"
+            ),
         )

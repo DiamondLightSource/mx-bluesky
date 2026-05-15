@@ -98,42 +98,52 @@ def test_prepare_beamline_for_scint_images(
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION
-        and msg.kwargs["group"] == test_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+            and msg.kwargs["group"] == test_group
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == InOut.OUT,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "backlight"
+            and msg.args[0] == InOut.OUT
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "scintillator-selected_pos"
-        and msg.args[0] == InOut.IN
-        and msg.kwargs["group"] == test_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "scintillator-selected_pos"
+            and msg.args[0] == InOut.IN
+            and msg.kwargs["group"] == test_group
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter-control_mode"
-        and msg.args[0] == ZebraShutterControl.MANUAL,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter-control_mode"
+            and msg.args[0] == ZebraShutterControl.MANUAL
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "wait"
     )
     assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter"
-        and msg.args[0] == ZebraShutterState.OPEN
-        and msg.kwargs["group"] == test_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter"
+            and msg.args[0] == ZebraShutterState.OPEN
+            and msg.kwargs["group"] == test_group
+        ),
     )
 
 
@@ -163,9 +173,9 @@ def test_plan_stubs_called_in_correct_order(
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == 1,
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args[0] == 1
+        ),
     )
 
     messages = assert_message_and_return_remaining(
@@ -175,28 +185,34 @@ def test_plan_stubs_called_in_correct_order(
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter-control_mode"
-        and msg.args[0] == ZebraShutterControl.MANUAL,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter-control_mode"
+            and msg.args[0] == ZebraShutterControl.MANUAL
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == messages[0].kwargs["group"],
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == messages[0].kwargs["group"]
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter"
-        and msg.args[0] == ZebraShutterState.OPEN,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter"
+            and msg.args[0] == ZebraShutterState.OPEN
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == messages[0].kwargs["group"],
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == messages[0].kwargs["group"]
+        ),
     )
 
 
@@ -232,9 +248,11 @@ def test_plan_called_with_specified_transmission_then_transmission_set(
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args[0] == transmission,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args[0] == transmission
+        ),
     )
 
 
@@ -247,16 +265,20 @@ def test_oav_image(sim_run_engine: RunEngineSimulator, oav: OAV):
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-snapshot-filename"
-        and msg.args[0] == mock_filename,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-snapshot-filename"
+            and msg.args[0] == mock_filename
+        ),
     )
 
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "oav-snapshot-directory"
-        and msg.args[0] == mock_filepath,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "oav-snapshot-directory"
+            and msg.args[0] == mock_filepath
+        ),
     )
 
     messages = assert_message_and_return_remaining(
@@ -682,10 +704,10 @@ def find_beam_centre_devices(
         scintillator=scintillator,
         xbpm_feedback=xbpm_feedback,
         max_pixel=max_pixel,
-        centre_ellipse=centre_ellipse,
+        beam_centre=centre_ellipse,
         attenuator=attenuator,
         zoom_controller=zoom_controller_with_centres,
-        shutter=sample_shutter,
+        sample_shutter=sample_shutter,
     )
 
 
@@ -728,7 +750,8 @@ def test_find_beam_centres_starts_by_prepping_scintillator(
 ):
     run_engine(find_beam_centres(composite=find_beam_centre_devices))
     mock_prepare_scintillator.assert_called_once()
-    assert find_beam_centre_devices.centre_ellipse.trigger.call_count == 4  # type: ignore
+    assert isinstance(find_beam_centre_devices.beam_centre.trigger, MagicMock)
+    assert find_beam_centre_devices.beam_centre.trigger.call_count == 4
 
 
 def mock_centre_ellipse_with_given_centres(
@@ -759,7 +782,7 @@ async def test_find_beam_centres_iterates_and_sets_centres(
     new_centres = [(100, 100), (200, 200), (300, 300), (400, 400)]
     expected_centres = new_centres.copy()
 
-    centre_ellipse = find_beam_centre_devices.centre_ellipse
+    centre_ellipse = find_beam_centre_devices.beam_centre
     zoom_controller_with_centres: ZoomControllerWithBeamCentres = (
         find_beam_centre_devices.zoom_controller
     )
@@ -795,7 +818,7 @@ async def test_if_only_some_levels_given_then_find_beam_centres_iterates_and_set
 ):
     new_centres = [(100, 100), (200, 200), (300, 300), (400, 400)]
 
-    centre_ellipse = find_beam_centre_devices.centre_ellipse
+    centre_ellipse = find_beam_centre_devices.beam_centre
     zoom_controller_with_centres: ZoomControllerWithBeamCentres = (
         find_beam_centre_devices.zoom_controller
     )
@@ -908,15 +931,19 @@ def test_find_beam_centres_prepares_beamline_and_waits(
     )
     assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "sample_shutter"
-        and msg.args[0] == ZebraShutterState.OPEN
-        and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "sample_shutter"
+            and msg.args[0] == ZebraShutterState.OPEN
+            and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT
+        ),
     )
     assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT
+        ),
     )
 
 

@@ -1,5 +1,5 @@
 {
-  "parameter_model_version": "5.0.0",
+  "parameter_model_version": "6.0.0",
   "visit": "cm37235-4",
   "detector_distance_mm": 255,
   "sample_id": 5461074,
@@ -12,7 +12,10 @@
     "use_roi_mode": true,
     "demand_energy_ev": 11100,
     "transmission_frac": 1.0,
-    "omega_start_deg": 0,
+    "omega_starts_deg": [
+      0,
+      90
+    ],
     "chi_start_deg": 30,
     "use_panda": false
   },

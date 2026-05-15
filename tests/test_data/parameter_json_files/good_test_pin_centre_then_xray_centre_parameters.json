@@ -1,5 +1,5 @@
 {
-    "parameter_model_version": "5.0.0",
+    "parameter_model_version": "6.0.0",
     "beamline": "BL03S",
     "storage_directory": "/tmp",
     "file_name": "file_name",
@@ -8,7 +8,10 @@
     "use_roi_mode": false,
     "exposure_time_s": 0.1,
     "detector_distance_mm": 100.0,
-    "omega_start_deg": 0.0,
+    "omega_starts_deg": [
+        0.0,
+        90.0
+    ],
     "tip_offset_um": 108.9,
     "grid_width_um": 290.6,
     "transmission_frac": 1.0,

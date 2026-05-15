@@ -12,7 +12,10 @@
     "use_roi_mode": true,
     "demand_energy_ev": 11100,
     "transmission_frac": 1.0,
-    "omega_start_deg": 0,
+    "omega_starts_deg": [
+      0,
+      90
+    ],
     "chi_start_deg": 30
   },
   "multi_rotation_scan": {

@@ -30,7 +30,7 @@ def test_map_external_to_internal_parameters(tmp_path):
     external_params = LoadCentreCollectParams(**raw_params)
     raw_params["robot_load_then_centre"]["tip_offset_um"] = 300.0
     expected_internal = LoadCentreCollect(
-        **(raw_params | {"parameter_model_version": get_param_version()})
+        **(raw_params | {"parameter_model_version": get_param_version()})  # type: ignore
     )
     actual_internal = load_centre_collect_to_internal(external_params)
     assert expected_internal == actual_internal
