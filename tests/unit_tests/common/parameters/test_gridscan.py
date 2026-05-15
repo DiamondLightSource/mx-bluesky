@@ -34,7 +34,7 @@ class GridParamsTest(SpecifiedGrids):
 def test_specified_grids_validation_error(
     y_starts_um: list[float],
     z_starts_um: list[float],
-    omega_starts_deg: list[float],
+    omega_starts_deg: list[int],
     y_step_sizes_um: list[float],
     y_steps: list[int],
     should_raise: bool,
@@ -82,7 +82,7 @@ class SpecifiedThreeDTest(SpecifiedThreeDGridScan):
 def test_three_d_grid_scan_validation(
     y_starts_um: list[float],
     z_starts_um: list[float],
-    omega_starts_deg: list[float],
+    omega_starts_deg: list[int],
     y_step_sizes_um: list[float],
     y_steps: list[int],
     should_raise: bool,

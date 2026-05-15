@@ -76,6 +76,7 @@ class PlanNameConstants:
     DO_FGS = "do_fgs"
     FLYSCAN_RESULTS = "xray_centre_results"
     PIN_TIP_CENTRE_THEN_XRC = "pin_tip_centre_then_xray_centre"
+    TRIGGER_GRIDSCAN_ISPYB_CALLBACK = "trigger gridscan ispyb callback"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"

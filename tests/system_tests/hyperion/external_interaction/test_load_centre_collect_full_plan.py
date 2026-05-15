@@ -28,11 +28,11 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
 )
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
@@ -305,7 +305,7 @@ def test_execute_load_centre_collect_full(
     tmp_path,
     robot_load_cb: RobotLoadISPyBCallback,
 ):
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -487,7 +487,7 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
         yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
 
     run_engine(move_to_initial_omega())
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -579,7 +579,7 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
@@ -613,7 +613,7 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
@@ -665,7 +665,7 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
@@ -697,7 +697,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
@@ -755,7 +755,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     load_centre_collect_composite.zocalo.my_zocalo_result = _with_sample_ids(
         zocalo_result, [SimConstants.ST_SAMPLE_ID]
     )
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -789,7 +789,7 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
 ):
     load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
 
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -871,7 +871,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     fetch_datacollection_attribute: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -924,7 +924,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -990,7 +990,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     robot_load_cb: RobotLoadISPyBCallback,
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -1047,7 +1047,7 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
     fetch_blsample: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
         param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
@@ -1175,7 +1175,7 @@ class TestGenerateSnapshot:
             SNAPSHOT_GENERATION_ZOCALO_RESULT
         )
 
-        ispyb_gridscan_cb = GridscanISPyBCallback(
+        ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
             param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_rotation_cb = RotationISPyBCallback()

@@ -159,7 +159,7 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
         msgs,
         lambda msg: (
             msg.command == "open_run"
-            and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"]
+            and "GridDetectAndScanISPyBCallback" in msg.kwargs["activate_callbacks"]
         ),
     )
     msgs = assert_message_and_return_remaining(

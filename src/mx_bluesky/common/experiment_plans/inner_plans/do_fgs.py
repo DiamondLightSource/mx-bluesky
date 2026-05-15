@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from time import time
 
 import bluesky.plan_stubs as bps
@@ -65,7 +65,7 @@ def kickoff_and_complete_gridscan(
     detector: EigerDetector,  # Once Eiger inherits from StandardDetector, use that type instead
     synchrotron: Synchrotron,
     scan_points: list[AxesPoints[Axis]],
-    omega_starts_deg: list[float],
+    omega_starts_deg: Sequence[float],
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.

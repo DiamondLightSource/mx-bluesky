@@ -271,7 +271,9 @@ class XyzStarts(BaseModel):
 
 class OptionalGonioAngleStarts(BaseModel):
     # Gridscans have different omega starts
-    omega_starts_deg: list[float] = [0, 90]
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/1631 for why
+    # we use int
+    omega_starts_deg: list[int] = [0, 90]
 
     phi_start_deg: float | None = None
     chi_start_deg: float | None = None

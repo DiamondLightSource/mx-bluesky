@@ -16,7 +16,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraGridScanParamsThreeD,
 )
 
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     _create_writers_from_params,
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
