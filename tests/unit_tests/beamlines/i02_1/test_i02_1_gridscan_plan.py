@@ -185,6 +185,7 @@ def test_i02_1_flyscan_xray_centre_in_re(
     expected_fgs_params.beam_size_y = 5
     expected_fgs_params.upper_left_x = 1
     expected_fgs_params.upper_left_y = 2
+    expected_fgs_params.box_size_um = 2
     specific_features = construct_i02_1_specific_features(
         fgs_composite, expected_fgs_params
     )
