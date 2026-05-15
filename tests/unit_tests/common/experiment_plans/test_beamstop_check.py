@@ -39,14 +39,17 @@ def test_beamstop_check_closes_sample_shutter(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.CLOSE,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.CLOSE
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == msgs[0].kwargs["group"],
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+        ),
     )
 
 
@@ -112,38 +115,49 @@ def test_beamstop_check_performs_pre_beamstop_out_check_actions_before_first_bac
     # Pre-beamstop out checks
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.backlight
-        and msg.args[0] == InOut.OUT,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.backlight
+            and msg.args[0] == InOut.OUT
+        ),
     )
     pre_check_group = msgs[0].kwargs["group"]
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.aperture_scatterguard.selected_aperture
-        and msg.args[0] == ApertureValue.OUT_OF_BEAM
-        and msg.kwargs["group"] == pre_check_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj
+            is beamstop_check_devices.aperture_scatterguard.selected_aperture
+            and msg.args[0] == ApertureValue.OUT_OF_BEAM
+            and msg.kwargs["group"] == pre_check_group
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.ipin.gain
-        and msg.args[0] == IPinGain.GAIN_10E4_LOW_NOISE
-        and msg.kwargs["group"] == pre_check_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.ipin.gain
+            and msg.args[0] == IPinGain.GAIN_10E4_LOW_NOISE
+            and msg.kwargs["group"] == pre_check_group
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.detector_motion.shutter
-        and msg.args[0] == ShutterState.CLOSED
-        and msg.kwargs["group"] == pre_check_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.detector_motion.shutter
+            and msg.args[0] == ShutterState.CLOSED
+            and msg.kwargs["group"] == pre_check_group
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.beamstop.selected_pos
-        and msg.args[0] == BeamstopPositions.OUT_OF_BEAM
-        and msg.kwargs["group"] == pre_check_group,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.beamstop.selected_pos
+            and msg.args[0] == BeamstopPositions.OUT_OF_BEAM
+            and msg.kwargs["group"] == pre_check_group
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -154,8 +168,10 @@ def test_beamstop_check_performs_pre_beamstop_out_check_actions_before_first_bac
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj is beamstop_check_devices.ipin.pin_readback,
+        lambda msg: (
+            msg.command == "read"
+            and msg.obj is beamstop_check_devices.ipin.pin_readback
+        ),
     )
 
 
@@ -172,16 +188,20 @@ def test_beamstop_check_completes_post_beamstop_out_check_actions_before_second_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.detector_motion.z
-        and msg.args[0] == 250,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.detector_motion.z
+            and msg.args[0] == 250
+        ),
     )
     post_check_group = msgs[0].kwargs["group"]
     # check background read happens first
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj is beamstop_check_devices.ipin.pin_readback,
+        lambda msg: (
+            msg.command == "read"
+            and msg.obj is beamstop_check_devices.ipin.pin_readback
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -189,22 +209,27 @@ def test_beamstop_check_completes_post_beamstop_out_check_actions_before_second_
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.OPEN,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.OPEN
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == msgs[0].kwargs["group"],
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "sleep" and msg.args[0] == 1
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj is beamstop_check_devices.ipin.pin_readback,
+        lambda msg: (
+            msg.command == "read"
+            and msg.obj is beamstop_check_devices.ipin.pin_readback
+        ),
     )
 
 
@@ -336,54 +361,72 @@ def test_beamstop_check_operates_shutter_and_beamstop_during_ipin_check(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == _GROUP_PRE_BEAMSTOP_OUT_CHECK,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == _GROUP_PRE_BEAMSTOP_OUT_CHECK
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.OPEN,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.OPEN
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj is beamstop_check_devices.ipin.pin_readback,
+        lambda msg: (
+            msg.command == "read"
+            and msg.obj is beamstop_check_devices.ipin.pin_readback
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.CLOSE,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.CLOSE
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.beamstop.selected_pos
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION
-        and msg.kwargs["group"] == _GROUP_POST_BEAMSTOP_OUT_CHECK,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.beamstop.selected_pos
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+            and msg.kwargs["group"] == _GROUP_POST_BEAMSTOP_OUT_CHECK
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == _GROUP_POST_BEAMSTOP_OUT_CHECK,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == _GROUP_POST_BEAMSTOP_OUT_CHECK
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.OPEN,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.OPEN
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj is beamstop_check_devices.ipin.pin_readback,
+        lambda msg: (
+            msg.command == "read"
+            and msg.obj is beamstop_check_devices.ipin.pin_readback
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj is beamstop_check_devices.sample_shutter
-        and msg.args[0] == ZebraShutterState.CLOSE,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is beamstop_check_devices.sample_shutter
+            and msg.args[0] == ZebraShutterState.CLOSE
+        ),
     )
 
 
@@ -421,9 +464,11 @@ def test_beamstop_check_moves_detector_if_outside_thresholds(
     if expected_move is not None:
         assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj is beamstop_check_devices.detector_motion.z
-            and msg.args[0] == expected_move,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj is beamstop_check_devices.detector_motion.z
+                and msg.args[0] == expected_move
+            ),
         )
     else:
         assert (

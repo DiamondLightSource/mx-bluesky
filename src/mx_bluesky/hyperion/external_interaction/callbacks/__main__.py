@@ -14,6 +14,7 @@ from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker
 from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_parameters import CONFIG_SERVER_URL_ENV_VAR
 from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
@@ -28,16 +29,19 @@ from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callbac
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
+    GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
+)
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    generate_start_info_from_omega_map,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
-    GridscanNexusFileCallback,
-)
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     NEXUS_LOGGER,
@@ -66,7 +70,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import 
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridCommonWithHyperionDetectorParams,
     HyperionSpecifiedThreeDGridScan,
 )
 
@@ -78,14 +81,18 @@ HYPERION_PING_INTERVAL_S = 19
 
 
 def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridscanISPyBCallback
+    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
         GridscanNexusFileCallback(param_type=HyperionSpecifiedThreeDGridScan),
-        GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams,
+        GridDetectAndScanISPyBCallback(
+            param_type=HyperionSpecifiedThreeDGridScan,
             emit=ZocaloCallback(
-                CONST.PLAN.DO_FGS, CONST.ZOCALO_ENV, generate_start_info_from_omega_map
+                CONST.PLAN.DO_FGS,
+                CONST.ZOCALO_ENV,
+                lambda: generate_start_info_from_omega_map(
+                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+                ),
             ),
         ),
     )
@@ -145,10 +152,10 @@ def setup_logging(dev_mode: bool):
 
 
 def create_config_client() -> ConfigClient:
-    config_server_url = os.getenv("CONFIG_SERVER_URL")
+    config_server_url = os.getenv(CONFIG_SERVER_URL_ENV_VAR)
     if not config_server_url:
         raise ValueError(
-            "CONFIG_SERVER_URL must be specified to run external callbacks."
+            f"{CONFIG_SERVER_URL_ENV_VAR} must be specified to run external callbacks."
         )
     return ConfigClient(config_server_url)
 
