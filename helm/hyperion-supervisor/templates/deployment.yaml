@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hyperion-supervisor-deployment
+spec:
+  selector:
+    matchLabels:
+      app: hyperion-supervisor
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hyperion-supervisor
+    spec:
+      volumes:
+        # Bind some source folders for easier debugging
+        - name: src
+          hostPath:
+            path: "{{ .Values.application.projectDir }}/src"
+            type: Directory
+        - name: tests
+          hostPath:
+            path: "{{ .Values.application.projectDir }}/tests"
+            type: Directory
+        - name: utility-scripts
+          hostPath:
+            path: "{{ .Values.application.projectDir }}/utility_scripts"
+            type: Directory
+        - name: dodal
+          hostPath:
+            path: "{{ .Values.dodal.projectDir | clean }}"
+            type: Directory
+        - name: logs
+          hostPath:
+            type: Directory
+            path: "{{ .Values.application.logDir }}"
+      containers:
+      - name: hyperion
+        image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}    
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        ports:
+          - name: hyperion-api
+            containerPort: {{ .Values.application.containerPort }}
+            protocol: TCP
+        env:
+          - name: LOG_DIR
+            value: /var/log/bluesky
+          - name: BEAMLINE
+            value: "{{ .Values.application.beamline }}"
+        readinessProbe:
+          exec:
+            command: [ "/app/hyperion/utility_scripts/docker/healthcheck.sh" ]
+          periodSeconds: 5
+        volumeMounts:
+          - mountPath: "/app/hyperion/src"
+            name: src
+          - mountPath: "/app/hyperion/tests"
+            name: tests
+          - mountPath: "/app/hyperion/utility_scripts"
+            name: utility-scripts
+          - mountPath: "/app/dodal"
+            name: dodal
+          - mountPath: "/var/log/bluesky"
+            name: logs
+      hostNetwork: true

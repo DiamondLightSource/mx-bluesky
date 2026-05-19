@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: hyperion-svc
+  name: hyperion-supervisor-svc
 spec:
   {{- if .Values.application.dev }}
   type: LoadBalancer
@@ -9,9 +9,9 @@ spec:
   type: ClusterIP
   {{- end }}
   ports:
-    - name: hyperion-api
+    - name: hyperion-supervisor-rest
       port: {{ .Values.application.servicePort }}
       protocol: TCP
       targetPort: {{ .Values.application.containerPort }}
   selector:
-    app: hyperion
+    app: hyperion-supervisor

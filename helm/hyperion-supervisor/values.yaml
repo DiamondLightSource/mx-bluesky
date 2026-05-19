@@ -1,0 +1,14 @@
+application:
+  containerPort: 5005
+  servicePort: 80
+  imageRepository: ghcr.io/diamondlightsource
+  beamline: i03
+  dev: false
+  logDir: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
+  # These should be overridden at install time
+  projectDir: SET_ON_INSTALL
+  appVersion: SET_ON_INSTALL
+dodal:
+  projectDir: SET_ON_INSTALL
+service:
+  type: NodePort
