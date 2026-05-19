@@ -2,7 +2,8 @@
 set -e
 # builds the docker image
 BUILD=1
-PUSH=1
+PUSH=0
+BUILD_UNCLEAN=0
 PODMAN_FLAGS=""
 for option in "$@"; do
     case $option in
@@ -10,12 +11,16 @@ for option in "$@"; do
             BUILD=0
             shift
             ;;
-        --no-push)
-            PUSH=0
+        --push)
+            PUSH=1
             shift
             ;;
         --no-cache)
             PODMAN_FLAGS+=" --no-cache"
+            shift
+            ;;
+        --unclean)
+            BUILD_UNCLEAN=1
             shift
             ;;
         --help|--info|--h)
@@ -24,8 +29,9 @@ for option in "$@"; do
             echo "Builds and/or pushes the docker container image to the repository"
             echo "  --help                  This help"
             echo "  --no-build              Do not build the image"
-            echo "  --no-push               Do not push the image"
+            echo "  --push                  Push the image"
             echo "  --no-cache              Don't use the cache when building the image."
+            echo "  --unclean               Build with an unclean workspace"
             exit 0
             ;;
         -*|--*)
@@ -36,13 +42,14 @@ for option in "$@"; do
 done
 
 PROJECTDIR=`dirname $0`/..
-IMAGE=mx-bluesky
+IMAGE=hyperion
 
-if ! git diff --cached --quiet; then
-  echo "Cannot build image from unclean workspace"
-  exit 1
+if [[ $BUILD_UNCLEAN == 0 ]]; then
+  if ! git diff --cached --quiet; then
+    echo "Cannot build image from unclean workspace"
+    exit 1
+  fi
 fi
-
 
 if [[ $BUILD == 1 ]]; then
   echo "Building initial image"
