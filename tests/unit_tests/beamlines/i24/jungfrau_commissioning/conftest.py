@@ -3,7 +3,9 @@ from dodal.beamlines.i24 import VerticalGoniometer
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
 from dodal.devices.beamlines.i24.beamstop import Beamstop
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.hutch_shutter import InterlockedHutchShutter
@@ -22,7 +24,9 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
 
 @pytest.fixture
 def rotation_composite(
-    jungfrau: CommissioningJungfrau, zebra: Zebra, enum_attenuator: EnumFilterAttenuator
+    jungfrau: CommissioningJungfrauDetector,
+    zebra: Zebra,
+    enum_attenuator: EnumFilterAttenuator,
 ) -> RotationScanComposite:
     with init_devices(mock=True):
         aperture = Aperture("")
