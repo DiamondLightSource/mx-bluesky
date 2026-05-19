@@ -6,7 +6,9 @@ from bluesky.preprocessors import run_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.beamlines.i24.aperture import AperturePositions
 from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
@@ -238,7 +240,7 @@ def single_rotation_plan(
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
                     composite.det_stage.z,
-                    composite.jungfrau._writer.file_path,  # noqa: SLF001 N
+                    composite.jungfrau.writer.file_path,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,
             )
@@ -280,7 +282,7 @@ def single_rotation_plan(
 
 def _cleanup_plan(
     zebra: Zebra,
-    jf: CommissioningJungfrau,
+    jf: CommissioningJungfrauDetector,
     zebra_shutter: ZebraShutter,
     group="rotation cleanup",
 ):

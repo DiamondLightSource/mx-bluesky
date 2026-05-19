@@ -40,7 +40,7 @@ async def test_metadata_writer_produces_correct_output(
     await rotation_composite.dcm.wavelength_in_a.set(wavelength)
     await rotation_composite.dcm.energy_in_keV.set(energy)
     await rotation_composite.det_stage.z.set(det_z)
-    await rotation_composite.jungfrau._writer.file_path.set(tmp_path)
+    await rotation_composite.jungfrau.writer.file_path.set(tmp_path)
 
     expected_output = {
         "wavelength_in_a": wavelength,
@@ -54,7 +54,7 @@ async def test_metadata_writer_produces_correct_output(
                 rotation_composite.dcm.energy_in_keV,
                 rotation_composite.dcm.wavelength_in_a,
                 rotation_composite.det_stage.z,
-                rotation_composite.jungfrau._writer.file_path,
+                rotation_composite.jungfrau.writer.file_path,
             ],
             params,
             metadata_writer,
@@ -90,7 +90,7 @@ async def test_assertion_error_if_no_jf_path_found(
                     rotation_composite.dcm.energy_in_keV,
                     rotation_composite.dcm.wavelength_in_a,
                     rotation_composite.det_stage.z,
-                    rotation_composite.jungfrau._writer.file_path,
+                    rotation_composite.jungfrau.writer.file_path,
                 ],
                 params,
                 metadata_writer,

@@ -25,7 +25,9 @@ from dodal.devices.attenuator.attenuator import (
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i03 import Beamstop
 from dodal.devices.beamlines.i03.dcm import DCM
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -535,12 +537,12 @@ class _BasePathProvider(PathProvider):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrauDetector:
     with init_devices(mock=True):
         base_provider = _BasePathProvider(tmp_path)
-        path = AutoMaxIncrementingPathProvider(base_provider)
-        detector = CommissioningJungfrau("", "", path)
-    set_mock_value(detector._writer.writer_ready, 1)
+        path_provider = AutoMaxIncrementingPathProvider(base_provider)
+        detector = CommissioningJungfrauDetector("", "", path_provider, "CAM:")
+    set_mock_value(detector.writer.writer_ready, 1)
     run_engine.subscribe(base_provider.run_start, "start")
 
     return detector

@@ -5,7 +5,9 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.callbacks import CallbackBase
 from bluesky.run_engine import RunEngine
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from ophyd_async.core import completed_status
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
@@ -49,39 +51,40 @@ def fake_complete(_, group=None):
     new=MagicMock(side_effect=fake_complete),
 )
 async def test_full_do_pedestal_darks(
-    jungfrau: CommissioningJungfrau,
+    jungfrau: CommissioningJungfrauDetector,
     run_engine: RunEngine,
 ):
     # Test that plan succeeds in RunEngine and pedestal-specific signals are changed as expected
 
     @bpp.run_decorator()
     def test_plan():
-        yield from bps.monitor(jungfrau.drv.acquisition_type, name="AT")
-        yield from bps.monitor(jungfrau.drv.pedestal_mode_state, name="PM")
-        yield from bps.monitor(jungfrau.drv.gain_mode, name="GM")
+        yield from bps.monitor(jungfrau.acquisition_type, name="AT")
+        yield from bps.monitor(jungfrau.detector.pedestal_mode_state, name="PM")
+        yield from bps.monitor(jungfrau.detector.gain_mode, name="GM")
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau)
 
-    jungfrau._controller.arm = AsyncMock()
-    assert await jungfrau.drv.acquisition_type.get_value() == AcquisitionType.STANDARD
-    await jungfrau.drv.gain_mode.set(GainMode.FIX_G2)
-    await jungfrau.drv.pedestal_mode_state.set(PedestalMode.OFF)
+    jungfrau._arm_logic.arm = AsyncMock()  # type: ignore
+    assert await jungfrau.acquisition_type.get_value() == AcquisitionType.STANDARD
+    await jungfrau.detector.gain_mode.set(GainMode.FIX_G2)
+    await jungfrau.detector.pedestal_mode_state.set(PedestalMode.OFF)
     monitor_tracker = CheckMonitor(
         [
-            "detector-drv-acquisition_type",
-            "detector-drv-pedestal_mode_state",
-            "detector-drv-gain_mode",
+            "detector-acquisition_type",
+            "detector-detector-pedestal_mode_state",
+            "detector-detector-gain_mode",
         ]
     )
     run_engine.subscribe(monitor_tracker)
     run_engine(test_plan())
 
-    assert monitor_tracker.signals_and_values["detector-drv-acquisition_type"] == [
-        AcquisitionType.STANDARD,  # Repeated as staging JF also sets to standard
+    assert monitor_tracker.signals_and_values["detector-acquisition_type"] == [
         AcquisitionType.STANDARD,
         AcquisitionType.PEDESTAL,
         AcquisitionType.STANDARD,
     ]
-    assert monitor_tracker.signals_and_values["detector-drv-pedestal_mode_state"] == [
+    assert monitor_tracker.signals_and_values[
+        "detector-detector-pedestal_mode_state"
+    ] == [
         PedestalMode.OFF,  # Repeated as staging JF also turns pedestals off
         PedestalMode.OFF,
         PedestalMode.ON,
@@ -90,7 +93,7 @@ async def test_full_do_pedestal_darks(
 
     # When using the real detector, the switching of gain mode is a bit more complicated,
     # see the docstring for the do_pedestal_darks plan.
-    assert monitor_tracker.signals_and_values["detector-drv-gain_mode"] == [
+    assert monitor_tracker.signals_and_values["detector-detector-gain_mode"] == [
         GainMode.FIX_G2,
         GainMode.DYNAMIC,
     ]
@@ -100,7 +103,7 @@ class FakeError(Exception): ...
 
 
 async def test_jungfrau_unstage_on_error(
-    jungfrau: CommissioningJungfrau, run_engine: RunEngine
+    jungfrau: CommissioningJungfrauDetector, run_engine: RunEngine
 ):
     jungfrau.stage = MagicMock(side_effect=FakeError)
     jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
