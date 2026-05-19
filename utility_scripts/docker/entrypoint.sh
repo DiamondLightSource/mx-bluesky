@@ -1,15 +1,22 @@
 #!/bin/bash
 # Entry point for the production docker image that launches the external callbacks
 # as well as the main server
-
+IN_DEV=false
+CALLBACKS=false
 for option in "$@"; do
     case $option in
         --dev)
             IN_DEV=true
+            shift
+            ;;
+        --callbacks)
+            CALLBACKS=true
+            shift
             ;;
         --help|--info|--h)
             echo "Arguments:"
             echo "  --dev start in development mode without external callbacks"
+            echo "  --callbacks start hyperion callbacks, otherwise start hyperion-supervisor"
             exit 0
             ;;
         -*|--*)
@@ -19,38 +26,22 @@ for option in "$@"; do
     esac
 done
 
-kill_active_apps () {
-    echo "Killing active instances of hyperion and hyperion-callbacks..."
-    pkill -e -f "python.*hyperion"
-    pkill -e -f "SCREEN.*hyperion"
-    echo "done."
-}
-
 RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
 cd ${RELATIVE_SCRIPT_DIR}
 
 echo "$(date) Logging to $LOG_DIR"
 mkdir -p $LOG_DIR
 start_log_path=$LOG_DIR/start_log.log
-callback_start_log_path=$LOG_DIR/callback_start_log.log
 
 #Add future arguments here
-declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
-declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
+args=""
+command="hyperion"
+if [ $IN_DEV == true ]; then
+  args+="--dev "
+fi
+if [ $CALLBACKS == true ]; then
+  command="hyperion-callbacks"
+fi
 
-h_commands=()
-cb_commands=()
-for i in "${!h_and_cb_args[@]}"
-do
-    if [ "${h_and_cb_args[$i]}" != false ]; then 
-        h_commands+="${h_and_cb_arg_strings[$i]} ";
-        cb_commands+="${h_and_cb_arg_strings[$i]} ";
-    fi;
-done
-
-trap kill_active_apps TERM 
-
-hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
-
-echo "$(date) Starting Hyperion..."
-hyperion `echo $h_commands;`>$start_log_path  2>&1
+echo "$(date) Starting $command..."
+$command $args > $start_log_path 2>&1
