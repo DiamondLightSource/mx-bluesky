@@ -359,7 +359,7 @@ def hyperion_fgs_params(tmp_path):
     params = HyperionSpecifiedThreeDGridScan(
         **(
             raw_params_from_file(
-                "tests/test_data/parameter_json_files/good_test_parameters.json",
+                "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
                 tmp_path,
             )
         )
