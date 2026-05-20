@@ -13,10 +13,16 @@ for option in "$@"; do
             CALLBACKS=true
             shift
             ;;
+        --version)
+            . ./.venv/bin/activate
+            hyperion --version
+            exit $?
+            ;;
         --help|--info|--h)
             echo "Arguments:"
             echo "  --dev start in development mode without external callbacks"
             echo "  --callbacks start hyperion callbacks, otherwise start hyperion-supervisor"
+            echo "  --version print the hyperion version and exit"
             exit 0
             ;;
         -*|--*)
@@ -28,6 +34,8 @@ done
 
 RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
 cd ${RELATIVE_SCRIPT_DIR}
+
+. ./.venv/bin/activate
 
 echo "$(date) Logging to $LOG_DIR"
 mkdir -p $LOG_DIR
