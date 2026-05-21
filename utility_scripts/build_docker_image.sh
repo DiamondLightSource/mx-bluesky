@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# builds the docker image
+# Script for building development docker images
 BUILD=1
 PUSH=0
 BUILD_UNCLEAN=0
@@ -26,7 +26,7 @@ for option in "$@"; do
         --help|--info|--h)
             CMD=`basename $0`
             echo "$CMD [options]"
-            echo "Builds and/or pushes the docker container image to the repository"
+            echo "Builds a development docker image and optionally pushes the docker container image to the repository"
             echo "  --help                  This help"
             echo "  --no-build              Do not build the image"
             echo "  --push                  Push the image"
@@ -44,6 +44,12 @@ done
 PROJECTDIR=`dirname $0`/..
 IMAGE=hyperion
 
+function extract_version() {
+  LATEST_VERSION=$(git tag | sed -E -n 's/^v?([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)$/\1/p' | sort -V -r | head -1)
+  GIT_HASH=$(git rev-parse --short HEAD)
+  echo $LATEST_VERSION-g$GIT_HASH
+}
+
 if [[ $BUILD_UNCLEAN == 0 ]]; then
   if ! git diff --cached --quiet; then
     echo "Cannot build image from unclean workspace"
@@ -53,23 +59,16 @@ fi
 
 if [[ $BUILD == 1 ]]; then
   echo "Building initial image"
+  IMAGE_VERSION=$(extract_version)
+  MX_BLUESKY_VERSION=${IMAGE_VERSION/-/+}
   LATEST_TAG=$IMAGE:latest
   TMPDIR=/tmp podman build \
     $PODMAN_FLAGS \
+    --build-arg SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY=$MX_BLUESKY_VERSION \
     -f $PROJECTDIR/Dockerfile.hyperion \
     --tag $LATEST_TAG \
+    --tag $IMAGE:$IMAGE_VERSION \
     $PROJECTDIR
-  # Now extract the version from the built image and then rebuild with the label
-  IMAGE_VERSION=$(podman run --rm --entrypoint=hyperion $LATEST_TAG -c "--version" | \
-   sed -e 's/[^a-zA-Z0-9 ._-]/_/g')
-  TAG=$IMAGE:$IMAGE_VERSION
-  echo "Labelling image with version $IMAGE_VERSION, tagging with tags $TAG $LATEST_TAG"
-  TMPDIR=/tmp podman build \
-    -f $PROJECTDIR/Dockerfile.hyperion \
-    --tag $TAG \
-    --tag $LATEST_TAG \
-    --label "version=$IMAGE_VERSION" \
-    $PROJECTDIR  
 fi
 
 if [[ $PUSH == 1 ]]; then

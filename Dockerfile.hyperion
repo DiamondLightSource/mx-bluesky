@@ -1,8 +1,16 @@
 # This is the Dockerfile for building the image for hyperion-supervisor and hyperion-callbacks
 
-FROM python:3.12 AS build
+# The image will contain the directory structure:
+# /app/mx-bluesky/.venv
+# /app/mx-bluesky/.git
+# /app/mx-bluesky/scripts
+# but we don't include the source folder structure for mx-bluesky or dodal since these will be
+# deployed in a separate volume by the initContainer for the scratch folder
+
+FROM python:3.12 AS base-image
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY
 
 # Need:
 # libgl, libglib2.0 for python cv2 dependency
@@ -13,32 +21,25 @@ RUN apt update -y && \
 # Install matching uv binaries for our python distro
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Directory structure:
-# /app/mx-bluesky
-# /app/dodal
+ADD .git /app/mx-bluesky/.git
+RUN mkdir -p /scratch && mkdir -p /app/scripts
+
+#############################################################################
+FROM base-image as uv-staging
 
 # Copy the pyproject.toml and install dependencies for better caching when developing
 # & rerunning deployment scripts
 WORKDIR "/app/mx-bluesky"
 COPY pyproject.toml uv.lock ./
-RUN mkdir -p src/mx_bluesky
+RUN mkdir -p src/mx_bluesky && \
+    git restore . && \
+    uv sync --compile-bytecode --no-cache --locked
 
-#
-# Everything above this line should be in the image cache unless pyproject.toml changes
-ADD .git /app/mx-bluesky/.git
-
-# Restore the repository at the current commit instead of copying, to exclude uncommitted changes
-# This is so that if you build a developer image from this dockerfile then _version.py will not
-# append the dirty workdir hash, which causes complications during deployments that mount from a clean folder.
-RUN git restore .
-
-# This enables us to cache the pip install without needing _version.py
-# see https://setuptools-scm.readthedocs.io/en/latest/usage/
-RUN uv sync --compile-bytecode --no-cache
-
-# Regenerate _version.py with the correct version - this should run quickly since we already have our dependencies
-RUN rm src/mx_bluesky/_version.py
-RUN uv pip install --no-cache-dir --no-compile --no-deps -e .
+#############################################################################
+FROM base-image as build
+WORKDIR "/app/mx-bluesky"
+COPY --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
+COPY utility_scripts/docker/initialise_scratch.sh /app/scripts/
 
 ENTRYPOINT ["/app/mx-bluesky/utility_scripts/docker/entrypoint.sh"]
 
