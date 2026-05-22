@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hyperion-supervisor-config
+data:
+  supervisor_config.yaml: |-
+    # Configures the supervisor BlueAPI context to access the baton
+    env:
+      sources:
+        - kind: deviceManager
+          module: dodal.beamlines.{{ .Values.application.beamline }}_supervisor
+    logging:
+      graylog:
+        url: {{ .Values.graylog.url }}
+        enabled: true
+  client_config.yaml: |-
+    # Configuration for the BlueAPI client running in the hyperion supervisor
+    api:
+      url: {{ .Values.blueapi.url }}
+    stomp:
+      enabled: true
+      url: {{ .Values.stomp.url }}

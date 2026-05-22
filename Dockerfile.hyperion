@@ -41,6 +41,6 @@ WORKDIR "/app/mx-bluesky"
 COPY --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
 COPY utility_scripts/docker/initialise_scratch.sh /app/scripts/
 
-ENTRYPOINT ["/app/mx-bluesky/utility_scripts/docker/entrypoint.sh"]
+ENTRYPOINT ["/scratch/mx-bluesky/utility_scripts/docker/entrypoint.sh"]
 
-EXPOSE 5005
+EXPOSE 5006

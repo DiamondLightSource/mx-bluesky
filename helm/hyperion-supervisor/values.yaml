@@ -1,14 +1,19 @@
 application:
-  containerPort: 5005
+  containerPort: 5006
   servicePort: 80
   imageRepository: ghcr.io/diamondlightsource
+  imageName: hyperion
+  imageVersion: SET_ON_INSTALL
   beamline: i03
   dev: false
-  logDir: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
-  # These should be overridden at install time
-  projectDir: SET_ON_INSTALL
-  appVersion: SET_ON_INSTALL
-dodal:
-  projectDir: SET_ON_INSTALL
-service:
-  type: NodePort
+  logDir: "/var/logs/mx-bluesky"
+scratch:
+  volumeSize: "2Gi"
+configServer:
+  url: http://i03-daq-config-server.diamond.ac.uk
+graylog:
+  url: "tcp://graylog-log-target.diamond.ac.uk:12232"
+stomp:
+  url: tcp://localhost:61613
+blueapi:
+  url: http://my.blueapi.service:5005

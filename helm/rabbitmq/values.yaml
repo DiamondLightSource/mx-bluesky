@@ -1,0 +1,12 @@
+rabbitmq:
+  plugins:
+    - rabbitmq_stomp
+  service:
+    extraPorts:
+      - name: stomp
+        protocol: TCP
+        containerPort: 61613
+        port: 61613
+  authentication:
+    erlangCookie:
+      value: DEFAULT_COOKIE

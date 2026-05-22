@@ -14,7 +14,7 @@ for option in "$@"; do
             shift
             ;;
         --version)
-            . ./.venv/bin/activate
+            . /app/mx-bluesky/.venv/bin/activate
             hyperion --version
             exit $?
             ;;
@@ -35,11 +35,10 @@ done
 RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
 cd ${RELATIVE_SCRIPT_DIR}
 
-. ./.venv/bin/activate
+. /app/mx-bluesky/.venv/bin/activate
 
 echo "$(date) Logging to $LOG_DIR"
 mkdir -p $LOG_DIR
-start_log_path=$LOG_DIR/start_log.log
 
 #Add future arguments here
 args=""
@@ -47,9 +46,13 @@ command="hyperion"
 if [ $IN_DEV == true ]; then
   args+="--dev "
 fi
+CONFIG_DIR=/etc/hyperion
 if [ $CALLBACKS == true ]; then
   command="hyperion-callbacks"
+  args+="--stomp-config $CONFIG_DIR/blueapi_callbacks.yml"
+else
+  args+="--mode supervisor --client-config $CONFIG_DIR/client_config.yaml --supervisor-config $CONFIG_DIR/supervisor_config.yaml"
 fi
 
 echo "$(date) Starting $command..."
-$command $args > $start_log_path 2>&1
+$command $args
