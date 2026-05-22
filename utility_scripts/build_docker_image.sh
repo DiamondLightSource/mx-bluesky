@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 # Script for building development docker images
 BUILD=1
 PUSH=0
@@ -61,7 +61,7 @@ if [[ $BUILD == 1 ]]; then
   echo "Building initial image"
   IMAGE_VERSION=$(extract_version)
   MX_BLUESKY_VERSION=${IMAGE_VERSION/-/+}
-  LATEST_TAG=$IMAGE:latest
+  LATEST_TAG=$IMAGE:dev
   TMPDIR=/tmp podman build \
     $PODMAN_FLAGS \
     --build-arg SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY=$MX_BLUESKY_VERSION \
@@ -77,7 +77,7 @@ if [[ $PUSH == 1 ]]; then
     echo "Not logged in to ghcr.io"
     exit 1
   fi
-  echo "Pushing to ghcr.io/$NAMESPACE/$IMAGE:latest ..."
-  podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:latest
-  podman push $IMAGE:latest docker://ghcr.io/$NAMESPACE/$IMAGE:$IMAGE_VERSION
+  echo "Pushing to ghcr.io/$NAMESPACE/$IMAGE:dev ..."
+  podman push $IMAGE:dev docker://ghcr.io/$NAMESPACE/$IMAGE:dev
+  podman push $IMAGE:dev docker://ghcr.io/$NAMESPACE/$IMAGE:$IMAGE_VERSION
 fi
