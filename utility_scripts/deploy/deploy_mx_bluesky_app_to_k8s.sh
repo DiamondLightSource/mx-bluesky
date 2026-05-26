@@ -144,6 +144,7 @@ if [[ $DRY_RUN = true ]]; then
   HELM_OPTIONS+="--dry-run=server --debug "
 fi
 if [[ $LINT = true ]]; then
+  helm template $RELEASE $HELMCHART_DIR $HELM_OPTIONS
   helm lint $HELMCHART_DIR --strict --values $HELMCHART_DIR/values.yaml $HELM_OPTIONS
 else
   helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz

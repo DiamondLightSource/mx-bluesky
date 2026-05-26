@@ -3,6 +3,8 @@
 # as well as the main server
 IN_DEV=false
 CALLBACKS=false
+APP_DIR=/app/mx-bluesky
+
 for option in "$@"; do
     case $option in
         --dev)
@@ -32,10 +34,10 @@ for option in "$@"; do
     esac
 done
 
-RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
-cd ${RELATIVE_SCRIPT_DIR}
 
-. /app/mx-bluesky/.venv/bin/activate
+cd $APP_DIR
+. .venv/bin/activate
+uv pip list
 
 echo "$(date) Logging to $LOG_DIR"
 mkdir -p $LOG_DIR
