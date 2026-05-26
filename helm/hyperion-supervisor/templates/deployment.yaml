@@ -12,6 +12,10 @@ spec:
       labels:
         app: hyperion-supervisor
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
       volumes:
         # Bind some source folders for easier debugging
         - name: scratch
