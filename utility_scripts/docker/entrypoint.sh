@@ -58,3 +58,4 @@ fi
 
 echo "$(date) Starting $command..."
 $command $args
+sleep 600

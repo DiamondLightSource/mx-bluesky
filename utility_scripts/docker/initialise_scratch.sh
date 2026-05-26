@@ -23,5 +23,3 @@ cd $APP_ROOT/mx-bluesky
 . ./.venv/bin/activate
 uv pip install -e $SCRATCH_ROOT/mx-bluesky
 uv pip install -e $SCRATCH_ROOT/dodal
-
-sleep 600
