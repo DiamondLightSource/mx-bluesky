@@ -12,9 +12,6 @@ spec:
       labels:
         app: hyperion-supervisor
     spec:
-      {{- if .Values.application.dev }}
-      restartPolicy: Never
-      {{- end }}
       volumes:
         # Bind some source folders for easier debugging
         - name: scratch

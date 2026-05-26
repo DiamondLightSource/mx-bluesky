@@ -8,6 +8,9 @@ if [ ! -d $SCRATCH_ROOT/mx-bluesky/.git ]; then
   CURRENT_BRANCH=$(git --git-dir=$APP_ROOT/mx-bluesky/.git rev-parse --abbrev-ref HEAD)
   git clone /app/mx-bluesky/.git $SCRATCH_ROOT/mx-bluesky
   cd $SCRATCH_ROOT/mx-bluesky
+  ls -la $APP_ROOT/mx-bluesky/.git
+  echo "Checking out $CURRENT_BRANCH... as $UID"
+  ls -la $SCRATCH_ROOT/mx-bluesky/.git
   git checkout $CURRENT_BRANCH
   cd $APP_ROOT/mx-bluesky
   . ./.venv/bin/activate

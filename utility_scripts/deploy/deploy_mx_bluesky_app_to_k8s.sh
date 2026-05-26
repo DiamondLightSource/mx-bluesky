@@ -140,10 +140,11 @@ if [[ $LOGIN = true ]]; then
   module load $CLUSTER
   kubectl config set-context --current --namespace=$NAMESPACE
 fi
+if [[ $DRY_RUN = true ]]; then
+  HELM_OPTIONS+="--dry-run=server --debug "
+fi
 if [[ $LINT = true ]]; then
-  helm lint $HELMCHART_DIR $HELM_OPTIONS
-elif [[ -z $DRY_RUN ]]; then
-  helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz
+  helm lint $HELMCHART_DIR --strict --values $HELMCHART_DIR/values.yaml $HELM_OPTIONS
 else
-  echo "helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz"
+  helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz
 fi
