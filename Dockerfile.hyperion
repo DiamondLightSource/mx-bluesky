@@ -23,7 +23,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Create the hyperion user and group which will be needed in the deployment securityContext
 RUN groupadd -r -g 1000 hyperion && \
-    useradd -r -u 1000 -g hyperion hyperion
+    useradd -r -u 1000 -g hyperion -d /app hyperion
 
 ADD --chown=hyperion:hyperion .git /app/mx-bluesky/.git
 RUN mkdir -p /app/scripts && \
@@ -37,6 +37,7 @@ FROM base-image as uv-staging
 WORKDIR "/app/mx-bluesky"
 COPY pyproject.toml uv.lock ./
 RUN mkdir -p src/mx_bluesky && \
+    git config --global --add safe.directory /app/mx-bluesky && \
     git restore . && \
     uv sync --no-cache --locked
 
