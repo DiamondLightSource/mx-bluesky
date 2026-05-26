@@ -32,7 +32,8 @@ spec:
             - name: scratch
               mountPath: "/scratch"
           env:
-            - DODAL_BRANCH: {{ .Values.initContainer.dodalBranch }}
+            - name: DODAL_BRANCH
+              value: {{ .Values.initContainer.dodalBranch }}
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
