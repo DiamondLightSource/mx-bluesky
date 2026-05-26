@@ -1,7 +1,7 @@
 #!/bin/bash
 # Installs helm package to kubernetes
 LOGIN=true
-
+LINT=false
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
@@ -22,6 +22,10 @@ for option in "$@"; do
             ;;
         --no-login)
             LOGIN=false
+            shift
+            ;;
+        --lint)
+            LINT=true
             shift
             ;;
         --dry-run)
@@ -53,6 +57,7 @@ Options:
   --dry-run               Do everything but don't do the final deploy to k8s 
   --no-login              Do not attempt to log in to kubernetes instead use the current namespace and cluster
   --repository=REPOSITORY Override the repository to fetch the image from
+  --lint                  Lint the helm chart
 EOM
             exit 0
             ;;
@@ -135,6 +140,10 @@ if [[ $LOGIN = true ]]; then
   module load $CLUSTER
   kubectl config set-context --current --namespace=$NAMESPACE
 fi
-if [[ -z $DRY_RUN ]]; then
+if [[ $LINT = true ]]; then
+  helm lint $HELMCHART_DIR $HELM_OPTIONS
+elif [[ -z $DRY_RUN ]]; then
   helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz
+else
+  echo "helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz"
 fi
