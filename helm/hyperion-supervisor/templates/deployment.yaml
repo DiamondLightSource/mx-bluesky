@@ -12,6 +12,9 @@ spec:
       labels:
         app: hyperion-supervisor
     spec:
+      {{- if .Values.application.dev }}
+      restartPolicy: Never
+      {{- end }}
       volumes:
         # Bind some source folders for easier debugging
         - name: scratch
@@ -27,16 +30,10 @@ spec:
           volumeMounts:
             - name: scratch
               mountPath: "/scratch"
-          {{- if .Values.application.dev }}
-          restartPolicy: Never
-          {{- end }}
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
           command: ['/scratch/mx-bluesky/utility_scripts/docker/entrypoint.sh']
-          {{- if .Values.application.dev }}
-          restartPolicy: Never
-          {{- end }}
           args:
             {{- if .Values.application.dev }}
             - "--dev"

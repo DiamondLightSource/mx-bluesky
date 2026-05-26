@@ -9,4 +9,7 @@ if [ ! -d $SCRATCH_ROOT/mx-bluesky/.git ]; then
   git clone /app/mx-bluesky/.git $SCRATCH_ROOT/mx-bluesky
   cd $SCRATCH_ROOT/mx-bluesky
   git checkout $CURRENT_BRANCH
+  cd $APP_ROOT/mx-bluesky
+  . ./.venv/bin/activate
+  uv pip install -e $SCRATCH_ROOT/mx-bluesky
 fi
