@@ -16,3 +16,4 @@ if [ ! -d $SCRATCH_ROOT/mx-bluesky/.git ]; then
   . ./.venv/bin/activate
   uv pip install -e $SCRATCH_ROOT/mx-bluesky
 fi
+sleep 600
