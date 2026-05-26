@@ -21,12 +21,13 @@ RUN apt update -y && \
 # Install matching uv binaries for our python distro
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ADD .git /app/mx-bluesky/.git
-RUN mkdir -p /scratch && mkdir -p /app/scripts
-
 # Create the hyperion user and group which will be needed in the deployment securityContext
 RUN groupadd -r -g 1000 hyperion && \
     useradd -r -u 1000 -g hyperion hyperion
+
+ADD --chown=hyperion:hyperion .git /app/mx-bluesky/.git
+RUN mkdir -p /app/scripts && \
+    chown hyperion:hyperion /app/scripts
 
 #############################################################################
 FROM base-image as uv-staging
@@ -41,9 +42,14 @@ RUN mkdir -p src/mx_bluesky && \
 
 #############################################################################
 FROM base-image as build
+
 WORKDIR "/app/mx-bluesky"
-COPY --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
-COPY utility_scripts/docker/initialise_scratch.sh /app/scripts/
+RUN mkdir /scratch && \
+    chown hyperion:hyperion /scratch
+
+USER hyperion:hyperion
+COPY --chown=hyperion:hyperion --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
+COPY --chown=hyperion:hyperion utility_scripts/docker/initialise_scratch.sh /app/scripts/
 
 ENTRYPOINT ["/scratch/mx-bluesky/utility_scripts/docker/entrypoint.sh"]
 
