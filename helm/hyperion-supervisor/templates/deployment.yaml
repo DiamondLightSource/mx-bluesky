@@ -13,9 +13,9 @@ spec:
         app: hyperion-supervisor
     spec:
       securityContext:
-        fsGroup: 1000
-        runAsGroup: 1000
-        runAsUser: 1000
+        fsGroup: {{ .Values.application.runAsGroup }}
+        runAsGroup: {{ .Values.application.runAsGroup }}
+        runAsUser: {{ .Values.application.runAsUser }}
       volumes:
         # Bind some source folders for easier debugging
         - name: scratch
@@ -24,6 +24,7 @@ spec:
         - name: config
           configMap:
             name: hyperion-supervisor-config
+        {{- toYaml .Values.logging.volume | nindent 8 }}
       initContainers:
         - name: hyperion-init
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -70,3 +71,5 @@ spec:
             - mountPath: "/etc/hyperion"
               name: config
               readOnly: true
+            - mountPath: "/var/log/bluesky"
+              name: logdir
