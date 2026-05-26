@@ -3,6 +3,7 @@
 # The image will contain the directory structure:
 # /app/mx-bluesky/.venv
 # /app/mx-bluesky/.git
+# /app/dodal/.git
 # /app/mx-bluesky/scripts
 # but we don't include the source folder structure for mx-bluesky or dodal since these will be
 # deployed in a separate volume by the initContainer for the scratch folder
@@ -49,6 +50,9 @@ RUN mkdir /scratch && \
     chown hyperion:hyperion /scratch
 
 USER hyperion:hyperion
+
+RUN git clone --bare https://github.com/DiamondLightSource/dodal.git /app/dodal/.git
+
 COPY --chown=hyperion:hyperion --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
 COPY --chown=hyperion:hyperion utility_scripts/docker/initialise_scratch.sh /app/scripts/
 
