@@ -7,6 +7,8 @@ application:
   beamline: i03
   dev: false
   logDir: "/var/logs/mx-bluesky"
+initContainer:
+  dodalBranch: "main"
 scratch:
   volumeSize: "2Gi"
 configServer:

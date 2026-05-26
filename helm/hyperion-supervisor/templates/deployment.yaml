@@ -31,6 +31,8 @@ spec:
           volumeMounts:
             - name: scratch
               mountPath: "/scratch"
+          env:
+            - DODAL_BRANCH: {{ .Values.initContainer.dodalBranch }}
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
