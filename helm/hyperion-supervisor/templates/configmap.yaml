@@ -9,6 +9,7 @@ data:
       sources:
         - kind: deviceManager
           module: dodal.beamlines.{{ .Values.application.beamline }}_supervisor
+          mock: {{ .Values.application.dev }}
     logging:
       graylog:
         url: {{ .Values.graylog.url }}
