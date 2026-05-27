@@ -51,7 +51,7 @@ fi
 CONFIG_DIR=/etc/hyperion
 if [ $CALLBACKS == true ]; then
   command="hyperion-callbacks"
-  args+="--stomp-config $CONFIG_DIR/blueapi_callbacks.yml"
+  args+="--stomp-config $CONFIG_DIR/blueapi_callbacks.yaml"
 else
   args+="--mode supervisor --client-config $CONFIG_DIR/client_config.yaml --supervisor-config $CONFIG_DIR/supervisor_config.yaml"
 fi

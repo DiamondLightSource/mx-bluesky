@@ -1,6 +1,6 @@
 apiVersion: v2
-name: hyperion-supervisor
-description: Hyperion Supervisor
+name: hyperion
+description: Hyperion Supervisor and Callbacks
 type: application
 # version of the chart
 version: 0.0.1
