@@ -15,9 +15,9 @@ ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY
 
 # Need:
 # libgl, libglib2.0 for python cv2 dependency
-RUN apt update -y && \
-    apt upgrade -y && \
-    apt install -y libgl1 libglib2.0-0
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y libgl1 libglib2.0-0
 
 # Install matching uv binaries for our python distro
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -55,7 +55,5 @@ RUN git clone --bare https://github.com/DiamondLightSource/dodal.git /app/dodal/
 
 COPY --chown=hyperion:hyperion --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
 COPY --chown=hyperion:hyperion utility_scripts/docker/initialise_scratch.sh /app/scripts/
-
-ENTRYPOINT ["/scratch/mx-bluesky/utility_scripts/docker/entrypoint.sh"]
 
 EXPOSE 5006

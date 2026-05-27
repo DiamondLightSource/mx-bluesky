@@ -44,7 +44,7 @@ the container, NOT the directory that you built the container image from.
 
 Arguments:
   release                 Name of the helmchart release
-  app_name                Use either "hyperion-supervisor" or "redis-to-murko"
+  app_name                Use either "hyperion" or "redis-to-murko"
 
 Options:
 
@@ -86,8 +86,8 @@ if [[ -z $APP_NAME ]]; then
   echo "App name must be specified, currently supporting hyperion and redis-to-murko"
   exit 1
 else
-  if [[ "$APP_NAME" != "hyperion-supervisor" && "$APP_NAME" != "redis-to-murko" ]]; then
-    echo "Invalid app name specified. Please provide either 'hyperion-supervisor' or 'redis-to-murko'."
+  if [[ "$APP_NAME" != "hyperion" && "$APP_NAME" != "redis-to-murko" ]]; then
+    echo "Invalid app name specified. Please provide either 'hyperion' or 'redis-to-murko'."
     exit 1
   fi
 fi
