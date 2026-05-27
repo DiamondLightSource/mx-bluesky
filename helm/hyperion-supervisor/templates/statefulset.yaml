@@ -1,16 +1,17 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: hyperion-supervisor-deployment
+  name: hyperion-supervisor-statefulset
 spec:
   selector:
     matchLabels:
-      app: hyperion-supervisor
+      app.kubernetes.io/name: hyperion-supervisor
   replicas: 1
   template:
     metadata:
       labels:
-        app: hyperion-supervisor
+        app.kubernetes.io/name: hyperion-supervisor
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       securityContext:
         fsGroup: {{ .Values.application.runAsGroup }}
