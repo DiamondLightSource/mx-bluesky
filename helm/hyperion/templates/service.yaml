@@ -10,8 +10,8 @@ spec:
   {{- end }}
   ports:
     - name: hyperion-supervisor-rest
-      port: {{ .Values.application.servicePort }}
+      port: {{ .Values.supervisor.servicePort }}
       protocol: TCP
-      targetPort: {{ .Values.application.containerPort }}
+      targetPort: {{ .Values.supervisor.containerPort }}
   selector:
     app: hyperion-supervisor

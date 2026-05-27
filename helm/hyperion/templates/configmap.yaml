@@ -21,3 +21,13 @@ data:
     stomp:
       enabled: true
       url: {{ .Values.stomp.url }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hyperion-callbacks-config
+data:
+  blueapi_callbacks.yml: |-
+    stomp:
+      enabled: true
+      url: {{ .Values.stomp.url }}
