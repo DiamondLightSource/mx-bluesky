@@ -60,6 +60,8 @@ spec:
               value: "{{ .Values.application.beamline }}"
             - name: CONFIG_SERVER_URL
               value: "{{ .Values.configServer.url }}"
+            - name: PYTHONPATH
+              value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
           readinessProbe:
             exec:
               command: [ "/scratch/mx-bluesky/utility_scripts/docker/healthcheck.sh" ]
