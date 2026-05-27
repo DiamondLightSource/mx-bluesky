@@ -1,17 +1,18 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: hyperion-supervisor-statefulset
+  name: hyperion-supervisor-deployment
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: hyperion-supervisor
+      app: hyperion-supervisor
+  strategy:
+    type: Recreate
   replicas: 1
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: hyperion-supervisor
-        app.kubernetes.io/instance: {{ .Release.Name }}
+        app: hyperion-supervisor
     spec:
       securityContext:
         fsGroup: {{ .Values.application.runAsGroup }}
@@ -64,8 +65,10 @@ spec:
             - name: PYTHONPATH
               value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
           readinessProbe:
-            exec:
-              command: [ "/scratch/mx-bluesky/utility_scripts/docker/healthcheck.sh" ]
+            httpGet:
+              path: "/status"
+              port: {{ .Values.application.containerPort }}
+            initialDelaySeconds: 30
             periodSeconds: 5
           volumeMounts:
             - mountPath: "/scratch"
