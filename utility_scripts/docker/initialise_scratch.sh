@@ -1,9 +1,7 @@
 #!/bin/bash
 # This script is run in the initContainer before the main hyperion pod is launched to initialise the scratch area
 # if not already present.
-#
-# dodal and mx-bluesky are not installed with uv pip install since this requires the .venv to be writable
-# instead they are added to PYTHONPATH in the container
+
 SCRATCH_ROOT=/scratch
 APP_ROOT=/app
 
@@ -21,3 +19,10 @@ if [ ! -d $SCRATCH_ROOT/mx-bluesky/.git ]; then
   ls -la $SCRATCH_ROOT/mx-bluesky/.git
   git --git-dir=$SCRATCH_ROOT/mx-bluesky/.git checkout $CURRENT_BRANCH
 fi
+
+# dodal and mx-bluesky are installed with uv pip install however since the writable layer for the .venv is ephemeral
+# they still need to be added to PYTHONPATH in the container
+cd $APP_ROOT/mx-bluesky
+. ./.venv/bin/activate
+uv pip install -e $SCRATCH_ROOT/mx-bluesky
+uv pip install -e $SCRATCH_ROOT/dodal
