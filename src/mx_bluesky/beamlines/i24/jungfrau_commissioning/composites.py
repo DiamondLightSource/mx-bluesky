@@ -4,7 +4,9 @@ import pydantic
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
 from dodal.devices.beamlines.i24.beamstop import Beamstop
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
@@ -22,7 +24,7 @@ class RotationScanComposite:
 
     aperture: Aperture
     attenuator: EnumFilterAttenuator
-    jungfrau: CommissioningJungfrau
+    jungfrau: CommissioningJungfrauDetector
     gonio: VerticalGoniometer
     synchrotron: Synchrotron
     sample_shutter: MXZebraShutter

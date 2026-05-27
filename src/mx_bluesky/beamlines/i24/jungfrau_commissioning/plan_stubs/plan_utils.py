@@ -4,7 +4,9 @@ from typing import cast
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common.watcher_utils import log_on_percentage_complete
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from ophyd_async.core import (
     TriggerInfo,
     WatchableAsyncStatus,
@@ -17,7 +19,7 @@ JF_COMPLETE_GROUP = "JF complete"
 
 
 def fly_jungfrau(
-    jungfrau: CommissioningJungfrau,
+    jungfrau: CommissioningJungfrauDetector,
     trigger_info: TriggerInfo,
     gain_mode: GainMode,
     wait: bool = False,
@@ -43,7 +45,7 @@ def fly_jungfrau(
     """
 
     LOGGER.info(f"Setting Jungfrau to gain mode {gain_mode}")
-    yield from bps.mv(jungfrau.drv.gain_mode, gain_mode)
+    yield from bps.mv(jungfrau.detector.gain_mode, gain_mode)
     LOGGER.info("Preparing detector...")
     yield from bps.prepare(jungfrau, trigger_info, wait=True)
     LOGGER.info("Detector prepared")

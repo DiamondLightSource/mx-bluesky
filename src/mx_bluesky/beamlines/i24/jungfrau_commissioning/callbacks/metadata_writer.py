@@ -57,10 +57,10 @@ class JsonMetadataWriter(CallbackBase):
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
             self.energy_in_kev = data.get("dcm-energy_in_keV")
             self.detector_distance_mm = data.get("detector_motion-z")
-            assert data.get("detector-_writer-file_path"), (
+            assert data.get("detector-writer-file_path"), (
                 "No detector writer path was found"
             )
-            self.final_path = Path(data.get("detector-_writer-file_path"))
+            self.final_path = Path(data.get("detector-writer-file_path"))
 
             LOGGER.info(
                 f"Metadata writer received parameters, energy_in_kev: {self.energy_in_kev}, wavelength: {self.wavelength_in_a}, det_distance_mm: {self.detector_distance_mm}, file path: {self.final_path}"

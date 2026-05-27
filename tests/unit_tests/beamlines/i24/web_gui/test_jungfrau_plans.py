@@ -6,7 +6,9 @@ from dodal.beamlines import i24
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
 from dodal.devices.beamlines.i24.beamstop import Beamstop
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
@@ -31,7 +33,7 @@ def vertical_gonio() -> VerticalGoniometer:
 
 
 def test_run_jf_rotation(
-    jungfrau: CommissioningJungfrau,
+    jungfrau: CommissioningJungfrauDetector,
     zebra: Zebra,
     enum_attenuator: EnumFilterAttenuator,
     aperture: Aperture,
