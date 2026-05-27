@@ -17,7 +17,7 @@ from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
     RotationScanComposite,
@@ -44,7 +44,7 @@ def test_run_jf_rotation(
     dcm: DCM,
     synchrotron: Synchrotron,
     shutter: InterlockedHutchShutter,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
     xbpm_feedback: XBPMFeedback,
     run_engine: RunEngine,
 ):

@@ -14,7 +14,7 @@ from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
     ZebraShutterControl,
     ZebraShutterState,
 )
@@ -46,7 +46,7 @@ async def test_check_exception_raised_if_pin_mounted(
     beamstop_phase1: Beamstop,
     scintillator: Scintillator,
     attenuator: BinaryFilterAttenuator,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
     oav: OAV,
 ):
     set_mock_value(robot.gonio_pin_sensor, PinMounted.PIN_MOUNTED)
@@ -71,7 +71,7 @@ def test_prepare_beamline_for_scint_images(
     backlight: Backlight,
     scintillator: Scintillator,
     xbpm_feedback: XBPMFeedback,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
 ):
     test_group = "my_group"
     messages = sim_run_engine.simulate_plan(
@@ -154,7 +154,7 @@ def test_plan_stubs_called_in_correct_order(
     scintillator: Scintillator,
     attenuator: BinaryFilterAttenuator,
     oav: OAV,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
     backlight: Backlight,
     xbpm_feedback: XBPMFeedback,
 ):
@@ -227,7 +227,7 @@ def test_plan_called_with_specified_transmission_then_transmission_set(
     scintillator: Scintillator,
     attenuator: BinaryFilterAttenuator,
     oav: OAV,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
     backlight: Backlight,
     xbpm_feedback: XBPMFeedback,
     transmission: float,
@@ -695,7 +695,7 @@ def find_beam_centre_devices(
     centre_ellipse: CentreEllipseMethod,
     attenuator: BinaryFilterAttenuator,
     zoom_controller_with_centres: ZoomControllerWithBeamCentres,
-    sample_shutter: ZebraShutter,
+    sample_shutter: MXZebraShutter,
 ):
     return FindBeamCentresComposite(
         robot=robot,

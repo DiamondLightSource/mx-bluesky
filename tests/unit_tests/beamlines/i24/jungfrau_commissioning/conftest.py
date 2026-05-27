@@ -14,7 +14,7 @@ from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.core import init_devices
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
@@ -32,7 +32,7 @@ def rotation_composite(
         aperture = Aperture("")
         gonio = VerticalGoniometer("")
         synchrotron = Synchrotron("")
-        sample_shutter = ZebraShutter("")
+        sample_shutter = MXZebraShutter("")
         xbpm_feedback = XBPMFeedback("")
         hutch_shutter = InterlockedHutchShutter("", PSSInterlock(""))
         beamstop = Beamstop("")

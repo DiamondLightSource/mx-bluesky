@@ -51,7 +51,7 @@ from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from dodal.log import LOGGER as DODAL_LOGGER
@@ -629,7 +629,7 @@ def thawer() -> Generator[Thawer, Any, Any]:
 
 
 @pytest.fixture
-def sample_shutter() -> Generator[ZebraShutter, Any, Any]:
+def sample_shutter() -> Generator[MXZebraShutter, Any, Any]:
     yield i03.sample_shutter.build(connect_immediately=True, mock=True)
 
 
