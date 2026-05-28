@@ -11,12 +11,16 @@ supervisor:
   containerPort: 5006
   runAsUser: 1000
   runAsGroup: 1000
+  enableDebugging: false
+  debugPort: 5050
   env:
     EPICS_CA_NAME_SERVERS: "gateways:9064"
     EPICS_PVA_NAME_SERVERS: "gateways:9065"
 callbacks:
   runAsUser: 1000
   runAsGroup: 1000
+  enableDebugging: false
+  debugPort: 5051
 initContainer:
   dodalBranch: "main"
 scratch:

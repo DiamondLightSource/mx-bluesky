@@ -13,21 +13,21 @@ class HyperionMode(StrEnum):
     SUPERVISOR = "supervisor"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CommonArgs:
     dev_mode: bool = False
     debug_port: int | None = None
     wait_for_debug_attach: bool = False
 
 
-@dataclass
+@dataclass(kw_only=True)
 class HyperionArgs(CommonArgs):
     mode: HyperionMode = HyperionMode.UDC
     client_config: str | None = None
     supervisor_config: str | None = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CallbackArgs(CommonArgs):
     watchdog_port: int = HyperionConstants.HYPERION_PORT
     stomp_config: Path | None = None
