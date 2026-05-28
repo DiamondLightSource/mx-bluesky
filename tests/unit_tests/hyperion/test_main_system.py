@@ -135,6 +135,51 @@ def test_hyperion_in_udc_mode_starts_logging(
     )
 
 
+@patch("sys.argv", new=["hyperion", "--mode", "udc", "--debug-port", "1234"])
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.create_server_for_udc", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.enable_debugging")
+def test_hyperion_can_enable_debugging(
+    mock_enable_debugging: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+
+    mock_enable_debugging.assert_called_once_with(False, 1234)
+
+
+@patch(
+    "sys.argv",
+    new=["hyperion", "--mode", "udc", "--debug-port", "1234", "--wait-for-attach"],
+)
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.create_server_for_udc", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.enable_debugging")
+def test_hyperion_can_wait_for_debug_attach(
+    mock_enable_debugging: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+
+    mock_enable_debugging.assert_called_once_with(True, 1234)
+
+
+@patch("sys.argv", new=["hyperion", "--mode", "udc"])
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.create_server_for_udc", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.enable_debugging")
+def test_hyperion_does_not_enable_debugging_if_not_specified(
+    mock_enable_debugging: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+
+    mock_enable_debugging.assert_not_called()
+
+
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
