@@ -29,12 +29,14 @@ volumes:
   logging:
     - name: logdir
       emptyDir: {}
+# In ixx-services, replace with path to relevant log folder, e.g.
 #      hostPath:
 #        path: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
 #        type: Directory
   data:
     - name: data
       emptyDir: {}
+# In ixx-services, replace with path to relevant data folder, e.g.
 #      hostPath:
 #        type: Directory
 #        path: "/dls/i03/data"
