@@ -10,9 +10,13 @@ supervisor:
   containerPort: 5006
   runAsUser: 1000
   runAsGroup: 1000
+  enableDebugging: false
+  debugPort: 5050
 callbacks:
   runAsUser: 1000
   runAsGroup: 1000
+  enableDebugging: false
+  debugPort: 5051
 initContainer:
   dodalBranch: "main"
 scratch:

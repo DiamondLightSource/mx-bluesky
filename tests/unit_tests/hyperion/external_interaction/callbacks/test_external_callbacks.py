@@ -17,6 +17,7 @@ from mx_bluesky.common.external_interaction.alerting.log_based_service import (
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, NEXUS_LOGGER
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     PING_TIMEOUT_S,
+    HyperionCallbackRunner,
     main,
     ping_watchdog_while_alive,
     run_watchdog,
@@ -30,7 +31,9 @@ from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.run_watchdog")
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
-    return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT),
+    return_value=CallbackArgs(
+        dev_mode=True, watchdog_port=HyperionConstants.SUPERVISOR_PORT
+    ),
 )
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging")
@@ -73,8 +76,50 @@ def test_main_function(
 
 
 @patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging",
+    MagicMock(),
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.create_config_client",
+    MagicMock(),
+)
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.enable_debugging")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.RemoteDispatcherContextMgr",
+    MagicMock(),
+)
+def test_debugging_enabled(mock_enable_debugging: MagicMock):
+    HyperionCallbackRunner(CallbackArgs(dev_mode=True, debug_port=1234))
+    mock_enable_debugging.assert_called_once_with(False, 1234)
+
+
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging",
+    MagicMock(),
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.create_config_client",
+    MagicMock(),
+)
+@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.enable_debugging")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.RemoteDispatcherContextMgr",
+    MagicMock(),
+)
+def test_debugging_enabled_wait_for_attach(mock_enable_debugging: MagicMock):
+    HyperionCallbackRunner(
+        CallbackArgs(dev_mode=True, debug_port=1234, wait_for_debug_attach=True)
+    )
+    mock_enable_debugging.assert_called_once_with(True, 1234)
+
+
+@patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
-    MagicMock(return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT)),
+    MagicMock(
+        return_value=CallbackArgs(
+            dev_mode=True, watchdog_port=HyperionConstants.SUPERVISOR_PORT
+        )
+    ),
 )
 def test_no_config_server_url_raises_exception():
     with pytest.raises(ValueError, match="CONFIG_SERVER_URL must be specified"):
@@ -91,7 +136,9 @@ def test_setup_callbacks():
 @pytest.mark.skip_log_setup
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
-    return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT),
+    return_value=CallbackArgs(
+        dev_mode=True, watchdog_port=HyperionConstants.SUPERVISOR_PORT
+    ),
 )
 def test_setup_logging(parse_callback_cli_args):
     assert DODAL_LOGGER.parent != ISPYB_ZOCALO_CALLBACK_LOGGER

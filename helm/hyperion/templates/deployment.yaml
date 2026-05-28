@@ -60,6 +60,9 @@ spec:
               hyperion --mode supervisor \
                 --client-config /etc/hyperion/client_config.yaml \
                 --supervisor-config /etc/hyperion/supervisor_config.yaml
+              {{- if .Values.supervisor.enableDebugging }} \
+                --debug-port {{ .Values.supervisor.debugPort }}
+              {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
               sleep 600
@@ -107,6 +110,9 @@ spec:
               hyperion-callbacks \
                 --watchdog-port {{ .Values.supervisor.containerPort }} \
                 --stomp-config /etc/hyperion/blueapi_callbacks.yml
+              {{- if .Values.callbacks.enableDebugging }} \
+                --debug-port {{ .Values.callbacks.debugPort }}
+              {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
               sleep 600

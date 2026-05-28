@@ -42,6 +42,7 @@ from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_han
     SampleHandlingCallback,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.utils.debug import enable_debugging
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     NEXUS_LOGGER,
@@ -176,6 +177,11 @@ class HyperionCallbackRunner:
     def __init__(self, callback_args: CallbackArgs) -> None:
         setup_logging(callback_args.dev_mode)
         log_info("Hyperion callback process started.")
+        if callback_args.debug_port:
+            enable_debugging(
+                callback_args.wait_for_debug_attach, callback_args.debug_port
+            )
+
         set_config_client(create_config_client())
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
