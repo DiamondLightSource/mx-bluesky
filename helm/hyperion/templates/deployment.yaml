@@ -19,7 +19,6 @@ spec:
         runAsGroup: {{ .Values.supervisor.runAsGroup }}
         runAsUser: {{ .Values.supervisor.runAsUser }}
       volumes:
-        # Bind some source folders for easier debugging
         - name: scratch
           persistentVolumeClaim:
             claimName: hyperion-supervisor-scratch-{{ .Values.application.imageVersion }}
@@ -133,12 +132,6 @@ spec:
               value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
             - name: ISPYB_CONFIG_PATH
               value: "/etc/secrets/expeye/ispyb.cfg"
-#          readinessProbe:
-#            httpGet:
-#              path: "/status"
-#              port: {{ .Values.supervisor.containerPort }}
-#            initialDelaySeconds: 30
-#            periodSeconds: 5
           volumeMounts:
             - mountPath: "/scratch"
               name: scratch
@@ -157,3 +150,18 @@ spec:
               name: zocalo-secrets
             - mountPath: "/etc/secrets/expeye"
               name: expeye-secrets
+        - name: hyperion-scratch
+          # container provided in order for vscode to attach to a writable scratch
+          image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
+          restartPolicy: Always
+          volumeMounts:
+            - mountPath: "/scratch"
+              name: scratch
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          command: ['/bin/bash', '-c']
+          args:
+            - |
+              while true; do sleep 60; done
