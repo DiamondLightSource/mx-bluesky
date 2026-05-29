@@ -11,7 +11,6 @@
 FROM python:3.12 AS base-image
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY
 
 # Need:
 # libgl, libglib2.0 for python cv2 dependency
@@ -29,6 +28,8 @@ RUN groupadd -r -g 1000 hyperion && \
 ADD --chown=hyperion:hyperion .git /app/mx-bluesky/.git
 RUN mkdir -p /app/scripts && \
     chown hyperion:hyperion /app/scripts
+
+ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY
 
 #############################################################################
 FROM base-image as uv-staging
