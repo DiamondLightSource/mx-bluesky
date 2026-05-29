@@ -172,10 +172,6 @@ spec:
           volumeMounts:
             - mountPath: "/scratch"
               name: scratch
-          resources:
-            limits:
-              cpu: "1"
-              memory: "1Gi"
           command: ['/bin/bash', '-c']
           args:
             - |

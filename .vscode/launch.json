@@ -30,11 +30,11 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/mx-bluesky/src",
+                    "localRoot": "${workspaceFolder}/src",
                     "remoteRoot": "/scratch/mx-bluesky/src"
                 },
                 {
-                    "localRoot": "${workspaceFolder}/dodal/src",
+                    "localRoot": "${workspaceFolder}/../dodal/src",
                     "remoteRoot": "/scratch/dodal/src"
                 }
             ]
@@ -50,11 +50,11 @@
             "pathMappings": [
                 {
                     "localRoot": "${workspaceFolder}/src",
-                    "remoteRoot": "/scratch/src"
+                    "remoteRoot": "/scratch//mx-bluesky/src"
                 },
                 {
                     "localRoot": "${workspaceFolder}/../dodal/src",
-                    "remoteRoot": "/scratch/../dodal/src"
+                    "remoteRoot": "/scratch/dodal/src"
                 }
             ]
         }

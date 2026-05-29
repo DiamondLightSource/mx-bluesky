@@ -18,8 +18,13 @@ Essentially the steps are:
 In VSCode, run ``Kubernetes: Set Kubeconfig`` and copy the location of your kubeconfig printed from above.
 Then from the Kubernetes plugin tray, expand Clusters -> <cluster> -> Workloads -> Pods -> ``hyperion-scratch``.
 Right click -> Attach Visual Studio Code to attach to the scratch pod.
-In the Explorer of the new VSCode window that opens, click Open Folder and enter ``/scratch`` as the folder on the pod to open.
-You can now edit files on the scratch persistent volume.
+In the Explorer of the new VSCode window that opens, click Open Folder and enter ``/`` as the folder on the pod to open.
+
+Select File->Open Workspace from File... and select ``/scratch/mx-bluesky/.vscode/hyperion-k8s-scratch.code-workspace``
+You can now edit files on the scratch persistent volume located in /scratch.
+
+When debugging inside the k8s pod, VSCode python extensions run remotely, so you will need to install them into the pod - open the extensions sidebar and install the various python extensions - these install a memory-hungry node server on the ``hyperion-scratch`` container.
+
 
 .. _Debugging in the Cluster: https://diamondlightsource.github.io/python-copier-template/main/how-to/debug-in-cluster.html
 
@@ -38,7 +43,7 @@ Having completed the steps above to attach to the PVC, when the pods are running
 
 .. code-block:: bash
 
-   $ kubectl port-forward pod/hyperion-supervisor 5050:5050 -n <k8s namespace>
+   $ kubectl port-forward pod/<pod name> 5050:5050 -n <k8s namespace>
 
 This will forward the port from the pod to your local machine.
 There are launchers configured for the workspace in .vscode/launch.json, select either ``Attach to K8s Hyperion Supervisor`` or ``Attach to K8s Hyperion Callbacks`` to connect on 5050/5051 as appropriate, this will put you into debug mode.
