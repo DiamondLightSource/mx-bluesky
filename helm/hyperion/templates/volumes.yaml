@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: hyperion-supervisor-scratch-{{ .Values.application.imageVersion }}
   annotations:
+    helm.sh/resource-policy: keep
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/compare-options: IgnoreExtraneous
 spec:
