@@ -19,6 +19,44 @@
                 "PYTEST_RAISE": "1",
                 "PYTEST_ADDOPTS": "--no-cov" // Needed for debugger - see https://code.visualstudio.com/docs/python/testing#_pytest-configuration-settings
             },
+        },
+        {
+            "name": "Attach to K8s Hyperion Supervisor",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "127.0.0.1",
+                "port": 5050
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/mx-bluesky/src",
+                    "remoteRoot": "/scratch/mx-bluesky/src"
+                },
+                {
+                    "localRoot": "${workspaceFolder}/dodal/src",
+                    "remoteRoot": "/scratch/dodal/src"
+                }
+            ]
+        },
+        {
+            "name": "Attach to K8s Hyperion Callbacks",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "127.0.0.1",
+                "port": 5051
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/mx-bluesky/src",
+                    "remoteRoot": "/scratch/mx-bluesky/src"
+                },
+                {
+                    "localRoot": "${workspaceFolder}/dodal/src",
+                    "remoteRoot": "/scratch/dodal/src"
+                }
+            ]
         }
     ]
 }
