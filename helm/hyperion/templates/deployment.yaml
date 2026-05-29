@@ -77,6 +77,10 @@ spec:
             - name: rest-api
               containerPort: {{ .Values.supervisor.containerPort }}
               protocol: TCP
+            {{- if .Values.supervisor.enableDebugging }}
+            - name: debug
+              containerPort: {{ .Values.supervisor.debugPort }}
+            {{- end }}
           env:
             - name: LOG_DIR
               value: /var/log/bluesky
@@ -131,6 +135,11 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+          ports:
+            {{- if .Values.supervisor.enableDebugging }}
+            - name: debug
+              containerPort: {{ .Values.supervisor.debugPort }}
+            {{- end }}
           env:
             - name: LOG_DIR
               value: /var/log/bluesky
