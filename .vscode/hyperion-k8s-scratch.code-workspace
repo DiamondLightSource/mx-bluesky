@@ -9,6 +9,6 @@
     }
   ],
   "settings": {
-        "python.defaultInterpreterPath": "../../../app/mx-bluesky/.venv/bin/python",
+    "python.defaultInterpreterPath": "/app/mx-bluesky/.venv/bin/python"
   }
 }
