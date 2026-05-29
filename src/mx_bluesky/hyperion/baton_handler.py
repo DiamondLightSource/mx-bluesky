@@ -36,9 +36,14 @@ from mx_bluesky.hyperion.utils.context import (
     setup_devices,
 )
 
-HYPERION_USER = "Hyperion"
+_hyperion_baton_user = "Hyperion"
 NO_USER = "None"
 COUNTDOWN_THRESHOLD_SECONDS = 600
+
+
+def set_hyperion_baton_user(new_user: str):
+    global _hyperion_baton_user
+    _hyperion_baton_user = new_user
 
 
 def run_forever(runner: PlanRunner):
@@ -77,7 +82,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
     def acquire_baton() -> MsgGenerator:
         yield from _wait_for_hyperion_requested(baton)
         LOGGER.debug("Hyperion is now current baton holder.")
-        yield from bps.abs_set(baton.current_user, HYPERION_USER)
+        yield from bps.abs_set(baton.current_user, _hyperion_baton_user)
 
     def collect() -> MsgGenerator:
         """
@@ -161,7 +166,7 @@ def _wait_for_hyperion_requested(baton: Baton):
     sleep_per_check = 0.1
     while True:
         requested_user = yield from bps.rd(baton.requested_user)
-        if requested_user == HYPERION_USER:
+        if requested_user == _hyperion_baton_user:
             LOGGER.debug("Baton requested for Hyperion")
             break
         yield from bps.sleep(sleep_per_check)
@@ -205,7 +210,7 @@ def _raise_udc_completed_alert(alert_service: AlertService):
 
 def _is_requesting_baton(baton: Baton) -> MsgGenerator:
     requested_user = yield from bps.rd(baton.requested_user)
-    return requested_user == HYPERION_USER
+    return requested_user == _hyperion_baton_user
 
 
 def _get_baton(context: BlueskyContext) -> Baton:
@@ -224,7 +229,7 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
         The previously requested user, or NO_USER if no user was already requested.
     """
     requested_user = yield from bps.rd(baton.requested_user)
-    if requested_user == HYPERION_USER:
+    if requested_user == _hyperion_baton_user:
         LOGGER.debug("Hyperion no longer requesting baton")
         yield from bps.abs_set(baton.requested_user, NO_USER)
         return NO_USER

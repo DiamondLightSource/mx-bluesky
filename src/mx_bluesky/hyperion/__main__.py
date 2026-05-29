@@ -17,7 +17,7 @@ from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.baton_handler import run_forever
+from mx_bluesky.hyperion.baton_handler import run_forever, set_hyperion_baton_user
 from mx_bluesky.hyperion.in_process_runner import InProcessRunner
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
@@ -45,6 +45,8 @@ def initialise_globals(args: HyperionArgs):
     LOGGER.info(f"Hyperion launched with args:{argv}")
     if args.debug_port:
         enable_debugging(args.wait_for_debug_attach, args.debug_port)
+    # Apply a different name for our baton
+    set_hyperion_baton_user(args.baton_name)
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
 
