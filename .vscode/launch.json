@@ -49,12 +49,12 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/mx-bluesky/src",
-                    "remoteRoot": "/scratch/mx-bluesky/src"
+                    "localRoot": "${workspaceFolder}/src",
+                    "remoteRoot": "/scratch/src"
                 },
                 {
-                    "localRoot": "${workspaceFolder}/dodal/src",
-                    "remoteRoot": "/scratch/dodal/src"
+                    "localRoot": "${workspaceFolder}/../dodal/src",
+                    "remoteRoot": "/scratch/../dodal/src"
                 }
             ]
         }
