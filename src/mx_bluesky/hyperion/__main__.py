@@ -62,7 +62,11 @@ def main():
             client_config = _load_config_from_yaml(Path(args.client_config))
             supervisor_config = _load_config_from_yaml(Path(args.supervisor_config))
             context = BlueskyContext(configuration=supervisor_config)
-            plan_runner = SupervisorRunner(context, client_config, args.dev_mode)
+            try:
+                plan_runner = SupervisorRunner(context, client_config, args.dev_mode)
+            except ConnectionError as e:
+                LOGGER.error(f"Failed to connect to blueapi: {e}")
+                raise
             server_port = HyperionConstants.SUPERVISOR_PORT
     create_server_for_udc(plan_runner, server_port)
     _register_sigterm_handler(plan_runner)
