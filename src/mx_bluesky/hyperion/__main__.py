@@ -9,6 +9,7 @@ from mx_bluesky.common.external_interaction import alerting
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
+from mx_bluesky.common.utils.debug import enable_debugging
 from mx_bluesky.common.utils.log import (
     LOGGER,
     do_default_logging_setup,
@@ -37,6 +38,8 @@ def initialise_globals(args: HyperionArgs):
         dev_mode=args.dev_mode,
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
+    if args.debug_port:
+        enable_debugging(args.wait_for_debug_attach, args.debug_port)
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
 

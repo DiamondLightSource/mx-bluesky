@@ -46,6 +46,7 @@ dependencies = [
     "deepdiff",
     "matplotlib",
     "cachetools",
+    "debugpy",
     "bluesky-stomp >= 0.2.0",
     "mysql-connector-python == 9.5.0", # Can unpin once https://github.com/DiamondLightSource/ispyb-api/pull/244 is merged and released
 

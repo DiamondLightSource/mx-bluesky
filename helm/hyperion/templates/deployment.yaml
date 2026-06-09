@@ -60,6 +60,9 @@ spec:
               hyperion --mode supervisor \
                 --client-config /etc/hyperion/client_config.yaml \
                 --supervisor-config /etc/hyperion/supervisor_config.yaml
+              {{- if .Values.supervisor.enableDebugging }} \
+                --debug-port {{ .Values.supervisor.debugPort }}
+              {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
               sleep 600
@@ -72,6 +75,10 @@ spec:
             - name: rest-api
               containerPort: {{ .Values.supervisor.containerPort }}
               protocol: TCP
+            {{- if .Values.supervisor.enableDebugging }}
+            - name: debug
+              containerPort: {{ .Values.supervisor.debugPort }}
+            {{- end }}
           env:
             - name: LOG_DIR
               value: /var/log/bluesky
@@ -107,6 +114,9 @@ spec:
               hyperion-callbacks \
                 --watchdog-port {{ .Values.supervisor.containerPort }} \
                 --stomp-config /etc/hyperion/blueapi_callbacks.yml
+              {{- if .Values.callbacks.enableDebugging }} \
+                --debug-port {{ .Values.callbacks.debugPort }}
+              {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
               sleep 600
@@ -119,6 +129,11 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+          ports:
+            {{- if .Values.supervisor.enableDebugging }}
+            - name: debug
+              containerPort: {{ .Values.supervisor.debugPort }}
+            {{- end }}
           env:
             - name: LOG_DIR
               value: /var/log/bluesky
@@ -157,10 +172,6 @@ spec:
           volumeMounts:
             - mountPath: "/scratch"
               name: scratch
-          resources:
-            limits:
-              cpu: "1"
-              memory: "1Gi"
           command: ['/bin/bash', '-c']
           args:
             - |
