@@ -94,7 +94,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
+from mx_bluesky.hyperion.baton_handler import _hyperion_baton_user
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -411,8 +411,8 @@ def backlight():
 @pytest.fixture
 def baton():
     baton = i03.baton.build(connect_immediately=True, mock=True)
-    set_mock_value(baton.requested_user, HYPERION_USER)
-    set_mock_value(baton.current_user, HYPERION_USER)
+    set_mock_value(baton.requested_user, _hyperion_baton_user)
+    set_mock_value(baton.current_user, _hyperion_baton_user)
     return baton
 
 

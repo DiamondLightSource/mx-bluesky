@@ -24,7 +24,7 @@ from mx_bluesky.hyperion.__main__ import (
     initialise_globals,
     main,
 )
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
+from mx_bluesky.hyperion.baton_handler import _hyperion_baton_user
 from mx_bluesky.hyperion.parameters.cli import (
     HyperionArgs,
     HyperionMode,
@@ -180,6 +180,20 @@ def test_hyperion_does_not_enable_debugging_if_not_specified(
     mock_enable_debugging.assert_not_called()
 
 
+@patch("sys.argv", new=["hyperion", "--mode", "udc", "--baton-name", "HyperionK8s"])
+@patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.create_server_for_udc", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
+@patch("mx_bluesky.hyperion.__main__.set_hyperion_baton_user")
+def test_hyperion_sets_hyperion_baton_user_if_specified(
+    mock_set_baton_user: MagicMock,
+    mock_setup_context: MagicMock,
+):
+    main()
+
+    mock_set_baton_user.assert_called_once_with("HyperionK8s")
+
+
 @patch("sys.argv", new=["hyperion", "--mode", "udc"])
 @patch("mx_bluesky.hyperion.__main__.do_default_logging_setup", MagicMock())
 @patch("mx_bluesky.hyperion.__main__.run_forever", MagicMock())
@@ -308,7 +322,7 @@ def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown
         context = plan_runner.context
         baton = find_device_in_context(context, "baton", Baton)
         synchrotron = find_device_in_context(context, "synchrotron", Synchrotron)
-        set_mock_value(baton.requested_user, HYPERION_USER)
+        set_mock_value(baton.requested_user, _hyperion_baton_user)
         set_mock_value(synchrotron.machine_user_countdown, 1200)
         while len(mock_create_parameters_from_agamemnon.mock_calls) == 0:
             sleep(0.2)
