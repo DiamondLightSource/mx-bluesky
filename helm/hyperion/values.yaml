@@ -1,25 +1,45 @@
 application:
-  containerPort: 5005
-  servicePort: 80
   imageRepository: ghcr.io/diamondlightsource
-  # i03-hyperion user and group
-  runAsUser: 36101
-  runAsGroup: 36101
-  supplementalGroups: []
+  imageName: hyperion
+  imageVersion: SET_ON_INSTALL
   beamline: i03
   dev: false
-  logDir: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
-  debugLogDir: "/dls/tmp/i03/logs/bluesky-k8s"
-  dataDir: "/dls/i03/data"
-  # These should be overridden at install time
-  projectDir: SET_ON_INSTALL
-  appVersion: SET_ON_INSTALL
-  externalHostname: i03-hyperion.diamond.ac.uk
-dodal:
-  projectDir: SET_ON_INSTALL
-service:
-  type: NodePort
-
+  logDir: "/var/logs/mx-bluesky"
+supervisor:
+  servicePort: 80
+  containerPort: 5006
+  runAsUser: 1000
+  runAsGroup: 1000
+callbacks:
+  runAsUser: 1000
+  runAsGroup: 1000
+initContainer:
+  dodalBranch: "main"
+scratch:
+  volumeSize: "2Gi"
+configServer:
+  url: http://i03-daq-config-server.diamond.ac.uk
+graylog:
+  url: "tcp://graylog-log-target.diamond.ac.uk:12232"
+stomp:
+  url: tcp://localhost:61613
+blueapi:
+  url: http://my.blueapi.service:5005
+volumes:
+  logging:
+    - name: logdir
+      emptyDir: {}
+# In ixx-services, replace with path to relevant log folder, e.g.
+#      hostPath:
+#        path: "/dls_sw/i03/logs/bluesky/hyperion-k8s"
+#        type: Directory
+  data:
+    - name: data
+      emptyDir: {}
+# In ixx-services, replace with path to relevant data folder, e.g.
+#      hostPath:
+#        type: Directory
+#        path: "/dls/i03/data"
 zocalo:
   defaultTransport: "PikaTransport"
   graylog:
@@ -30,6 +50,3 @@ zocalo:
     - name: rabbitmq
       secretName: rmq-creds
       fileName: rabbitmq-credentials.yml
-    - name: rabbitmq-api-reader
-      secretName: rmq-api-reader
-      fileName: rabbitmq-api-reader.yml

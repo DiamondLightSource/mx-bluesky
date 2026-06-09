@@ -1,0 +1,15 @@
+apiVersion: v2
+name: mx-bluesky-rabbitmq-test
+description: Rabbitmq server for use in testing environments
+
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.0.1
+
+dependencies:
+  - name: rabbitmq
+    version: 2.3.0
+    repository: https://groundhog2k.github.io/helm-charts/
