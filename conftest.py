@@ -21,6 +21,8 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session", autouse=True)
 def default_session_fixture() -> Iterator[None]:
-    print("Patching bluesky 0MQ Publisher in __main__ for the whole session")
-    with patch("mx_bluesky.hyperion.plan_runner.Publisher"):
+    print("Patching bluesky 0MQ Publisher and blueapi connection for the whole session")
+    with patch("mx_bluesky.hyperion.plan_runner.Publisher"), \
+         patch("mx_bluesky.hyperion.blueapi.connector.BlueapiClient.connect",
+               return_value=None):
         yield
