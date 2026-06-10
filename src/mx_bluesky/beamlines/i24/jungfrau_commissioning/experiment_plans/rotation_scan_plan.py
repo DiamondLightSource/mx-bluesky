@@ -12,7 +12,7 @@ from dodal.devices.beamlines.i24.commissioning_jungfrau import (
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
@@ -283,7 +283,7 @@ def single_rotation_plan(
 def _cleanup_plan(
     zebra: Zebra,
     jf: CommissioningJungfrauDetector,
-    zebra_shutter: ZebraShutter,
+    zebra_shutter: MXZebraShutter,
     group="rotation cleanup",
 ):
     LOGGER.info("Tidying up Zebra and Jungfrau...")

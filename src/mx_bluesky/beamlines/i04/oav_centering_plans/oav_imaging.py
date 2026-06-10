@@ -15,7 +15,7 @@ from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
     ZebraShutterControl,
     ZebraShutterState,
 )
@@ -38,7 +38,7 @@ class FindBeamCentresComposite:
     beam_centre: CentreEllipseMethod
     attenuator: BinaryFilterAttenuator
     zoom_controller: ZoomControllerWithBeamCentres
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
 
 
 def take_oav_image_with_scintillator_in(
@@ -46,7 +46,7 @@ def take_oav_image_with_scintillator_in(
     image_path: str = "dls_sw/i04/software/bluesky/scratch",
     transmission: float = 1,
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
-    shutter: ZebraShutter = inject("sample_shutter"),
+    shutter: MXZebraShutter = inject("sample_shutter"),
     oav: OAV = inject("oav"),
     robot: BartRobot = inject("robot"),
     beamstop: Beamstop = inject("beamstop"),
@@ -104,7 +104,7 @@ def _prepare_beamline_for_scintillator_images(
     backlight: Backlight,
     scintillator: Scintillator,
     xbpm_feedback: XBPMFeedback,
-    shutter: ZebraShutter,
+    shutter: MXZebraShutter,
     group: str,
 ) -> MsgGenerator:
     """
