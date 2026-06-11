@@ -7,7 +7,10 @@ import pydantic
 from blueapi.core import BlueskyContext
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.xspress3.xspress3 import Xspress3
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    MXZebraShutter,
+    ZebraShutterState,
+)
 
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.log import LOGGER
@@ -27,7 +30,7 @@ class OptimizeAttenuationComposite:
     """All devices which are directly or indirectly required by this plan"""
 
     attenuator: BinaryFilterAttenuator
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     xspress3mini: Xspress3
 
 

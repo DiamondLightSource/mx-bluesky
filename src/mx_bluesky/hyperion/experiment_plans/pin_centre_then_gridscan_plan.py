@@ -5,7 +5,7 @@ import json
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.oav.oav_parameters import OAVParameters
 
-from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi_omega
+from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )
@@ -20,7 +20,7 @@ from mx_bluesky.common.experiment_plans.pin_tip_centring_plan import (
     PinTipCentringComposite,
     pin_tip_centre_plan,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
@@ -74,7 +74,7 @@ def pin_centre_then_gridscan_plan(
             composite.gonio, composite.backlight, composite.aperture_scatterguard
         )
 
-        yield from move_phi_chi_omega(
+        yield from move_phi_chi(
             composite.gonio,
             parameters.phi_start_deg,
             parameters.chi_start_deg,

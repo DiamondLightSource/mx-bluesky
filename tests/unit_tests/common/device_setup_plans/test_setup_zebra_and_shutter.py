@@ -7,7 +7,7 @@ from dodal.devices.zebra.zebra import (
     Zebra,
 )
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
     ZebraShutterControl,
 )
 
@@ -36,7 +36,7 @@ async def _get_shutter_input_1(zebra: Zebra):
 
 
 async def test_configure_zebra_and_shutter_for_auto(
-    run_engine, zebra: Zebra, zebra_shutter: ZebraShutter
+    run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter
 ):
     run_engine(
         configure_zebra_and_shutter_for_auto_shutter(
@@ -48,7 +48,7 @@ async def test_configure_zebra_and_shutter_for_auto(
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
 
 
-async def test_zebra_cleanup(run_engine, zebra: Zebra, zebra_shutter: ZebraShutter):
+async def test_zebra_cleanup(run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter):
     run_engine(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
@@ -58,12 +58,12 @@ async def test_zebra_cleanup(run_engine, zebra: Zebra, zebra_shutter: ZebraShutt
 
 
 async def test_zebra_set_up_for_gridscan(
-    run_engine, zebra: Zebra, zebra_shutter: ZebraShutter
+    run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter
 ):
     @dataclasses.dataclass
     class Composite:
         zebra: Zebra
-        sample_shutter: ZebraShutter
+        sample_shutter: MXZebraShutter
 
     composite = Composite(zebra, zebra_shutter)
     run_engine(setup_zebra_for_gridscan(composite, wait=True))
@@ -79,7 +79,7 @@ async def test_zebra_set_up_for_gridscan(
 async def test_zebra_set_up_for_rotation(
     run_engine,
     zebra: Zebra,
-    zebra_shutter: ZebraShutter,
+    zebra_shutter: MXZebraShutter,
 ):
     axis = I24Axes.OMEGA
     start_angle = 90

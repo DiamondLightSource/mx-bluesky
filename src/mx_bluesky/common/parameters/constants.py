@@ -17,12 +17,6 @@ BEAMLINE = get_beamline_name("test")
 TEST_MODE = BEAMLINE == "test"
 ZEBRA_STATUS_TIMEOUT = 30
 
-GDA_DOMAIN_PROPERTIES_PATH = (
-    "tests/test_data/test_domain_properties"
-    if TEST_MODE
-    else (f"/dls_sw/{BEAMLINE}/software/daq_configuration/domain/domain.properties")
-)
-
 
 @dataclass(frozen=True)
 class DocDescriptorNames:
@@ -76,6 +70,7 @@ class PlanNameConstants:
     DO_FGS = "do_fgs"
     FLYSCAN_RESULTS = "xray_centre_results"
     PIN_TIP_CENTRE_THEN_XRC = "pin_tip_centre_then_xray_centre"
+    TRIGGER_GRIDSCAN_ISPYB_CALLBACK = "trigger gridscan ispyb callback"
     # Rotation scan
     ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_MULTI_OUTER = "multi_rotation_outer"
@@ -110,8 +105,8 @@ class GridscanParamConstants:
     EXPOSURE_TIME_S = 0.004
     USE_ROI = True
     BOX_WIDTH_UM = 20.0
-    OMEGA_1 = 0.0
-    OMEGA_2 = 90.0
+    OMEGA_1 = 0
+    OMEGA_2 = 90
     PANDA_RUN_UP_DISTANCE_MM = 0.2
     ZOCALO_MIN_TOTAL_COUNT_THRESHOLD = 3
 
@@ -125,19 +120,8 @@ class RotationParamConstants:
 
 @dataclass(frozen=True)
 class DetectorParamConstants:
-    BEAM_XY_LUT_PATH = (
-        "tests/test_data/test_det_dist_converter.txt"
-        if TEST_MODE
-        else f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
-    )
+    BEAM_XY_LUT_PATH = f"/dls_sw/{BEAMLINE}/software/daq_configuration/lookup/DetDistToBeamXYConverter.txt"
     DETECTOR = EIGER2_X_16M_SIZE
-
-
-@dataclass(frozen=True)
-class ExperimentParamConstants:
-    DETECTOR = DetectorParamConstants()
-    GRIDSCAN = GridscanParamConstants()
-    ROTATION = RotationParamConstants()
 
 
 @dataclass(frozen=True)
@@ -149,6 +133,8 @@ class PlanGroupCheckpointConstants:
     READY_FOR_OAV = "ready_for_oav"
     PREPARE_APERTURE = "prepare_aperture"
     SETUP_ZEBRA_FOR_ROTATION = "setup_zebra_for_rotation"
+    SETUP_ZEBRA_FOR_GRIDSCAN = "setup_zebra_for_gridscan"
+    TIDY_ZEBRA_AFTER_GRIDSCAN = "tidy_zebra_after_gridscan"
 
 
 # Eventually replace below with https://github.com/DiamondLightSource/mx-bluesky/issues/798

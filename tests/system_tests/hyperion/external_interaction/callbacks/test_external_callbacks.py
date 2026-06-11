@@ -38,7 +38,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     fetch_xrc_results_from_zocalo,
     zocalo_stage_decorator,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_decorator,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot

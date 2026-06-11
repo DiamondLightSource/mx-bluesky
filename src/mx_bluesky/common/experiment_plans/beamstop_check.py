@@ -11,7 +11,10 @@ from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.ipin import IPin, IPinGain
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    MXZebraShutter,
+    ZebraShutterState,
+)
 from ophyd_async.core import InOut
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
@@ -36,7 +39,7 @@ class BeamstopCheckDevices:
     beamstop: Beamstop
     detector_motion: DetectorMotion
     ipin: IPin
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     xbpm_feedback: XBPMFeedback
 
 

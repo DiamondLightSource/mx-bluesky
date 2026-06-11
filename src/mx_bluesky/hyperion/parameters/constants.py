@@ -1,5 +1,3 @@
-import os
-
 from dodal.devices.detector import EIGER2_X_16M_SIZE
 from pydantic.dataclasses import dataclass
 
@@ -13,14 +11,10 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 
-TEST_MODE = os.environ.get("HYPERION_TEST_MODE")
-
 
 @dataclass(frozen=True)
 class I03Constants:
-    BEAMLINE = "BL03S" if TEST_MODE else "BL03I"
     DETECTOR = EIGER2_X_16M_SIZE
-    INSERTION_PREFIX = "SR03S" if TEST_MODE else "SR03I"
     OAV_CENTRING_FILE = OavConstants.OAV_CONFIG_JSON
     SHUTTER_TIME_S = 0.06
     USE_GPU_RESULTS = True

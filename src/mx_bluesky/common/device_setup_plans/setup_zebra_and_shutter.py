@@ -10,7 +10,7 @@ from dodal.devices.zebra.zebra import (
     Zebra,
 )
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
     ZebraShutterControl,
 )
 
@@ -30,7 +30,7 @@ from mx_bluesky.common.utils.log import LOGGER
 @runtime_checkable
 class GridscanSetupDevices(Protocol):
     zebra: Zebra
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
 
 
 def setup_zebra_for_gridscan(
@@ -73,16 +73,19 @@ def setup_zebra_for_gridscan(
 
 def set_shutter_auto_input(zebra: Zebra, input: int, group="set_shutter_trigger"):
     """Set the signal that controls the shutter. We use the second input to the
-    Zebra's AND_GATE_FOR_AUTO_SHUTTER for this input. ZebraShutter control mode must be in auto for this input to take control
+    Zebra's AND_GATE_FOR_AUTO_SHUTTER for this input. MXZebraShutter control mode must be in auto for this input to take control
 
-    For more details see the ZebraShutter device."""
+    For more details see the MXZebraShutter device."""
     auto_gate = zebra.mapping.AND_GATE_FOR_AUTO_SHUTTER
     auto_shutter_control = zebra.logic_gates.and_gates[auto_gate]
     yield from bps.abs_set(auto_shutter_control.sources[2], input, group=group)
 
 
 def configure_zebra_and_shutter_for_auto_shutter(
-    zebra: Zebra, zebra_shutter: ZebraShutter, input: int, group="use_automatic_shutter"
+    zebra: Zebra,
+    zebra_shutter: MXZebraShutter,
+    input: int,
+    group="use_automatic_shutter",
 ):
     """Set the shutter to auto mode, and configure the zebra to trigger the shutter on
     an input source. For the input, use one of the source constants in zebra.py
@@ -113,7 +116,7 @@ def configure_zebra_and_shutter_for_auto_shutter(
 
 def tidy_up_zebra_after_gridscan(
     zebra: Zebra,
-    zebra_shutter: ZebraShutter,
+    zebra_shutter: MXZebraShutter,
     group="tidy_up_zebra_after_gridscan",
     wait=True,
     ttl_input_for_detector_to_use: int | None = None,
@@ -150,7 +153,7 @@ def tidy_up_zebra_after_gridscan(
 
 def setup_zebra_for_rotation(
     zebra: Zebra,
-    zebra_shutter: ZebraShutter,
+    zebra_shutter: MXZebraShutter,
     axis: EncEnum = I03Axes.OMEGA,
     start_angle: float = 0,
     scan_width: float = 360,
@@ -221,7 +224,7 @@ def setup_zebra_for_rotation(
 
 def tidy_up_zebra_after_rotation_scan(
     zebra: Zebra,
-    zebra_shutter: ZebraShutter,
+    zebra_shutter: MXZebraShutter,
     group="tidy_up_zebra_after_rotation",
     wait=True,
 ):
