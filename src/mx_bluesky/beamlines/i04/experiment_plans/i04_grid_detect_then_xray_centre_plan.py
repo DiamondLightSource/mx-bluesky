@@ -12,7 +12,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beamsize import Beamsize
 from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
-from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
@@ -270,7 +270,7 @@ def get_ready_for_oav_and_close_shutter(
     LOGGER.info("Non-udc tidy: Closing detector shutter")
     yield from bps.abs_set(
         detector_motion.shutter,
-        0,
+        ShutterState.CLOSED,
         group=group,
     )
     yield from bps.wait(group)

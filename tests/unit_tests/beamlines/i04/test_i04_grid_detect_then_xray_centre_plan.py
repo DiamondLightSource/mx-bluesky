@@ -13,7 +13,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beamsize import Beamsize
 from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
-from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
@@ -176,7 +176,7 @@ def test_get_ready_for_oav_and_close_shutter_closes_shutter_and_calls_setup_for_
         predicate=lambda msg: (
             msg.command == "set"
             and msg.obj.name == "detector_motion-shutter"
-            and msg.args[0] == 0
+            and msg.args[0] == ShutterState.CLOSED
         ),
     )
     msgs = assert_message_and_return_remaining(

@@ -38,7 +38,7 @@ def test_full_do_internal_acquisition(
             yield from bps.wait_for([partial(asyncio.sleep, 0)])
         yield from bps.wait(JF_COMPLETE_GROUP)
 
-    jungfrau._arm_logic.arm = AsyncMock()  # type: ignore
+    jungfrau._acquire_logic.start_acquiring = AsyncMock()  # type: ignore
     run_engine(test_plan())
     assert "Jungfrau data collection triggers received: 100%" in caplog.messages
 
