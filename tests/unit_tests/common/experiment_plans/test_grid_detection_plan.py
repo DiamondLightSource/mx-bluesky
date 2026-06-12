@@ -100,7 +100,7 @@ def fake_devices(
 def do_grid_and_edge_detect(composite, parameters, tmp_dir):
     yield from grid_detection_plan(
         composite,
-        parameters=parameters,
+        oav_parameters=parameters,
         snapshot_dir=f"{tmp_dir}",
         snapshot_template="test_{angle}",
         grid_width_microns=161.2,
@@ -179,7 +179,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     def decorated():
         yield from grid_detection_plan(
             composite,
-            parameters=params,
+            oav_parameters=params,
             snapshot_dir=f"{tmp_path}",
             snapshot_template="test_{angle}",
             grid_width_microns=161.2,
