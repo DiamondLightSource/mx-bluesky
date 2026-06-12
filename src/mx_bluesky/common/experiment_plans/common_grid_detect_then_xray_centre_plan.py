@@ -43,7 +43,12 @@ from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GenericGrid,
+    GridDetectionParams,
+    GridScanParams,
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.common.utils.log import LOGGER
 
 TFlyScanEssentialDevices = TypeVar(
@@ -102,6 +107,9 @@ def detect_grid_and_do_gridscan(
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
+    grid_detect_params = GridDetectionParams(
+        box_size_um=parameters.box_size_um, grid_width_um=parameters.grid_width_um
+    )
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
     grid_params_callback = GridDetectionCallback()
@@ -113,28 +121,6 @@ def detect_grid_and_do_gridscan(
         wait=True,
     )
 
-    @bpp.subs_decorator([grid_params_callback])
-    def run_grid_detection_plan(
-        oav_params,
-        snapshot_template,
-        snapshot_dir: Path,
-    ):
-        grid_detect_composite = OavGridDetectionComposite(
-            backlight=composite.backlight,
-            oav=composite.oav,
-            gonio=composite.gonio,
-            pin_tip_detection=composite.pin_tip_detection,
-        )
-
-        yield from grid_detection_plan(
-            grid_detect_composite,
-            oav_params,
-            snapshot_template,
-            str(snapshot_dir),
-            parameters.grid_width_um,
-            parameters.box_size_um,
-        )
-
     if parameters.selected_aperture:
         # Start moving the aperture/scatterguard into position without moving it in
         yield from bps.prepare(
@@ -143,10 +129,15 @@ def detect_grid_and_do_gridscan(
             group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
         )
 
-    yield from run_grid_detection_plan(
-        oav_params,
-        snapshot_template,
-        parameters.snapshot_directory,
+    yield from bpp.subs_wrapper(
+        _run_grid_detection_plan(
+            composite,
+            grid_detect_params,
+            oav_params,
+            snapshot_template,
+            parameters.snapshot_directory,
+        ),
+        grid_params_callback,
     )
 
     yield from bps.abs_set(
@@ -161,13 +152,41 @@ def detect_grid_and_do_gridscan(
         parameters.selected_aperture,
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
-    xrc_params = create_parameters_for_flyscan_xray_centre(
+    xrc_params, grid_scan_params = create_parameters_for_flyscan_xray_centre(
         parameters, grid_params_callback.get_grid_parameters(), xrc_params_type
     )
     parameters.set_specified_grid_params(xrc_params)
-    beamline_specific = construct_beamline_specific(composite, xrc_params)
+    beamline_specific = construct_beamline_specific(
+        composite, xrc_params, grid_scan_params
+    )
 
-    yield from common_flyscan_xray_centre(composite, xrc_params, beamline_specific)
+    yield from common_flyscan_xray_centre(
+        composite, xrc_params, grid_scan_params, beamline_specific
+    )
+
+
+def _run_grid_detection_plan(
+    composite: GridDetectThenXRayCentreComposite,
+    grid_detect_params: GridDetectionParams,
+    oav_params: OAVParameters,
+    snapshot_template: str,
+    snapshot_dir: Path,
+):
+    grid_detect_composite = OavGridDetectionComposite(
+        backlight=composite.backlight,
+        oav=composite.oav,
+        gonio=composite.gonio,
+        pin_tip_detection=composite.pin_tip_detection,
+    )
+
+    yield from grid_detection_plan(
+        grid_detect_composite,
+        oav_params,
+        snapshot_template,
+        str(snapshot_dir),
+        grid_detect_params.grid_width_um,
+        grid_detect_params.box_size_um,
+    )
 
 
 class ConstructBeamlineSpecificFeatures(
@@ -177,6 +196,7 @@ class ConstructBeamlineSpecificFeatures(
         self,
         xrc_composite: TFlyScanEssentialDevices,
         xrc_parameters: TSpecifiedThreeDGridScan,
+        grid_scan_parameters: GridScanParams,
     ) -> BeamlineSpecificFGSFeatures: ...
 
 
@@ -184,9 +204,19 @@ def create_parameters_for_flyscan_xray_centre(
     parameters: GenericGrid,
     grid_parameters: GridParamUpdate,
     xrc_params_type: type[SpecifiedThreeDGridScan],
-) -> SpecifiedThreeDGridScan:
+) -> tuple[SpecifiedThreeDGridScan, GridScanParams]:
+    grid_scan_params = GridScanParams(
+        omega_starts_deg=parameters.omega_starts_deg,
+        x_start_um=grid_parameters["x_start_um"],
+        y_starts_um=grid_parameters["y_starts_um"],
+        z_starts_um=grid_parameters["z_starts_um"],
+        x_steps=grid_parameters["x_steps"],
+        y_steps=grid_parameters["y_steps"],
+        x_step_size_um=grid_parameters["x_step_size_um"],
+        y_step_sizes_um=grid_parameters["y_step_sizes_um"],
+    )
     params_json = parameters.model_dump()
     params_json.update(grid_parameters)
     flyscan_xray_centre_parameters = xrc_params_type(**params_json)
     LOGGER.info(f"Parameters for FGS: {flyscan_xray_centre_parameters}")
-    return flyscan_xray_centre_parameters
+    return flyscan_xray_centre_parameters, grid_scan_params
