@@ -44,7 +44,7 @@ def fake_complete(_, group=None):
 
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.log_on_percentage_complete",
-    new=MagicMock,
+    new=MagicMock(),
 )
 @patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils.bps.complete",

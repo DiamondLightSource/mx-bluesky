@@ -1062,7 +1062,6 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             0.1,
         )
         with (
-            patch("bluesky.plan_stubs.wait", autospec=True),
             patch(
                 "bluesky.preprocessors.__read_and_stash_a_motor",
                 fake_read,
