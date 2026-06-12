@@ -164,6 +164,9 @@ filterwarnings = [
     "ignore:.*__contains__ will no longer raise TypeError.*:DeprecationWarning",
     # epicscorelibs requires setuptools >= 70.1
     "ignore:.*The 'wheel' package is no longer the canonical location of the 'bdist_wheel' command.*:DeprecationWarning",
+    # Ignore deprecation warnings about TriggerableCommand until https://github.com/bluesky/ophyd-async/issues/1292
+    # addressed
+    "ignore:epics_signal_x is deprecated, use epics_triggerable_command instead:DeprecationWarning",
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests/unit_tests"

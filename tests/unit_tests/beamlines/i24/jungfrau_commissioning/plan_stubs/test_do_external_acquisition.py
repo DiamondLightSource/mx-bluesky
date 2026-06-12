@@ -40,7 +40,7 @@ def test_full_do_external_acquisition(
             yield from bps.wait_for([partial(asyncio.sleep, 0)])
         yield from bps.wait(JF_COMPLETE_GROUP)
 
-    jungfrau._arm_logic.arm = AsyncMock()  # type: ignore
+    jungfrau._acquire_logic.start_acquiring = AsyncMock()  # type: ignore
     run_engine(test_plan())
     for i in range(20, 120, 20):
         assert f"Jungfrau data collection triggers received: {i}%" in caplog.messages

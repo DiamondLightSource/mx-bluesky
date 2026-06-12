@@ -78,7 +78,7 @@ async def test_full_do_pedestal_darks(
         yield from bps.monitor(jungfrau.detector.gain_mode, name="GM")
         yield from do_pedestal_darks(0.001, 2, 2, test_path, jungfrau=jungfrau)
 
-    jungfrau._arm_logic.arm = AsyncMock()  # type: ignore
+    jungfrau._acquire_logic.start_acquiring = AsyncMock()  # type: ignore
     assert await jungfrau.acquisition_type.get_value() == AcquisitionType.STANDARD
     await jungfrau.detector.gain_mode.set(GainMode.FIX_G2)
     await jungfrau.detector.pedestal_mode_state.set(PedestalMode.OFF)

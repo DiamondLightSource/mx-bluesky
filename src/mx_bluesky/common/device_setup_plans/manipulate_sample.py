@@ -6,7 +6,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
 from dodal.devices.backlight import Backlight, InOut
-from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.thawer import OnOff, Thawer
 
@@ -71,7 +71,7 @@ def cleanup_sample_environment(
 
     yield from bps.abs_set(
         detector_motion.shutter,
-        int(not LOWER_DETECTOR_SHUTTER_AFTER_SCAN),
+        ShutterState.CLOSED if LOWER_DETECTOR_SHUTTER_AFTER_SCAN else ShutterState.OPEN,
         group=group,
     )
 
