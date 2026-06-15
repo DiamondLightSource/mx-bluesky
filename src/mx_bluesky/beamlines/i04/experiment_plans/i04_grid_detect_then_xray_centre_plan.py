@@ -84,7 +84,9 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
+    GridScanParams,
     SpecifiedThreeDGridScan,
+    fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
     set_transmission_and_trigger_xbpm_feedback_before_collection_decorator,
@@ -224,7 +226,7 @@ def i04_default_grid_detect_and_xray_centre(
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
-            yield from grid_detect_then_xray_centre(
+            grid_scan_params = yield from grid_detect_then_xray_centre(
                 composite=composite,
                 parameters=grid_common_params,
                 xrc_params_type=SpecifiedThreeDGridScan,
@@ -239,6 +241,7 @@ def i04_default_grid_detect_and_xray_centre(
                 yield from get_results_and_move_to_xtal(
                     composite,
                     grid_common_params.specified_grid_params,
+                    grid_scan_params,
                     flyscan_event_handler,
                 )
             except CrystalNotFoundError:
@@ -297,6 +300,7 @@ def create_gridscan_callbacks() -> tuple[
 def construct_i04_specific_features(
     xrc_composite: GridDetectThenXRayCentreComposite,
     xrc_parameters: SpecifiedThreeDGridScan,
+    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     """
     Get all the information needed to do the i04 XRC flyscan.
@@ -327,10 +331,11 @@ def construct_i04_specific_features(
         group="flyscan_zebra_tidy",
         wait=True,
     )
+    zebra_fgs_params = fast_gridscan_params(xrc_parameters, grid_scan_params)
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
         xrc_composite.zebra_fast_grid_scan,
-        xrc_parameters.fast_gridscan_params,
+        zebra_fgs_params,
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_fast_gridscan_features(
