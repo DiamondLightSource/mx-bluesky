@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Annotated, Generic, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -235,10 +234,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
 
         return self
 
-    @property
-    @abstractmethod
-    def fast_gridscan_params(self) -> GridScanParamType: ...
-
     def do_set_stub_offsets(self, value: bool):
         self._set_stub_offsets = value
 
@@ -330,21 +325,24 @@ class SpecifiedThreeDGridScan(
 
         return self
 
-    @property
-    def fast_gridscan_params(self) -> ZebraGridScanParamsThreeD:
-        return ZebraGridScanParamsThreeD(
-            x_steps=self.x_steps,
-            y_steps=self.y_steps[0],
-            z_steps=self.y_steps[1],
-            x_step_size_mm=self.x_step_size_um / 1000,
-            y_step_size_mm=self.y_step_sizes_um[0] / 1000,
-            z_step_size_mm=self.y_step_sizes_um[1] / 1000,
-            x_start_mm=self.x_start_um / 1000,
-            y1_start_mm=self.y_starts_um[0] / 1000,
-            z1_start_mm=self.z_starts_um[0] / 1000,
-            y2_start_mm=self.y_starts_um[1] / 1000,
-            z2_start_mm=self.z_starts_um[1] / 1000,
-            set_stub_offsets=self._set_stub_offsets,
-            dwell_time_ms=self.exposure_time_s * 1000,
-            transmission_fraction=self.transmission_frac,
-        )
+
+def fast_gridscan_params(
+    expt_params: SpecifiedGrids, grid_scan_params: GridScanParams
+) -> ZebraGridScanParamsThreeD:
+    return ZebraGridScanParamsThreeD(
+        x_steps=grid_scan_params.x_steps,
+        y_steps=grid_scan_params.y_steps[0],
+        z_steps=grid_scan_params.y_steps[1],
+        x_step_size_mm=grid_scan_params.x_step_size_um / 1000,
+        y_step_size_mm=grid_scan_params.y_step_sizes_um[0] / 1000,
+        z_step_size_mm=grid_scan_params.y_step_sizes_um[1] / 1000,
+        x_start_mm=grid_scan_params.x_start_um / 1000,
+        y1_start_mm=grid_scan_params.y_starts_um[0] / 1000,
+        z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
+        y2_start_mm=grid_scan_params.y_starts_um[1] / 1000,
+        z2_start_mm=grid_scan_params.z_starts_um[1] / 1000,
+        # TODO remove this private access
+        set_stub_offsets=expt_params._set_stub_offsets,  # noqa: SLF001
+        dwell_time_ms=expt_params.exposure_time_s * 1000,
+        transmission_fraction=expt_params.transmission_frac,
+    )
