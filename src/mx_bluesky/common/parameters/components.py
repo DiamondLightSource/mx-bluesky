@@ -24,13 +24,11 @@ from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
-    TEST_MODE,
     USE_NUMTRACKER,
-    DetectorParamConstants,
     GridscanParamConstants,
 )
 
-PARAMETER_VERSION = Version.parse("5.3.0")
+PARAMETER_VERSION = Version.parse("6.0.0")
 
 
 def get_param_version() -> SemanticVersion:
@@ -96,6 +94,10 @@ class IspybExperimentType(StrEnum):
     GRIDSCAN_3D = "Mesh3D"
 
 
+class WithNexusWriter(BaseModel):
+    indices_per_writer: tuple[int]
+
+
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
         extra="allow",
@@ -154,11 +156,7 @@ class WithOptionalEnergyChange(BaseModel):
 class WithVisit(BaseModel):
     beamline: str = Field(default="BL03I", pattern=r"BL\d{2}[BIJS]")
     visit: str = Field(min_length=1)
-    det_dist_to_beam_converter_path: str = Field(
-        default=DetectorParamConstants.BEAM_XY_LUT_PATH
-    )
     detector_distance_mm: float | None = Field(default=None, gt=0)
-    insertion_prefix: str = "SR03S" if TEST_MODE else "SR03I"
 
 
 class DiffractionExperiment(
@@ -208,11 +206,15 @@ class WithScan(BaseModel):
 
     @property
     @abstractmethod
-    def scan_points(self) -> AxesPoints: ...
+    def scan_points(self) -> list[AxesPoints]: ...
+
+    """Per grid"""
 
     @property
     @abstractmethod
     def num_images(self) -> int: ...
+
+    """Must be same for each grid"""
 
 
 class WithPandaGridScan(BaseModel):
@@ -241,28 +243,32 @@ class DiffractionExperimentWithSample(DiffractionExperiment, WithSample): ...
 
 
 class OptionalXyzStarts(BaseModel):
-    x_start_um: float | None = None
-    y_start_um: float | None = None
-    z_start_um: float | None = None
+    x_start_um: float = 0  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
+    y_starts_um: list[float | None] | None = None
+    z_starts_um: list[float | None] | None = None
 
 
 class XyzStarts(BaseModel):
     x_start_um: float
-    y_start_um: float
-    z_start_um: float
+    y_starts_um: list[float]
+    z_starts_um: list[float]
 
-    def _start_for_axis(self, axis: XyzAxis) -> float:
+    def _start_for_axis(self, axis: XyzAxis, grid: int) -> float:
         match axis:
             case XyzAxis.X:
                 return self.x_start_um
             case XyzAxis.Y:
-                return self.y_start_um
+                return self.y_starts_um[grid]
             case XyzAxis.Z:
-                return self.z_start_um
+                return self.z_starts_um[grid]
 
 
 class OptionalGonioAngleStarts(BaseModel):
-    omega_start_deg: float | None = None
+    # Gridscans have different omega starts
+    # See https://github.com/DiamondLightSource/mx-bluesky/issues/1631 for why
+    # we use int
+    omega_starts_deg: list[int] = [0, 90]
+
     phi_start_deg: float | None = None
     chi_start_deg: float | None = None
     kappa_start_deg: float | None = None

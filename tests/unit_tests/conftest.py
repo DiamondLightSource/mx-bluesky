@@ -8,27 +8,50 @@ from pathlib import Path
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator
+from daq_config_server import ConfigClient
 from dodal.beamlines import i03
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import (
+    ApertureScatterguard,
+    ApertureValue,
+)
+from dodal.devices.attenuator.attenuator import (
+    BinaryFilterAttenuator,
+)
 from dodal.devices.backlight import Backlight
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i03 import Beamstop
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
+from dodal.devices.fast_grid_scan import (
+    PandAFastGridScan,
+    ZebraFastGridScanThreeD,
+)
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
+from dodal.devices.thawer import Thawer
+from dodal.devices.undulator import UndulatorInKeV
+from dodal.devices.xbpm_feedback import XBPMFeedback
+from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    MXZebraShutter,
+    ZebraShutterState,
+)
 from dodal.devices.zocalo import ZocaloResults
 from event_model import RunStart
 from event_model.documents import Event
@@ -50,12 +73,14 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    generate_start_info_from_omega_map,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
@@ -67,13 +92,17 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
+    GridscanParamConstants,
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GridCommon, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+)
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
@@ -185,19 +214,30 @@ def assert_event(mock_call, expected):
 
 
 def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridscanISPyBCallback
+    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
-        GridscanISPyBCallback(
+        GridDetectAndScanISPyBCallback(
             param_type=SpecifiedThreeDGridScan,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,
+                lambda: generate_start_info_from_omega_map(
+                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+                ),
             ),
         ),
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_default_beam_xy_lut():
+    with patch(
+        "mx_bluesky.common.parameters.constants.DetectorParamConstants.BEAM_XY_LUT_PATH",
+        "tests/test_data/test_lookup_table.txt",
+    ):
+        yield
 
 
 @pytest.fixture
@@ -219,13 +259,13 @@ def use_beamline_t01():
 
 
 @pytest.fixture
-def mock_subscriptions(test_fgs_params):
+def mock_subscriptions(test_three_d_grid_params):
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb"
+            "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb"
         ) as mock_store_in_ispyb,
     ):
         mock_store_in_ispyb.return_value.begin_deposition.return_value = IspybIds(
@@ -242,26 +282,21 @@ def mock_subscriptions(test_fgs_params):
         yield (nexus_callback, ispyb_callback)
 
 
-ReWithSubs = tuple[RunEngine, tuple[GridscanNexusFileCallback | GridscanISPyBCallback]]
+ReWithSubs = tuple[
+    RunEngine, tuple[GridscanNexusFileCallback | GridDetectAndScanISPyBCallback]
+]
 
 
 @pytest.fixture
 def run_engine_with_subs(
     run_engine: RunEngine,
-    mock_subscriptions: tuple[GridscanNexusFileCallback | GridscanISPyBCallback],
+    mock_subscriptions: tuple[
+        GridscanNexusFileCallback | GridDetectAndScanISPyBCallback
+    ],
 ) -> Generator[ReWithSubs, Any, None]:
     for cb in list(mock_subscriptions):
         run_engine.subscribe(cb)
     yield run_engine, mock_subscriptions
-
-
-@pytest.fixture
-def test_fgs_params(tmp_path, patch_beamline_env_variable):
-    return SpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
-        )
-    )
 
 
 def mock_zocalo_trigger(zocalo: ZocaloResults, result):
@@ -295,7 +330,7 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 
 def run_generic_ispyb_handler_setup(
-    ispyb_handler: GridscanISPyBCallback,
+    ispyb_handler: GridDetectAndScanISPyBCallback,
     params: SpecifiedThreeDGridScan,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
@@ -344,7 +379,7 @@ async def zebra_fast_grid_scan():
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_fgs_params: SpecifiedThreeDGridScan,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -362,7 +397,9 @@ async def fake_fgs_composite(
 
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
-    fake_composite.eiger.set_detector_parameters(test_fgs_params.detector_params)
+    fake_composite.eiger.set_detector_parameters(
+        test_three_d_grid_params.detector_params
+    )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
 
@@ -416,7 +453,7 @@ def test_full_grid_scan_params(tmp_path):
         "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
         tmp_path,
     )
-    return GridCommon(**params)
+    return GenericGrid(**params)
 
 
 @pytest.fixture
@@ -503,12 +540,12 @@ class _BasePathProvider(PathProvider):
 
 # See https://github.com/DiamondLightSource/dodal/issues/1455
 @pytest.fixture
-def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrau:
+def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrauDetector:
     with init_devices(mock=True):
         base_provider = _BasePathProvider(tmp_path)
-        path = AutoMaxIncrementingPathProvider(base_provider)
-        detector = CommissioningJungfrau("", "", path)
-    set_mock_value(detector._writer.writer_ready, 1)
+        path_provider = AutoMaxIncrementingPathProvider(base_provider)
+        detector = CommissioningJungfrauDetector("", "", path_provider, "CAM:")
+    set_mock_value(detector.writer.writer_ready, 1)
     run_engine.subscribe(base_provider.run_start, "start")
 
     return detector
@@ -611,4 +648,84 @@ def patch_config_paths(monkeypatch):
     monkeypatch.setattr(
         "dodal.beamlines.i04.BEAMLINE_PARAMETERS_PATH",
         TEST_BEAMLINE_PARAMETERS,
+    )
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(
+        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
+    )
+
+
+@pytest.fixture
+def oav(test_config_files):
+    parameters = OAVConfigBeamCentre(
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
+    )
+    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
+
+    set_mock_value(oav.zoom_controller.level, "5.0x")
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
+
+    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    yield oav
+
+
+@pytest.fixture()
+def fake_create_rotation_devices(
+    beamstop_phase1: Beamstop,
+    eiger: EigerDetector,
+    smargon: Smargon,
+    zebra: Zebra,
+    detector_motion: DetectorMotion,
+    backlight: Backlight,
+    attenuator: BinaryFilterAttenuator,
+    flux: Flux,
+    undulator: UndulatorInKeV,
+    aperture_scatterguard: ApertureScatterguard,
+    synchrotron: Synchrotron,
+    s4_slit_gaps: S4SlitGaps,
+    dcm: DCM,
+    robot: BartRobot,
+    oav: OAV,
+    sample_shutter: MXZebraShutter,
+    xbpm_feedback: XBPMFeedback,
+    thawer: Thawer,
+    beamsize: BeamsizeBase,
+    sim_run_engine: RunEngineSimulator,
+):
+    set_mock_value(smargon.omega.max_velocity, 131)
+    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    sim_run_engine.add_handler(
+        "read",
+        lambda msg: {
+            "gonio-wrapped_omega-offset_and_phase": {"value": np.array([0, 0])}
+        },
+        "gonio-wrapped_omega",
+    )
+    return RotationScanComposite(
+        attenuator=attenuator,
+        backlight=backlight,
+        beamsize=beamsize,
+        beamstop=beamstop_phase1,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        eiger=eiger,
+        flux=flux,
+        gonio=smargon,
+        undulator=undulator,
+        aperture_scatterguard=aperture_scatterguard,
+        synchrotron=synchrotron,
+        s4_slit_gaps=s4_slit_gaps,
+        zebra=zebra,
+        robot=robot,
+        oav=oav,
+        sample_shutter=sample_shutter,
+        xbpm_feedback=xbpm_feedback,
+        thawer=thawer,
     )

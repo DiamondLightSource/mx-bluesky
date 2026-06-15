@@ -21,7 +21,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
@@ -48,7 +48,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
     panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     backlight: Backlight
     xbpm_feedback: XBPMFeedback
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
