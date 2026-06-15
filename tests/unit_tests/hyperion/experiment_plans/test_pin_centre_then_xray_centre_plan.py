@@ -16,7 +16,10 @@ from ophyd_async.core import get_mock_put
 
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     create_parameters_for_grid_detection,
@@ -413,10 +416,14 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     test_three_d_grid_params: SpecifiedThreeDGridScan,
+    three_d_grid_scan_params: GridScanParams,
     test_config_files,
     run_engine: RunEngine,
 ):
-    mock_create_flyscan_params.return_value = test_three_d_grid_params
+    mock_create_flyscan_params.return_value = (
+        test_three_d_grid_params,
+        three_d_grid_scan_params,
+    )
     run_engine(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
@@ -425,7 +432,8 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
         )
     )
     mock_fetch_xrc_results.assert_called_once()
-    assert mock_fetch_xrc_results.call_args[0][1] == test_three_d_grid_params
+    grid_scan_params = mock_fetch_xrc_results.call_args[0][1]
+    assert grid_scan_params == three_d_grid_scan_params
 
 
 @patch(

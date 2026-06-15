@@ -33,7 +33,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
     GridParamUpdate,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
-    ispyb_activation_wrapper,
+    ispyb_activation_decorator,
 )
 from mx_bluesky.common.parameters.constants import (
     OavConstants,
@@ -65,7 +65,7 @@ def grid_detect_then_xray_centre(
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
-) -> MsgGenerator:
+) -> MsgGenerator[GridScanParams]:
     """
     A plan which combines the collection of snapshots from the OAV and the determination
     of the grid dimensions to use for the following grid scan.
@@ -77,16 +77,17 @@ def grid_detect_then_xray_centre(
 
     oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config)
 
+    grid_scan_params = None
+
+    @ispyb_activation_decorator(parameters)
     def plan_to_perform():
-        yield from ispyb_activation_wrapper(
-            detect_grid_and_do_gridscan(
-                composite,
-                parameters,
-                oav_params,
-                xrc_params_type,
-                construct_beamline_specific,
-            ),
+        nonlocal grid_scan_params
+        grid_scan_params = yield from detect_grid_and_do_gridscan(
+            composite,
             parameters,
+            oav_params,
+            xrc_params_type,
+            construct_beamline_specific,
         )
 
     yield from start_preparing_data_collection_then_do_plan(
@@ -98,6 +99,9 @@ def grid_detect_then_xray_centre(
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
 
+    assert grid_scan_params
+    return grid_scan_params
+
 
 # This function should be private but is currently called by Hyperion, see https://github.com/DiamondLightSource/mx-bluesky/issues/1148
 def detect_grid_and_do_gridscan(
@@ -106,7 +110,7 @@ def detect_grid_and_do_gridscan(
     oav_params: OAVParameters,
     xrc_params_type: type[SpecifiedThreeDGridScan],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
-):
+) -> MsgGenerator[GridScanParams]:
     grid_detect_params = GridDetectionParams(
         box_size_um=parameters.box_size_um, grid_width_um=parameters.grid_width_um
     )
@@ -164,6 +168,8 @@ def detect_grid_and_do_gridscan(
         composite, xrc_params, grid_scan_params, beamline_specific
     )
 
+    return grid_scan_params
+
 
 def _run_grid_detection_plan(
     composite: GridDetectThenXRayCentreComposite,
@@ -196,7 +202,7 @@ class ConstructBeamlineSpecificFeatures(
         self,
         xrc_composite: TFlyScanEssentialDevices,
         xrc_parameters: TSpecifiedThreeDGridScan,
-        grid_scan_parameters: GridScanParams,
+        grid_scan_params: GridScanParams,
     ) -> BeamlineSpecificFGSFeatures: ...
 
 
