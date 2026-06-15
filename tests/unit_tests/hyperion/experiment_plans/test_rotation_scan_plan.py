@@ -262,10 +262,6 @@ def test_calculate_motion_profile_computes_values_for_wrapped_axis(
 
 
 @patch(
-    "dodal.common.beamlines.beamline_utils.active_device_is_same_type",
-    lambda a, b: True,
-)
-@patch(
     "mx_bluesky.hyperion.experiment_plans.rotation_scan_plan.rotation_scan_plan",
     autospec=True,
 )
@@ -1066,7 +1062,6 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
             0.1,
         )
         with (
-            patch("bluesky.plan_stubs.wait", autospec=True),
             patch(
                 "bluesky.preprocessors.__read_and_stash_a_motor",
                 fake_read,

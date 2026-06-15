@@ -23,7 +23,7 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
@@ -86,7 +86,7 @@ class RotationScanComposite(OavSnapshotComposite):
     undulator: UndulatorInKeV
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     zebra: Zebra
     oav: OAV
     xbpm_feedback: XBPMFeedback

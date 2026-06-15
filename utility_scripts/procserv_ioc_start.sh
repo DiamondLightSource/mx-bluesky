@@ -15,5 +15,8 @@ source /dls_sw/etc/profile
 # Activate virtual environment
 source $env_directory/.venv/bin/activate
 
+export LOG_DIR="/var/log/bluesky"
+export DEBUG_LOG_DIR="/var/log/bluesky-debug"
+
 # Start blueapi server
 blueapi -c "${config_directory}/blueapi_config.yaml" serve

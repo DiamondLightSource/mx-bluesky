@@ -3,15 +3,18 @@ from dodal.beamlines.i24 import VerticalGoniometer
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
 from dodal.devices.beamlines.i24.beamstop import Beamstop
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
-from dodal.devices.hutch_shutter import HutchInterlock, InterlockedHutchShutter
+from dodal.devices.hutch_shutter import InterlockedHutchShutter
+from dodal.devices.interlocks import PSSInterlock
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.core import init_devices
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
@@ -21,15 +24,17 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
 
 @pytest.fixture
 def rotation_composite(
-    jungfrau: CommissioningJungfrau, zebra: Zebra, enum_attenuator: EnumFilterAttenuator
+    jungfrau: CommissioningJungfrauDetector,
+    zebra: Zebra,
+    enum_attenuator: EnumFilterAttenuator,
 ) -> RotationScanComposite:
     with init_devices(mock=True):
         aperture = Aperture("")
         gonio = VerticalGoniometer("")
         synchrotron = Synchrotron("")
-        sample_shutter = ZebraShutter("")
+        sample_shutter = MXZebraShutter("")
         xbpm_feedback = XBPMFeedback("")
-        hutch_shutter = InterlockedHutchShutter("", HutchInterlock(""))
+        hutch_shutter = InterlockedHutchShutter("", PSSInterlock(""))
         beamstop = Beamstop("")
         det_stage = YZStage(
             "",
