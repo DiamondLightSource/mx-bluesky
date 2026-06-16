@@ -5,7 +5,6 @@ from sys import argv
 
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext
-
 from daq_config_server import ConfigClient
 from dodal.common.beamlines.beamline_utils import set_config_client
 
@@ -31,6 +30,7 @@ from mx_bluesky.hyperion.supervisor import SupervisorRunner
 from mx_bluesky.hyperion.utils.context import setup_context
 
 DEFAULT_CONFIG_SERVER_ENDPOINT = "https://i03-daq-config.diamond.ac.uk"
+
 
 def initialise_globals(args: HyperionArgs):
     """Do all early main low-level application initialisation."""
