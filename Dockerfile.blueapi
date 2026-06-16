@@ -1,7 +1,7 @@
 # Before changing this BlueAPI version number, you should check that 
 # the BlueAPI pin in pyproject.toml is compatible, else the version will
 # be overridden
-FROM ghcr.io/diamondlightsource/blueapi:latest
+FROM ghcr.io/diamondlightsource/blueapi:latest as base
 USER root
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -12,13 +12,20 @@ RUN apt update -y && \
     apt upgrade -y && \
     apt install -y libgl1 libglib2.0-0
 
-RUN uv pip install --no-cache-dir --no-compile mx-bluesky
+FROM base as work
 
-# Create and set permissions for uv venv, root cache
-# and user cache. Allows Blueapi's setup-scratch
-# to change dependencies without permission errors
-RUN mkdir -p /app/.venv /root/.cache/uv /home/app/.cache/uv \
-    && chmod -R 777 /app/.venv /root/.cache/uv /home/app/.cache/uv
+# Temporary work folder because uv sync needs to write to this even though
+# we don't need it in the build image
+COPY --chown=1000:1000 . /work
 
+FROM base as build
 
+# User 1000 - same as owner of base image .venv files
 USER ubuntu
+
+# If running this build locally in podman, and this fails here you may need to run
+# chcon -Rt container_file_t .
+# in order for podman to bind mount the working directory
+RUN --mount=type=bind,from=work,source=/work,target=/tmp/work,rw --mount=type=tmpfs,target=/tmp/uvcache \
+    cd /tmp/work && \
+    UV_COMPILE_BYTECODE=0 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv uv sync --cache-dir=/tmp/uvcache --locked
