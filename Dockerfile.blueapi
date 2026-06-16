@@ -1,6 +1,11 @@
-# Before changing this BlueAPI version number, you should check that 
-# the BlueAPI pin in pyproject.toml is compatible, else the version will
-# be overridden
+# Generate a customised version of the stock BlueAPI container image
+# The image updates the virtual environment in /app/.venv with the correct versions of
+# mx-bluesky dependencies as determined from the uv.lock file
+#
+# The image does not contain the mx-bluesky or dodal workspaces; these are
+# created in the scratch folder at runtime via the blueapi initContainer
+
+# An assumption is made here that at release time the latest blueapi is in effect
 FROM ghcr.io/diamondlightsource/blueapi:latest as base
 USER root
 
