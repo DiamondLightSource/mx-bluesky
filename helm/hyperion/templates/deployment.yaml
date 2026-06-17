@@ -15,7 +15,6 @@ spec:
         app: hyperion
     spec:
       securityContext:
-        fsGroup: {{ .Values.supervisor.runAsGroup }}
         runAsGroup: {{ .Values.supervisor.runAsGroup }}
         runAsUser: {{ .Values.supervisor.runAsUser }}
       volumes:
