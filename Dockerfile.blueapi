@@ -33,4 +33,5 @@ USER ubuntu
 # in order for podman to bind mount the working directory
 RUN --mount=type=bind,from=work,source=/work,target=/tmp/work,rw --mount=type=tmpfs,target=/tmp/uvcache \
     cd /tmp/work && \
-    UV_COMPILE_BYTECODE=0 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv uv sync --cache-dir=/tmp/uvcache --locked
+    UV_COMPILE_BYTECODE=0 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv uv sync --cache-dir=/tmp/uvcache --locked && \
+    chmod -R 777 /app/.venv
