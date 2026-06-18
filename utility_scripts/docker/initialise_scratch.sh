@@ -24,5 +24,5 @@ fi
 # they still need to be added to PYTHONPATH in the container
 cd $APP_ROOT/mx-bluesky
 . ./.venv/bin/activate
-uv pip install -e $SCRATCH_ROOT/mx-bluesky
-uv pip install -e $SCRATCH_ROOT/dodal
+uv pip install --no-cache -e $SCRATCH_ROOT/mx-bluesky
+uv pip install --no-cache -e $SCRATCH_ROOT/dodal
