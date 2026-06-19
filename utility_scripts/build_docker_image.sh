@@ -62,7 +62,7 @@ if [[ $BUILD == 1 ]]; then
   IMAGE_VERSION=$(extract_version)
   MX_BLUESKY_VERSION=${IMAGE_VERSION/-/+}
   LATEST_TAG=$IMAGE:dev
-  TMPDIR=/tmp podman build \
+  BIGFILES_TMPDIR=/scratch/tmp TMPDIR=/tmp podman build \
     $PODMAN_FLAGS \
     --build-arg SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MX_BLUESKY=$MX_BLUESKY_VERSION \
     -f $PROJECTDIR/Dockerfile.hyperion \

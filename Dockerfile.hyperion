@@ -53,7 +53,8 @@ USER hyperion:hyperion
 
 RUN git clone --bare https://github.com/DiamondLightSource/dodal.git /app/dodal/.git
 
-COPY --chown=hyperion:hyperion --chmod=o=+rwX --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
+COPY --chown=hyperion:hyperion --from=uv-staging /app/mx-bluesky/.venv /app/mx-bluesky/.venv
+RUN chmod -R o=rwX /app/mx-bluesky/.venv
 COPY --chown=hyperion:hyperion utility_scripts/docker/initialise_scratch.sh /app/scripts/
 
 EXPOSE 5006
