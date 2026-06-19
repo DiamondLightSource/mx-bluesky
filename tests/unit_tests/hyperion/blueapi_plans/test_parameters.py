@@ -42,8 +42,8 @@ def test_map_external_to_internal_roi_mode(tmp_path, expected_roi_mode):
         "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
         tmp_path,
     )
-    external_params = LoadCentreCollectParams(**raw_params)
     raw_params["robot_load_then_centre"]["use_roi_mode"] = expected_roi_mode
+    external_params = LoadCentreCollectParams(**raw_params)
     actual_internal = load_centre_collect_to_internal(external_params)
     assert actual_internal.robot_load_then_centre.use_roi_mode == expected_roi_mode
 
