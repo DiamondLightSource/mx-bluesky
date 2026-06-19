@@ -25,6 +25,9 @@ from mx_bluesky.hyperion.blueapi.parameters import (
     PinTypeParam,
     SingleSamplePinTypeParam,
 )
+from mx_bluesky.hyperion.external_interaction.config_server import (
+    get_hyperion_feature_settings,
+)
 
 T = TypeVar("T", bound=WithVisit)
 MULTIPIN_PREFIX = "multipin"
@@ -152,7 +155,7 @@ def _populate_parameters_from_agamemnon(
     pin_type = _get_pin_type_from_agamemnon_collect_parameters(agamemnon_params)
     collections = agamemnon_params["collection"]
     visit_directory, file_name = path.split(agamemnon_params["prefix"])
-
+    use_roi_mode = get_hyperion_feature_settings().XRC_USE_ROI_MODE
     return [
         LoadCentreCollectParams.model_validate(
             {
@@ -174,6 +177,7 @@ def _populate_parameters_from_agamemnon(
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
                     "exposure_time_s": GridscanParamConstants.EXPOSURE_TIME_S,
+                    "use_roi_mode": use_roi_mode,
                 },
                 "multi_rotation_scan": {
                     "comment": collection["comment"],
