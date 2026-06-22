@@ -85,7 +85,7 @@ spec:
               value: "{{ .Values.configServer.url }}"
             - name: PYTHONPATH
               value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
-            {{- range $key, $value := .Values.application.env }}
+            {{- range $key, $value := .Values.supervisor.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}

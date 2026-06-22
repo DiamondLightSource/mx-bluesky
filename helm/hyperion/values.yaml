@@ -6,14 +6,14 @@ application:
   dev: false
   logDir: "/var/logs/mx-bluesky"
   terminationGracePeriodSeconds: 30
-  env:
-    EPICS_CA_NAME_SERVERS: "gateways:9064"
-    EPICS_PVA_NAME_SERVERS: "gateways:9065"
 supervisor:
   servicePort: 80
   containerPort: 5006
   runAsUser: 1000
   runAsGroup: 1000
+  env:
+    EPICS_CA_NAME_SERVERS: "gateways:9064"
+    EPICS_PVA_NAME_SERVERS: "gateways:9065"
 callbacks:
   runAsUser: 1000
   runAsGroup: 1000
