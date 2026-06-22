@@ -52,10 +52,6 @@ spec:
               value: /tmp
             - name: DODAL_BRANCH
               value: {{ .Values.initContainer.dodalBranch }}
-            {{- range $key, $value := .Values.application.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -89,6 +85,10 @@ spec:
               value: "{{ .Values.configServer.url }}"
             - name: PYTHONPATH
               value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
+            {{- range $key, $value := .Values.application.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: "/status"
