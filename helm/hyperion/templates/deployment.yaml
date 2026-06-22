@@ -48,11 +48,10 @@ spec:
             - name: scratch
               mountPath: "/scratch"
           env:
+            - name: HOME
+              value: /tmp
             - name: DODAL_BRANCH
               value: {{ .Values.initContainer.dodalBranch }}
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
