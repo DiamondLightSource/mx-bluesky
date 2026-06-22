@@ -5,6 +5,9 @@
 SCRATCH_ROOT=/scratch
 APP_ROOT=/app
 
+git config --global -add safe.directory /app/dodal/.git
+git config --global -add safe.directory /app/mx-bluesky/.git
+
 if [ ! -d $SCRATCH_ROOT/dodal/.git ]; then
   git clone /app/dodal/.git $SCRATCH_ROOT/dodal
   echo "Checking out dodal branch $DODAL_BRANCH"
