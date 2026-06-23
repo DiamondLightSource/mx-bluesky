@@ -77,6 +77,7 @@ spec:
               {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
+              sleep 600
               {{- end }}
           resources:
             limits:
@@ -143,6 +144,7 @@ spec:
               {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
+              sleep 600
               {{- end }}
           securityContext:
             fsGroup: {{ .Values.callbacks.runAsGroup }}
