@@ -37,12 +37,13 @@ kind: ConfigMap
 metadata:
   name: hyperion-etc-config
 data:
+  # Debugging in VSCode requires username and home folder to be resolvable in /etc/passwd
   passwd: |
     root:x:0:0:root:/root:/bin/bash
     nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
     hyperion:x:1000:1000::/app:/bin/sh
-    {{ .Values.callbacks.userName }}:x:{{ .Values.callbacks.runAsUser }}:{{ .Values.callbacks.runAsGroup }}:{{ .Values.callbacks.userName }}:
-    {{ .Values.supervisor.userName }}:x:{{ .Values.supervisor.runAsUser }}:{{ .Values.supervisor.runAsGroup }}:{{ .Values.supervisor.userName }}:
+    {{ .Values.callbacks.userName }}:x:{{ .Values.callbacks.runAsUser }}:{{ .Values.callbacks.runAsGroup }}:{{ .Values.callbacks.userName }}:/home/{{ .Values.callbacks.userName }}:/usr/sbin/nologin
+    {{ .Values.supervisor.userName }}:x:{{ .Values.supervisor.runAsUser }}:{{ .Values.supervisor.runAsGroup }}:{{ .Values.supervisor.userName }}:/home/{{ .Values.supervisor.userName }}:/usr/sbin/nologin
   group: |
     root:x:0:
     hyperion:x:1000:
