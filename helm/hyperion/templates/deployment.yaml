@@ -33,14 +33,14 @@ spec:
         - name: zocalo-config
           configMap:
             name: zocalo-config
-            defaultMode: 420
+            defaultMode: "644"
         - name: zocalo-secrets
           secret:
             secretName: rmq-creds
         - name: etc
           configMap:
             name: hyperion-etc-config
-            defaultMode: 644
+            defaultMode: "644"
       initContainers:
         - name: hyperion-init
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
