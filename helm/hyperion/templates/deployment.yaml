@@ -15,9 +15,6 @@ spec:
         app: hyperion
     spec:
       terminationGracePeriodSeconds: {{ .Values.application.terminationGracePeriodSeconds }}
-      securityContext:
-        runAsGroup: {{ .Values.supervisor.runAsGroup }}
-        runAsUser: {{ .Values.supervisor.runAsUser }}
       volumes:
         - name: scratch
           persistentVolumeClaim:
@@ -40,6 +37,10 @@ spec:
         - name: zocalo-secrets
           secret:
             secretName: rmq-creds
+        - name: etc
+          configMap:
+            name: hyperion-etc-config
+            defaultMode: 644
       initContainers:
         - name: hyperion-init
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -47,11 +48,20 @@ spec:
           volumeMounts:
             - name: scratch
               mountPath: "/scratch"
+            - name: hyperion-etc-config
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: hyperion-etc-config
+              mountPath: /etc/group
+              subPath: group
           env:
             - name: HOME
               value: /tmp
             - name: DODAL_BRANCH
               value: {{ .Values.initContainer.dodalBranch }}
+          securityContext:
+            runAsGroup: {{ .Values.supervisor.runAsGroup }}
+            runAsUser: {{ .Values.supervisor.runAsUser }}
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -111,6 +121,15 @@ spec:
               readOnly: true
             - mountPath: "/var/log/bluesky"
               name: logdir
+            - name: hyperion-etc-config
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: hyperion-etc-config
+              mountPath: /etc/group
+              subPath: group
+          securityContext:
+            runAsGroup: {{ .Values.supervisor.runAsGroup }}
+            runAsUser: {{ .Values.supervisor.runAsUser }}
         - name: hyperion-callbacks
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
           command: ['/bin/bash', '-c']
@@ -171,6 +190,12 @@ spec:
               name: zocalo-secrets
             - mountPath: "/etc/secrets/expeye"
               name: expeye-secrets
+            - name: hyperion-etc-config
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: hyperion-etc-config
+              mountPath: /etc/group
+              subPath: group
         - name: hyperion-scratch
           # container provided in order for vscode to attach to a writable scratch
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -178,6 +203,12 @@ spec:
           volumeMounts:
             - mountPath: "/scratch"
               name: scratch
+            - name: hyperion-etc-config
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: hyperion-etc-config
+              mountPath: /etc/group
+              subPath: group
           command: ['/bin/bash', '-c']
           args:
             - |
