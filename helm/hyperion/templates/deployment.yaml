@@ -40,6 +40,10 @@ spec:
           configMap:
             name: hyperion-etc-config
             defaultMode: 420
+        # Required for vscode to install remote debugging plugins in the debug container
+        - name: debug-home
+          emptyDir:
+            sizeLimit: 1Gi
       initContainers:
         - name: hyperion-init
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -208,9 +212,11 @@ spec:
             - name: etc
               mountPath: /etc/group
               subPath: group
+            - name: debug-home
+              mountPath: /home/{{ .Values.supervisor.userName }}
           env:
             - name: HOME
-              value: /tmp
+              value: /home/{{ .Values.supervisor.userName }}
           command: ['/bin/bash', '-c']
           args:
             - |
