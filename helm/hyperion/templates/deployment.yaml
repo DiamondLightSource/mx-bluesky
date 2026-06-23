@@ -48,10 +48,10 @@ spec:
           volumeMounts:
             - name: scratch
               mountPath: "/scratch"
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/passwd
               subPath: passwd
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/group
               subPath: group
           env:
@@ -121,10 +121,10 @@ spec:
               readOnly: true
             - mountPath: "/var/log/bluesky"
               name: logdir
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/passwd
               subPath: passwd
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/group
               subPath: group
           securityContext:
@@ -190,10 +190,10 @@ spec:
               name: zocalo-secrets
             - mountPath: "/etc/secrets/expeye"
               name: expeye-secrets
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/passwd
               subPath: passwd
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/group
               subPath: group
         - name: hyperion-scratch
@@ -203,10 +203,10 @@ spec:
           volumeMounts:
             - mountPath: "/scratch"
               name: scratch
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/passwd
               subPath: passwd
-            - name: hyperion-etc-config
+            - name: etc
               mountPath: /etc/group
               subPath: group
           command: ['/bin/bash', '-c']
