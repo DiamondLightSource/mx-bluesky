@@ -108,6 +108,14 @@ def get_chip_prog_values(
         pump_repeat_pvar = 5
     elif parameters.pump_repeat == PumpProbeSetting.Repeat10:
         pump_repeat_pvar = 10
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat1:
+        pump_repeat_pvar = 21
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat2:
+        pump_repeat_pvar = 22
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat3:
+        pump_repeat_pvar = 23
+    elif parameters.pump_repeat == PumpProbeSetting.ShortRepeat4:
+        pump_repeat_pvar = 24
     else:
         raise ValueError(f"Unknown pump_repeat, pump_repeat = {parameters.pump_repeat}")
 
@@ -376,6 +384,13 @@ def start_i24(
         SSX_LOGGER.error(msg)
         raise ValueError(msg)
 
+    # Wsunrite parameters.txt to before data collection
+
+    # complete_filename: str
+    # transmission = float(caget(pv.requested_transmission))
+    # wavelength = yield from bps.rd(dcm.wavelength_in_a)
+    # write_userlog(parameters, complete_filename, transmission, wavelength)
+
     # Open the hutch shutter
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
@@ -414,6 +429,7 @@ def finish_i24(
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
 
     # Write a record of what was collected to the processing directory
+    # test move to start
     write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
@@ -572,6 +588,7 @@ def tidy_up_after_collection_plan(
 
     SSX_LOGGER.debug("Notify DCID of end of collection.")
     dcid.notify_end()
+    dcid.collection_complete(datetime.now(), aborted=False)
 
     SSX_LOGGER.debug("Quick summary of settings")
     SSX_LOGGER.debug(
@@ -590,7 +607,7 @@ def run_fixed_target_plan(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
-    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_beam_center"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(
