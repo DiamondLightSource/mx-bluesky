@@ -5,7 +5,6 @@ application:
   beamline: i03
   dev: false
   logDir: "/var/logs/mx-bluesky"
-  terminationGracePeriodSeconds: 30
 supervisor:
   servicePort: 80
   containerPort: 5006
