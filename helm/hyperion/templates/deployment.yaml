@@ -208,6 +208,9 @@ spec:
             - name: etc
               mountPath: /etc/group
               subPath: group
+          env:
+            - name: HOME
+              value: /tmp
           command: ['/bin/bash', '-c']
           args:
             - |
