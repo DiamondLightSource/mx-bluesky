@@ -41,8 +41,8 @@ data:
     root:x:0:0:root:/root:/bin/bash
     nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
     hyperion:x:1000:1000::/app:/bin/sh
-    {{ .Values.callbacks.userName }}:{{ .Values.callbacks.runAsUser }}:x:{{ .Values.callbacks.runAsGroup }}:
-    {{ .Values.supervisor.userName }}:{{ .Values.supervisor.runAsUser }}:x:{{ .Values.supervisor.runAsGroup }}:
+    {{ .Values.callbacks.userName }}:x:{{ .Values.callbacks.runAsUser }}:{{ .Values.callbacks.runAsGroup }}:{{ .Values.callbacks.userName }}:
+    {{ .Values.supervisor.userName }}:x:{{ .Values.supervisor.runAsUser }}:{{ .Values.supervisor.runAsGroup }}:{{ .Values.supervisor.userName }}:
   group: |
     root:x:0:
     hyperion:x:1000:

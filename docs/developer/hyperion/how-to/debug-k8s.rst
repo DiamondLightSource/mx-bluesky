@@ -16,7 +16,9 @@ Essentially the steps are:
     $ echo $KUBECONFIG
 
 In VSCode, run ``Kubernetes: Set Kubeconfig`` and copy the location of your kubeconfig printed from above.
-Then from the Kubernetes plugin tray, expand Clusters -> <cluster> -> Workloads -> Pods -> ``hyperion-scratch``.
+To set your namespace, from the Kubernetes plugin tray, expand Clusters -> <cluster> -> Namespaces, right click
+the namespace and select "Use Namespace".
+Then expand Clusters -> <cluster> -> Workloads -> Pods -> ``hyperion-scratch``.
 Right click -> Attach Visual Studio Code to attach to the scratch pod.
 In the Explorer of the new VSCode window that opens, click Open Folder and enter ``/`` as the folder on the pod to open.
 
