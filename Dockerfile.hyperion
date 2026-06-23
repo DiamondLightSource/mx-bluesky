@@ -16,10 +16,15 @@ ARG DEBIAN_FRONTEND=noninteractive
 # libgl, libglib2.0 for python cv2 dependency
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y libgl1 libglib2.0-0
+    apt-get install -y libgl1 libglib2.0-0 \
+    # libnss required for attaching vscode in debug as it requires user ids to be resolved to names
+    libnss-ldapd
 
 # Install matching uv binaries for our python distro
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# For this pod to understand finding user information from LDAP
+RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Create the hyperion user and group which will be needed in the deployment securityContext
 RUN groupadd -r -g 1000 hyperion && \
