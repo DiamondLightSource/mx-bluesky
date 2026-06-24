@@ -158,9 +158,9 @@ spec:
               cpu: "1"
               memory: "1Gi"
           ports:
-            {{- if .Values.supervisor.enableDebugging }}
+            {{- if .Values.callbacks.enableDebugging }}
             - name: debug
-              containerPort: {{ .Values.supervisor.debugPort }}
+              containerPort: {{ .Values.callbacks.debugPort }}
             {{- end }}
           env:
             - name: LOG_DIR
