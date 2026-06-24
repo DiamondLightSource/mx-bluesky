@@ -29,6 +29,7 @@ Documentation specific for the Hyperion module within MX-Bluesky
             :caption: How-to Guides
             :maxdepth: 1
 
+            how-to/debug-k8s
             how-to/update-panda-ioc
 
         +++
