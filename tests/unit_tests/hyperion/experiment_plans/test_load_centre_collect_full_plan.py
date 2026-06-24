@@ -1,5 +1,6 @@
 import dataclasses
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
@@ -318,6 +319,23 @@ def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
     params["multi_rotation_scan"][key] = value
     with pytest.raises(ValidationError, match="Unexpected keys in multi_rotation_scan"):
         LoadCentreCollect(**params)
+
+
+def test_params_with_snapshot_directory_overrides_defaults(tmp_path: Path):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
+    params["robot_load_then_centre"]["snapshot_directory"] = (
+        "/some/other/path/to/snapshots"
+    )
+    params["multi_rotation_scan"]["snapshot_directory"] = "/another/path/to/snapshots"
+    load_centre_collect = LoadCentreCollect(**params)
+    assert load_centre_collect.robot_load_then_centre.snapshot_directory == Path(
+        "/some/other/path/to/snapshots"
+    )
+    assert load_centre_collect.multi_rotation_scan.snapshot_directory == Path(
+        "/another/path/to/snapshots"
+    )
 
 
 def test_can_serialize_load_centre_collect_robot_load_params(
