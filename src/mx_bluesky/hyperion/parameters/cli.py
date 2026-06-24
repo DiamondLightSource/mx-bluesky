@@ -70,6 +70,7 @@ def parse_callback_args() -> CallbackArgs:
         dev_mode=args.dev,
         watchdog_port=args.watchdog_port,
         stomp_config=args.stomp_config,
+        debug_port=args.debug_port,
     )
 
 

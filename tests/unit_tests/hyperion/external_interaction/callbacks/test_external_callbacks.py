@@ -202,6 +202,21 @@ def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicM
     callback_args = mock_callback_runner.mock_calls[0].args[0]
     assert callback_args.dev_mode
     assert callback_args.watchdog_port == 1234
+    assert not callback_args.debug_port
+
+
+@patch(
+    "sys.argv",
+    new=["hyperion-callbacks", "--watchdog-port", "1234", "--debug-port", "2345"],
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.HyperionCallbackRunner"
+)
+def test_launch_with_debug_port_arg_applies_port(mock_callback_runner: MagicMock):
+    main(dev_mode=True)
+    mock_callback_runner.assert_called_once()
+    callback_args = mock_callback_runner.mock_calls[0].args[0]
+    assert callback_args.debug_port == 2345
 
 
 @patch(
