@@ -60,7 +60,7 @@ class AlertService(Protocol):
                 by default.
 
         """
-        beamline = get_beamline_name("")
+        beamline = get_beamline_name()
         self.raise_alert(f"UDC encountered an error on {beamline}", content, metadata)
 
 
