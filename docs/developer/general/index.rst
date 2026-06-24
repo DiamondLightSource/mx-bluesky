@@ -31,6 +31,7 @@ Documentation is split into four categories, and each is also accessible from li
             how-to/contribute
             how-to/create-a-release
             how-to/deploy-a-release
+            how-to/deploy-hyperion-k8s
             how-to/dev-ops/dev-ops
 
         +++
