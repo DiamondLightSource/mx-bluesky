@@ -30,7 +30,7 @@ EXPECTED_ROBOT_LOAD_AND_CENTRE_PARAMS = {
     "demand_energy_ev": 12700.045934258673,
     "tip_offset_um": 300,
     "grid_width_um": 600,
-    "omega_start_deg": 0,
+    "omega_starts_deg": [0, 90],
     "chi_start_deg": 0,
     "transmission_frac": 1.0,
 }

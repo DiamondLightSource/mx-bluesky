@@ -272,3 +272,33 @@ def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown
     t = threading.Thread(None, wait_for_udc_to_start_then_send_sigterm, daemon=True)
     t.start()
     main()
+
+
+@patch("mx_bluesky.hyperion.__main__.ConfigClient")
+@patch("mx_bluesky.hyperion.__main__.set_config_client")
+@patch(
+    "sys.argv",
+    new=[
+        "hyperion",
+        "--mode",
+        "supervisor",
+        "--dev",
+        "--client-config",
+        "test_client_config",
+        "--supervisor-config",
+        "test_supervisor_config",
+    ],
+)
+def test_supervisor_start_reads_config_client_url(
+    mock_set_config_client: MagicMock,
+    mock_config_client_cls: MagicMock,
+    mock_supervisor_mode: MagicMock,
+    monkeypatch,
+):
+    test_url = "https://test-daq-config.diamond.ac.uk/"
+    monkeypatch.setenv("CONFIG_SERVER_URL", test_url)
+
+    main()
+
+    mock_config_client_cls.assert_called_once_with(test_url)
+    mock_set_config_client.assert_called_once_with(mock_config_client_cls.return_value)

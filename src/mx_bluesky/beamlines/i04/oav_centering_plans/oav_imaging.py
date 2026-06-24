@@ -15,7 +15,7 @@ from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
     ZebraShutterControl,
     ZebraShutterState,
 )
@@ -35,10 +35,10 @@ class FindBeamCentresComposite:
     scintillator: Scintillator
     xbpm_feedback: XBPMFeedback
     max_pixel: MaxPixel
-    centre_ellipse: CentreEllipseMethod
+    beam_centre: CentreEllipseMethod
     attenuator: BinaryFilterAttenuator
     zoom_controller: ZoomControllerWithBeamCentres
-    shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
 
 
 def take_oav_image_with_scintillator_in(
@@ -46,7 +46,7 @@ def take_oav_image_with_scintillator_in(
     image_path: str = "dls_sw/i04/software/bluesky/scratch",
     transmission: float = 1,
     attenuator: BinaryFilterAttenuator = inject("attenuator"),
-    shutter: ZebraShutter = inject("sample_shutter"),
+    shutter: MXZebraShutter = inject("sample_shutter"),
     oav: OAV = inject("oav"),
     robot: BartRobot = inject("robot"),
     beamstop: Beamstop = inject("beamstop"),
@@ -104,7 +104,7 @@ def _prepare_beamline_for_scintillator_images(
     backlight: Backlight,
     scintillator: Scintillator,
     xbpm_feedback: XBPMFeedback,
-    shutter: ZebraShutter,
+    shutter: MXZebraShutter,
     group: str,
 ) -> MsgGenerator:
     """
@@ -299,7 +299,7 @@ def find_beam_centres(
         composite.backlight,
         composite.scintillator,
         composite.xbpm_feedback,
-        composite.shutter,
+        composite.sample_shutter,
         OAV_PREPARE_BEAMLINE_FOR_SCINT_WAIT,
     )
     LOGGER.info("Waiting for prepare beamline plan to complete...")
@@ -320,9 +320,9 @@ def find_beam_centres(
                     xbpm_feedback=composite.xbpm_feedback,
                 )
 
-            yield from bps.trigger(composite.centre_ellipse, wait=True)
-            centre_x = yield from bps.rd(composite.centre_ellipse.center_x_val)
-            centre_y = yield from bps.rd(composite.centre_ellipse.center_y_val)
+            yield from bps.trigger(composite.beam_centre, wait=True)
+            centre_x = yield from bps.rd(composite.beam_centre.center_x_val)
+            centre_y = yield from bps.rd(composite.beam_centre.center_y_val)
             centre_x = round(centre_x)
             centre_y = round(centre_y)
             LOGGER.info(

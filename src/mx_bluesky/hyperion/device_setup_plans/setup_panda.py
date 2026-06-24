@@ -9,13 +9,13 @@ from dodal.common.beamlines.beamline_utils import get_path_provider
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
+from dodal.plans.load_panda_yaml import load_panda_from_yaml
 from ophyd_async.fastcs.panda import (
     HDFPanda,
     SeqTable,
     SeqTrigger,
 )
 
-from mx_bluesky.common.device_setup_plans.setup_panda import load_panda_from_yaml
 from mx_bluesky.common.parameters.constants import DeviceSettingsConstants
 from mx_bluesky.common.utils.log import LOGGER
 

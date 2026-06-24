@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
-from dodal.common.maths import reflect_phase
-from dodal.devices.zocalo import ZocaloStartInfo
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -19,11 +17,13 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
-    ZocaloInfoGenerator,
-)
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_mapping import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    ASSERT_START_BEFORE_EVENT_DOC_MESSAGE,
+    common_add_processing_time_to_comment,
+    common_populate_axis_info,
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
@@ -39,13 +39,12 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridCommon
+from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
 )
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_tag
-from mx_bluesky.common.utils.utils import number_of_frames_from_scan_spec
 
 OMEGA_TOLERANCE = 1
 
@@ -58,8 +57,7 @@ class GridscanPlane(StrEnum):
 if TYPE_CHECKING:
     from event_model import Event, RunStart, RunStop
 
-T = TypeVar("T", bound="GridCommon")
-ASSERT_START_BEFORE_EVENT_DOC_MESSAGE = f"No data collection group info - event document has been emitted before a {PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN} start document"
+T = TypeVar("T", bound="GenericGrid")
 
 
 def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
@@ -67,7 +65,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
         bpp.run_wrapper(
             plan_generator,
             md={
-                "activate_callbacks": ["GridscanISPyBCallback"],
+                "activate_callbacks": ["GridDetectAndScanISPyBCallback"],
                 "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
             },
@@ -79,11 +77,14 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
 ispyb_activation_decorator = make_decorator(ispyb_activation_wrapper)
 
 
-class GridscanISPyBCallback(BaseISPyBCallback):
+class GridDetectAndScanISPyBCallback(BaseISPyBCallback):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
     receiving an 'event' document for the 'ispyb_reading_hardware' event, and updates the
     deposition on receiving its final 'stop' document.
+
+    This callback is specifically for detecting and scanning two grids. In the future
+    this callback should be made compatible to a generic number of grids
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
@@ -171,16 +172,8 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return doc
 
     def _add_processing_time_to_comment(self, processing_start_time: float):
-        assert self.data_collection_group_info, ASSERT_START_BEFORE_EVENT_DOC_MESSAGE
-        proc_time = time() - processing_start_time
-        crystal_summary = f"Zocalo processing took {proc_time:.2f} s."
-
-        self.data_collection_group_info.comments = (
-            self.data_collection_group_info.comments or ""
-        ) + crystal_summary
-
-        self.ispyb.append_to_comment(
-            self.ispyb_ids.data_collection_ids[0], crystal_summary
+        common_add_processing_time_to_comment(
+            self, processing_start_time, self.data_collection_group_info
         )
 
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
@@ -256,14 +249,7 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         return [scan_data_info]
 
     def _populate_axis_info(self, data_collection_info: DataCollectionInfo, doc: dict):
-        if (phase := doc.get("gonio-wrapped_omega-phase")) is not None:
-            omega_in_gda_space = reflect_phase(phase)
-            data_collection_info.omega_start = omega_in_gda_space
-            data_collection_info.axis_start = omega_in_gda_space
-            data_collection_info.axis_end = omega_in_gda_space
-            data_collection_info.axis_range = 0
-        if (chi_start := doc.get("gonio-chi")) is not None:
-            data_collection_info.chi_start = chi_start
+        common_populate_axis_info(data_collection_info, doc)
 
     def populate_info_for_update(
         self,
@@ -336,27 +322,6 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         assert self.params
         base_number = self.params.detector_params.run_number
         return base_number if plane == GridscanPlane.OMEGA_XY else base_number + 1
-
-
-def generate_start_info_from_omega_map() -> ZocaloInfoGenerator:
-    """
-    Generate the zocalo trigger info from bluesky runs where the frame number is
-    computed using metadata added to the document by the ISPyB callback and the
-    run start which together can be used to determine the correct frame numbering.
-    """
-    doc = yield []
-    omega_to_scan_spec = doc["omega_to_scan_spec"]
-    start_frame = 0
-    infos = []
-    for i, omega in enumerate([GridscanPlane.OMEGA_XY, GridscanPlane.OMEGA_XZ]):
-        frames = number_of_frames_from_scan_spec(omega_to_scan_spec[omega])
-        infos.append(
-            ZocaloStartInfo(
-                doc["grid_plane_to_id_map"][omega], None, start_frame, frames, i
-            )
-        )
-        start_frame += frames
-    yield infos
 
 
 def _smargon_omega_to_xyxz_plane(smargon_omega: float) -> GridscanPlane:

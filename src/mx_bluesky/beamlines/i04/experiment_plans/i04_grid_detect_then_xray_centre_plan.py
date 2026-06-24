@@ -12,7 +12,7 @@ from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beamsize import Beamsize
 from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
-from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
@@ -29,7 +29,7 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
@@ -62,16 +62,19 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-    generate_start_info_from_omega_map,
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
+    generate_start_info_from_omega_map,
 )
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
+    GridscanParamConstants,
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
@@ -80,7 +83,7 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import (
-    GridCommon,
+    GenericGrid,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -105,7 +108,7 @@ class I04AutoXrcParams(BaseModel):
 
 
 def _change_beamsize(
-    transfocator: Transfocator, beamsize: float, parameters: GridCommon
+    transfocator: Transfocator, beamsize: float, parameters: GenericGrid
 ):
     """i04 always uses the large aperture and changes beamsize with the transfocator.
 
@@ -136,7 +139,7 @@ def i04_default_grid_detect_and_xray_centre(
     xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
     zebra: Zebra = inject("zebra"),
     robot: BartRobot = inject("robot"),
-    sample_shutter: ZebraShutter = inject("sample_shutter"),
+    sample_shutter: MXZebraShutter = inject("sample_shutter"),
     eiger: EigerDetector = inject("eiger"),
     synchrotron: Synchrotron = inject("synchrotron"),
     zocalo: ZocaloResults = inject("zocalo"),
@@ -188,7 +191,7 @@ def i04_default_grid_detect_and_xray_centre(
     initial_z = yield from bps.rd(smargon.z.user_readback)
 
     _current_wavelength_a = yield from bps.rd(composite.dcm.wavelength_in_a)
-    grid_common_params = _get_grid_common_params(_current_wavelength_a, parameters)
+    grid_common_params = _get_generic_grid_params(_current_wavelength_a, parameters)
 
     def tidy_beamline():
         yield from bps.mv(transfocator, initial_beamsize)
@@ -208,7 +211,10 @@ def i04_default_grid_detect_and_xray_centre(
         # Hyperion handles its callbacks differently to BlueAPI-managed plans, see
         # https://github.com/DiamondLightSource/mx-bluesky/issues/1117
         flyscan_event_handler = XRayCentreEventHandler()
-        callbacks = *create_gridscan_callbacks(), flyscan_event_handler
+        callbacks = (
+            *create_gridscan_callbacks(),
+            flyscan_event_handler,
+        )
 
         @bpp.subs_decorator(callbacks)
         @verify_undulator_gap_before_run_decorator(composite)
@@ -226,21 +232,22 @@ def i04_default_grid_detect_and_xray_centre(
                 oav_config=oav_config,
             )
 
-        try:
-            yield from grid_detect_then_xray_centre_with_callbacks()
-            assert isinstance(
-                grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
-            ), "Specified grid params couldn't be found after grid detection"
-            yield from get_results_and_move_to_xtal(
-                composite,
-                grid_common_params.specified_grid_params,
-                flyscan_event_handler,
-            )
-        except CrystalNotFoundError:
-            yield from bps.mv(
-                smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
-            )
-            raise
+            try:
+                assert isinstance(
+                    grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
+                ), "Specified grid params couldn't be found after grid detection"
+                yield from get_results_and_move_to_xtal(
+                    composite,
+                    grid_common_params.specified_grid_params,
+                    flyscan_event_handler,
+                )
+            except CrystalNotFoundError:
+                yield from bps.mv(
+                    smargon.x, initial_x, smargon.y, initial_y, smargon.z, initial_z
+                )
+                raise
+
+        yield from grid_detect_then_xray_centre_with_callbacks()
 
     yield from _change_beamsize(
         transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, grid_common_params
@@ -263,23 +270,25 @@ def get_ready_for_oav_and_close_shutter(
     LOGGER.info("Non-udc tidy: Closing detector shutter")
     yield from bps.abs_set(
         detector_motion.shutter,
-        0,
+        ShutterState.CLOSED,
         group=group,
     )
     yield from bps.wait(group)
 
 
 def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridscanISPyBCallback
+    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
         GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
-        GridscanISPyBCallback(
-            param_type=GridCommon,
+        GridDetectAndScanISPyBCallback(
+            param_type=GenericGrid,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                generate_start_info_from_omega_map,
+                lambda: generate_start_info_from_omega_map(
+                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+                ),
             ),
         ),
     )
@@ -336,9 +345,9 @@ def construct_i04_specific_features(
     )
 
 
-def _get_grid_common_params(
+def _get_generic_grid_params(
     _current_wavelength_a: float, parameters: I04AutoXrcParams
-) -> GridCommon:
+) -> GenericGrid:
     """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
     feature_settings = get_i04_feature_settings()
     _assumed_wavelength_a = feature_settings.ASSUMED_WAVELENGTH_IN_A
@@ -353,7 +362,7 @@ def _get_grid_common_params(
         )
     )
 
-    return GridCommon(
+    return GenericGrid(
         sample_id=parameters.sample_id,
         file_name=parameters.file_name,
         visit=parameters.visit,

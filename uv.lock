@@ -12,6 +12,9 @@ supported-markers = [
     "platform_machine == 'x86_64' and sys_platform == 'linux'",
 ]
 
+[manifest]
+constraints = [{ name = "starlette", specifier = ">=1.1.0" }]
+
 [[package]]
 name = "accessible-pygments"
 version = "0.0.5"
@@ -689,7 +692,7 @@ wheels = [
 
 [[package]]
 name = "daq-config-server"
-version = "1.3.1"
+version = "1.3.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -704,9 +707,9 @@ dependencies = [
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "xmltodict", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/18/282dfb53acf238416b1c6031dc6530a87a3ef75ce298a6d21db7d661ad3b/daq_config_server-1.3.1.tar.gz", hash = "sha256:0fd447ad2902ee789c459bdcb39fa7902b5529dd2102ab48c29aaaa8ae84ae9d", size = 226549, upload-time = "2026-03-26T13:31:08.725Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/74/56eddf2a44efd981cc5678e74fd777f37c045a7f9b71b01143ee8be45715/daq_config_server-1.3.6.tar.gz", hash = "sha256:ec25a69eca6fbeca309f04763d53728000e39d509a3f43353b76721985e34ee2", size = 232081, upload-time = "2026-06-10T13:30:53.252Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/32/1f70fbc87f440b5cd9bdb61e9b7a713d5bd802275a66491a130e10814a79/daq_config_server-1.3.1-py3-none-any.whl", hash = "sha256:af01dc381492b0bffb42f71daf238252710347f4aba5105e0dba5945806b2320", size = 31579, upload-time = "2026-03-26T13:31:07.621Z" },
+    { url = "https://files.pythonhosted.org/packages/65/0a/f225277d9b0133b6cd0e68f19d93af67db1fd76c9ccea9026563d53f2ffa/daq_config_server-1.3.6-py3-none-any.whl", hash = "sha256:948933c4d7f79ea609cff5774aeef3578ffda582d623e8d5bdf9aadf89df36b7", size = 33132, upload-time = "2026-06-10T13:30:52.176Z" },
 ]
 
 [[package]]
@@ -807,8 +810,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.3.1.dev8+gca163b99a"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#ca163b99a719b006e844067e724bf8c103615b83" }
+version = "2.5.2.dev2+gc101e17a7"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#c101e17a73dbf2533c2c4d7e46ce546887ebf75e" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2130,7 +2133,7 @@ requires-dist = [
     { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "ophyd", specifier = ">=1.10.5" },
-    { name = "ophyd-async", specifier = ">=0.16.0" },
+    { name = "ophyd-async", specifier = ">=0.17a4" },
     { name = "pydantic" },
     { name = "pydantic-extra-types", specifier = ">=2.10.1" },
     { name = "pyepics" },
@@ -2682,7 +2685,7 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.16"
+version = "0.19.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bluesky", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2696,9 +2699,9 @@ dependencies = [
     { name = "stamina", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "velocity-profile", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/08/2d/cd178f31c4efb7f2a1b2787900d62b70b478111c5db51a625307f5fb9b15/ophyd_async-0.16.tar.gz", hash = "sha256:c8a3671c704da77c7a7b7c5343b972230f743b1029a100f6c5780123fb0df33d", size = 545367, upload-time = "2026-02-17T16:39:37.897Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/d9/bc09637a5caff453a205fa3c26474f497964618b72074413a6315d36725b/ophyd_async-0.19.2.tar.gz", hash = "sha256:138dcd5ac2ccc30194c9d74525aefb291b8a0be2ef3468a60e294f0fcea5495a", size = 588686, upload-time = "2026-06-16T15:31:31.055Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/ab/0c92e9824c9e54df5a06b5759957fc23c30489c2aabef5653dd9057b3f61/ophyd_async-0.16-py3-none-any.whl", hash = "sha256:017d837767b63cdc20af1851275495b6bb0db195a887e0bd989dc7a17e0f0c79", size = 208499, upload-time = "2026-02-17T16:39:36.542Z" },
+    { url = "https://files.pythonhosted.org/packages/90/36/96ac313cc51e147556e80d2388ca7c55672d13c06cb87353d8d607125284/ophyd_async-0.19.2-py3-none-any.whl", hash = "sha256:2cdd5ce876ce00246d043c581b1bb4074984822a879a330637a3188ace8e1f3e", size = 228241, upload-time = "2026-06-16T15:31:29.546Z" },
 ]
 
 [package.optional-dependencies]
@@ -4039,15 +4042,15 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "1.0.0"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "typing-extensions", marker = "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/69/17425771797c36cded50b7fe44e850315d039f28b15901ab44839e70b593/starlette-1.0.0.tar.gz", hash = "sha256:6a4beaf1f81bb472fd19ea9b918b50dc3a77a6f2e190a12954b25e6ed5eea149", size = 2655289, upload-time = "2026-03-22T18:29:46.779Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/66/4d20cdf39a8d6a51e663b7038e3b828ff211d3891a43a713fe7e4643f3a8/starlette-1.1.0.tar.gz", hash = "sha256:e83c7fe0ddecd8719c5b840080325aec0260acec86e9832899e377b91d65e90f", size = 2660060, upload-time = "2026-05-23T16:55:41.376Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/c9/584bc9651441b4ba60cc4d557d8a547b5aff901af35bda3a4ee30c819b82/starlette-1.0.0-py3-none-any.whl", hash = "sha256:d3ec55e0bb321692d275455ddfd3df75fff145d009685eb40dc91fc66b03d38b", size = 72651, upload-time = "2026-03-22T18:29:45.111Z" },
+    { url = "https://files.pythonhosted.org/packages/93/79/920b8e0a8b20f793e8d64855095cb8febabf6175b8550b6f7a547d813891/starlette-1.1.0-py3-none-any.whl", hash = "sha256:7f0dfd38e428aad5cb6f9f667f0ca1d2d8ca3f3385dccac8305f79ec98458382", size = 72899, upload-time = "2026-05-23T16:55:39.201Z" },
 ]
 
 [[package]]
