@@ -19,8 +19,9 @@ class Eiger:
         round(a * b, 3) for a, b in zip(image_size_pixels, pixel_size_mm, strict=False)
     )
 
-    det_y_threshold = 70.0
-    det_y_target = 59.0
+    # TODO: Move to separate configuration file in daq_configuration #1779
+    det_y_threshold = 220  # 70.0
+    det_y_target = 209  # 59.0
 
     class PV:
         detector_distance = pv.eiger_detdist
