@@ -21,9 +21,11 @@ from tests.conftest import RunEngineSimulator, XBPMAndTransmissionWrapperComposi
 def assert_open_run_sets_transmission_then_triggers_xbpm(msgs, transmission):
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (transmission,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args == (transmission,)
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -31,8 +33,9 @@ def assert_open_run_sets_transmission_then_triggers_xbpm(msgs, transmission):
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "open_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
 
@@ -119,21 +122,23 @@ def assert_open_run_then_pause_xbpm_then_close_run_then_unpause(msgs):
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "open_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "close_run"
-        and msg.run == PlanNameConstants.GRIDSCAN_OUTER,
+        lambda msg: (
+            msg.command == "close_run" and msg.run == PlanNameConstants.GRIDSCAN_OUTER
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "attenuator"
-        and msg.args == (1.0,),
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "attenuator" and msg.args == (1.0,)
+        ),
     )
 
 

@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 1006
-y 300
+x 5525
+y 826
 w 700
 h 900
 font "arial-medium-r-18.0"
@@ -1301,49 +1301,6 @@ value {
 autoSize
 endObjectProperties
 
-# (Text Monitor)
-object activeXTextDspClass:noedit
-beginObjectProperties
-major 4
-minor 6
-release 0
-x 352
-y 689
-w 65
-h 18
-controlPv "BL24I-EA-PILAT-01:cam1:DetectorState_RBV"
-font "arial-medium-r-16.0"
-fgColor index 16
-fgAlarm
-bgColor index 10
-autoHeight
-limitsFromDb
-nullColor index 0
-useHexPrefix
-newPos
-objType "monitors"
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 1
-x 304
-y 689
-w 35
-h 18
-font "arial-medium-r-16.0"
-fgColor index 14
-bgColor index 0
-useDisplayBg
-value {
-  "P6M"
-}
-autoSize
-endObjectProperties
-
 # (Static Text)
 object activeXTextClass
 beginObjectProperties
@@ -2270,4 +2227,87 @@ numCmds 1
 command {
   0 "blueapi -c CONFIG_LOCATION controller abort"
 }
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 304
+y 685
+w 42
+h 18
+font "arial-medium-r-16.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "JF9M"
+}
+autoSize
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 6
+release 0
+x 451
+y 686
+w 65
+h 18
+controlPv "BL24I-JUNGFRAU:CTRL:STATUS"
+font "arial-medium-r-16.0"
+fgColor index 16
+fgAlarm
+bgColor index 10
+autoHeight
+limitsFromDb
+nullColor index 0
+useHexPrefix
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 354
+y 685
+w 35
+h 18
+font "arial-medium-i-16.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "soon"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 413
+y 685
+w 30
+h 18
+font "arial-medium-r-16.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "IOC"
+}
+autoSize
 endObjectProperties

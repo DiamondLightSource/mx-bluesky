@@ -4,7 +4,9 @@ import pydantic
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
 from dodal.devices.beamlines.i24.beamstop import Beamstop
-from dodal.devices.beamlines.i24.commissioning_jungfrau import CommissioningJungfrau
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
 from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
@@ -13,7 +15,7 @@ from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -22,10 +24,10 @@ class RotationScanComposite:
 
     aperture: Aperture
     attenuator: EnumFilterAttenuator
-    jungfrau: CommissioningJungfrau
+    jungfrau: CommissioningJungfrauDetector
     gonio: VerticalGoniometer
     synchrotron: Synchrotron
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     zebra: Zebra
     xbpm_feedback: XBPMFeedback
     hutch_shutter: InterlockedHutchShutter

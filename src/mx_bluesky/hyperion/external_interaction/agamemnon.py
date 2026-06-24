@@ -211,7 +211,7 @@ def _populate_parameters_from_agamemnon(
                     "storage_directory": str(visit_directory) + "/xraycentring",
                     "file_name": file_name,
                     "pin_type": pin_type,
-                    "omega_start_deg": 0.0,
+                    "omega_starts_deg": [0.0, 90.0],
                     "chi_start_deg": collection["chi"],
                     "transmission_frac": 1.0,
                     "exposure_time_s": GridscanParamConstants.EXPOSURE_TIME_S,

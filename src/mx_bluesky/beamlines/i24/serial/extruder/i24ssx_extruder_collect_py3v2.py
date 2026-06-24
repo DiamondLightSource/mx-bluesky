@@ -473,7 +473,7 @@ def run_extruder_plan(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
-    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_beam_center"),
 ) -> MsgGenerator:
     start_time = datetime.now()
     SSX_LOGGER.info(f"Collection start time: {start_time.ctime()}")

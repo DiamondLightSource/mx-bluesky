@@ -128,9 +128,11 @@ def test_setup_panda_correctly_configures_table(
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "panda-pulse-1-width"
-        and msg.args[0] == exposure_time_s,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "panda-pulse-1-width"
+            and msg.args[0] == exposure_time_s
+        ),
     )
 
     table_msg = [

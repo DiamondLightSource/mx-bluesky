@@ -12,10 +12,12 @@ BLUEAPI_CONFIG=$CONFIG_DIR/blueapi_config.yaml
 SUPERVISOR_CONFIG=$CONFIG_DIR/supervisor/supervisor_config.yaml
 CLIENT_CONFIG=$CONFIG_DIR/supervisor/client_config.yaml
 STOMP_CONFIG=$CONFIG_DIR/blueapi_config.yaml
-DO_CALLBACKS=1
 HEALTHCHECK_PORT=5005
+SUPERVISOR_HEALTHCHECK_PORT=5006
 CALLBACK_WATCHDOG_PORT=5005
 CALLBACK_MODE=0mq
+START_HYPERION_SUPERVISOR=0
+START_HYPERION_BLUEAPI=0
 
 for option in "$@"; do
     case $option in
@@ -40,12 +42,13 @@ for option in "$@"; do
             ;;
         --blueapi)
             MODE=blueapi
+            START_HYPERION_BLUEAPI=1
             CALLBACK_WATCHDOG_PORT=5006
             ;;
         --supervisor)
-            MODE=supervisor
-            DO_CALLBACKS=0
-            HEALTHCHECK_PORT=5006
+            MODE=blueapi
+            START_HYPERION_SUPERVISOR=1
+            SUPERVISOR_HEALTHCHECK_PORT=5006
             ;;
 	--stomp)
 	    CALLBACK_MODE=stomp
@@ -63,14 +66,15 @@ Options:
                           options.
   --no-start              Used to specify that the script should be run without starting the server.
   --dev                   Enable dev mode to run from a local workspace on a development machine.
-  --udc                   Start hyperion in UDC mode taking instructions from agamemnon in a monolithic process
-  --blueapi               Start hyperion in blueapi mode taking instructions from the supervisor
-  --supervisor            Start hyperion in supervisor mode, taking commands from Agamemnon and feeding them to
-                          an instance running in blueapi mode.
+  --udc                   (Re)start hyperion in UDC mode taking instructions from agamemnon in a monolithic process
+  --blueapi               (Re)start hyperio-blueapi taking instructions from the supervisor
+  --supervisor            (Re)start hyperion-supervisor, taking commands from Agamemnon and feeding them to
+                          hyperion-blueapi.
   --stomp                 Start external callbacks in stomp mode instead of 0mq (the default)
   --help                  This help
 
 By default this script will start an Hyperion server unless the --no-start flag is specified.
+Note: --udc is exclusive with --supervisor and --blueapi.
 END
             exit 0
             ;;
@@ -82,17 +86,18 @@ END
 done
 
 kill_active_apps () {
-    if [ $MODE = "supervisor" ]; then
+    echo "Killing vanilla hyperion instances"
+    pkill -e -f "\.venv/bin/python3? .*--mode (gda|udc)"
+    if [[ $START_HYPERION_SUPERVISOR == 1 || $MODE = "udc" || $STOP == 1 ]]; then
       # supervisor mode kills only supervisor
       echo "Killing active instances of hyperion supervisor..."
-      pkill -e -f "mx-bluesky/.venv/bin/python .*--mode supervisor"
-    else
+      pkill -e -f "\.venv/bin/python3? .*--mode supervisor"
+    fi
+    if [[ $START_HYPERION_BLUEAPI == 1 || $MODE = "udc" || $STOP == 1 ]]; then
       echo "Killing active instances of hyperion-blueapi"
-      pkill -e -f "python .*mx-bluesky/.venv/bin/blueapi .*serve"
-      echo "Killing vanilla hyperion instances"
-      pkill -e -f "mx-bluesky/.venv/bin/python .*--mode (gda|udc)"
+      pkill -e -f "python3? .*/\.venv/bin/blueapi .*serve"
       echo "Killing hyperion-callbacks"
-      pkill -e -f "mx-bluesky/.venv/bin/python .*hyperion-callbacks"
+      pkill -e -f "\.venv/bin/python3? .*hyperion-callbacks"
     fi
 }
 
@@ -104,11 +109,37 @@ check_user () {
     fi
 }
 
+wait_for_healthcheck () {
+    local APP=$1
+    local HEALTHCHECK_PORT=$2
+    local HEALTHCHECK_ENDPOINT=$3
+    echo "$(date) Waiting for $APP to start"
+    for i in {1..30}
+    do
+        echo "$(date)"
+        curl --head -X GET http://localhost:$HEALTHCHECK_PORT/$HEALTHCHECK_ENDPOINT >/dev/null
+        ret_value=$?
+        if [ $ret_value -ne 0 ]; then
+            sleep 1
+        else
+            break
+        fi
+    done
+    if [ $ret_value -ne 0 ]; then
+        echo "$(date) $APP Failed to start!!!!"
+        exit 1
+    else
+        echo "$(date) Hyperion started"
+    fi
+}
+
 if [ -z "${BEAMLINE}" ]; then
     echo "BEAMLINE environment variable is not set and the --beamline parameter is not specified."
     echo "Please set the option -b, --beamline=BEAMLINE to set it manually"
     exit 1
 fi
+
+export CONFIG_SERVER_URL="https://${BEAMLINE}-daq-config.diamond.ac.uk"
 
 if [[ $STOP == 1 ]]; then
     if [ $IN_DEV == false ]; then
@@ -157,67 +188,49 @@ if [[ $START == 1 ]]; then
     echo "Debug log file set to $DEBUG_LOG_DIR"
     export DEBUG_LOG_DIR
     mkdir -p "$DEBUG_LOG_DIR"
-    if [ $MODE = "supervisor" ]; then
+    source .venv/bin/activate
+
+    if [[ $START_HYPERION_SUPERVISOR == 1 ]]; then
       start_log_path=$LOG_DIR/supervisor_start_log.log
     else
       start_log_path=$LOG_DIR/start_log.log
     fi
     callback_start_log_path=$LOG_DIR/callback_start_log.log
 
-    source .venv/bin/activate
-
-    declare -A h_and_cb_args=( ["IN_DEV"]="$IN_DEV" )
-    declare -A h_and_cb_arg_strings=( ["IN_DEV"]="--dev" )
-
-    h_commands="--mode $MODE "
+    h_commands=""
     cb_commands="--watchdog-port $CALLBACK_WATCHDOG_PORT "
-    if [ $MODE = "supervisor" ]; then
-      h_commands+="--client-config ${CLIENT_CONFIG} --supervisor-config ${SUPERVISOR_CONFIG} "
+
+    if [[ "$IN_DEV" == true ]]; then
+      h_commands+="--dev "
+      cb_commands+="--dev "
     fi
+
     if [ "${CALLBACK_MODE}" = "stomp" ]; then
-       cb_commands+="--stomp-config $STOMP_CONFIG"
+       cb_commands+="--stomp-config $STOMP_CONFIG "
     fi
-    for i in "${!h_and_cb_args[@]}"
-    do
-        if [ "${h_and_cb_args[$i]}" != false ]; then 
-            h_commands+="${h_and_cb_arg_strings[$i]} ";
-            cb_commands+="${h_and_cb_arg_strings[$i]} ";
-        fi;
-    done
 
     unset PYEPICS_LIBCA
-    if [ $MODE = "blueapi" ]; then 
-      echo "Starting hyperion in blueapi mode, start log is $start_log_path"
-      blueapi --config $BLUEAPI_CONFIG serve > $start_log_path 2>&1 &
-      HEALTHCHECK_ENDPOINT="healthz"
-    else
-      echo "Starting hyperion in mode $MODE with hyperion $h_commands, start_log is $start_log_path"
-      hyperion `echo $h_commands;`>$start_log_path  2>&1 &
-      HEALTHCHECK_ENDPOINT="status"
+    if [[ $START_HYPERION_BLUEAPI == 1 ]]; then
+      echo "Starting hyperion-blueapi, start log is $start_log_path"
+      # start in a separate process group to avoid GDA sending it a SIGINT on
+      # GDA server shutdown
+      ( set -m; nohup blueapi --config $BLUEAPI_CONFIG serve > $start_log_path 2>&1 & )
+      wait_for_healthcheck hyperion-blueapi $HEALTHCHECK_PORT healthz
     fi
-    if [[ $DO_CALLBACKS == 1 ]]; then
+    if [[ $START_HYPERION_SUPERVISOR == 1 ]]; then
+      h_commands+="--mode supervisor --client-config ${CLIENT_CONFIG} --supervisor-config ${SUPERVISOR_CONFIG} "
+      echo "Starting hyperion-supervisor with hyperion $h_commands, start_log is $start_log_path"
+      ( set -m; hyperion `echo $h_commands;`>$start_log_path  2>&1 & )
+      wait_for_healthcheck hyperion-supervisor $SUPERVISOR_HEALTHCHECK_PORT status
+    elif [[ $MODE = "udc" ]]; then
+        h_commands+="--mode udc "
+        echo "Starting hyperion udc with hyperion $h_commands, start_log is $start_log_path"
+        ( set -m; hyperion `echo $h_commands;`>$start_log_path  2>&1 & )
+        wait_for_healthcheck hyperion $HEALTHCHECK_PORT status
+    fi
+    if [[ $START_HYPERION_BLUEAPI == 1 || $MODE = "udc" ]]; then
       echo "Starting hyperion-callbacks with hyperion-callbacks $cb_commands, start_log is $callback_start_log_path"
-      hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &
-    fi
-    echo "$(date) Waiting for Hyperion to start"
-
-    for i in {1..30}
-    do
-        echo "$(date)"
-        curl --head -X GET http://localhost:$HEALTHCHECK_PORT/$HEALTHCHECK_ENDPOINT >/dev/null
-        ret_value=$?
-        if [ $ret_value -ne 0 ]; then
-            sleep 1
-        else
-            break
-        fi
-    done
-
-    if [ $ret_value -ne 0 ]; then
-        echo "$(date) Hyperion Failed to start!!!!"
-        exit 1
-    else
-        echo "$(date) Hyperion started"
+      ( set -m; hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 & )
     fi
 fi
 
