@@ -384,13 +384,6 @@ def start_i24(
         SSX_LOGGER.error(msg)
         raise ValueError(msg)
 
-    # Wsunrite parameters.txt to before data collection
-
-    # complete_filename: str
-    # transmission = float(caget(pv.requested_transmission))
-    # wavelength = yield from bps.rd(dcm.wavelength_in_a)
-    # write_userlog(parameters, complete_filename, transmission, wavelength)
-
     # Open the hutch shutter
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
@@ -429,7 +422,6 @@ def finish_i24(
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
 
     # Write a record of what was collected to the processing directory
-    # test move to start
     write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
