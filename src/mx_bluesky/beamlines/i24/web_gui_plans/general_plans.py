@@ -143,7 +143,7 @@ def gui_run_chip_collection(
     shutter: InterlockedHutchShutter = inject("shutter"),
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
-    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_beam_center"),
     attenuator: EnumFilterAttenuator = inject("attenuator"),
 ) -> MsgGenerator:
     """Set the parameter model and run the data collection.
@@ -260,7 +260,7 @@ def gui_run_extruder_collection(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: EnumFilterAttenuator = inject("attenuator"),
-    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_beam_center"),
 ):
     """Set parameter model for extruder and run the data collection.
     Args:

@@ -1,6 +1,6 @@
 env:
   sources:
-    - kind: dodal
+    - kind: deviceManager
       module: dodal.beamlines.i24
     - kind: planFunctions
       module: mx_bluesky.beamlines.i24.serial
@@ -16,6 +16,7 @@ stomp:
   enabled: true
   url: tcp://i24-control.diamond.ac.uk:61613
 logging:
+  level: "DEBUG"
   graylog:
     url: "tcp://graylog-log-target.diamond.ac.uk:12231"
     enabled: true
