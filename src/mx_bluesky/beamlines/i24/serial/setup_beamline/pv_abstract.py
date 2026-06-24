@@ -19,7 +19,7 @@ class Eiger:
         round(a * b, 3) for a, b in zip(image_size_pixels, pixel_size_mm, strict=False)
     )
 
-    # TODO: Move to separate configuration file #1779
+    # TODO: Move to separate configuration file in daq_configuration #1779
     det_y_threshold = 220  # 70.0
     det_y_target = 209  # 59.0
 
