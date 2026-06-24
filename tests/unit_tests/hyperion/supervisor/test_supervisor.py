@@ -417,7 +417,7 @@ def test_supervisor_retries_service_unavailable_error(
         ]
     )
     mock_alert_service.raise_error_alert.assert_called_once_with(
-        "hyperion-supervisor stopped UDC because unable to connect to hyperion-blueapi.",
+        "UDC was stopped because hyperion-supervisor was unable to connect to hyperion-blueapi.",
         {},
     )
 
@@ -434,7 +434,7 @@ def test_supervisor_retries_service_unavailable_error(
     ],
 )
 @patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
-def test_supervisor_hands_back_baton_if_any_other_error(
+def test_supervisor_hands_back_baton_if_non_retryable_error(
     mock_sleep: MagicMock,
     runner: SupervisorRunner,
     external_load_centre_collect_params: LoadCentreCollectParams,

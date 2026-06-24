@@ -148,16 +148,13 @@ class SupervisorRunner(PlanRunner):
                     except BlueskyStreamingError:
                         raise
                     except Exception as e:
-                        get_alerting_service().raise_error_alert(
-                            "Unexpected error communicating with hyperion-blueapi", {}
-                        )
-                        raise PlanError(
-                            "Unexpected error communicating with hyperion-blueapi"
-                        ) from e
+                        msg = "Unexpected error communicating with hyperion-blueapi"
+                        get_alerting_service().raise_error_alert(msg, {})
+                        raise PlanError(msg) from e
                 else:
                     LOGGER.error("Max retries reached, ending UDC.")
                     get_alerting_service().raise_error_alert(
-                        "hyperion-supervisor stopped UDC because unable to connect to hyperion-blueapi.",
+                        "UDC was stopped because hyperion-supervisor was unable to connect to hyperion-blueapi.",
                         {},
                     )
                     raise PlanError(

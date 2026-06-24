@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 import requests
 from dodal.utils import get_beamline_name
 from pydantic import BaseModel
-from requests import ConnectionError, HTTPError, Timeout
+from requests import ConnectionError, HTTPError, Response, Timeout
 
 from mx_bluesky.common.external_interaction.alerting import get_alerting_service
 from mx_bluesky.common.parameters.components import (
@@ -91,7 +91,7 @@ def _get_parameters_from_url(url: str) -> dict:
                 response.raise_for_status()
                 break
             except HTTPError as e:
-                if 500 <= response.status_code < 600:
+                if _is_server_error(e.response):
                     LOGGER.warning(
                         f"Agamemnon returned server error status {response.status_code}, retries left {tries}: {str(e)}"
                     )
@@ -116,6 +116,10 @@ def _get_parameters_from_url(url: str) -> dict:
         get_alerting_service().raise_error_alert(msg, {})
         raise PlanError(msg)
     return json.loads(response.content)
+
+
+def _is_server_error(response: Response):
+    return 500 <= response.status_code < 600
 
 
 def _get_pin_type_from_agamemnon_collect_parameters(
