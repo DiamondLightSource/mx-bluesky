@@ -218,6 +218,13 @@ spec:
             - name: HOME
               value: /home/{{ .Values.supervisor.userName }}
           command: ['/bin/bash', '-c']
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+            requests:
+              cpu: 200m
+              memory: 400Mi
           args:
             - |
               while true; do sleep 60; done
