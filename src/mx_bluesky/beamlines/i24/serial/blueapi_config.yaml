@@ -18,5 +18,5 @@ stomp:
 logging:
   level: "DEBUG"
   graylog:
-    url: "tcp://graylog-log-target.diamond.ac.uk:12232"
+    url: "tcp://graylog-log-target.diamond.ac.uk:12231"
     enabled: true
