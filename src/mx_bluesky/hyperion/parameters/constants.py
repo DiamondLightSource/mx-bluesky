@@ -19,6 +19,7 @@ class I03Constants:
     SHUTTER_TIME_S = 0.06
     USE_GPU_RESULTS = True
     ALTERNATE_ROTATION_DIRECTION = True
+    APERTURE_SELECTION_XTAL_WIDTH_THRESHOLD_MM = 0.021
 
 
 @dataclass(frozen=True)
