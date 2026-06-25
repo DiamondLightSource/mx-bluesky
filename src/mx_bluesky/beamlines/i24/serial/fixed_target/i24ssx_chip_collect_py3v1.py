@@ -580,6 +580,7 @@ def tidy_up_after_collection_plan(
 
     SSX_LOGGER.debug("Notify DCID of end of collection.")
     dcid.notify_end()
+    dcid.collection_complete(datetime.now(), aborted=False)
 
     SSX_LOGGER.debug("Quick summary of settings")
     SSX_LOGGER.debug(
@@ -598,7 +599,7 @@ def run_fixed_target_plan(
     dcm: DCM = inject("dcm"),
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: ReadOnlyAttenuator = inject("attenuator"),
-    beam_center_eiger: DetectorBeamCenter = inject("eiger_bc"),
+    beam_center_eiger: DetectorBeamCenter = inject("eiger_beam_center"),
 ) -> MsgGenerator:
     # Read the parameters
     parameters: FixedTargetParameters = yield from read_parameters(

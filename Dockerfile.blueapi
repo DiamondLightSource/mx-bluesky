@@ -6,7 +6,7 @@
 # created in the scratch folder at runtime via the blueapi initContainer
 
 # An assumption is made here that at release time the latest blueapi is in effect
-FROM ghcr.io/diamondlightsource/blueapi:latest as base
+FROM ghcr.io/diamondlightsource/blueapi:latest AS base
 USER root
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -17,13 +17,13 @@ RUN apt update -y && \
     apt upgrade -y && \
     apt install -y libgl1 libglib2.0-0
 
-FROM base as work
+FROM base AS work
 
 # Temporary work folder because uv sync needs to write to this even though
 # we don't need it in the build image
 COPY --chown=1000:1000 . /work
 
-FROM base as build
+FROM base AS build
 
 # User 1000 - same as owner of base image .venv files
 USER ubuntu
@@ -33,4 +33,5 @@ USER ubuntu
 # in order for podman to bind mount the working directory
 RUN --mount=type=bind,from=work,source=/work,target=/tmp/work,rw --mount=type=tmpfs,target=/tmp/uvcache \
     cd /tmp/work && \
-    UV_COMPILE_BYTECODE=0 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv uv sync --cache-dir=/tmp/uvcache --locked
+    UV_PYTHON=/app/.venv/bin/python UV_COMPILE_BYTECODE=0 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv uv sync --cache-dir=/tmp/uvcache --locked && \
+    chmod -R 777 /app/.venv
