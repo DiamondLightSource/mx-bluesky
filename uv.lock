@@ -692,8 +692,8 @@ wheels = [
 
 [[package]]
 name = "daq-config-server"
-version = "1.3.7.dev1+g06eaaa763"
-source = { git = "https://github.com/DiamondLightSource/daq-config-server.git?rev=mx-bluesky_1587_hyperion_should_honour_roi_mode#06eaaa763f1f2596c6eebe56caefbaefd9bf4433" }
+version = "1.3.7"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "fastapi", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -706,6 +706,10 @@ dependencies = [
     { name = "urllib3", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "xmltodict", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/36/93/c913c56425bf937c3c6b8733ac88bdb6b03a49dd10f068215473b511f12f/daq_config_server-1.3.7.tar.gz", hash = "sha256:6dc0c0613c88198eb16cd86c84c731de97090499ebcf39ccfe9be67dad84caae", size = 233043, upload-time = "2026-06-25T10:00:58.084Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/0b/0472e9ab51f04a5fd00d477edf8567bdf320a6f245bd6414b3f208f49684/daq_config_server-1.3.7-py3-none-any.whl", hash = "sha256:ecf11b770d059248d70b3418b75701842dce398d4945e26a8a16ac5049a845c5", size = 35113, upload-time = "2026-06-25T10:00:57.083Z" },
 ]
 
 [[package]]
@@ -806,8 +810,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.5.1"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#641e0a47865c8c4c3c4413bc02f75f54a73cd334" }
+version = "2.5.2.dev3+g80b0c62df"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#80b0c62df96df9bbd5399d8d5c4a230e4d34ecad" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2115,7 +2119,7 @@ requires-dist = [
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "cachetools" },
     { name = "caproto" },
-    { name = "daq-config-server", git = "https://github.com/DiamondLightSource/daq-config-server.git?rev=mx-bluesky_1587_hyperion_should_honour_roi_mode" },
+    { name = "daq-config-server", specifier = ">=1.3.7" },
     { name = "deepdiff" },
     { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
     { name = "fastapi", extras = ["all"] },
