@@ -91,7 +91,7 @@ def _get_parameters_from_url(url: str) -> dict:
                 response.raise_for_status()
                 break
             except HTTPError as e:
-                if _is_server_error(e.response):
+                if _is_server_error(response):
                     LOGGER.warning(
                         f"Agamemnon returned server error status {response.status_code}, retries left {tries}: {str(e)}"
                     )
