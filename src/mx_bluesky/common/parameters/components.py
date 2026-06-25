@@ -182,6 +182,7 @@ class DiffractionExperiment(
         # Plans using numtracker currently won't work with snapshot directories:
         # see https://github.com/DiamondLightSource/mx-bluesky/issues/1527
         if values["storage_directory"] != USE_NUMTRACKER:
+            # TODO don't write to storage here https://github.com/DiamondLightSource/mx-bluesky/issues/1780
             os.makedirs(values["storage_directory"], exist_ok=True)
 
             values["snapshot_directory"] = values.get(
