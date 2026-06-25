@@ -6,6 +6,11 @@ from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+from daq_config_server import ConfigClient
+from daq_config_server.models.feature_settings.hyperion_feature_settings import (
+    HyperionFeatureSettings,
+)
+from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.hyperion._plan_runner_params import Wait
@@ -24,6 +29,11 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _instruction_and_data,
     create_parameters_from_agamemnon,
 )
+
+
+@pytest.fixture(autouse=True)
+def mock_config_client():
+    set_config_client(ConfigClient("http://localhost"))
 
 
 def set_up_agamemnon_params(
@@ -233,13 +243,23 @@ def test_create_parameters_from_agamemnon_contains_expected_data(agamemnon_respo
 
 
 @pytest.mark.parametrize(
-    "agamemnon_response",
-    ["tests/test_data/agamemnon/example_native.json"],
-    indirect=True,
+    "agamemnon_response, expected_roi_mode",
+    [
+        ["tests/test_data/agamemnon/example_native.json", True],
+        ["tests/test_data/agamemnon/example_native.json", False],
+    ],
+    indirect=["agamemnon_response"],
+)
+@patch(
+    "mx_bluesky.hyperion.external_interaction.agamemnon.get_hyperion_feature_settings"
 )
 def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_centre_data(
-    agamemnon_response,
+    mock_get_hyperion_feature_settings: MagicMock,
+    agamemnon_response: str,
+    expected_roi_mode: bool,
 ):
+    settings = HyperionFeatureSettings(XRC_USE_ROI_MODE=expected_roi_mode)
+    mock_get_hyperion_feature_settings.return_value = settings
     hyperion_params_list = create_parameters_from_agamemnon()
     load_centre_collect_list = [
         load_centre_collect_to_internal(p)
@@ -272,6 +292,7 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
         assert robot_load_params.snapshot_directory == PosixPath(
             "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring/snapshots"
         )
+        assert robot_load_params.use_roi_mode == expected_roi_mode
 
 
 @patch("mx_bluesky.common.parameters.rotation.os", new=MagicMock())

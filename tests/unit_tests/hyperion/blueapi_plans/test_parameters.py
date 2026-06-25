@@ -36,6 +36,18 @@ def test_map_external_to_internal_parameters(tmp_path):
     assert expected_internal == actual_internal
 
 
+@pytest.mark.parametrize("expected_roi_mode", [True, False])
+def test_map_external_to_internal_roi_mode(tmp_path, expected_roi_mode):
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
+        tmp_path,
+    )
+    raw_params["robot_load_then_centre"]["use_roi_mode"] = expected_roi_mode
+    external_params = LoadCentreCollectParams(**raw_params)
+    actual_internal = load_centre_collect_to_internal(external_params)
+    assert actual_internal.robot_load_then_centre.use_roi_mode == expected_roi_mode
+
+
 def test_map_external_to_internal_multisample_pin(tmp_path):
     raw_params = raw_params_from_file(
         "tests/test_data/parameter_json_files/external_load_centre_collect_params_multipin.json",
