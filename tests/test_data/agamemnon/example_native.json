@@ -47,6 +47,8 @@
       }
     ],
     "prefix": "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/CBLBA-x00242",
+    "jpegs_prefix": "/dls/i03/data/2025/mx34598-77/jpegs/auto/CBLBA/CBLBA-x00242",
+    "xrc_prefix": "/dls/i03/data/2025/mx34598-77/xraycentring/auto/CBLBA/CBLBA-x00242/CBLBA-x00242",
     "recipe_limits": {
       "distance": {
         "max": 800.0,

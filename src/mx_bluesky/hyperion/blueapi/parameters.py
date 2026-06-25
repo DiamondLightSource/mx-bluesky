@@ -38,6 +38,7 @@ PinTypeParam: TypeAlias = SingleSamplePinTypeParam | MultiSamplePinTypeParam
 
 class RobotLoadThenCentreParams(HyperionParam):
     storage_directory: str
+    snapshot_directory: str
     file_name: str
     transmission_frac: float
     exposure_time_s: float
@@ -61,6 +62,7 @@ class MultiRotationScanParams(HyperionParam):
     comment: str
     file_name: str
     storage_directory: str
+    snapshot_directory: str
     exposure_time_s: float
     rotation_increment_deg: float
     snapshot_omegas_deg: list[float]

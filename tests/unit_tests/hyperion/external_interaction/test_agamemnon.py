@@ -286,11 +286,11 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
         assert str(robot_load_params.parameter_model_version) == "6.0.0"
         assert (
             robot_load_params.storage_directory
-            == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring"
+            == "/dls/i03/data/2025/mx34598-77/xraycentring/auto/CBLBA/CBLBA-x00242"
         )
         assert robot_load_params.file_name == "CBLBA-x00242"
         assert robot_load_params.snapshot_directory == PosixPath(
-            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring/snapshots"
+            "/dls/i03/data/2025/mx34598-77/jpegs/auto/CBLBA/CBLBA-x00242"
         )
         assert robot_load_params.use_roi_mode == expected_roi_mode
 
@@ -330,7 +330,7 @@ def test_create_parameters_from_agamemnon_contains_expected_rotation_data(
         )
         assert rotation_params.file_name == "CBLBA-x00242"
         assert rotation_params.snapshot_directory == PosixPath(
-            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/snapshots"
+            "/dls/i03/data/2025/mx34598-77/jpegs/auto/CBLBA/CBLBA-x00242"
         )
 
     individual_scans = list(
