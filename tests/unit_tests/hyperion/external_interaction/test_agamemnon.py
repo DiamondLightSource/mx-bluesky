@@ -538,7 +538,7 @@ def test_create_parameters_from_agamemnon_retries_on_500_error(
 
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.time.sleep")
 @patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests.get")
-def test_create_parameters_from_agamemnon_fails_on_40x_error_and_ends_udc(
+def test_create_parameters_from_agamemnon_fails_on_400_error_and_ends_udc(
     mock_requests_get: MagicMock,
     mock_sleep: MagicMock,
     mock_alert_service: MagicMock,
