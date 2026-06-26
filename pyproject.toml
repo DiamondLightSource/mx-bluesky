@@ -28,6 +28,8 @@ dependencies = [
     "annotated_types",
     "caproto",
     "fastapi[all]",
+    "uvicorn",
+    # TODO remove flask
     "flask-restful",
     "jupyterlab",
     "matplotlib",
