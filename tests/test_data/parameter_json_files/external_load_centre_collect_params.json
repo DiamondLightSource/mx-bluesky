@@ -14,7 +14,8 @@
       0,
       90
     ],
-    "chi_start_deg": 30
+    "chi_start_deg": 30,
+    "use_roi_mode": true
   },
   "multi_rotation_scan": {
     "comment": "Hyperion Rotation Scan - ",

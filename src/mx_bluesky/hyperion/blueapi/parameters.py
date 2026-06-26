@@ -46,6 +46,7 @@ class RobotLoadThenCentreParams(HyperionParam):
     pin_type: SingleSamplePinTypeParam | MultiSamplePinTypeParam = Field(
         discriminator="name", default=SingleSamplePinTypeParam()
     )
+    use_roi_mode: bool
 
 
 class SingleRotationScanParams(HyperionParam):
