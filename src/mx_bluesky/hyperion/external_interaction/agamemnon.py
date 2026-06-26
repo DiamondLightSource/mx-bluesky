@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 from collections.abc import Sequence
 from enum import StrEnum
 from os import path
@@ -9,7 +10,9 @@ from typing import Any, TypeVar
 import requests
 from dodal.utils import get_beamline_name
 from pydantic import BaseModel
+from requests import ConnectionError, HTTPError, Response, Timeout
 
+from mx_bluesky.common.external_interaction.alerting import get_alerting_service
 from mx_bluesky.common.parameters.components import (
     WithVisit,
 )
@@ -25,6 +28,7 @@ from mx_bluesky.hyperion.blueapi.parameters import (
     PinTypeParam,
     SingleSamplePinTypeParam,
 )
+from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
@@ -34,6 +38,9 @@ MULTIPIN_PREFIX = "multipin"
 MULTIPIN_FORMAT_DESC = "Expected multipin format is multipin_{number_of_wells}x{well_size}+{distance_between_tip_and_first_well}"
 MULTIPIN_REGEX = rf"^{MULTIPIN_PREFIX}_(\d+)x(\d+(?:\.\d+)?)\+(\d+(?:\.\d+)?)$"
 MX_GENERAL_ROOT_REGEX = r"^/dls/(?P<beamline>[^/]+)/data/[^/]*/(?P<visit>[^/]+)(?:/|$)"
+
+MAX_TRIES = 3
+RETRY_INITIAL_DELAY_S = 2
 
 
 class _InstructionType(StrEnum):
@@ -46,7 +53,10 @@ def create_parameters_from_agamemnon() -> Sequence[BaseModel]:
     mx-bluesky instructions.
     Returns:
         The generated sequence of mx-bluesky parameters, or empty list if
-        no instructions."""
+        no instructions.
+    Raises:
+        PlanError: if the instructions could not be fetched from Agamemnon
+    """
     beamline_name = get_beamline_name("i03")
     agamemnon_instruction = _get_next_instruction(beamline_name)
     if agamemnon_instruction:
@@ -75,9 +85,44 @@ def _instruction_and_data(agamemnon_instruction: dict) -> tuple[str, Any]:
 
 
 def _get_parameters_from_url(url: str) -> dict:
-    response = requests.get(url, headers={"Accept": "application/json"})
-    response.raise_for_status()
+    tries, delay = MAX_TRIES, RETRY_INITIAL_DELAY_S
+    while tries > 0:
+        tries -= 1
+        try:
+            response = requests.get(url, headers={"Accept": "application/json"})
+            try:
+                response.raise_for_status()
+                break
+            except HTTPError as e:
+                if _is_server_error(response):
+                    LOGGER.warning(
+                        f"Agamemnon returned server error status {response.status_code}, retries left {tries}: {str(e)}"
+                    )
+                else:
+                    msg = f"Agamemnon returned unexpected HTTP response status code {response.status_code}"
+                    get_alerting_service().raise_error_alert(msg, {})
+                    raise PlanError(msg) from e
+        except ConnectionError as e:
+            LOGGER.warning(
+                f"Connection error attempting to connect to agamemnon, retries left {tries}",
+                exc_info=e,
+            )
+        except Timeout:
+            LOGGER.warning(
+                f"Timed out attempting to connect to agamemnon, retries left {tries}"
+            )
+        if tries:
+            time.sleep(delay)  # noqa
+            delay *= 2
+    else:
+        msg = f"Unable to fetch instruction from agamemnon after {MAX_TRIES} attempts, ending UDC."
+        get_alerting_service().raise_error_alert(msg, {})
+        raise PlanError(msg)
     return json.loads(response.content)
+
+
+def _is_server_error(response: Response):
+    return 500 <= response.status_code < 600
 
 
 def _get_pin_type_from_agamemnon_collect_parameters(
