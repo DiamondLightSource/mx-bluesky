@@ -29,8 +29,6 @@ dependencies = [
     "caproto",
     "fastapi[all]",
     "uvicorn",
-    # TODO remove flask
-    "flask-restful",
     "jupyterlab",
     "matplotlib",
     "nexgen >= 0.11.0",
