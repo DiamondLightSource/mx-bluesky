@@ -28,7 +28,7 @@ dependencies = [
     "annotated_types",
     "caproto",
     "fastapi[all]",
-    "flask-restful",
+    "uvicorn",
     "jupyterlab",
     "matplotlib",
     "nexgen >= 0.11.0",
