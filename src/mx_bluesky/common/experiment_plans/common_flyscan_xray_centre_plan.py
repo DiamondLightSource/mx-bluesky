@@ -171,7 +171,7 @@ def common_flyscan_xray_centre(
 
             LOGGER.info("Starting grid scan")
             yield from run_gridscan(
-                fgs_composite, params, grid_scan_parameters, beamline_specific
+                fgs_composite, grid_scan_parameters, beamline_specific
             )
 
             LOGGER.info("Grid scan finished")
@@ -184,7 +184,6 @@ def common_flyscan_xray_centre(
 
 def run_gridscan(
     fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
-    parameters: SpecifiedGrids,
     grid_scan_params: GridScanParams,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
@@ -219,7 +218,7 @@ def run_gridscan(
         fgs_composite.eiger,
         fgs_composite.synchrotron,
         grid_scan_params.scan_points,
-        parameters.omega_starts_deg,
+        grid_scan_params.omega_starts_deg,
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )
 
