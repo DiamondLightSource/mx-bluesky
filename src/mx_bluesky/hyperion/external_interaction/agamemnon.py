@@ -154,7 +154,11 @@ def _populate_parameters_from_agamemnon(
     with_energy_params = _get_withenergy_parameters_from_agamemnon(agamemnon_params)
     pin_type = _get_pin_type_from_agamemnon_collect_parameters(agamemnon_params)
     collections = agamemnon_params["collection"]
-    visit_directory, file_name = path.split(agamemnon_params["prefix"])
+    rotation_storage_directory, rotation_file_name = path.split(
+        agamemnon_params["prefix"]
+    )
+    xrc_storage_directory, xrc_file_name = path.split(agamemnon_params["xrc_prefix"])
+    snapshot_directory = agamemnon_params["jpegs_dir"]
     use_roi_mode = get_hyperion_feature_settings().XRC_USE_ROI_MODE
     return [
         LoadCentreCollectParams.model_validate(
@@ -170,8 +174,9 @@ def _populate_parameters_from_agamemnon(
                 },
                 **with_energy_params,
                 "robot_load_then_centre": {
-                    "storage_directory": str(visit_directory) + "/xraycentring",
-                    "file_name": file_name,
+                    "snapshot_directory": str(snapshot_directory),
+                    "storage_directory": str(xrc_storage_directory),
+                    "file_name": xrc_file_name,
                     "pin_type": pin_type,
                     "omega_starts_deg": [0.0, 90.0],
                     "chi_start_deg": collection["chi"],
@@ -181,9 +186,10 @@ def _populate_parameters_from_agamemnon(
                 },
                 "multi_rotation_scan": {
                     "comment": collection["comment"],
-                    "storage_directory": str(visit_directory),
+                    "snapshot_directory": str(snapshot_directory),
+                    "storage_directory": str(rotation_storage_directory),
                     "exposure_time_s": collection["exposure_time"],
-                    "file_name": file_name,
+                    "file_name": rotation_file_name,
                     "transmission_frac": collection["transmission"],
                     "rotation_increment_deg": collection["omega_increment"],
                     "ispyb_experiment_type": collection["experiment_type"],
