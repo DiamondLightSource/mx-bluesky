@@ -111,7 +111,7 @@ def grid_position_to_motor_position(
     assert grid_scan_params.num_grids == 2
     assert grid_scan_params.y_starts_um[0] == grid_scan_params.y_starts_um[1]
     assert grid_scan_params.z_starts_um[0] == grid_scan_params.z_starts_um[1]
-    return (
+    motor_pos = (
         np.array(
             [
                 (
@@ -129,6 +129,17 @@ def grid_position_to_motor_position(
             ]
         )
         / 1000
+    )
+    if not _is_inside_3d_grid(grid_pos, grid_scan_params):
+        raise IndexError(f"{motor_pos} is outside the bounds of the grid")
+    return motor_pos
+
+
+def _is_inside_3d_grid(grid_pos: np.ndarray, grid_scan_params: GridScanParams):
+    return (
+        (-0.5 <= grid_pos[0] <= grid_scan_params.x_steps - 0.5)
+        and (-0.5 <= grid_pos[1] <= grid_scan_params.y_steps[0] - 0.5)
+        and (-0.5 <= grid_pos[2] <= grid_scan_params.y_steps[1] - 0.5)
     )
 
 
