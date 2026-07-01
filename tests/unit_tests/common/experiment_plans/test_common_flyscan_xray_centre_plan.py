@@ -130,7 +130,7 @@ class TestFlyscanXrayCentrePlan:
     def test_when_run_gridscan_called_then_generator_returned(
         self,
     ):
-        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock(), MagicMock())
+        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
@@ -282,7 +282,6 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 run_gridscan(
                     fake_fgs_composite,
-                    test_three_d_grid_params,
                     grid_scan_params,
                     beamline_specific,
                 )
@@ -297,7 +296,6 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
         grid_scan_params: GridScanParams,
     ):
         exception = FailedStatus()
@@ -309,7 +307,6 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 run_gridscan(
                     fake_fgs_composite,
-                    test_three_d_grid_params,
                     grid_scan_params,
                     beamline_specific,
                 )
@@ -425,7 +422,6 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
         grid_scan_params: GridScanParams,
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
@@ -434,7 +430,6 @@ class TestFlyscanXrayCentrePlan:
         run_engine(
             run_gridscan(
                 fake_fgs_composite,
-                test_three_d_grid_params,
                 grid_scan_params,
                 beamline_specific,
             )
@@ -465,7 +460,6 @@ class TestFlyscanXrayCentrePlan:
         mock_wait,
         mock_kickoff,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
         grid_scan_params: GridScanParams,
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
@@ -494,7 +488,6 @@ class TestFlyscanXrayCentrePlan:
                 bpp.run_wrapper(
                     run_gridscan(
                         fake_fgs_composite,
-                        test_three_d_grid_params,
                         grid_scan_params,
                         beamline_specific,
                     )
@@ -580,7 +573,6 @@ class TestFlyscanXrayCentrePlan:
     def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
         grid_scan_params: GridScanParams,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
@@ -603,7 +595,6 @@ class TestFlyscanXrayCentrePlan:
         msgs = sim_run_engine.simulate_plan(
             run_gridscan(
                 fake_fgs_composite,
-                test_three_d_grid_params,
                 grid_scan_params,
                 beamline_specific,
             )
