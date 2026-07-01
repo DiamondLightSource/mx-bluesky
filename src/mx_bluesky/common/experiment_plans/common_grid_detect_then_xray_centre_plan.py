@@ -212,7 +212,7 @@ def create_parameters_for_flyscan_xray_centre(
     xrc_params_type: type[SpecifiedThreeDGridScan],
 ) -> tuple[SpecifiedThreeDGridScan, GridScanParams]:
     grid_scan_params = GridScanParams(
-        omega_starts_deg=parameters.omega_starts_deg,
+        omega_starts_deg=[0, 90],
         x_start_um=grid_parameters["x_start_um"],
         y_starts_um=grid_parameters["y_starts_um"],
         z_starts_um=grid_parameters["z_starts_um"],
