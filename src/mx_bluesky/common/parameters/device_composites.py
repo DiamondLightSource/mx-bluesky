@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
-from dodal.devices.aperturescatterguard import (
-    ApertureScatterguard,
-)
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamsize.beamsize import BeamsizeBase
@@ -58,21 +58,27 @@ class OavGridDetectionComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectThenXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
+class GridDetectAndGridScanEssentialDevices(
+    FlyScanEssentialDevices[Smargon], OavGridDetectionComposite
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamstop: Beamstop
+    detector_motion: DetectorMotion
+    zocalo: ZocaloResults
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class GridDetectThenXRayCentreComposite(GridDetectAndGridScanEssentialDevices):
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard: ApertureScatterguard
+    # TODO Tidy this up to remove redundant items
     attenuator: BinaryFilterAttenuator
-    zocalo: ZocaloResults
     backlight: Backlight
-    beamstop: Beamstop
     beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
-    detector_motion: DetectorMotion
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
     flux: Flux
     oav: OAV
-    pin_tip_detection: PinTipDetection
     s4_slit_gaps: MinimalSlits
     undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback

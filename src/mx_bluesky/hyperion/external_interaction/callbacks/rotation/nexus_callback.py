@@ -94,6 +94,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             shape = (parameters.num_images, det_size.width, det_size.height)
             self.writer = NexusWriter(
                 parameters,
+                parameters.detector_params,
                 shape,
                 parameters.scan_points,
                 omega_start_deg=parameters.omega_start_deg,

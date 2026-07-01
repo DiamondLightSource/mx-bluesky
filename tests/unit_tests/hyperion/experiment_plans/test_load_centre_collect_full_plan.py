@@ -21,9 +21,8 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra.zebra import RotationDirection
 from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 from pydantic import ValidationError
-
 from mx_bluesky.common.parameters.components import AperturePolicy
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     RotationScanPerSweep,
@@ -102,23 +101,6 @@ FLYSCAN_RESULT_LARGE_APERTURE = dataclasses.replace(
     bounding_box_mm=(np.array([1.020, 1.000, 1.000]), np.array([1.060, 1.020, 1.020])),
     centre_of_mass_mm=np.array([1.040, 1.010, 1.010]),
 )
-
-
-@pytest.fixture
-def load_centre_collect_params_with_patched_create_params(
-    load_centre_collect_params: LoadCentreCollect,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-):
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.create_parameters_for_grid_detection"
-    ) as mock_create_params:
-        load_centre_collect_params.robot_load_then_centre.set_specified_grid_params(
-            test_three_d_grid_params
-        )
-        mock_create_params.return_value = (
-            load_centre_collect_params.robot_load_then_centre
-        )
-        yield
 
 
 @pytest.fixture
@@ -1092,8 +1074,6 @@ def test_box_size_passed_through_to_gridscan(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     run_engine: RunEngine,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-    load_centre_collect_params_with_patched_create_params,
 ):
     run_engine(
         load_centre_collect_full(
@@ -1101,7 +1081,10 @@ def test_box_size_passed_through_to_gridscan(
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == test_three_d_grid_params.box_size_um
+    assert (
+        detect_grid_call.args[2].box_size_um
+        == load_centre_collect_params.robot_load_then_centre.pin_centre_then_xray_centre_params.box_size_um
+    )
 
 
 @patch(

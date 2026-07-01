@@ -17,9 +17,9 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     grid_position_to_motor_position,
     zocalo_stage_decorator,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
@@ -53,8 +53,8 @@ def grid_scan_params():
 
 
 async def test_results_adjusted_and_event_raised(
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-    three_d_grid_scan_params: GridScanParams,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_scan_params_3d: GridScanParams,
     run_engine: RunEngine,
     zocalo: ZocaloResults,
 ):
@@ -63,7 +63,7 @@ async def test_results_adjusted_and_event_raised(
     mock_zocalo_trigger(zocalo, TestData.test_result_large)
     run_engine(
         fetch_xrc_results_from_zocalo(
-            zocalo, three_d_grid_scan_params, test_three_d_grid_params.sample_id
+            zocalo, grid_scan_params_3d, minimal_diffraction_expt_with_sample.sample_id
         )
     )
 
@@ -85,8 +85,8 @@ async def test_results_adjusted_and_event_raised(
 
 
 def test_fetch_results_discards_results_below_threshold(
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-    three_d_grid_scan_params: GridScanParams,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_scan_params_3d: GridScanParams,
     run_engine: RunEngine,
     zocalo: ZocaloResults,
 ):
@@ -101,7 +101,7 @@ def test_fetch_results_discards_results_below_threshold(
     )
     run_engine(
         fetch_xrc_results_from_zocalo(
-            zocalo, three_d_grid_scan_params, test_three_d_grid_params.sample_id
+            zocalo, grid_scan_params_3d, minimal_diffraction_expt_with_sample.sample_id
         )
     )
 
@@ -111,8 +111,8 @@ def test_fetch_results_discards_results_below_threshold(
 
 def test_no_xtal_found_raises_exception(
     run_engine: RunEngine,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-    three_d_grid_scan_params: GridScanParams,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_scan_params_3d: GridScanParams,
     zocalo: ZocaloResults,
 ):
     mock_zocalo_trigger(zocalo, [])
@@ -120,15 +120,17 @@ def test_no_xtal_found_raises_exception(
     with pytest.raises(CrystalNotFoundError):
         run_engine(
             fetch_xrc_results_from_zocalo(
-                zocalo, three_d_grid_scan_params, test_three_d_grid_params.sample_id
+                zocalo,
+                grid_scan_params_3d,
+                minimal_diffraction_expt_with_sample.sample_id,
             )
         )
 
 
 def test_dummy_result_returned_when_no_xtal_and_commissioning_mode_enabled(
     run_engine: RunEngine,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-    three_d_grid_scan_params: GridScanParams,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_scan_params_3d: GridScanParams,
     fake_fgs_composite: FlyScanEssentialDevices,
     beamline_specific: BeamlineSpecificFGSFeatures,
     zocalo: ZocaloResults,
@@ -141,13 +143,13 @@ def test_dummy_result_returned_when_no_xtal_and_commissioning_mode_enabled(
 
     run_engine(
         fetch_xrc_results_from_zocalo(
-            zocalo, three_d_grid_scan_params, test_three_d_grid_params.sample_id
+            zocalo, grid_scan_params_3d, minimal_diffraction_expt_with_sample.sample_id
         )
     )
     results = xrc_event_handler.xray_centre_results or []
     assert len(results) == 1
     result = results[0]
-    assert result.sample_id == test_three_d_grid_params.sample_id
+    assert result.sample_id == minimal_diffraction_expt_with_sample.sample_id
     assert result.max_count == 10000
     assert result.total_count == 100000
     assert all(np.isclose(result.bounding_box_mm[0], [1.95, 0.95, 0.45]))

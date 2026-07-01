@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from abc import abstractmethod
 from collections.abc import Iterator
 from itertools import accumulate
 from typing import Annotated, Any, Self
@@ -10,6 +11,7 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.zebra.zebra import (
     RotationDirection,
 )
+from dodal.utils import get_run_number
 from pydantic import Field, model_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
@@ -66,11 +68,13 @@ class RotationExperiment(DiffractionExperiment):
     def _detector_params_impl(
         self, omega_start_deg: float, num_images_per_trigger: int, num_triggers: int
     ) -> DetectorParams:
-        optional_args = {}
-        if self.run_number:
-            optional_args["run_number"] = self.run_number
-        assert self.detector_distance_mm is not None
         os.makedirs(self.storage_directory, exist_ok=True)
+        run_number = (
+            get_run_number(self.storage_directory, self.file_name)
+            if not self.run_number
+            else self.run_number
+        )
+        assert self.detector_distance_mm is not None
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
@@ -84,11 +88,15 @@ class RotationExperiment(DiffractionExperiment):
             num_triggers=num_triggers,
             use_roi_mode=False,
             det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
-            **optional_args,
+            run_number=run_number,
         )
 
     def _detector_params(self, omega_start_deg: float) -> DetectorParams:
         return self._detector_params_impl(omega_start_deg, self.num_images, 1)
+
+    @property
+    @abstractmethod
+    def num_images(self) -> int: ...
 
 
 class SingleRotationScan(

@@ -31,6 +31,7 @@ from dodal.devices.beamlines.i24.commissioning_jungfrau import (
     CommissioningJungfrauDetector,
 )
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
@@ -92,6 +93,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -102,7 +104,11 @@ from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GenericGrid,
+    GridDetectionParams,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -165,6 +171,21 @@ def _error_and_kill_pending_tasks(
     return unfinished_tasks
 
 
+@pytest.fixture(autouse=True)
+def always_patch_config_client():
+    with patch(
+        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
+        create=True,
+        new=ConfigClient("http://localhost:8555"),
+    ):
+        yield
+
+
+@pytest.fixture()
+def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
+    monkeypatch.setenv("BEAMLINE", "i03")
+
+
 @pytest.fixture(autouse=True, scope="function")
 async def fail_test_on_unclosed_tasks(request: FixtureRequest):
     """
@@ -218,9 +239,9 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
         GridDetectAndScanISPyBCallback(
-            param_type=SpecifiedThreeDGridScan,
+            param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
@@ -278,7 +299,7 @@ def use_beamline_t01():
 
 
 @pytest.fixture
-def mock_subscriptions(test_three_d_grid_params):
+def mock_subscriptions():
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
@@ -352,7 +373,8 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridDetectAndScanISPyBCallback,
-    params: SpecifiedThreeDGridScan,
+    params: DiffractionExperimentWithSample,
+    detector_params: DetectorParams,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""
@@ -362,6 +384,7 @@ def run_generic_ispyb_handler_setup(
         {
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "mx_bluesky_parameters": params.model_dump_json(),
+            "detector_params": detector_params.model_dump_json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
@@ -400,7 +423,7 @@ async def zebra_fast_grid_scan():
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -423,7 +446,7 @@ async def fake_fgs_composite(
     )
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
-        test_three_d_grid_params.detector_params
+        create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
     )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
@@ -761,4 +784,26 @@ def fake_create_rotation_devices(
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
         thawer=thawer,
+    )
+
+
+@pytest.fixture()
+def minimal_diffraction_expt_with_sample(
+    tmp_path: Path,
+) -> DiffractionExperimentWithSample:
+    return DiffractionExperimentWithSample(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/minimal_diffraction_expt_with_sample.json",
+            tmp_path,
+        )
+    )
+
+
+@pytest.fixture()
+def grid_detect_params(tmp_path: Path) -> GridDetectionParams:
+    return GridDetectionParams(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/grid_detect_params.json",
+            tmp_path,
+        )
     )
