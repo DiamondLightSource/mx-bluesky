@@ -158,7 +158,7 @@ def _populate_parameters_from_agamemnon(
         agamemnon_params["prefix"]
     )
     xrc_storage_directory, xrc_file_name = path.split(agamemnon_params["xrc_prefix"])
-    snapshot_directory = agamemnon_params["jpegs_prefix"]
+    snapshot_directory = agamemnon_params["jpegs_dir"]
     use_roi_mode = get_hyperion_feature_settings().XRC_USE_ROI_MODE
     return [
         LoadCentreCollectParams.model_validate(

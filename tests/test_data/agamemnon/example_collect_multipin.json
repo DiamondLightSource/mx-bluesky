@@ -79,7 +79,7 @@
             }
         },
         "prefix": "/dls/tmp/data/year/cm00000-0/auto/test/test_xtal",
-        "jpegs_prefix": "/dls/tmp/data/year/cm00000-0/jpegs/auto/test/test_xtal",
+        "jpegs_dir": "/dls/tmp/data/year/cm00000-0/jpegs/auto/test/test_xtal",
         "xrc_prefix": "/dls/tmp/data/year/cm00000-0/xraycentring/auto/test/test_xtal"
     }
 }
