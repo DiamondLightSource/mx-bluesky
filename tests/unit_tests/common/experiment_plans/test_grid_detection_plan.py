@@ -32,7 +32,11 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     GridDetectAndScanISPyBCallback,
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
+from mx_bluesky.common.parameters.gridscan import (
+    GenericGrid,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.common.utils.exceptions import WarningError
 
 from ...conftest import assert_event
@@ -206,7 +210,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     tmp_path: Path,
     dummy_rotation_data_collection_group_info,
 ):
@@ -222,7 +226,10 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         run_engine(
             ispyb_activation_wrapper(
                 do_grid_and_edge_detect(composite, params, tmp_path),
-                test_three_d_grid_params,
+                minimal_diffraction_expt_with_sample,
+                create_detector_params_for_grid_scan(
+                    minimal_diffraction_expt_with_sample
+                ),
             )
         )
 
@@ -273,7 +280,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     tmp_path: Path,
 ):
     params = OAVParameters(
@@ -287,7 +294,8 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     run_engine(
         ispyb_activation_wrapper(
             do_grid_and_edge_detect(composite, params, tmp_path),
-            test_three_d_grid_params,
+            minimal_diffraction_expt_with_sample,
+            create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
         )
     )
 
@@ -311,7 +319,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     fake_devices: tuple[OavGridDetectionComposite, MagicMock],
     run_engine: RunEngine,
     test_config_files: dict[str, str],
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     tmp_path: Path,
 ):
     params = OAVParameters(
@@ -332,7 +340,8 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     run_engine(
         ispyb_activation_wrapper(
             do_grid_and_edge_detect(composite, params, tmp_path),
-            test_three_d_grid_params,
+            minimal_diffraction_expt_with_sample,
+            create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
         )
     )
 

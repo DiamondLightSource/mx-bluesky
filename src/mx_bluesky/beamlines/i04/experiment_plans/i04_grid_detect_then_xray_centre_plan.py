@@ -71,7 +71,13 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     generate_start_info_from_omega_map,
 )
-from mx_bluesky.common.parameters.components import AperturePolicy, get_param_version
+from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
+    DiffractionExperiment,
+    DiffractionExperimentWithSample,
+    IspybExperimentType,
+    get_param_version,
+)
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     GridscanParamConstants,
@@ -83,9 +89,9 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import (
-    GenericGrid,
+    GridDetectionParams,
     GridScanParams,
-    SpecifiedThreeDGridScan,
+    create_detector_params_for_grid_scan,
     fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -110,7 +116,7 @@ class I04AutoXrcParams(BaseModel):
 
 
 def _change_beamsize(
-    transfocator: Transfocator, beamsize: float, parameters: GenericGrid
+    transfocator: Transfocator, beamsize: float, parameters: DiffractionExperiment
 ):
     """i04 always uses the large aperture and changes beamsize with the transfocator.
 
@@ -164,27 +170,27 @@ def i04_default_grid_detect_and_xray_centre(
     """
 
     composite = GridDetectThenXRayCentreComposite(
-        eiger,
-        synchrotron,
-        smargon,
-        aperture_scatterguard,
-        attenuator,
-        zocalo,
-        backlight,
-        beamstop,
-        beamsize,
-        dcm,
-        detector_motion,
-        zebra_fast_grid_scan,
-        flux,
-        oav,
-        pin_tip_detection,
-        s4_slit_gaps,
-        undulator,
-        xbpm_feedback,
-        zebra,
-        robot,
-        sample_shutter,
+        eiger=eiger,
+        synchrotron=synchrotron,
+        gonio=smargon,
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        zocalo=zocalo,
+        backlight=backlight,
+        beamstop=beamstop,
+        beamsize=beamsize,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        zebra_fast_grid_scan=zebra_fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=pin_tip_detection,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
+        robot=robot,
+        sample_shutter=sample_shutter,
     )
     initial_beamsize = yield from bps.rd(transfocator.current_vertical_size_rbv)
 
@@ -193,7 +199,7 @@ def i04_default_grid_detect_and_xray_centre(
     initial_z = yield from bps.rd(smargon.z.user_readback)
 
     _current_wavelength_a = yield from bps.rd(composite.dcm.wavelength_in_a)
-    grid_common_params = _get_generic_grid_params(_current_wavelength_a, parameters)
+    internal_params = _create_internal_params(_current_wavelength_a, parameters)
 
     def tidy_beamline():
         yield from bps.mv(transfocator, initial_beamsize)
@@ -222,25 +228,23 @@ def i04_default_grid_detect_and_xray_centre(
         @verify_undulator_gap_before_run_decorator(composite)
         @set_transmission_and_trigger_xbpm_feedback_before_collection_decorator(
             composite,
-            grid_common_params.transmission_frac,
+            internal_params.transmission_frac,
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
             grid_scan_params = yield from grid_detect_then_xray_centre(
                 composite=composite,
-                parameters=grid_common_params,
-                xrc_params_type=SpecifiedThreeDGridScan,
+                parameters=internal_params,
+                grid_detection_params=GridDetectionParams(),
+                detector_params=create_detector_params_for_grid_scan(internal_params),
                 construct_beamline_specific=construct_i04_specific_features,
                 oav_config=oav_config,
             )
 
             try:
-                assert isinstance(
-                    grid_common_params.specified_grid_params, SpecifiedThreeDGridScan
-                ), "Specified grid params couldn't be found after grid detection"
                 yield from get_results_and_move_to_xtal(
                     composite,
-                    grid_common_params.specified_grid_params,
+                    internal_params,
                     grid_scan_params,
                     flyscan_event_handler,
                 )
@@ -253,7 +257,7 @@ def i04_default_grid_detect_and_xray_centre(
         yield from grid_detect_then_xray_centre_with_callbacks()
 
     yield from _change_beamsize(
-        transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, grid_common_params
+        transfocator, DEFAULT_XRC_BEAMSIZE_MICRONS, internal_params
     )
     yield from _inner_grid_detect_then_xrc()
 
@@ -283,9 +287,9 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
         GridDetectAndScanISPyBCallback(
-            param_type=GenericGrid,
+            param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
@@ -299,7 +303,7 @@ def create_gridscan_callbacks() -> tuple[
 
 def construct_i04_specific_features(
     xrc_composite: GridDetectThenXRayCentreComposite,
-    xrc_parameters: SpecifiedThreeDGridScan,
+    xrc_parameters: DiffractionExperimentWithSample,
     grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     """
@@ -350,9 +354,9 @@ def construct_i04_specific_features(
     )
 
 
-def _get_generic_grid_params(
+def _create_internal_params(
     _current_wavelength_a: float, parameters: I04AutoXrcParams
-) -> GenericGrid:
+) -> DiffractionExperimentWithSample:
     """Calculate scaled transmission and exposure by comparing current beamline energy to default energy"""
     feature_settings = get_i04_feature_settings()
     _assumed_wavelength_a = feature_settings.ASSUMED_WAVELENGTH_IN_A
@@ -367,7 +371,7 @@ def _get_generic_grid_params(
         )
     )
 
-    return GenericGrid(
+    return DiffractionExperimentWithSample(
         sample_id=parameters.sample_id,
         file_name=parameters.file_name,
         visit=parameters.visit,
@@ -376,4 +380,5 @@ def _get_generic_grid_params(
         transmission_frac=transmission_frac,
         exposure_time_s=exposure_time_s,
         parameter_model_version=get_param_version(),
+        ispyb_experiment_type=IspybExperimentType.GRIDSCAN_3D,
     )

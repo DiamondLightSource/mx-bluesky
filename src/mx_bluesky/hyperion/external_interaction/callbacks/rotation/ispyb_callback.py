@@ -72,6 +72,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
             self.params = SingleRotationScan.model_validate_json(hyperion_params)
+            self.detector_params = self.params.detector_params
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)
@@ -101,6 +102,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
                 dcgid,
                 data_collection_info,
                 self.params,
+                self.params.detector_params,
             )
             data_collection_info.parent_id = dcgid
             scan_data_info = ScanDataInfo(
@@ -118,7 +120,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params,
     ) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, (
             "Expect an existing DataCollection to update"

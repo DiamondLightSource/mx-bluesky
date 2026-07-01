@@ -1,0 +1,16 @@
+{
+    "parameter_model_version": "6.0.0",
+    "demand_energy_ev": 100,
+    "comment": "test",
+    "detector_distance_mm": 100.0,
+    "visit": "cm31105-4",
+    "exposure_time_s": 0.1,
+    "file_name": "file_name",
+    "sample_id": 123456,
+    "run_number": 0,
+    "use_roi_mode": false,
+    "transmission_frac": 1.0,
+    "storage_directory": "{tmp_data}/xraycentring/123456/",
+    "ispyb_experiment_type": "Mesh3D",
+    "selected_aperture": "SMALL_APERTURE"
+}

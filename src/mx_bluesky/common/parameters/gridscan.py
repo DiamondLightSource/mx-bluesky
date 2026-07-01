@@ -1,26 +1,25 @@
 from __future__ import annotations
 
-from typing import Annotated, Generic, TypeVar
+from typing import Annotated, TypeVar
 
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
-from dodal.devices.detector.detector import DetectorParams
+from dodal.devices.detector.detector import DetectorParams, TriggerMode
+from dodal.devices.eiger import FREE_RUN_MAX_IMAGES
 from dodal.devices.fast_grid_scan import (
     GridScanParamsCommon,
     ZebraGridScanParamsThreeD,
 )
-from dodal.utils import get_beamline_name
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from dodal.utils import get_beamline_name, get_run_number
+from pydantic import BaseModel, Field, model_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Concat, Line, Product, Static
 
 from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
-    SplitScan,
-    WithOptionalEnergyChange,
-    WithScan,
     XyzStarts,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -142,6 +141,45 @@ class GridScanParams(BaseModel):
             )
         return _scan_points
 
+    @property
+    def scan_indices(self) -> list[int]:
+        """The first index of each gridscan, useful for writing nexus files/VDS"""
+        _scan_indices = [0]
+        for idx in range(self.num_grids - 1):
+            _scan_indices.append(
+                len(
+                    ScanPath(self.grid_specs[idx].calculate())
+                    .consume()
+                    .midpoints["sam_x"]
+                )
+            )
+        return _scan_indices
+
+    @property
+    def num_images(self) -> int:
+        """Total num images in entire scan"""
+        _num_images = 0
+        for grid in range(len(self.scan_points)):
+            _num_images += len(self.scan_points[grid]["sam_x"])
+        return _num_images
+
+
+class GridScanParams3D(GridScanParams):
+    """Parameters representing a so-called 3D grid scan, which consists of doing a
+    gridscan in X and Y, followed by one in X and Z."""
+
+    @model_validator(mode="after")
+    def validate_y_and_z_axes(self):
+        _err_str = "must be length 2 for 3D scans"
+        if len(self.y_steps) != 2:
+            raise ValueError(f"{self.y_steps=} {_err_str}")
+        if len(self.y_step_sizes_um) != 2:
+            raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
+        if len(self.omega_starts_deg) != 2:
+            raise ValueError(f"{self.omega_starts_deg=} {_err_str}")
+
+        return self
+
 
 class GenericGrid(
     DiffractionExperimentWithSample,
@@ -159,59 +197,55 @@ class GenericGrid(
     box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
 
+    # Overrides of default values in the superclass
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
-
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
 
     tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
-    # Available after grid detection, used by entry point plans which need to
-    # get the grid parameters to retrieve zocalo results
-    # Can remove this after https://github.com/DiamondLightSource/python-dlstbx/issues/255 is done
-    _specified_grids_params: SpecifiedGrids | None = PrivateAttr(default=None)
 
-    def set_specified_grid_params(self, params: SpecifiedGrids):
-        self._specified_grid_params = params
+# We currently only arm the detector once, regardless of total grids. Detector params
+# must be the same for each grid
+def create_detector_params_for_grid_scan(
+    params: DiffractionExperiment,
+) -> DetectorParams:
 
-    @property
-    def specified_grid_params(self) -> SpecifiedGrids | None:
-        return self._specified_grid_params
-
-    # We currently only arm the detector once, regardless of total grids. Detector params
-    # must be the same for each grid
-    @property
-    def detector_params(self):
-        optional_args = {}
-        if self.run_number:
-            optional_args["run_number"] = self.run_number
-        assert self.detector_distance_mm is not None, (
-            "Detector distance must be filled before generating DetectorParams"
-        )
-        return DetectorParams(
-            detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
-            expected_energy_ev=self.demand_energy_ev,
-            exposure_time_s=self.exposure_time_s,
-            directory=self.storage_directory,
-            prefix=self.file_name,
-            detector_distance=self.detector_distance_mm,
-            omega_start=0,  # Metadata we set on detector isn't currently accurate, but also not used downstream
-            omega_increment=0,
-            num_images_per_trigger=1,
-            num_triggers=self.num_images,
-            use_roi_mode=self.use_roi_mode,
-            det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
-            trigger_mode=self.trigger_mode,
-            **optional_args,
-        )
+    assert params.detector_distance_mm is not None, (
+        "Detector distance must be filled before generating DetectorParams"
+    )
+    assert params.trigger_mode == TriggerMode.FREE_RUN, (
+        "Trigger mode SET_FRAMES is not supported for gridscans."
+    )
+    run_number = (
+        get_run_number(params.storage_directory, params.file_name)
+        if not params.run_number
+        else params.run_number
+    )
+    return DetectorParams(
+        detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
+        expected_energy_ev=params.demand_energy_ev,
+        exposure_time_s=params.exposure_time_s,
+        directory=params.storage_directory,
+        prefix=params.file_name,
+        detector_distance=params.detector_distance_mm,
+        omega_start=0,  # Metadata we set on detector isn't currently accurate, but also not used downstream
+        omega_increment=0,
+        num_images_per_trigger=1,
+        num_triggers=FREE_RUN_MAX_IMAGES,
+        use_roi_mode=params.use_roi_mode,
+        det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
+        run_number=run_number,
+        trigger_mode=params.trigger_mode,
+    )
 
 
 PositiveInt = Annotated[int, Field(gt=0)]
 PositiveFloat = Annotated[float, Field(gt=0)]
 
 
-class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType]):
+class SpecifiedGrids(GenericGrid, XyzStarts):
     """A specified grid is one which has defined values for the start position,
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
@@ -233,8 +267,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     )
     x_steps: PositiveInt  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
     y_steps: list[PositiveInt]
-
-    _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
 
     @model_validator(mode="after")
     def _check_lengths_are_same(self):
@@ -258,9 +290,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
 
         return self
 
-    def do_set_stub_offsets(self, value: bool):
-        self._set_stub_offsets = value
-
     @property
     def num_grids(self):
         return len(self.y_steps)
@@ -281,20 +310,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
             grid_z = Static("sam_z", self.z_starts_um[idx])
             _grid_specs.append(grid_y.zip(grid_z) * ~grid_x)
         return _grid_specs
-
-    @property
-    def scan_indices(self) -> list[int]:
-        """The first index of each gridscan, useful for writing nexus files/VDS"""
-        _scan_indices = [0]
-        for idx in range(self.num_grids - 1):
-            _scan_indices.append(
-                len(
-                    ScanPath(self.grid_specs[idx].calculate())
-                    .consume()
-                    .midpoints["sam_x"]
-                )
-            )
-        return _scan_indices
 
     @property
     def scan_spec(self) -> Product[str] | Concat[str]:
@@ -320,38 +335,9 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
             )
         return _scan_points
 
-    @property
-    def num_images(self) -> int:
-        """Total num images in entire scan"""
-        _num_images = 0
-        for grid in range(len(self.scan_points)):
-            _num_images += len(self.scan_points[grid]["sam_x"])
-        return _num_images
-
-
-class SpecifiedThreeDGridScan(
-    SpecifiedGrids[ZebraGridScanParamsThreeD],
-    SplitScan,
-    WithOptionalEnergyChange,
-):
-    """Parameters representing a so-called 3D grid scan, which consists of doing a
-    gridscan in X and Y, followed by one in X and Z."""
-
-    @model_validator(mode="after")
-    def validate_y_and_z_axes(self):
-        _err_str = "must be length 2 for 3D scans"
-        if len(self.y_steps) != 2:
-            raise ValueError(f"{self.y_steps=} {_err_str}")
-        if len(self.y_step_sizes_um) != 2:
-            raise ValueError(f"{self.y_step_sizes_um=} {_err_str}")
-        if len(self.omega_starts_deg) != 2:
-            raise ValueError(f"{self.omega_starts_deg=} {_err_str}")
-
-        return self
-
 
 def fast_gridscan_params(
-    expt_params: SpecifiedGrids, grid_scan_params: GridScanParams
+    expt_params: DiffractionExperiment, grid_scan_params: GridScanParams
 ) -> ZebraGridScanParamsThreeD:
     return ZebraGridScanParamsThreeD(
         x_steps=grid_scan_params.x_steps,
@@ -365,8 +351,7 @@ def fast_gridscan_params(
         z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
         y2_start_mm=grid_scan_params.y_starts_um[1] / 1000,
         z2_start_mm=grid_scan_params.z_starts_um[1] / 1000,
-        # TODO remove this private access
-        set_stub_offsets=expt_params._set_stub_offsets,  # noqa: SLF001
+        set_stub_offsets=False,
         dwell_time_ms=expt_params.exposure_time_s * 1000,
         transmission_fraction=expt_params.transmission_frac,
     )
