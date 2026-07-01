@@ -32,7 +32,11 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    SpecifiedThreeDGridScan,
+    fast_gridscan_params,
+)
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
@@ -59,7 +63,7 @@ def _fake_flyscan(*args):
 def construct_beamline_specific(
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> ConstructBeamlineSpecificFeatures:
-    return lambda xrc_composite, xrc_parameters: beamline_specific
+    return lambda xrc_composite, xrc_parameters, grid_scan_params: beamline_specific
 
 
 @pytest.mark.timeout(2)
@@ -111,15 +115,11 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     )
 
     # Check we called out to underlying fast grid scan plan
-    mock_flyscan.assert_called_once_with(ANY, ANY, ANY)
+    mock_flyscan.assert_called_once_with(ANY, ANY, ANY, ANY)
 
 
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-    autospec=True,
-)
-@patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.create_parameters_for_flyscan_xray_centre",
     autospec=True,
 )
 @patch(
@@ -138,7 +138,6 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
     mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect: MagicMock,
     mock_flyscan: MagicMock,
-    mock_create_params: MagicMock,
     mock_grid_detect_callback: MagicMock,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
@@ -146,6 +145,15 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
     test_config_files: dict,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
+    mock_grid_detect_callback.return_value.get_grid_parameters.return_value = {
+        "x_start_um": 0,
+        "y_starts_um": [0, 0],
+        "z_starts_um": [0, 0],
+        "x_steps": 10,
+        "y_steps": [10, 10],
+        "x_step_size_um": 10,
+        "y_step_sizes_um": [10, 10],
+    }
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
@@ -156,7 +164,6 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
             xrc_params_type=SpecifiedThreeDGridScan,
         ),
     )
-
     mock_setup_beamline_for_oav.assert_called_once()
 
 
@@ -210,10 +217,11 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     )
 
     params: HyperionSpecifiedThreeDGridScan = mock_flyscan.call_args[0][1]
-
+    grid_scan_params: GridScanParams = mock_flyscan.call_args[0][2]
     assert params.detector_params.num_triggers == 180
-    assert params.fast_gridscan_params.x_axis.full_steps == 15
-    assert params.fast_gridscan_params.y_axis.end == pytest.approx(-0.06329, 0.001)
+    fgs_params = fast_gridscan_params(params, grid_scan_params)
+    assert fgs_params.x_axis.full_steps == 15
+    assert fgs_params.y_axis.end == pytest.approx(-0.06329, 0.001)
 
     # Parameters can be serialized
     params.model_dump_json()
@@ -395,9 +403,21 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
     test_config_files: dict,
 ):
-    mock_grid_detect_then_xray_centre.return_value = iter(
-        [Msg("grid_detect_then_xray_centre")]
-    )
+    def mock_grid_detect_then_xrc_plan(*args, **kwargs):
+        yield Msg("grid_detect_then_xray_centre")
+        return GridScanParams(
+            omega_starts_deg=[0, 90],
+            x_steps=10,
+            y_steps=[10, 10],
+            x_start_um=0,
+            y_starts_um=[0, 0],
+            z_starts_um=[0, 0],
+            x_step_size_um=10,
+            y_step_sizes_um=[10, 10],
+        )
+
+    mock_grid_detect_then_xray_centre.side_effect = mock_grid_detect_then_xrc_plan
+
     msgs = sim_run_engine.simulate_plan(
         grid_detect_then_xray_centre(
             grid_detect_xrc_devices,
