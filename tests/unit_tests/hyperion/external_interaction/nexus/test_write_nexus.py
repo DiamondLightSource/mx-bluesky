@@ -24,7 +24,11 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import GridScanParams
+from mx_bluesky.hyperion.parameters.gridscan import (
+    HyperionSpecifiedThreeDGridScan,
+    fast_gridscan_params,
+)
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
 that confirms that we're passing the right sorts of data to nexgen to get a sensible output.
@@ -128,8 +132,19 @@ def test_given_dummy_data_then_datafile_written_correctly(
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
-    grid_scan_params: ZebraGridScanParamsThreeD = (
-        test_three_d_grid_params.fast_gridscan_params
+
+    grid_scan_params = GridScanParams(
+        omega_starts_deg=test_three_d_grid_params.omega_starts_deg,
+        x_steps=test_three_d_grid_params.x_steps,
+        y_steps=test_three_d_grid_params.y_steps,
+        x_start_um=test_three_d_grid_params.x_start_um,
+        y_starts_um=test_three_d_grid_params.y_starts_um,
+        z_starts_um=test_three_d_grid_params.z_starts_um,
+        x_step_size_um=test_three_d_grid_params.x_step_size_um,
+        y_step_sizes_um=test_three_d_grid_params.y_step_sizes_um,
+    )
+    zebra_grid_scan_params: ZebraGridScanParamsThreeD = fast_gridscan_params(
+        test_three_d_grid_params, grid_scan_params
     )
     nexus_writer_1.create_nexus_file(np.uint16)
 
@@ -139,14 +154,14 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 data_path := written_nexus_file["/entry/data"], h5py.Group
             )
             assert_x_data_stride_correct(
-                data_path, grid_scan_params, grid_scan_params.y_steps
+                data_path, zebra_grid_scan_params, zebra_grid_scan_params.y_steps
             )
             assert isinstance(sam_y := data_path["sam_y"], h5py.Dataset)
             assert_varying_axis_stride_correct(
-                sam_y[:], grid_scan_params, grid_scan_params.y_axis
+                sam_y[:], zebra_grid_scan_params, zebra_grid_scan_params.y_axis
             )
             assert_axis_data_fixed(
-                written_nexus_file, "z", grid_scan_params.z1_start_mm
+                written_nexus_file, "z", zebra_grid_scan_params.z1_start_mm
             )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],
@@ -194,14 +209,14 @@ def test_given_dummy_data_then_datafile_written_correctly(
                 data_path := written_nexus_file["/entry/data"], h5py.Group
             )
             assert_x_data_stride_correct(
-                data_path, grid_scan_params, grid_scan_params.z_steps
+                data_path, zebra_grid_scan_params, zebra_grid_scan_params.z_steps
             )
             assert isinstance(sam_y := data_path["sam_y"], h5py.Dataset)
             assert_varying_axis_stride_correct(
-                sam_y[:], grid_scan_params, grid_scan_params.z_axis
+                sam_y[:], zebra_grid_scan_params, zebra_grid_scan_params.z_axis
             )
             assert_axis_data_fixed(
-                written_nexus_file, "z", grid_scan_params.y2_start_mm
+                written_nexus_file, "z", zebra_grid_scan_params.y2_start_mm
             )
             assert isinstance(
                 flux := written_nexus_file["/entry/instrument/beam/total_flux"],

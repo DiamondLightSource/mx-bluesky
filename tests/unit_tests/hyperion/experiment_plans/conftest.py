@@ -17,6 +17,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
@@ -294,10 +295,25 @@ def grid_detection_callback_with_detected_grid():
 
 
 @pytest.fixture
+def hyperion_grid_scan_params(hyperion_fgs_params: HyperionSpecifiedThreeDGridScan):
+    return GridScanParams(
+        omega_starts_deg=hyperion_fgs_params.omega_starts_deg,
+        x_start_um=hyperion_fgs_params.x_start_um,
+        y_starts_um=hyperion_fgs_params.y_starts_um,
+        z_starts_um=hyperion_fgs_params.z_starts_um,
+        x_steps=hyperion_fgs_params.x_steps,
+        y_steps=hyperion_fgs_params.y_steps,
+        x_step_size_um=hyperion_fgs_params.x_step_size_um,
+        y_step_sizes_um=hyperion_fgs_params.y_step_sizes_um,
+    )
+
+
+@pytest.fixture
 def beamline_specific(
     hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
     hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    hyperion_grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite, hyperion_fgs_params
+        hyperion_flyscan_xrc_composite, hyperion_fgs_params, hyperion_grid_scan_params
     )
