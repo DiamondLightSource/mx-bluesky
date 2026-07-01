@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 import bluesky.plan_stubs as bps
 import numpy as np
 import pytest
@@ -12,6 +14,7 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     fetch_xrc_results_from_zocalo,
+    grid_position_to_motor_position,
     zocalo_stage_decorator,
 )
 from mx_bluesky.common.parameters.gridscan import (
@@ -30,6 +33,20 @@ from tests.unit_tests.hyperion.experiment_plans.conftest import (
 )
 
 from ....conftest import TestData
+
+
+@pytest.fixture
+def grid_scan_params():
+    yield GridScanParams(
+        x_steps=10,
+        y_steps=[15, 20],
+        x_step_size_um=300,
+        y_step_sizes_um=[200, 100],
+        x_start_um=0,
+        y_starts_um=[1000, 2000],
+        z_starts_um=[3000, 4000],
+    )
+
 
 """ Below are tests for getting zocalo results from the zocalo device, which is done
  post gridscan """
@@ -159,3 +176,56 @@ def test_zocalo_stage_wrapper(
         msgs,
         predicate=lambda msg: msg.command == "unstage" and msg.obj.name == "zocalo",
     )
+
+
+@pytest.mark.parametrize(
+    "grid_position, expected",
+    [
+        [np.array([-1, 2, 4]), pytest.raises(IndexError)],
+        [np.array([11, 2, 4]), pytest.raises(IndexError)],
+        [np.array([1, 17, 4]), pytest.raises(IndexError)],
+        [np.array([1, 5, 22]), pytest.raises(IndexError)],
+        [np.array([0, 0, 0]), nullcontext(np.array([0, 1, 4]))],
+        [np.array([1, 1, 1]), nullcontext(np.array([0.3, 1.2, 4.1]))],
+        [np.array([2, 11, 16]), nullcontext(np.array([0.6, 3.2, 5.6]))],
+        [np.array([6, 5, 5]), nullcontext(np.array([1.8, 2.0, 4.5]))],
+        [np.array([-0.51, 5, 5]), pytest.raises(IndexError)],
+        [
+            np.array([-0.5, 5, 5]),
+            nullcontext(np.array([-0.5 * 0.3, 1 + 5 * 0.2, 4 + 5 * 0.1])),
+        ],
+        [np.array([5, -0.51, 5]), pytest.raises(IndexError)],
+        [
+            np.array([5, -0.5, 5]),
+            nullcontext(np.array([5 * 0.3, 1 - 0.5 * 0.2, 4 + 5 * 0.1])),
+        ],
+        [np.array([5, 5, -0.51]), pytest.raises(IndexError)],
+        [
+            np.array([5, 5, -0.5]),
+            nullcontext(np.array([5 * 0.3, 1 + 5 * 0.2, 4 - 0.5 * 0.1])),
+        ],
+        [np.array([9.51, 5, 5]), pytest.raises(IndexError)],
+        [
+            np.array([9.5, 5, 5]),
+            nullcontext(np.array([9.5 * 0.3, 1 + 5 * 0.2, 4 + 5 * 0.1])),
+        ],
+        [np.array([5, 14.51, 5]), pytest.raises(IndexError)],
+        [
+            np.array([5, 14.5, 5]),
+            nullcontext(np.array([5 * 0.3, 1 + 14.5 * 0.2, 4 + 5 * 0.1])),
+        ],
+        [np.array([5, 5, 19.51]), pytest.raises(IndexError)],
+        [
+            np.array([5, 5, 19.5]),
+            nullcontext(np.array([5 * 0.3, 1 + 5 * 0.2, 4 + 19.5 * 0.1])),
+        ],
+    ],
+)
+def test_given_x_y_z_out_of_range_then_converting_to_motor_coords_raises(
+    grid_scan_params: GridScanParams, grid_position, expected
+):
+    with expected as expected_value:
+        motor_position = grid_position_to_motor_position(
+            grid_scan_params, grid_position
+        )
+        assert np.allclose(motor_position, expected_value)

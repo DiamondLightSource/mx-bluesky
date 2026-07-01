@@ -45,11 +45,37 @@ GridScanParamType = TypeVar(
 
 
 class GridDetectionParams(BaseModel):
+    """
+    Parameters that specify the characteristic dimensions of one or more grids to be detected.
+
+    Attributes:
+        box_size_um: The dimensions of the boxes in the grid in microns.
+        grid_width_um: The suggested width of the grid to be detected.
+    """
+
     box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
 
 
 class GridScanParams(BaseModel):
+    """
+    Parameters that specify a series of grid scans to be carried out.
+    The grids to be scanned must all originate at the same x-coordinate, and have the same number of steps in x'.
+
+    Note for the purposes of this description, x, y, z are coordinates in sample space, whereas x', y' are coordinates
+    in grid space for the respective grid scans.
+
+    Attributes:
+        omega_starts_deg: value of omega for each of the scans, which defines the projection of y' onto the y, z axes.
+        x_start_um: sample x position at the origin of all grid scans in microns.
+        y_starts_um: sample y positions at the origins of each successive grid scan in microns.
+        z_starts_um: samply z positions at the origins of each successive grid scan in microns.
+        x_steps: number of grid steps in the x'-coordinate for each grid scan.
+        y_steps: number of grid steps in the y'-coordinate for each grid scan.
+        x_step_size_um:  Size of the steps in the x'-coordinate in microns
+        y_step_sizes_um: Sizes of the steps in the y'-coordinate for each grid scan in microns.
+    """
+
     omega_starts_deg: list[int] = Field(
         default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
     )

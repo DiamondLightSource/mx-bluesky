@@ -109,8 +109,6 @@ def grid_position_to_motor_position(
     grid_scan_params: GridScanParams, grid_pos: np.ndarray
 ) -> np.ndarray:
     assert grid_scan_params.num_grids == 2
-    assert grid_scan_params.y_starts_um[0] == grid_scan_params.y_starts_um[1]
-    assert grid_scan_params.z_starts_um[0] == grid_scan_params.z_starts_um[1]
     motor_pos = (
         np.array(
             [
@@ -123,7 +121,7 @@ def grid_position_to_motor_position(
                     + grid_pos[1] * grid_scan_params.y_step_sizes_um[0]
                 ),
                 (
-                    grid_scan_params.z_starts_um[0]
+                    grid_scan_params.z_starts_um[1]
                     + grid_pos[2] * grid_scan_params.y_step_sizes_um[1]
                 ),
             ]
