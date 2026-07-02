@@ -59,6 +59,9 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
+from mx_bluesky.hyperion.parameters.gridscan import (
+    create_detector_params_with_hyperion_feature_settings,
+)
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 
@@ -179,10 +182,15 @@ def robot_load_then_xray_centre(
             LOGGER.info("Pin already loaded and chi not changed so doing nothing")
             return
 
+    # TODO this is probably no longer used in production since r_l_a_c is now only
+    # ever called via agamemnon, so energy is always specified
+    detector_params = create_detector_params_with_hyperion_feature_settings(parameters)
     detector_params = yield from fill_in_energy_if_not_supplied(
-        composite.dcm, parameters.detector_params
+        composite.dcm, detector_params
     )
 
+    # TODO this also appears to get called in common_flyscan_xray_centre, we should
+    # rationalise this
     eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(

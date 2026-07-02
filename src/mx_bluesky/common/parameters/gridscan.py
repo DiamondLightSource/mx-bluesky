@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Generic, TypeVar
+from typing import Annotated, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
@@ -16,6 +16,7 @@ from scanspec.core import Path as ScanPath
 from scanspec.specs import Concat, Line, Product, Static
 
 from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
@@ -160,8 +161,8 @@ class GenericGrid(
     box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
 
+    # Overrides of default values in the superclass
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
-
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
@@ -181,39 +182,39 @@ class GenericGrid(
     def specified_grid_params(self) -> SpecifiedGrids | None:
         return self._specified_grid_params
 
-    # We currently only arm the detector once, regardless of total grids. Detector params
-    # must be the same for each grid
-    @property
-    def detector_params(self):
-        optional_args = {}
-        if self.run_number:
-            optional_args["run_number"] = self.run_number
-        assert self.detector_distance_mm is not None, (
-            "Detector distance must be filled before generating DetectorParams"
-        )
-        return DetectorParams(
-            detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
-            expected_energy_ev=self.demand_energy_ev,
-            exposure_time_s=self.exposure_time_s,
-            directory=self.storage_directory,
-            prefix=self.file_name,
-            detector_distance=self.detector_distance_mm,
-            omega_start=0,  # Metadata we set on detector isn't currently accurate, but also not used downstream
-            omega_increment=0,
-            num_images_per_trigger=1,
-            num_triggers=self.num_images,
-            use_roi_mode=self.use_roi_mode,
-            det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
-            trigger_mode=self.trigger_mode,
-            **optional_args,
-        )
+
+# We currently only arm the detector once, regardless of total grids. Detector params
+# must be the same for each grid
+def create_detector_params(params: DiffractionExperiment) -> DetectorParams:
+    optional_args = {}
+    if params.run_number:
+        optional_args["run_number"] = params.run_number
+    assert params.detector_distance_mm is not None, (
+        "Detector distance must be filled before generating DetectorParams"
+    )
+    return DetectorParams(
+        detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
+        expected_energy_ev=params.demand_energy_ev,
+        exposure_time_s=params.exposure_time_s,
+        directory=params.storage_directory,
+        prefix=params.file_name,
+        detector_distance=params.detector_distance_mm,
+        omega_start=0,  # Metadata we set on detector isn't currently accurate, but also not used downstream
+        omega_increment=0,
+        num_images_per_trigger=1,
+        num_triggers=params.num_images,
+        use_roi_mode=params.use_roi_mode,
+        det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
+        trigger_mode=params.trigger_mode,
+        **optional_args,
+    )
 
 
 PositiveInt = Annotated[int, Field(gt=0)]
 PositiveFloat = Annotated[float, Field(gt=0)]
 
 
-class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType]):
+class SpecifiedGrids(GenericGrid, XyzStarts, WithScan):
     """A specified grid is one which has defined values for the start position,
     grid and box sizes, etc., as opposed to parameters for a plan which will create
     those parameters at some point (e.g. through optical pin detection)."""
@@ -236,8 +237,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     x_steps: PositiveInt  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
     y_steps: list[PositiveInt]
 
-    _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
-
     @model_validator(mode="after")
     def _check_lengths_are_same(self):
         fields = {
@@ -259,9 +258,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
             raise ValueError("Fields must all have the same length:\n" + details)
 
         return self
-
-    def do_set_stub_offsets(self, value: bool):
-        self._set_stub_offsets = value
 
     @property
     def num_grids(self):
@@ -332,7 +328,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
 
 
 class SpecifiedThreeDGridScan(
-    SpecifiedGrids[ZebraGridScanParamsThreeD],
+    SpecifiedGrids,
     SplitScan,
     WithOptionalEnergyChange,
 ):
@@ -353,7 +349,7 @@ class SpecifiedThreeDGridScan(
 
 
 def fast_gridscan_params(
-    expt_params: SpecifiedGrids, grid_scan_params: GridScanParams
+    expt_params: DiffractionExperiment, grid_scan_params: GridScanParams
 ) -> ZebraGridScanParamsThreeD:
     return ZebraGridScanParamsThreeD(
         x_steps=grid_scan_params.x_steps,
@@ -367,8 +363,7 @@ def fast_gridscan_params(
         z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
         y2_start_mm=grid_scan_params.y_starts_um[1] / 1000,
         z2_start_mm=grid_scan_params.z_starts_um[1] / 1000,
-        # TODO remove this private access
-        set_stub_offsets=expt_params._set_stub_offsets,  # noqa: SLF001
+        set_stub_offsets=False,
         dwell_time_ms=expt_params.exposure_time_s * 1000,
         transmission_fraction=expt_params.transmission_frac,
     )

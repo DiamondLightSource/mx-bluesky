@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
@@ -9,7 +9,6 @@ from typing import Self, SupportsInt
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
-    DetectorParams,
     TriggerMode,
 )
 from pydantic import (
@@ -160,7 +159,7 @@ class WithVisit(BaseModel):
 
 
 class DiffractionExperiment(
-    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
+    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit, ABC
 ):
     """For all experiments which use beam"""
 
@@ -196,10 +195,6 @@ class DiffractionExperiment(
     @property
     def num_images(self) -> int:
         return 0
-
-    @property
-    @abstractmethod
-    def detector_params(self) -> DetectorParams: ...
 
 
 class WithScan(BaseModel):

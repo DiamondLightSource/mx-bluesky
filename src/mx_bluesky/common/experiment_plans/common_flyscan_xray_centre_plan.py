@@ -3,11 +3,13 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable, Sequence
 from functools import partial
+from typing import Generic, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
+from dodal.devices.detector import DetectorParams
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
@@ -21,6 +23,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
@@ -32,7 +35,6 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    SpecifiedGrids,
 )
 from mx_bluesky.common.utils.exceptions import (
     SampleError,
@@ -40,10 +42,15 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
+TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
+TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
+
 
 @dataclasses.dataclass
-class BeamlineSpecificFGSFeatures:
-    setup_trigger_plan: Callable[..., MsgGenerator]
+class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TParameters]):
+    setup_trigger_plan: Callable[
+        [TFlyScanDevices, TParameters, GridScanParams], MsgGenerator
+    ]
     tidy_plan: Callable[..., MsgGenerator]
     set_flyscan_params_plan: Callable[..., MsgGenerator]
     fgs_motors: FastGridScanCommon
@@ -116,16 +123,18 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: FlyScanEssentialDevices[GonioWithOmegaType],
-    parameters: SpecifiedGrids,
+    composite: TFlyScanDevices,
+    parameters: TParameters,
+    xrc_detector_params: DetectorParams,
     grid_scan_parameters: GridScanParams,
-    beamline_specific: BeamlineSpecificFGSFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures[TFlyScanDevices, TParameters],
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
     Args:
         composite (FlyScanEssentialDevices): Devices required to perform this plan.
 
+        xrc_detector_params (DetectorParams): Detector parameters to use during x-ray centring.
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
         grid_scan_parameters (GridScanParams): Parameters defining the grid scan(s) to be carried out.
 
@@ -162,7 +171,6 @@ def common_flyscan_xray_centre(
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
             fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
-            params: SpecifiedGrids,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
             yield from beamline_specific.setup_trigger_plan(
@@ -176,9 +184,9 @@ def common_flyscan_xray_centre(
 
             LOGGER.info("Grid scan finished")
 
-        yield from run_gridscan_and_tidy(composite, parameters, beamline_specific)
+        yield from run_gridscan_and_tidy(composite, beamline_specific)
 
-    composite.eiger.set_detector_parameters(parameters.detector_params)
+    composite.eiger.set_detector_parameters(xrc_detector_params)
     yield from _decorated_flyscan()
 
 
