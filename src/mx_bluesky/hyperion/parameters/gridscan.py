@@ -1,44 +1,32 @@
 from __future__ import annotations
 
+from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParamsThreeD,
 )
 
-from mx_bluesky.common.parameters.components import DiffractionExperiment
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
+    DiffractionExperimentWithSample,
+    OptionalGonioAngleStarts,
+)
 from mx_bluesky.common.parameters.gridscan import (
-    GenericGrid,
+    GridDetectionParams,
     GridScanParams,
-    SpecifiedThreeDGridScan,
+    create_detector_params,
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
 
 
-class GenericGridWithHyperionDetectorParams(GenericGrid):
-    """Used by models which require detector parameters but have no specifications of the grid"""
-
-    # These detector params only exist so that we can properly select enable_dev_shm. Remove in
-    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
-    @property
-    def detector_params(self):
-        params = super().detector_params
-        params.enable_dev_shm = get_hyperion_feature_settings().USE_GPU_RESULTS
-        return params
-
-
-class HyperionSpecifiedThreeDGridScan(SpecifiedThreeDGridScan):
-    """Hyperion's 3D grid scan deviates from the common class due to: optionally using a PandA, optionally using dev_shm for GPU analysis, and using a config server for features"""
-
-    # These detector params only exist so that we can properly select enable_dev_shm. Remove in
-    # https://github.com/DiamondLightSource/hyperion/issues/1395"""
-
-    @property
-    def detector_params(self):
-        params = super().detector_params
-        params.enable_dev_shm = get_hyperion_feature_settings().USE_GPU_RESULTS
-        return params
+def create_detector_params_with_hyperion_feature_settings(
+    params: DiffractionExperiment,
+) -> DetectorParams:
+    detector_params = create_detector_params(params)
+    detector_params.enable_dev_shm = get_hyperion_feature_settings().USE_GPU_RESULTS
+    return detector_params
 
 
 # Relative to common grid scan, stub offsets are defined by config server
@@ -94,9 +82,7 @@ def panda_fast_gridscan_params(
 class OddYStepsError(Exception): ...
 
 
-class PinTipCentreThenXrayCentre(GenericGridWithHyperionDetectorParams):
+class PinTipCentreThenXrayCentre(
+    DiffractionExperimentWithSample, GridDetectionParams, OptionalGonioAngleStarts
+):
     tip_offset_um: float = 0
-
-
-class GridScanWithEdgeDetect(GenericGridWithHyperionDetectorParams):
-    pass

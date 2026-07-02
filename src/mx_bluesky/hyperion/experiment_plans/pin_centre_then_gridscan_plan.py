@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.oav.oav_parameters import OAVParameters
 
@@ -24,11 +22,9 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
-from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -37,22 +33,9 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    HyperionSpecifiedThreeDGridScan,
     PinTipCentreThenXrayCentre,
+    create_detector_params_with_hyperion_feature_settings,
 )
-
-
-def create_parameters_for_grid_detection(
-    pin_centre_parameters: PinTipCentreThenXrayCentre,
-) -> GridScanWithEdgeDetect:
-    params_json = json.loads(pin_centre_parameters.model_dump_json())
-    del params_json["tip_offset_um"]
-    grid_detect_and_gridscan = GridScanWithEdgeDetect(**params_json)
-    LOGGER.info(
-        f"Parameters for grid detect and gridscan: {grid_detect_and_gridscan.model_dump_json(indent=2)}"
-    )
-    return grid_detect_and_gridscan
 
 
 def pin_centre_then_gridscan_plan(
@@ -87,7 +70,6 @@ def pin_centre_then_gridscan_plan(
             oav_config_file,
         )
 
-        grid_detect_params = create_parameters_for_grid_detection(parameters)
         oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config_file)
 
         @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
@@ -99,17 +81,17 @@ def pin_centre_then_gridscan_plan(
             return (
                 yield from detect_grid_and_do_gridscan(
                     composite,
-                    grid_detect_params,
+                    parameters,
+                    parameters,
                     oav_params,
-                    HyperionSpecifiedThreeDGridScan,
+                    lambda: create_detector_params_with_hyperion_feature_settings(
+                        parameters
+                    ),
                     construct_hyperion_specific_features,
                 )
             )
 
         grid_scan_params = yield from _grid_detect_and_gridscan_plan()
-        assert isinstance(
-            grid_detect_params.specified_grid_params, SpecifiedThreeDGridScan
-        ), "Specified grid params couldn't be found after grid detection"
         yield from fetch_xrc_results_from_zocalo(
             composite.zocalo, grid_scan_params, parameters.sample_id
         )

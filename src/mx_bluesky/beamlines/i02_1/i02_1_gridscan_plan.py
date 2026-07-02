@@ -57,7 +57,11 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
 )
-from mx_bluesky.common.parameters.gridscan import GridScanParams, PositiveFloat
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    PositiveFloat,
+    create_detector_params,
+)
 from mx_bluesky.common.utils.log import LOGGER
 
 DEFAULT_BOX_SIZE_UM = 2
@@ -225,7 +229,11 @@ def i02_1_gridscan_plan(
     @ispyb_activation_decorator(params)
     def decorated_flyscan_plan():
         yield from common_flyscan_xray_centre(
-            composite, params, grid_scan_params, beamline_specific
+            composite,
+            params,
+            create_detector_params(params),
+            grid_scan_params,
+            beamline_specific,
         )
 
     yield from decorated_flyscan_plan()

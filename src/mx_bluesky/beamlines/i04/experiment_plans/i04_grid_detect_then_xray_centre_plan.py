@@ -71,7 +71,10 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     generate_start_info_from_omega_map,
 )
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperimentWithSample,
+    get_param_version,
+)
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     GridscanParamConstants,
@@ -84,8 +87,10 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
+    GridDetectionParams,
     GridScanParams,
     SpecifiedThreeDGridScan,
+    create_detector_params,
     fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -164,27 +169,27 @@ def i04_default_grid_detect_and_xray_centre(
     """
 
     composite = GridDetectThenXRayCentreComposite(
-        eiger,
-        synchrotron,
-        smargon,
-        aperture_scatterguard,
-        attenuator,
-        zocalo,
-        backlight,
-        beamstop,
-        beamsize,
-        dcm,
-        detector_motion,
-        zebra_fast_grid_scan,
-        flux,
-        oav,
-        pin_tip_detection,
-        s4_slit_gaps,
-        undulator,
-        xbpm_feedback,
-        zebra,
-        robot,
-        sample_shutter,
+        eiger=eiger,
+        synchrotron=synchrotron,
+        gonio=smargon,
+        aperture_scatterguard=aperture_scatterguard,
+        attenuator=attenuator,
+        zocalo=zocalo,
+        backlight=backlight,
+        beamstop=beamstop,
+        beamsize=beamsize,
+        dcm=dcm,
+        detector_motion=detector_motion,
+        zebra_fast_grid_scan=zebra_fast_grid_scan,
+        flux=flux,
+        oav=oav,
+        pin_tip_detection=pin_tip_detection,
+        s4_slit_gaps=s4_slit_gaps,
+        undulator=undulator,
+        xbpm_feedback=xbpm_feedback,
+        zebra=zebra,
+        robot=robot,
+        sample_shutter=sample_shutter,
     )
     initial_beamsize = yield from bps.rd(transfocator.current_vertical_size_rbv)
 
@@ -229,7 +234,11 @@ def i04_default_grid_detect_and_xray_centre(
             grid_scan_params = yield from grid_detect_then_xray_centre(
                 composite=composite,
                 parameters=grid_common_params,
+                grid_detection_params=GridDetectionParams(),
                 xrc_params_type=SpecifiedThreeDGridScan,
+                detector_params_factory=lambda: create_detector_params(
+                    grid_common_params
+                ),
                 construct_beamline_specific=construct_i04_specific_features,
                 oav_config=oav_config,
             )
@@ -299,7 +308,7 @@ def create_gridscan_callbacks() -> tuple[
 
 def construct_i04_specific_features(
     xrc_composite: GridDetectThenXRayCentreComposite,
-    xrc_parameters: SpecifiedThreeDGridScan,
+    xrc_parameters: DiffractionExperimentWithSample,
     grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     """
