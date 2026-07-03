@@ -1,0 +1,25 @@
+{
+    "omega_starts_deg": [
+        0,
+        90
+    ],
+    "x_steps": 40,
+    "y_steps": [
+        20,
+        10
+    ],
+    "x_step_size_um": 100,
+    "y_step_sizes_um": [
+        100,
+        100
+    ],
+    "x_start_um": 0.0,
+    "y_starts_um": [
+        0.0,
+        0.0
+    ],
+    "z_starts_um": [
+        0.0,
+        0.0
+    ]
+}

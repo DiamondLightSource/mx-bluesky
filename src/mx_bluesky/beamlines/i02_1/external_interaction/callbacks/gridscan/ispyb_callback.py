@@ -13,7 +13,6 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     Orientation,
     ScanDataInfo,
 )
-from mx_bluesky.common.parameters.gridscan import create_detector_params
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
 
 
@@ -28,6 +27,7 @@ class GridscanISPyBCallback(CommonGridscanISPyBCallback):
         """
         assert isinstance(self.params, I02_1FgsParams)
         assert self.grid_scan_params
+        assert self.detector_params
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
@@ -41,10 +41,9 @@ class GridscanISPyBCallback(CommonGridscanISPyBCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 f"Generating dc info for gridplane XY, omega {omega}"
             )
-            detector_params = create_detector_params(self.params)
-            data_collection_number = detector_params.run_number
+            data_collection_number = self.detector_params.run_number
             file_template = (
-                f"{detector_params.prefix}_{data_collection_number}_master.h5"
+                f"{self.detector_params.prefix}_{data_collection_number}_master.h5"
             )
             # Snapshots have already been taken in GDA
 

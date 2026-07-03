@@ -29,6 +29,7 @@ from dodal.devices.beamlines.i24.commissioning_jungfrau import (
     CommissioningJungfrauDetector,
 )
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
@@ -89,6 +90,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -99,7 +101,11 @@ from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GenericGrid,
+    GridScanParams,
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -331,7 +337,8 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridDetectAndScanISPyBCallback,
-    params: SpecifiedThreeDGridScan,
+    params: DiffractionExperimentWithSample,
+    detector_params: DetectorParams,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""
@@ -341,6 +348,7 @@ def run_generic_ispyb_handler_setup(
         {
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "mx_bluesky_parameters": params.model_dump_json(),
+            "detector_params": detector_params.model_dump_json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
@@ -728,4 +736,26 @@ def fake_create_rotation_devices(
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
         thawer=thawer,
+    )
+
+
+@pytest.fixture()
+def minimal_diffraction_expt_with_sample(
+    tmp_path: Path,
+) -> DiffractionExperimentWithSample:
+    return DiffractionExperimentWithSample(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/minimal_diffraction_expt_with_sample.json",
+            tmp_path,
+        )
+    )
+
+
+@pytest.fixture()
+def grid_scan_params_3d(tmp_path: Path) -> GridScanParams:
+    return GridScanParams(
+        **raw_params_from_file(
+            "tests/tests_data/parameter_json_files/internal/grid_scan_params_3d.json",
+            tmp_path,
+        )
     )
