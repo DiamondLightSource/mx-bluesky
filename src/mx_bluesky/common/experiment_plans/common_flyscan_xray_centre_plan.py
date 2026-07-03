@@ -162,6 +162,7 @@ def common_flyscan_xray_centre(
             md={
                 "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
+                "detector_parameters": xrc_detector_params,
                 "grid_scan_parameters": grid_scan_parameters,
                 "activate_callbacks": [
                     "GridscanNexusFileCallback",

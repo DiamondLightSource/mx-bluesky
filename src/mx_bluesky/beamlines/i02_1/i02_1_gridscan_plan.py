@@ -28,7 +28,7 @@ from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
 from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.beamlines.i02_1.parameters.gridscan import SpecifiedTwoDGridScan
+from mx_bluesky.beamlines.i02_1.parameters.gridscan import fast_gridscan_params
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     common_flyscan_xray_centre,
@@ -47,6 +47,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     generate_start_info_from_num_grids,
 )
 from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
     IspybExperimentType,
     get_param_version,
 )
@@ -68,16 +69,16 @@ DEFAULT_BOX_SIZE_UM = 2
 
 
 def create_gridscan_callbacks(
-    params: I02_1FgsParams,
+    grid_scan_params: GridScanParams,
 ) -> tuple[GridscanNexusFileCallback, GridscanISPyBCallback]:
     return (
-        GridscanNexusFileCallback(param_type=SpecifiedTwoDGridScan),
+        GridscanNexusFileCallback(param_type=I02_1FgsParams),
         GridscanISPyBCallback(
             param_type=I02_1FgsParams,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
-                lambda: generate_start_info_from_num_grids(params),
+                lambda: generate_start_info_from_num_grids(grid_scan_params),
             ),
         ),
     )
@@ -98,7 +99,8 @@ class I021FlyScanXRayCentreComposite(FlyScanEssentialDevices[XYZWrappedOmegaStag
 
 def construct_i02_1_specific_features(
     fgs_composite: I021FlyScanXRayCentreComposite,
-    parameters: SpecifiedTwoDGridScan,
+    params: DiffractionExperiment,
+    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     signals_to_read_pre_flyscan = [
         fgs_composite.synchrotron.synchrotron_mode,
@@ -117,13 +119,14 @@ def construct_i02_1_specific_features(
         fgs_composite.eiger.ispyb_detector_id,
     ]
 
+    fgs_params = fast_gridscan_params(params, grid_scan_params)
     return construct_beamline_specific_fast_gridscan_features(
         partial(_zebra_triggering_setup),
         partial(_tidy_plan, fgs_composite, group="flyscan_zebra_tidy", wait=True),
         partial(
             set_flyscan_params_plan,
             fgs_composite.zebra_fast_grid_scan,
-            parameters.fast_gridscan_params,
+            fgs_params,
         ),
         fgs_composite.zebra_fast_grid_scan,
         signals_to_read_pre_flyscan,
@@ -175,19 +178,15 @@ class ExternalGridScanParams(BaseModel):
     omega_start_deg: int
 
 
-def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
-    return I02_1FgsParams(
-        y_starts_um=[params.y_start_um],
-        x_start_um=params.x_start_um,
-        z_starts_um=[params.z_start_um],
-        omega_starts_deg=[params.omega_start_deg],
+def get_internal_params(
+    params: ExternalGridScanParams,
+) -> tuple[I02_1FgsParams, GridScanParams]:
+    fgs_params = I02_1FgsParams(
         sample_id=params.sample_id,
         visit=params.visit,
         parameter_model_version=get_param_version(),
         file_name=params.file_name,
         storage_directory=params.storage_directory,
-        x_steps=params.x_steps,
-        y_steps=[params.y_steps],
         path_to_xtal_snapshot=params.snapshot_directory,
         beam_size_x=params.beam_size_x,
         beam_size_y=params.beam_size_y,
@@ -197,11 +196,20 @@ def get_internal_params(params: ExternalGridScanParams) -> I02_1FgsParams:
         upper_left_y=params.upper_left_y,
         detector_distance_mm=params.detector_distance_mm,
         ispyb_experiment_type=IspybExperimentType.SAD,
+        use_roi_mode=False,
+    )
+
+    grid_scan_params = GridScanParams(
+        omega_starts_deg=[params.omega_start_deg],
+        x_start_um=params.x_start_um,
+        y_starts_um=[params.y_start_um],
+        z_starts_um=[params.z_start_um],
+        x_steps=params.x_steps,
+        y_steps=[params.y_steps],
         x_step_size_um=params.x_step_size_um,
         y_step_sizes_um=params.y_step_sizes_um,
-        use_roi_mode=False,
-        box_size_um=DEFAULT_BOX_SIZE_UM,
     )
+    return fgs_params, grid_scan_params
 
 
 def i02_1_gridscan_plan(
@@ -210,28 +218,21 @@ def i02_1_gridscan_plan(
 ) -> MsgGenerator:
     """BlueAPI entry point for i02-1 grid scans"""
 
-    params = get_internal_params(parameters)
+    params, grid_scan_params = get_internal_params(parameters)
 
-    beamline_specific = construct_i02_1_specific_features(composite, params)
-    callbacks = create_gridscan_callbacks(params)
-    grid_scan_params = GridScanParams(
-        omega_starts_deg=params.omega_starts_deg,
-        x_start_um=params.x_start_um,
-        y_starts_um=params.y_starts_um,
-        z_starts_um=params.z_starts_um,
-        x_steps=params.x_steps,
-        y_steps=params.y_steps,
-        x_step_size_um=params.x_step_size_um,
-        y_step_sizes_um=params.y_step_sizes_um,
+    beamline_specific = construct_i02_1_specific_features(
+        composite, params, grid_scan_params
     )
+    callbacks = create_gridscan_callbacks(grid_scan_params)
+    detector_params = create_detector_params(params)
 
     @bpp.subs_decorator(callbacks)
-    @ispyb_activation_decorator(params)
+    @ispyb_activation_decorator(params, grid_scan_params, detector_params)
     def decorated_flyscan_plan():
         yield from common_flyscan_xray_centre(
             composite,
             params,
-            create_detector_params(params),
+            detector_params,
             grid_scan_params,
             beamline_specific,
         )

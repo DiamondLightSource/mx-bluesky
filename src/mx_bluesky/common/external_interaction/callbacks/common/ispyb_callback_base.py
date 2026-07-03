@@ -67,6 +67,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
         self.params: DiffractionExperimentWithSample | None = None
+        self.detector_params: DetectorParams | None = None
         self.ispyb: StoreInIspyb
         self.descriptors: dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
@@ -130,7 +131,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         _data = doc["data"]
 
-        assert self.params, "Event handled before activity_gated_start received params"
+        assert self.params and self.detector_params, (
+            "Event handled before activity_gated_start received params"
+        )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"ISPyB handler received event from read hardware: {doc}"
         )
@@ -159,7 +162,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
         hwscan_data_collection_info = _update_based_on_energy(
-            doc, self.params.detector_params, hwscan_data_collection_info
+            doc, self.detector_params, hwscan_data_collection_info
         )
 
         hwscan_position_info = DataCollectionPositionInfo(
@@ -180,7 +183,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     ) -> Sequence[ScanDataInfo]:
         _data = doc["data"]
 
-        assert self.params
+        assert self.params and self.detector_params
         aperture = _data.get(
             "aperture_scatterguard-selected_aperture", "Not implemented"
         )
@@ -211,7 +214,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
         hwscan_data_collection_info = _update_based_on_energy(
-            doc, self.params.detector_params, hwscan_data_collection_info
+            doc, self.detector_params, hwscan_data_collection_info
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, None, self.params

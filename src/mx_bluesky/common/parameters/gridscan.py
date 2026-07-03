@@ -144,6 +144,20 @@ class GridScanParams(BaseModel):
             )
         return _scan_points
 
+    @property
+    def scan_indices(self) -> list[int]:
+        """The first index of each gridscan, useful for writing nexus files/VDS"""
+        _scan_indices = [0]
+        for idx in range(self.num_grids - 1):
+            _scan_indices.append(
+                len(
+                    ScanPath(self.grid_specs[idx].calculate())
+                    .consume()
+                    .midpoints["sam_x"]
+                )
+            )
+        return _scan_indices
+
 
 class GenericGrid(
     DiffractionExperimentWithSample,
@@ -279,20 +293,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan):
             grid_z = Static("sam_z", self.z_starts_um[idx])
             _grid_specs.append(grid_y.zip(grid_z) * ~grid_x)
         return _grid_specs
-
-    @property
-    def scan_indices(self) -> list[int]:
-        """The first index of each gridscan, useful for writing nexus files/VDS"""
-        _scan_indices = [0]
-        for idx in range(self.num_grids - 1):
-            _scan_indices.append(
-                len(
-                    ScanPath(self.grid_specs[idx].calculate())
-                    .consume()
-                    .midpoints["sam_x"]
-                )
-            )
-        return _scan_indices
 
     @property
     def scan_spec(self) -> Product[str] | Concat[str]:

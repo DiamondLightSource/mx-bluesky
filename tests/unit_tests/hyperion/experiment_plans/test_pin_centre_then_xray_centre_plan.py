@@ -9,6 +9,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from bluesky.utils import Msg, MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
+from dodal.devices.detector import DetectorParams
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.xbpm_feedback import Pause
@@ -41,17 +42,21 @@ from ...conftest import raw_params_from_file
 from .conftest import FLYSCAN_RESULT_MED
 
 
+# TODO Remove this as is only used in tests
 def pin_tip_centre_then_gridscan_plan_wrapper(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
+    detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(parameters.detector_params)
+    eiger.set_detector_parameters(detector_params)
 
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
-        yield from pin_centre_then_gridscan_plan(composite, parameters, oav_config_file)
+        yield from pin_centre_then_gridscan_plan(
+            composite, parameters, detector_params, oav_config_file
+        )
 
     yield from pin_centre_flyscan_then_fetch_results()
 

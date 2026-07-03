@@ -42,7 +42,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     ispyb_activation_decorator,
 )
 from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.parameters.gridscan import GridScanParams
+from mx_bluesky.common.parameters.gridscan import GridScanParams, create_detector_params
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -273,8 +273,10 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         fgs_composite_for_fake_zocalo, dummy_params, grid_scan_params
     )
 
+    detector_params = create_detector_params(dummy_params)
+
     @zocalo_stage_decorator(fgs_composite_for_fake_zocalo.zocalo)
-    @ispyb_activation_decorator(dummy_params)
+    @ispyb_activation_decorator(dummy_params, detector_params)
     def wrapped_xray_centre():
         yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
