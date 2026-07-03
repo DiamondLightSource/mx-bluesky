@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+from dodal.devices.detector import DetectorParams
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
@@ -27,6 +28,7 @@ class NexusWriter:
     def __init__(
         self,
         parameters: DiffractionExperiment,
+        detector_params: DetectorParams,
         data_shape: tuple[int, int, int],
         scan_points: AxesPoints,
         *,
@@ -45,10 +47,8 @@ class NexusWriter:
         self.attenuator: Attenuator | None = None
         self.scan_points: dict = scan_points
         self.data_shape: tuple[int, int, int] = data_shape
-        self.run_number: int = (
-            run_number if run_number else parameters.detector_params.run_number
-        )
-        self.detector: Detector = create_detector_parameters(parameters.detector_params)
+        self.run_number: int = run_number if run_number else detector_params.run_number
+        self.detector: Detector = create_detector_parameters(detector_params)
         self.source: Source = Source(get_beamline_name(""))
         self.directory: Path = Path(parameters.storage_directory)
         self.start_index: int = vds_start_index
@@ -56,7 +56,7 @@ class NexusWriter:
         self.data_filename: str = (
             f"{parameters.file_name}_{meta_data_run_number}"
             if meta_data_run_number
-            else parameters.detector_params.full_filename
+            else detector_params.full_filename
         )
         self.nexus_file: Path = (
             self.directory / f"{parameters.file_name}_{self.run_number}.nxs"

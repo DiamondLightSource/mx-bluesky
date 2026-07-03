@@ -40,9 +40,8 @@ def pin_tip_centre_then_xray_centre(
     """
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(
-        create_detector_params_with_hyperion_feature_settings(parameters)
-    )
+    detector_params = create_detector_params_with_hyperion_feature_settings(parameters)
+    eiger.set_detector_parameters(detector_params)
 
     xrc_event_handler = XRayCentreEventHandler()
 
@@ -61,7 +60,9 @@ def pin_tip_centre_then_xray_centre(
         }
     )
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
-        yield from pin_centre_then_gridscan_plan(composite, parameters, oav_config_file)
+        yield from pin_centre_then_gridscan_plan(
+            composite, parameters, detector_params, oav_config_file
+        )
 
         results = xrc_event_handler.xray_centre_results
         sample_ids_and_locations = yield from samples_and_locations_to_collect(

@@ -103,7 +103,7 @@ def grid_detect_then_xray_centre(
 
     grid_scan_params = None
 
-    @ispyb_activation_decorator(parameters)
+    @ispyb_activation_decorator(parameters, detector_params)
     def plan_to_perform():
         nonlocal grid_scan_params
         grid_scan_params = yield from detect_grid_and_do_gridscan(

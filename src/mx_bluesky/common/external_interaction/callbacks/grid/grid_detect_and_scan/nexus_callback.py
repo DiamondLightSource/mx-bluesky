@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
+
+from dodal.devices.detector import DetectorParams
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -10,41 +12,50 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     vds_type_based_on_bit_depth,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
+    DiffractionExperimentWithSample,
+)
 from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
-    SpecifiedGrids,
+    GridScanParams,
 )
 from mx_bluesky.common.utils.log import NEXUS_LOGGER
 
 if TYPE_CHECKING:
     from event_model.documents import Event, EventDescriptor, RunStart
 
-T = TypeVar("T", bound="SpecifiedGrids")
+T = TypeVar("T", bound="DiffractionExperimentWithSample")
 
 
-def _create_writers_from_params(params: SpecifiedGrids) -> list[NexusWriter]:
-    num_writers = params.num_grids
+def _create_writers_from_params(
+    params: DiffractionExperiment,
+    detector_params: DetectorParams,
+    grid_scan_params: GridScanParams,
+) -> list[NexusWriter]:
+    num_writers = grid_scan_params.num_grids
     writers = []
-    d_size = params.detector_params.detector_size_constants.det_size_pixels
+    d_size = detector_params.detector_size_constants.det_size_pixels
     for idx in range(num_writers):
-        images_in_grid = len(params.scan_points[idx]["sam_x"])
+        images_in_grid = len(grid_scan_params.scan_points[idx]["sam_x"])
         data_shape = (images_in_grid, d_size.width, d_size.height)
-        run_number = params.detector_params.run_number + idx
+        run_number = detector_params.run_number + idx
 
         writers.append(
             NexusWriter(
                 params,
+                detector_params,
                 data_shape,
-                params.scan_points[idx],
+                grid_scan_params.scan_points[idx],
                 run_number=run_number,
-                vds_start_index=params.scan_indices[idx],
-                omega_start_deg=params.omega_starts_deg[idx],
+                vds_start_index=grid_scan_params.scan_indices[idx],
+                omega_start_deg=grid_scan_params.omega_starts_deg[idx],
             )
         )
     return writers
 
 
-class GridscanNexusFileCallback(PlanReactiveCallback):
+class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
     """Callback class to handle the creation of Nexus files based on experiment \
     parameters. Initialises on receiving a 'start' document for the \
     'run_gridscan_move_and_tidy' sub plan, which must also contain the run parameters, \
@@ -72,12 +83,20 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == PlanNameConstants.GRIDSCAN_OUTER:
             mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
+            detector_params_json = doc.get("detector_params")
+            grid_scan_params_json = doc.get("grid_scan_parameters")
             assert isinstance(mx_bluesky_parameters, str)
+            assert isinstance(detector_params_json, str)
+            assert isinstance(grid_scan_params_json, str)
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {mx_bluesky_parameters}"
             )
             parameters = self.param_type.model_validate_json(mx_bluesky_parameters)
-            self._writers = _create_writers_from_params(parameters)
+            detector_params = DetectorParams.model_validate_json(detector_params_json)
+            grid_scan_params = GridScanParams.model_validate_json(grid_scan_params_json)
+            self._writers = _create_writers_from_params(
+                parameters, detector_params, grid_scan_params
+            )
 
             self.run_start_uid = doc.get("uid")
 
