@@ -19,10 +19,8 @@ from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.panda import HDFPanda
 
-from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
-    GridDetectAndGridScanEssentialDevices,
-)
 from mx_bluesky.common.parameters.device_composites import (
+    GridDetectAndGridScanEssentialDevices,
     GridDetectThenXRayCentreComposite,
 )
 

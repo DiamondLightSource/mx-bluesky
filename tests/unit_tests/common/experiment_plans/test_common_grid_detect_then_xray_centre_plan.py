@@ -28,6 +28,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
@@ -39,10 +40,6 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
-)
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    HyperionSpecifiedThreeDGridScan,
 )
 
 from ....conftest import (
@@ -76,7 +73,7 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     pin_tip_detection_with_found_pin: PinTipDetection,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
     run_engine: RunEngine,
-    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     test_config_files: dict,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):

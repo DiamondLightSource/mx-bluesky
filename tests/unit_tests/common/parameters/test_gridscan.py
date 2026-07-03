@@ -1,10 +1,16 @@
 import pytest
+from dodal.devices.detector.det_dim_constants import EIGER_TYPE_EIGER2_X_16M
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
+    get_param_version,
+)
+from mx_bluesky.common.parameters.constants import DetectorParamConstants
 from mx_bluesky.common.parameters.gridscan import (
     SpecifiedGrids,
     SpecifiedThreeDGridScan,
+    create_detector_params,
 )
 
 
@@ -108,3 +114,42 @@ def test_three_d_grid_scan_validation(
             make_params()
     else:
         make_params()
+
+
+def test_create_detector_params_populates_from_diffraction_expt(
+    minimal_diffraction_expt_with_sample: DiffractionExperiment,
+):
+    detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    assert (
+        detector_params.detector_size_constants.det_type_string
+        == EIGER_TYPE_EIGER2_X_16M
+    )
+    assert detector_params.expected_energy_ev == 100
+    assert detector_params.exposure_time_s == 0.1
+    assert (
+        detector_params.directory
+        == minimal_diffraction_expt_with_sample.storage_directory
+    )
+    assert detector_params.prefix == "file_name"
+    assert detector_params.detector_distance == 100.0
+    assert detector_params.omega_start == 0
+    assert detector_params.omega_increment == 0
+    assert detector_params.num_images_per_trigger == 1
+    assert detector_params.use_roi_mode == False
+    assert (
+        detector_params.det_dist_to_beam_converter_path
+        == DetectorParamConstants.BEAM_XY_LUT_PATH
+    )
+    assert (
+        detector_params.trigger_mode
+        == minimal_diffraction_expt_with_sample.trigger_mode
+    )
+    assert detector_params.get("run_number") == 0
+
+
+def test_create_detector_params_does_not_specify_run_number_if_unspecified(
+    minimal_diffraction_expt_with_sample: DiffractionExperiment,
+):
+    minimal_diffraction_expt_with_sample.run_number = None
+    detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    assert "run_number" not in detector_params

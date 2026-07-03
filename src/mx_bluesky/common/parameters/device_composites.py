@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
 )
 from dodal.devices.flux import Flux
+from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -21,11 +26,8 @@ from dodal.devices.wrapped_axis import WrappedAxis
 from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
+from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.epics.motor import Motor
-
-from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
-    GridDetectAndGridScanEssentialDevices,
-)
 
 
 # MX gridscans only uses the gonio to set omega to 0. Other motors are only accessed in the motion program
@@ -53,6 +55,16 @@ class OavGridDetectionComposite:
     oav: OAV
     gonio: Smargon
     pin_tip_detection: PinTipDetection
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class GridDetectAndGridScanEssentialDevices(
+    FlyScanEssentialDevices[Smargon], OavGridDetectionComposite
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamstop: Beamstop
+    detector_motion: DetectorMotion
+    zocalo: ZocaloResults
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

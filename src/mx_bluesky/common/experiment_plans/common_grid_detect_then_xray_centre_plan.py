@@ -4,20 +4,14 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol, TypeVar
 
-import pydantic
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import InOut
 from dodal.devices.detector import DetectorParams
-from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_parameters import OAVParameters
-from dodal.devices.smargon import Smargon
-from dodal.devices.zocalo import ZocaloResults
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
@@ -48,24 +42,15 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.device_composites import (
+    GridDetectAndGridScanEssentialDevices,
+)
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.log import LOGGER
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectAndGridScanEssentialDevices(
-    FlyScanEssentialDevices[Smargon], OavGridDetectionComposite
-):
-    aperture_scatterguard: ApertureScatterguard
-    beamstop: Beamstop
-    detector_motion: DetectorMotion
-    zocalo: ZocaloResults
-
 
 TGridDetectAndGridScanEssentialDevices = TypeVar(
     "TGridDetectAndGridScanEssentialDevices",
