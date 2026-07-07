@@ -8,7 +8,7 @@ from numpy.typing import DTypeLike
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def test_writers_not_called_on_plan_start_doc(
     test_event_data,
 ):
     nexus_handler = GridscanNexusFileCallback(
-        param_type=HyperionSpecifiedThreeDGridScan
+        param_type=DiffractionExperimentWithSample
     )
     nexus_writer.assert_not_called()
     nexus_handler.activity_gated_start(
@@ -42,7 +42,7 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
-        param_type=HyperionSpecifiedThreeDGridScan
+        param_type=DiffractionExperimentWithSample
     )
 
     assert not nexus_handler._writers
@@ -83,7 +83,7 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dat
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
-        param_type=HyperionSpecifiedThreeDGridScan
+        param_type=DiffractionExperimentWithSample
     )
 
     nexus_handler.activity_gated_start(
@@ -116,7 +116,7 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
-        param_type=HyperionSpecifiedThreeDGridScan
+        param_type=DiffractionExperimentWithSample
     )
 
     nexus_handler.activity_gated_start(
@@ -140,7 +140,7 @@ def test_sensible_error_if_writing_triggered_before_params_received(
     test_event_data,
 ):
     nexus_handler = GridscanNexusFileCallback(
-        param_type=HyperionSpecifiedThreeDGridScan
+        param_type=DiffractionExperimentWithSample
     )
     nexus_handler.activity_gated_descriptor(
         test_event_data.test_descriptor_document_during_data_collection

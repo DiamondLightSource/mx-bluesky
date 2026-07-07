@@ -156,7 +156,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             pos_z=float(_data["gonio-z"]),
         )
         scan_data_infos = self.populate_info_for_update(
-            hwscan_data_collection_info, hwscan_position_info, self.params
+            hwscan_data_collection_info, hwscan_position_info
         )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after hardware read."
@@ -202,7 +202,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             doc, self.detector_params, hwscan_data_collection_info
         )
         scan_data_infos = self.populate_info_for_update(
-            hwscan_data_collection_info, None, self.params
+            hwscan_data_collection_info, None
         )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after flux read."
@@ -215,7 +215,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         pass
 

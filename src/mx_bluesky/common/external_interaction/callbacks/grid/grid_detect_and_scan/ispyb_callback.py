@@ -268,7 +268,6 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, (
             "Expect at least one valid data collection to record scan data"

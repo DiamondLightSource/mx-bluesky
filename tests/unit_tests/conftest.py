@@ -106,8 +106,8 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
-    GridScanParams,
-    SpecifiedThreeDGridScan,
+    GridDetectionParams,
+    create_detector_params,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -224,9 +224,9 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
         GridDetectAndScanISPyBCallback(
-            param_type=SpecifiedThreeDGridScan,
+            param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
@@ -284,7 +284,7 @@ def use_beamline_t01():
 
 
 @pytest.fixture
-def mock_subscriptions(test_three_d_grid_params):
+def mock_subscriptions():
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
@@ -408,7 +408,7 @@ async def zebra_fast_grid_scan():
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -431,7 +431,7 @@ async def fake_fgs_composite(
     )
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
-        test_three_d_grid_params.detector_params
+        create_detector_params(minimal_diffraction_expt_with_sample)
     )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
@@ -785,10 +785,10 @@ def minimal_diffraction_expt_with_sample(
 
 
 @pytest.fixture()
-def grid_scan_params_3d(tmp_path: Path) -> GridScanParams:
-    return GridScanParams(
+def grid_detect_params(tmp_path: Path) -> GridDetectionParams:
+    return GridDetectionParams(
         **raw_params_from_file(
-            "tests/tests_data/parameter_json_files/internal/grid_scan_params_3d.json",
+            "tests/test_data/parameter_json_files/internal/grid_detect_params.json",
             tmp_path,
         )
     )

@@ -12,12 +12,12 @@ from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     get_results_then_change_aperture_and_move_to_xtal,
     move_to_xtal,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler, XRayCentreResult
 
@@ -99,25 +99,16 @@ def test_get_results_then_change_aperture_and_move_to_xtal_calls_expected_plans(
     mock__get_xrc_results: MagicMock,
     run_engine: RunEngine,
     grid_detect_xrc_devices: GridDetectThenXRayCentreComposite,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_scan_params_3d: GridScanParams,
 ):
     mock_flyscan_event_handler = MagicMock(spec=XRayCentreEventHandler)
     mock_flyscan_event_handler.xray_centre_results = [0]
-    grid_scan_params = GridScanParams(
-        omega_starts_deg=test_three_d_grid_params.omega_starts_deg,
-        x_steps=test_three_d_grid_params.x_steps,
-        y_steps=test_three_d_grid_params.y_steps,
-        x_step_size_um=test_three_d_grid_params.x_step_size_um,
-        y_step_sizes_um=test_three_d_grid_params.y_step_sizes_um,
-        x_start_um=test_three_d_grid_params.x_start_um,
-        y_starts_um=test_three_d_grid_params.y_starts_um,
-        z_starts_um=test_three_d_grid_params.z_starts_um,
-    )
     run_engine(
         get_results_then_change_aperture_and_move_to_xtal(
             grid_detect_xrc_devices,
-            test_three_d_grid_params,
-            grid_scan_params,
+            minimal_diffraction_expt_with_sample,
+            grid_scan_params_3d,
             mock_flyscan_event_handler,
         )
     )

@@ -43,13 +43,14 @@ from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
 TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
+TSetupParameters = TypeVar("TSetupParameters")
 TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
 
 
 @dataclasses.dataclass
-class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TParameters]):
+class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TSetupParameters]):
     setup_trigger_plan: Callable[
-        [TFlyScanDevices, TParameters, GridScanParams], MsgGenerator
+        [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
     ]
     tidy_plan: Callable[..., MsgGenerator]
     set_flyscan_params_plan: Callable[..., MsgGenerator]

@@ -24,9 +24,12 @@ from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
 )
 from mx_bluesky.common.external_interaction.nexus.write_nexus import NexusWriter
-from mx_bluesky.common.parameters.gridscan import GridScanParams
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
+    DiffractionExperimentWithSample,
+)
+from mx_bluesky.common.parameters.gridscan import GridScanParams, create_detector_params
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionSpecifiedThreeDGridScan,
     fast_gridscan_params,
 )
 
@@ -46,8 +49,12 @@ def assert_end_data_correct(nexus_writer: NexusWriter):
 
 
 @contextmanager
-def create_nexus_writers(parameters: HyperionSpecifiedThreeDGridScan):
-    writers = _create_writers_from_params(parameters)
+def create_nexus_writers(
+    parameters: DiffractionExperiment, grid_scan_params: GridScanParams
+):
+    writers = _create_writers_from_params(
+        parameters, create_detector_params(parameters), grid_scan_params
+    )
     try:
         for writer in writers:
             writer.beam, writer.attenuator = create_beam_and_attenuator_parameters(
@@ -62,8 +69,10 @@ def create_nexus_writers(parameters: HyperionSpecifiedThreeDGridScan):
 
 
 @pytest.fixture
-def dummy_nexus_writers(test_three_d_grid_params: HyperionSpecifiedThreeDGridScan):
-    with create_nexus_writers(test_three_d_grid_params) as (
+def dummy_nexus_writers(
+    parameters: DiffractionExperiment, grid_scan_params: GridScanParams
+):
+    with create_nexus_writers(parameters, grid_scan_params) as (
         nexus_writer_1,
         nexus_writer_2,
     ):
@@ -72,13 +81,14 @@ def dummy_nexus_writers(test_three_d_grid_params: HyperionSpecifiedThreeDGridSca
 
 @pytest.fixture
 def dummy_nexus_writers_with_more_images(
-    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
+    grid_scan_params_3d: GridScanParams,
 ):
     x, y, z = 45, 35, 25
-    test_three_d_grid_params.x_steps = x
-    test_three_d_grid_params.y_steps[0] = y
-    test_three_d_grid_params.y_steps[1] = z
-    with create_nexus_writers(test_three_d_grid_params) as (
+    grid_scan_params_3d.x_steps = x
+    grid_scan_params_3d.y_steps[0] = y
+    grid_scan_params_3d.y_steps[1] = z
+    with create_nexus_writers(expt_params_for_nexus_tests, grid_scan_params_3d) as (
         nexus_writer_1,
         nexus_writer_2,
     ):
@@ -86,14 +96,17 @@ def dummy_nexus_writers_with_more_images(
 
 
 @pytest.fixture
-def single_dummy_file(test_three_d_grid_params: HyperionSpecifiedThreeDGridScan):
-    test_three_d_grid_params.use_roi_mode = True
-    d_size = (
-        test_three_d_grid_params.detector_params.detector_size_constants.det_size_pixels
-    )
+def single_dummy_file(
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
+    test_three_d_grid_params: GridScanParams,
+):
+    expt_params_for_nexus_tests.use_roi_mode = True
+    detector_params = create_detector_params(expt_params_for_nexus_tests)
+    d_size = detector_params.detector_size_constants.det_size_pixels
     data_shape = (test_three_d_grid_params.scan_indices[1], d_size.width, d_size.height)
     nexus_writer = NexusWriter(
-        test_three_d_grid_params,
+        expt_params_for_nexus_tests,
+        detector_params,
         data_shape,
         scan_points=test_three_d_grid_params.scan_points[0],
         run_number=1,
@@ -110,7 +123,8 @@ def single_dummy_file(test_three_d_grid_params: HyperionSpecifiedThreeDGridScan)
     indirect=["test_three_d_grid_params"],
 )
 def test_given_number_of_images_above_1000_then_expected_datafiles_used(
-    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
+    test_three_d_grid_params: GridScanParams,
     expected_num_of_files: Literal[3, 4, 9],
     single_dummy_file: NexusWriter,
 ):
@@ -128,23 +142,14 @@ def test_given_number_of_images_above_1000_then_expected_datafiles_used(
 
 
 def test_given_dummy_data_then_datafile_written_correctly(
-    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
+    test_three_d_grid_params: GridScanParams,
     dummy_nexus_writers: tuple[NexusWriter, NexusWriter],
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
 
-    grid_scan_params = GridScanParams(
-        omega_starts_deg=test_three_d_grid_params.omega_starts_deg,
-        x_steps=test_three_d_grid_params.x_steps,
-        y_steps=test_three_d_grid_params.y_steps,
-        x_start_um=test_three_d_grid_params.x_start_um,
-        y_starts_um=test_three_d_grid_params.y_starts_um,
-        z_starts_um=test_three_d_grid_params.z_starts_um,
-        x_step_size_um=test_three_d_grid_params.x_step_size_um,
-        y_step_sizes_um=test_three_d_grid_params.y_step_sizes_um,
-    )
     zebra_grid_scan_params: ZebraGridScanParamsThreeD = fast_gridscan_params(
-        test_three_d_grid_params, grid_scan_params
+        expt_params_for_nexus_tests, test_three_d_grid_params
     )
     nexus_writer_1.create_nexus_file(np.uint16)
 
@@ -256,6 +261,7 @@ def test_nexus_file_entry_data_omega_written_correctly_independent_of_omega_dire
     shape = (test_rotation_params.num_images, det_size.width, det_size.height)
     nexus_writer = NexusWriter(
         test_rotation_params,
+        test_rotation_params.detector_params,
         shape,
         test_rotation_params.scan_points,
         omega_start_deg=test_rotation_params.omega_start_deg,
@@ -318,12 +324,12 @@ def assert_contains_external_link(data_path, entry_name, file_name):
 
 
 def test_nexus_writer_files_are_formatted_as_expected(
-    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
     single_dummy_file: NexusWriter,
 ):
     for file in [single_dummy_file.nexus_file, single_dummy_file.master_file]:
         file_name = os.path.basename(file.name)
-        expected_file_name_prefix = test_three_d_grid_params.file_name + "_1"
+        expected_file_name_prefix = expt_params_for_nexus_tests.file_name + "_1"
         assert file_name.startswith(expected_file_name_prefix)
 
 
@@ -339,14 +345,17 @@ def test_nexus_writer_writes_width_and_height_correctly(single_dummy_file: Nexus
 
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_nexus_writer_writes_beamline_name_correctly(
-    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
+    test_three_d_grid_params: GridScanParams,
 ):
-    d_size = (
-        test_three_d_grid_params.detector_params.detector_size_constants.det_size_pixels
-    )
-    data_shape = (test_three_d_grid_params.num_images, d_size.width, d_size.height)
+    detector_params = create_detector_params(expt_params_for_nexus_tests)
+    d_size = detector_params.detector_size_constants.det_size_pixels
+    data_shape = (expt_params_for_nexus_tests.num_images, d_size.width, d_size.height)
     nexus_writer = NexusWriter(
-        test_three_d_grid_params, data_shape, test_three_d_grid_params.scan_points[0]
+        expt_params_for_nexus_tests,
+        detector_params,
+        data_shape,
+        test_three_d_grid_params.scan_points[0],
     )
     assert nexus_writer.source.beamline == "i03"
 
@@ -413,10 +422,13 @@ def test_given_some_datafiles_outside_of_virtual_dataset_range_then_they_are_not
 
 
 def test_given_data_files_not_yet_written_when_nexus_files_created_then_nexus_files_still_written(
-    test_three_d_grid_params: HyperionSpecifiedThreeDGridScan,
+    expt_params_for_nexus_tests: DiffractionExperimentWithSample,
+    test_three_d_grid_params: GridScanParams,
 ):
-    test_three_d_grid_params.file_name = "non_existant_file"
-    with create_nexus_writers(test_three_d_grid_params) as (
+    expt_params_for_nexus_tests.file_name = "non_existant_file"
+    with create_nexus_writers(
+        expt_params_for_nexus_tests, test_three_d_grid_params
+    ) as (
         nexus_writer_1,
         nexus_writer_2,
     ):

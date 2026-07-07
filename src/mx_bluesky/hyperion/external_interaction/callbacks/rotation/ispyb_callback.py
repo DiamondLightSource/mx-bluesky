@@ -120,7 +120,6 @@ class RotationISPyBCallback(BaseISPyBCallback):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params,
     ) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, (
             "Expect an existing DataCollection to update"
