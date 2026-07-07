@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol, TypeVar
 
@@ -48,7 +47,6 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
-    SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -58,17 +56,11 @@ TGridDetectAndGridScanEssentialDevices = TypeVar(
 )
 
 
-TSpecifiedThreeDGridScan = TypeVar(
-    "TSpecifiedThreeDGridScan", bound=SpecifiedThreeDGridScan
-)
-
-
 def grid_detect_then_xray_centre(
     composite: TGridDetectAndGridScanEssentialDevices,
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
-    xrc_params_type: type[SpecifiedThreeDGridScan],
-    detector_params_factory: Callable[..., DetectorParams],
+    detector_params: DetectorParams,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
@@ -81,7 +73,6 @@ def grid_detect_then_xray_centre(
 
     eiger: EigerDetector = composite.eiger
 
-    detector_params = detector_params_factory()
     eiger.set_detector_parameters(detector_params)
 
     oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config)
@@ -96,7 +87,7 @@ def grid_detect_then_xray_centre(
             parameters,
             grid_detection_params,
             oav_params,
-            detector_params_factory,
+            detector_params,
             construct_beamline_specific,
         )
 
@@ -119,7 +110,7 @@ def detect_grid_and_do_gridscan(
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
     oav_params: OAVParameters,
-    detector_params_factory: Callable[[], DetectorParams],
+    detector_params: DetectorParams,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
@@ -128,7 +119,6 @@ def detect_grid_and_do_gridscan(
         box_size_um=grid_detection_params.box_size_um,
         grid_width_um=grid_detection_params.grid_width_um,
     )
-    detector_params = detector_params_factory()
     snapshot_template = (
         f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
     )

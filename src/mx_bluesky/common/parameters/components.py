@@ -173,6 +173,8 @@ class DiffractionExperiment(
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
     use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
+
+    # Override of snapshot_directory defaults required for type-checking
     snapshot_directory: Path = None  # type:ignore # filled in on validation
 
     @model_validator(mode="before")

@@ -9,29 +9,10 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
     Orientation,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
-
-from .....conftest import (
-    TEST_SAMPLE_ID,
-    default_raw_gridscan_params,
-)
-
-
-@pytest.fixture
-def dummy_params(tmp_path):
-    dummy_params = HyperionSpecifiedThreeDGridScan(
-        **default_raw_gridscan_params(tmp_path)
-    )
-    dummy_params.sample_id = TEST_SAMPLE_ID
-    dummy_params.run_number = 0
-    return dummy_params
 
 
 @patch("ispyb.open", autospec=True)
-def test_ispyb_deposition_rounds_position_to_int(
-    mock_ispyb_conn: MagicMock,
-    dummy_params,
-):
+def test_ispyb_deposition_rounds_position_to_int():
     assert construct_comment_for_gridscan(
         DataCollectionGridInfo(
             0.1,
@@ -69,7 +50,6 @@ def test_ispyb_deposition_rounds_position_to_int(
 )
 def test_ispyb_deposition_rounds_box_size_int(
     bottom_right_from_top_left: MagicMock,
-    dummy_params: HyperionSpecifiedThreeDGridScan,
     raw,
     rounded,
 ):

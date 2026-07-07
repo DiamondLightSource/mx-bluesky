@@ -482,7 +482,12 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
 
 def test_override_parameters_override(test_params: SingleRotationScan):
     writer = NexusWriter(
-        test_params, (1, 2, 3), {}, full_num_of_images=82367, meta_data_run_number=9852
+        test_params,
+        test_params.detector_params,
+        (1, 2, 3),
+        {},
+        full_num_of_images=82367,
+        meta_data_run_number=9852,
     )
     assert writer.full_num_of_images != test_params.num_images
     assert writer.full_num_of_images == 82367

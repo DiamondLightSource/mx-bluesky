@@ -11,13 +11,13 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     fetch_xrc_results_from_zocalo,
 )
+from mx_bluesky.common.parameters.components import WithSample
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
@@ -26,7 +26,7 @@ from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler, XRayCentr
 
 def _get_xrc_results(
     zocalo: ZocaloResults,
-    parameters: SpecifiedThreeDGridScan,
+    parameters: WithSample,
     grid_scan_params: GridScanParams,
     flyscan_event_handler: XRayCentreEventHandler,
 ) -> Generator[Any, Any, Sequence[XRayCentreResult]]:
@@ -42,7 +42,7 @@ def _get_xrc_results(
 
 def get_results_and_move_to_xtal(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: SpecifiedThreeDGridScan,
+    parameters: WithSample,
     grid_scan_params: GridScanParams,
     flyscan_event_handler: XRayCentreEventHandler,
 ):
@@ -55,7 +55,7 @@ def get_results_and_move_to_xtal(
 # Currently not being used, but see https://github.com/DiamondLightSource/mx-bluesky/issues/561
 def get_results_then_change_aperture_and_move_to_xtal(
     composite: GridDetectThenXRayCentreComposite,
-    parameters: SpecifiedThreeDGridScan,
+    parameters: WithSample,
     grid_scan_params: GridScanParams,
     flyscan_event_handler: XRayCentreEventHandler,
 ):

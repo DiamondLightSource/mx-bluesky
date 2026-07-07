@@ -24,6 +24,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
 )
@@ -36,7 +37,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionSpecifiedThreeDGridScan,
+    create_detector_params_with_hyperion_feature_settings,
 )
 from tests.conftest import (
     RunEngineSimulator,
@@ -98,8 +99,8 @@ class TestFlyscanXrayCentrePlan:
         move_aperture: MagicMock,
         run_gridscan: MagicMock,
         hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
-        hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-        hyperion_grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         run_engine_with_subs: ReWithSubs,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -114,8 +115,11 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
-                    hyperion_fgs_params,
-                    hyperion_grid_scan_params,
+                    minimal_diffraction_expt_with_sample,
+                    create_detector_params_with_hyperion_feature_settings(
+                        minimal_diffraction_expt_with_sample
+                    ),
+                    grid_scan_params_3d,
                     beamline_specific,
                 )
             )
@@ -152,8 +156,8 @@ class TestFlyscanXrayCentrePlan:
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
         sim_run_engine: RunEngineSimulator,
-        hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
-        hyperion_grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         zocalo: ZocaloResults,
@@ -173,8 +177,11 @@ class TestFlyscanXrayCentrePlan:
         msgs = sim_run_engine.simulate_plan(
             common_flyscan_xray_centre(
                 hyperion_flyscan_xrc_composite,
-                hyperion_fgs_params,
-                hyperion_grid_scan_params,
+                minimal_diffraction_expt_with_sample,
+                create_detector_params_with_hyperion_feature_settings(
+                    minimal_diffraction_expt_with_sample
+                ),
+                grid_scan_params_3d,
                 beamline_specific,
             )
         )
@@ -201,31 +208,26 @@ class TestFlyscanXrayCentrePlan:
     def test_if_smargon_speed_over_limit_then_log_error(
         self,
         mock_kickoff_and_complete: MagicMock,
-        fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
+        use_panda: None,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         run_engine: RunEngine,
     ):
-        fgs_params_use_panda.x_step_size_um = 10000
-        grid_scan_params = GridScanParams(
-            omega_starts_deg=fgs_params_use_panda.omega_starts_deg,
-            x_start_um=fgs_params_use_panda.x_start_um,
-            y_starts_um=fgs_params_use_panda.y_starts_um,
-            z_starts_um=fgs_params_use_panda.z_starts_um,
-            x_steps=fgs_params_use_panda.x_steps,
-            y_steps=fgs_params_use_panda.y_steps,
-            x_step_size_um=10000,
-            y_step_sizes_um=fgs_params_use_panda.y_step_sizes_um,
+        minimal_diffraction_expt_with_sample.exposure_time_s = 0.01
+        detector_params = create_detector_params_with_hyperion_feature_settings(
+            minimal_diffraction_expt_with_sample
         )
-        fgs_params_use_panda.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
         with pytest.raises(SmargonSpeedError):
             run_engine(
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
-                    fgs_params_use_panda,
-                    grid_scan_params,
+                    minimal_diffraction_expt_with_sample,
+                    detector_params,
+                    grid_scan_params_3d,
                     beamline_specific,
                 )
             )
@@ -251,22 +253,14 @@ class TestFlyscanXrayCentrePlan:
         self,
         mock_load_panda: MagicMock,
         mock_set_panda_directory: MagicMock,
-        fgs_params_use_panda: HyperionSpecifiedThreeDGridScan,
+        use_panda: None,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
     ):
-        grid_scan_params = GridScanParams(
-            omega_starts_deg=fgs_params_use_panda.omega_starts_deg,
-            x_start_um=fgs_params_use_panda.x_start_um,
-            y_starts_um=fgs_params_use_panda.y_starts_um,
-            z_starts_um=fgs_params_use_panda.z_starts_um,
-            x_steps=fgs_params_use_panda.x_steps,
-            y_steps=fgs_params_use_panda.y_steps,
-            x_step_size_um=fgs_params_use_panda.x_step_size_um,
-            y_step_sizes_um=fgs_params_use_panda.y_step_sizes_um,
-        )
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.gonio.x.max_velocity, 10
         )
@@ -277,8 +271,11 @@ class TestFlyscanXrayCentrePlan:
         msgs = sim_run_engine.simulate_plan(
             common_flyscan_xray_centre(
                 fgs_composite_with_panda_pcap,
-                fgs_params_use_panda,
-                grid_scan_params,
+                minimal_diffraction_expt_with_sample,
+                create_detector_params_with_hyperion_feature_settings(
+                    minimal_diffraction_expt_with_sample
+                ),
+                grid_scan_params_3d,
                 beamline_specific,
             )
         )

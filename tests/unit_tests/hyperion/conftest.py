@@ -17,10 +17,6 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.hyperion._plan_runner_params import Wait
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GridScanWithEdgeDetect,
-    HyperionSpecifiedThreeDGridScan,
-)
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanRunner
 from tests.conftest import (
@@ -129,25 +125,12 @@ def test_omega_flip(request):
 
 
 @pytest.fixture
-def fgs_params_use_panda(tmp_path):
+def use_panda(tmp_path):
     with patch(
         "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new="tests/test_data/test_domain_properties_with_panda",
     ):
-        params = raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
-            tmp_path,
-        )
-        yield HyperionSpecifiedThreeDGridScan(**params)
-
-
-@pytest.fixture
-def test_full_grid_scan_params(tmp_path):
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
-        tmp_path,
-    )
-    return GridScanWithEdgeDetect(**params)
+        yield
 
 
 def dummy_rotation_data_collection_group_info():

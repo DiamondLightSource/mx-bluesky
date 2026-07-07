@@ -74,7 +74,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
 
     def __init__(self, param_type: type[T]) -> None:
         super().__init__(NEXUS_LOGGER)
-        self.param_type = param_type
+        self.param_type: type[T] = param_type
         self.run_start_uid: str | None = None
         self.descriptors: dict[str, EventDescriptor] = {}
         self.log = NEXUS_LOGGER
@@ -91,7 +91,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
             NEXUS_LOGGER.info(
                 f"Nexus writer received start document with experiment parameters {mx_bluesky_parameters}"
             )
-            parameters = self.param_type.model_validate_json(mx_bluesky_parameters)
+            parameters: T = self.param_type.model_validate_json(mx_bluesky_parameters)
             detector_params = DetectorParams.model_validate_json(detector_params_json)
             grid_scan_params = GridScanParams.model_validate_json(grid_scan_params_json)
             self._writers = _create_writers_from_params(

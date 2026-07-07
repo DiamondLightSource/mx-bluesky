@@ -35,7 +35,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
-    create_detector_params_with_hyperion_feature_settings,
 )
 
 
@@ -86,9 +85,7 @@ def pin_centre_then_gridscan_plan(
                     parameters,
                     parameters,
                     oav_params,
-                    lambda: create_detector_params_with_hyperion_feature_settings(
-                        parameters
-                    ),
+                    detector_params,
                     construct_hyperion_specific_features,
                 )
             )

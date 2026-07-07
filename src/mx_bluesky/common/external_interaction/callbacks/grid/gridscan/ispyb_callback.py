@@ -33,7 +33,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridScanParams, SpecifiedGrids
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
@@ -151,14 +151,13 @@ class GridscanISPyBCallback(BaseISPyBCallback, Generic[T]):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, (
             "Expect at least one valid data collection to record scan data"
         )
-        assert isinstance(self.params, SpecifiedGrids)
+        assert self.grid_scan_params
         scan_data_infos = []
-        for grid_num in range(self.params.num_grids):
+        for grid_num in range(self.grid_scan_params.num_grids):
             id = self.ispyb_ids.data_collection_ids[grid_num]
             self._grid_num_to_id_map[grid_num] = id
             scan_data_info = ScanDataInfo(

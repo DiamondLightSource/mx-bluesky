@@ -78,6 +78,7 @@ from scanspec.specs import Line
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridscanPlane,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -85,7 +86,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    SpecifiedThreeDGridScan,
+    create_detector_params,
 )
 from mx_bluesky.common.parameters.rotation import RotationScan
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
@@ -101,7 +102,6 @@ from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.test_data.oav import (
     TEST_DISPLAY_CONFIG,
     TEST_OAV_CENTRING_JSON,
@@ -344,39 +344,13 @@ def beamline_parameters():
     return json.loads(contents)
 
 
-@pytest.fixture
-def hyperion_fgs_params(tmp_path):
-    return HyperionSpecifiedThreeDGridScan(
-        **(
-            raw_params_from_file(
-                "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
-                tmp_path,
-            )
-        )
-    )
-
-
-@pytest.fixture
-def test_three_d_grid_params(tmp_path, patch_beamline_env_variable):
-    return SpecifiedThreeDGridScan(
+@pytest.fixture()
+def grid_scan_params_3d(tmp_path: Path) -> GridScanParams:
+    return GridScanParams(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
+            "tests/tests_data/parameter_json_files/internal/grid_scan_params_3d.json",
             tmp_path,
         )
-    )
-
-
-@pytest.fixture
-def three_d_grid_scan_params(test_three_d_grid_params):
-    return GridScanParams(
-        omega_starts_deg=test_three_d_grid_params.omega_starts_deg,
-        x_steps=test_three_d_grid_params.x_steps,
-        y_steps=test_three_d_grid_params.y_steps,
-        x_start_um=test_three_d_grid_params.x_start_um,
-        y_starts_um=test_three_d_grid_params.y_starts_um,
-        z_starts_um=test_three_d_grid_params.z_starts_um,
-        x_step_size_um=test_three_d_grid_params.x_step_size_um,
-        y_step_sizes_um=test_three_d_grid_params.y_step_sizes_um,
     )
 
 
@@ -882,7 +856,7 @@ def panda_fast_grid_scan():
 @pytest.fixture
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
-    hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -895,6 +869,10 @@ async def hyperion_flyscan_xrc_composite(
     fast_grid_scan,
     panda_fast_grid_scan,
     beamsize,
+    oav,
+    pin_tip_detection,
+    beamstop,
+    detector_motion,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -917,11 +895,17 @@ async def hyperion_flyscan_xrc_composite(
         robot=i03.robot.build(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
         beamsize=beamsize,
+        oav=oav,
+        pin_tip_detection=pin_tip_detection,
+        beamstop=beamstop,
+        detector_motion=detector_motion,
     )
 
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
-    fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
+    fake_composite.eiger.set_detector_parameters(
+        create_detector_params(minimal_diffraction_expt_with_sample)
+    )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
 
@@ -1172,10 +1156,20 @@ def default_raw_gridscan_params(
     return raw_params_from_file(json_file, tmp_path)
 
 
-def dummy_params(tmp_path):
-    dummy_params = SpecifiedThreeDGridScan(
+def nexus_test_diffraction_expt_with_sample(tmp_path: Path):
+    dummy_params = DiffractionExperimentWithSample(
         **raw_params_from_file(
-            "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
+            "tests/test_data/parameter_json_files/internal/nexus_test_diffraction_expt_with_sample.json",
+            tmp_path,
+        )
+    )
+    return dummy_params
+
+
+def gridscan_callback_main_params(tmp_path) -> DiffractionExperimentWithSample:
+    dummy_params = DiffractionExperimentWithSample(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/gridscan_callback_test_main_params.json",
             tmp_path,
         )
     )
@@ -1280,6 +1274,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
 
     @property
     def test_grid_detect_and_gridscan_start_document(self) -> RunStart:
+        main_params = gridscan_callback_main_params(self._tmp_path)
         return {  # type: ignore
             "uid": _UID_GRID_DETECT_AND_DO_GRIDSCAN,
             "time": 1666604299.6149616,
@@ -1287,7 +1282,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "scan_id": 1,
             "plan_type": "generator",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-            "mx_bluesky_parameters": dummy_params(self._tmp_path).model_dump_json(),
+            "mx_bluesky_parameters": main_params,
+            "detector_params": create_detector_params(main_params).model_dump_json(),
         }
 
     @property
@@ -1321,7 +1317,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-            "mx_bluesky_parameters": dummy_params(self._tmp_path).model_dump_json(),
+            "mx_bluesky_parameters": nexus_test_diffraction_expt_with_sample(
+                self._tmp_path
+            ).model_dump_json(),
         }
 
     @property
