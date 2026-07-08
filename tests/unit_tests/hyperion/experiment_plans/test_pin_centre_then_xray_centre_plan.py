@@ -19,7 +19,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_G
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
@@ -293,7 +293,9 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
         pin_tip_centre_then_gridscan_plan_wrapper(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
-            create_detector_params(test_pin_centre_then_xray_centre_params),
+            create_detector_params_for_grid_scan(
+                test_pin_centre_then_xray_centre_params
+            ),
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -349,7 +351,9 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
         pin_tip_centre_then_gridscan_plan_wrapper(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
-            create_detector_params(test_pin_centre_then_xray_centre_params),
+            create_detector_params_for_grid_scan(
+                test_pin_centre_then_xray_centre_params
+            ),
         )
     )
 

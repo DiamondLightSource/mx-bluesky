@@ -90,7 +90,7 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
     fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
@@ -235,7 +235,7 @@ def i04_default_grid_detect_and_xray_centre(
                 composite=composite,
                 parameters=internal_params,
                 grid_detection_params=GridDetectionParams(),
-                detector_params=create_detector_params(internal_params),
+                detector_params=create_detector_params_for_grid_scan(internal_params),
                 construct_beamline_specific=construct_i04_specific_features,
                 oav_config=oav_config,
             )

@@ -12,7 +12,7 @@ from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     GridScanParams3D,
     SpecifiedGrids,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
 )
 
 
@@ -102,10 +102,13 @@ def test_grid_scan_params_3d_validation(
         make_params()
 
 
-def test_create_detector_params_populates_from_diffraction_expt(
+def test_create_detector_params_for_grid_scan_populates_from_diffraction_expt(
     minimal_diffraction_expt_with_sample: DiffractionExperiment,
+    minimal_3d_gridscan_params: GridScanParams,
 ):
-    detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample, minimal_3d_gridscan_params
+    )
     assert (
         detector_params.detector_size_constants.det_type_string
         == EIGER_TYPE_EIGER2_X_16M
@@ -121,6 +124,7 @@ def test_create_detector_params_populates_from_diffraction_expt(
     assert detector_params.omega_start == 0
     assert detector_params.omega_increment == 0
     assert detector_params.num_images_per_trigger == 1
+    assert detector_params.num_triggers == 5 * 7 + 5 * 9
     assert not detector_params.use_roi_mode
     assert (
         detector_params.det_dist_to_beam_converter_path
@@ -134,13 +138,16 @@ def test_create_detector_params_populates_from_diffraction_expt(
 
 
 @patch("mx_bluesky.common.parameters.gridscan.get_run_number")
-def test_create_detector_params_computes_run_number_if_unspecified(
+def test_create_detector_params_for_grid_scan_computes_run_number_if_unspecified(
     mock_get_run_number: MagicMock,
     minimal_diffraction_expt_with_sample: DiffractionExperiment,
+    minimal_3d_gridscan_params: GridScanParams,
 ):
     mock_get_run_number.return_value = 24680
     minimal_diffraction_expt_with_sample.run_number = None
-    detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample, minimal_3d_gridscan_params
+    )
     mock_get_run_number.assert_called_once_with(
         minimal_diffraction_expt_with_sample.storage_directory,
         minimal_diffraction_expt_with_sample.file_name,
@@ -149,11 +156,14 @@ def test_create_detector_params_computes_run_number_if_unspecified(
 
 
 @patch("mx_bluesky.common.parameters.gridscan.get_run_number")
-def test_create_detector_params_uses_run_number_if_specified(
+def test_create_detector_params_for_grid_scan_uses_run_number_if_specified(
     mock_get_run_number: MagicMock,
     minimal_diffraction_expt_with_sample: DiffractionExperiment,
+    minimal_3d_gridscan_params: GridScanParams,
 ):
     minimal_diffraction_expt_with_sample.run_number = 13579
-    detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample, minimal_3d_gridscan_params
+    )
     mock_get_run_number.assert_not_called()
     assert detector_params.run_number == 13579

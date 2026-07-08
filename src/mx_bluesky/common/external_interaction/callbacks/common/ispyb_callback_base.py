@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from dodal.devices.detector import DetectorParams
+from dodal.common.beamlines.beamline_utils import get_config_client
+from dodal.devices.detector import DetectorDistanceToBeamXYConverter, DetectorParams
+from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
+from dodal.devices.detector.det_dist_to_beam_converter import Axis
 from dodal.devices.detector.det_resolution import resolution
+from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
@@ -52,6 +57,46 @@ def _update_based_on_energy(
             detector_params.detector_distance,
         )
     return data_collection_info
+
+
+class DetectorMetadata(BaseModel):
+    """The subset of DetectorParams that is needed for deposition which we can
+    determine before the gridscan parameters are available."""
+
+    exposure_time_s: float
+    detector_distance: float
+    directory: str
+    prefix: str
+    use_roi_mode: bool
+    det_dist_to_beam_converter_path: str
+    detector_size_constants: DetectorSizeConstants
+    run_number: int
+
+    @cached_property
+    def beam_xy_converter(self) -> DetectorDistanceToBeamXYConverter:
+        return DetectorDistanceToBeamXYConverter(
+            self.det_dist_to_beam_converter_path, get_config_client()
+        )
+
+    def get_beam_position_mm(self, detector_distance: float) -> tuple[float, float]:
+        x_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
+            detector_distance, Axis.X_AXIS
+        )
+        y_beam_mm = self.beam_xy_converter.get_beam_xy_from_det_dist(
+            detector_distance, Axis.Y_AXIS
+        )
+
+        full_size_mm = self.detector_size_constants.det_dimension
+        roi_size_mm = (
+            self.detector_size_constants.roi_dimension
+            if self.use_roi_mode
+            else full_size_mm
+        )
+
+        offset_x = (full_size_mm.width - roi_size_mm.width) / 2.0
+        offset_y = (full_size_mm.height - roi_size_mm.height) / 2.0
+
+        return x_beam_mm - offset_x, y_beam_mm - offset_y
 
 
 class BaseISPyBCallback(PlanReactiveCallback):
@@ -131,7 +176,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         _data = doc["data"]
 
-        assert self.params and self.detector_params, (
+        assert self.params and self.detector_metadata, (
             "Event handled before activity_gated_start received params"
         )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
@@ -162,7 +207,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
         hwscan_data_collection_info = _update_based_on_energy(
-            doc, self.detector_params, hwscan_data_collection_info
+            doc, self.detector_metadata, hwscan_data_collection_info
         )
 
         hwscan_position_info = DataCollectionPositionInfo(
@@ -183,7 +228,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     ) -> Sequence[ScanDataInfo]:
         _data = doc["data"]
 
-        assert self.params and self.detector_params
+        assert self.params and self.detector_metadata
         aperture = _data.get(
             "aperture_scatterguard-selected_aperture", "Not implemented"
         )
@@ -214,7 +259,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
         hwscan_data_collection_info = _update_based_on_energy(
-            doc, self.detector_params, hwscan_data_collection_info
+            doc, self.detector_metadata, hwscan_data_collection_info
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, None

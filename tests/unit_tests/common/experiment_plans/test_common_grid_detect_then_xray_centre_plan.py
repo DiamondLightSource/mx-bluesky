@@ -39,7 +39,7 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
     fast_gridscan_params,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
@@ -94,7 +94,7 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
                 construct_beamline_specific,
             ),
             minimal_diffraction_expt_with_sample,
-            create_detector_params(minimal_diffraction_expt_with_sample),
+            create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
         )
     )
 
@@ -166,7 +166,7 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
             grid_detect_xrc_devices,
             minimal_3d_gridscan_params,
             grid_detect_params,
-            create_detector_params(minimal_3d_gridscan_params),
+            create_detector_params_for_grid_scan(minimal_3d_gridscan_params),
             construct_beamline_specific=construct_beamline_specific,
             oav_config=test_config_files["oav_config_json"],
         ),
@@ -188,7 +188,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
         oav_params=OAVParameters(
             ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
         ),
-        detector_params=create_detector_params(expt_params),
+        detector_params=create_detector_params_for_grid_scan(expt_params),
         construct_beamline_specific=construct_beamline_specific_xrc_features,
     )
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
@@ -213,7 +213,9 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
         ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
     )
 
-    detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
     run_engine(
         ispyb_activation_wrapper(
             detect_grid_and_do_gridscan(
@@ -289,7 +291,9 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
             OAVParameters(
                 ConfigClient(""), "xrayCentring", test_config_files["oav_config_json"]
             ),
-            detector_params=create_detector_params(minimal_3d_gridscan_params),
+            detector_params=create_detector_params_for_grid_scan(
+                minimal_3d_gridscan_params
+            ),
             construct_beamline_specific=construct_beamline_specific,
         )
     )
@@ -360,7 +364,9 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
             grid_detect_xrc_devices,
             minimal_3d_gridscan_params,
             grid_detect_params,
-            detector_params=create_detector_params(minimal_3d_gridscan_params),
+            detector_params=create_detector_params_for_grid_scan(
+                minimal_3d_gridscan_params
+            ),
             construct_beamline_specific=construct_beamline_specific,
             oav_config=test_config_files["oav_config_json"],
         )
@@ -442,7 +448,7 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
             grid_detect_xrc_devices,
             minimal_3d_gridscan_params,
             grid_detect_params,
-            create_detector_params(minimal_3d_gridscan_params),
+            create_detector_params_for_grid_scan(minimal_3d_gridscan_params),
             construct_beamline_specific,
             test_config_files["oav_config_json"],
         )

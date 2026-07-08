@@ -19,7 +19,6 @@ from pydantic import (
     model_validator,
 )
 from pydantic_extra_types.semantic_version import SemanticVersion
-from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
@@ -193,26 +192,6 @@ class DiffractionExperiment(
         else:
             values["snapshot_directory"] = Path("/tmp")
         return values
-
-    @property
-    def num_images(self) -> int:
-        return 0
-
-
-class WithScan(BaseModel):
-    """For experiments where the scan is known"""
-
-    @property
-    @abstractmethod
-    def scan_points(self) -> list[AxesPoints]: ...
-
-    """Per grid"""
-
-    @property
-    @abstractmethod
-    def num_images(self) -> int: ...
-
-    """Must be same for each grid"""
 
 
 class WithPandaGridScan(BaseModel):

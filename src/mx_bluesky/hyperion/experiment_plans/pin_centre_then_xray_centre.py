@@ -16,7 +16,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
-    create_detector_params_with_hyperion_feature_settings,
+    create_detector_params_for_grid_scan_with_hyperion_feature_settings,
 )
 from mx_bluesky.hyperion.utils.centre_selection import samples_and_locations_to_collect
 
@@ -40,7 +40,9 @@ def pin_tip_centre_then_xray_centre(
     """
     eiger: EigerDetector = composite.eiger
 
-    detector_params = create_detector_params_with_hyperion_feature_settings(parameters)
+    detector_params = (
+        create_detector_params_for_grid_scan_with_hyperion_feature_settings(parameters)
+    )
     eiger.set_detector_parameters(detector_params)
 
     xrc_event_handler = XRayCentreEventHandler()

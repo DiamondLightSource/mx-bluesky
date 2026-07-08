@@ -32,7 +32,10 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 from mx_bluesky.common.parameters.components import (
     IspybExperimentType,
 )
-from mx_bluesky.common.parameters.gridscan import GridScanParams, create_detector_params
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    create_detector_params_for_grid_scan,
+)
 
 
 @pytest.fixture
@@ -186,7 +189,7 @@ def test_ispyb_activated_correct_params(
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
     expected_group_info = populate_data_collection_group(fgs_params_two_d)
     expected_group_info.comments = f"Diffraction grid scan of {grid_scan_params.x_steps} by {grid_scan_params.y_steps[0]}.Zocalo processing took 0.00 s."
-    expected_detector_params = create_detector_params(fgs_params_two_d)
+    expected_detector_params = create_detector_params_for_grid_scan(fgs_params_two_d)
     expected_scan_info = ScanDataInfo(
         data_collection_info=populate_remaining_data_collection_info(
             "MX-Bluesky: Xray centring 1/1 -",

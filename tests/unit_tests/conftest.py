@@ -104,7 +104,7 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
     GridDetectionParams,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -388,6 +388,7 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    minimal_3d_gridscan_params: GridScanParams,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -406,7 +407,9 @@ async def fake_fgs_composite(
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
-        create_detector_params(minimal_diffraction_expt_with_sample)
+        create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample, minimal_3d_gridscan_params
+        )
     )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True

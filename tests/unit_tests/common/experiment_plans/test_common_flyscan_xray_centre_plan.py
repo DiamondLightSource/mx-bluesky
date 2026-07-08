@@ -48,7 +48,7 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
     fast_gridscan_params,
 )
 from mx_bluesky.common.utils.exceptions import (
@@ -125,8 +125,8 @@ class TestFlyscanXrayCentrePlan:
         with patch.object(fake_fgs_composite.gonio.omega, "set") as mock_set:
             error = AssertionError("Test Exception")
             mock_set.side_effect = FailedStatus(error)
-            detector_params = create_detector_params(
-                minimal_diffraction_expt_with_sample
+            detector_params = create_detector_params_for_grid_scan(
+                minimal_diffraction_expt_with_sample, grid_scan_params_3d
             )
             with pytest.raises(FailedStatus):
                 run_engine(
@@ -193,7 +193,9 @@ class TestFlyscanXrayCentrePlan:
     ):
         run_engine, _ = run_engine_with_subs
 
-        detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+        detector_params = create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        )
 
         def wrapped_gridscan_and_move():
             yield from common_flyscan_xray_centre(
@@ -368,8 +370,8 @@ class TestFlyscanXrayCentrePlan:
             autospec=True,
         ):
             [run_engine.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
-            detector_params = create_detector_params(
-                minimal_diffraction_expt_with_sample
+            detector_params = create_detector_params_for_grid_scan(
+                minimal_diffraction_expt_with_sample, grid_scan_params_3d
             )
             run_engine(
                 ispyb_activation_wrapper(
@@ -626,7 +628,9 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs
-        detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+        detector_params = create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        )
 
         def _wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(

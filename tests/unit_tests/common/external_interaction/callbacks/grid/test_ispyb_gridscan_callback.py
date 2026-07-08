@@ -18,7 +18,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridScanParams, create_detector_params
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 
 
@@ -40,8 +43,8 @@ def test_gridscan_callback_start_calls_correct_funcs(
     doc = {
         "subplan_name": PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
         "mx_bluesky_parameters": minimal_diffraction_expt_with_sample.model_dump_json(),
-        "detector_params": create_detector_params(
-            minimal_diffraction_expt_with_sample
+        "detector_metadata": create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample, grid_scan_params_3d
         ).model_dump_json(),
         "grid_scan_params": grid_scan_params_3d.model_dump_json(),
     }
@@ -57,7 +60,9 @@ def test_populate_info_for_update(
     cb = Callback(DiffractionExperimentWithSample)
     cb.params = minimal_diffraction_expt_with_sample
     cb.grid_scan_params = grid_scan_params_3d
-    cb.detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    cb.detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample, grid_scan_params_3d
+    )
     cb.ispyb_ids = IspybIds(data_collection_ids=(0, 1))
     cb._grid_num_to_id_map = {0: 0, 1: 1}
     es_dcid = DataCollectionInfo()
@@ -113,7 +118,9 @@ def test_fill_gridscan_deposition_and_store(
     cb = Callback(DiffractionExperimentWithSample)
     cb.params = minimal_diffraction_expt_with_sample
     cb.grid_scan_params = grid_scan_params_3d
-    cb.detector_params = create_detector_params(minimal_diffraction_expt_with_sample)
+    cb.detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample, grid_scan_params_3d
+    )
     ispyb = StoreInIspyb("")
     ispyb.begin_deposition = MagicMock()
     ispyb.update_deposition = MagicMock()

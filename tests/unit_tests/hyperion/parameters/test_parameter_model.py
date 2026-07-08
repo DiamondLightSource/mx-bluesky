@@ -17,7 +17,7 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     OddYStepsError,
-    create_detector_params_with_hyperion_feature_settings,
+    create_detector_params_for_grid_scan_with_hyperion_feature_settings,
     panda_fast_gridscan_params,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
@@ -206,7 +206,9 @@ def test_create_detector_params_with_hyperion_feature_settings_sets_dev_shm_enab
         "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new=properties_path,
     ):
-        detector_params = create_detector_params_with_hyperion_feature_settings(
-            minimal_diffraction_expt_with_sample
+        detector_params = (
+            create_detector_params_for_grid_scan_with_hyperion_feature_settings(
+                minimal_diffraction_expt_with_sample
+            )
         )
         assert detector_params.enable_dev_shm == enable_gpu

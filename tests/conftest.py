@@ -86,7 +86,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    create_detector_params,
+    create_detector_params_for_grid_scan,
 )
 from mx_bluesky.common.parameters.rotation import RotationScan
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
@@ -348,7 +348,7 @@ def beamline_parameters():
 def grid_scan_params_3d(tmp_path: Path) -> GridScanParams:
     return GridScanParams(
         **raw_params_from_file(
-            "tests/tests_data/parameter_json_files/internal/grid_scan_params_3d.json",
+            "tests/test_data/parameter_json_files/internal/grid_scan_params_3d.json",
             tmp_path,
         )
     )
@@ -904,7 +904,7 @@ async def hyperion_flyscan_xrc_composite(
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
-        create_detector_params(minimal_diffraction_expt_with_sample)
+        create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
     )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
@@ -1283,7 +1283,9 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "plan_type": "generator",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
             "mx_bluesky_parameters": main_params,
-            "detector_params": create_detector_params(main_params).model_dump_json(),
+            "detector_params": create_detector_params_for_grid_scan(
+                main_params
+            ).model_dump_json(),
         }
 
     @property
