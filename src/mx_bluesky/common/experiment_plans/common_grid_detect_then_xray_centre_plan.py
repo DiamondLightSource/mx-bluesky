@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol, TypeVar
 
@@ -8,7 +9,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.backlight import InOut
-from dodal.devices.detector import DetectorParams
+from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
@@ -33,6 +34,9 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridDetectionCallback,
     GridParamUpdate,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
+    DetectorMetadata,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_decorator,
@@ -60,7 +64,7 @@ def grid_detect_then_xray_centre(
     composite: TGridDetectAndGridScanEssentialDevices,
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
-    detector_params: DetectorParams,
+    detector_metadata: DetectorMetadata,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
@@ -73,13 +77,11 @@ def grid_detect_then_xray_centre(
 
     eiger: EigerDetector = composite.eiger
 
-    eiger.set_detector_parameters(detector_params)
-
     oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config)
 
     grid_scan_params = None
 
-    @ispyb_activation_decorator(parameters, detector_params)
+    @ispyb_activation_decorator(parameters, detector_metadata)
     def plan_to_perform():
         nonlocal grid_scan_params
         grid_scan_params = yield from detect_grid_and_do_gridscan(
@@ -90,6 +92,11 @@ def grid_detect_then_xray_centre(
             detector_params,
             construct_beamline_specific,
         )
+
+    assert parameters.trigger_mode != TriggerMode.SET_FRAMES, (
+        "Cannot pre-arm detector before grid detection when trigger mode is SET_FRAMES"
+    )
+    eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
@@ -110,7 +117,7 @@ def detect_grid_and_do_gridscan(
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
     oav_params: OAVParameters,
-    detector_params: DetectorParams,
+    detector_params_factory: Callable[[GridScanParams], DetectorParams],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
@@ -119,9 +126,7 @@ def detect_grid_and_do_gridscan(
         box_size_um=grid_detection_params.box_size_um,
         grid_width_um=grid_detection_params.grid_width_um,
     )
-    snapshot_template = (
-        f"{detector_params.prefix}_{detector_params.run_number}_{{angle}}"
-    )
+    snapshot_template = f"{parameters.file_name}_{detector_params.run_number}_{{angle}}"
 
     grid_params_callback = GridDetectionCallback()
 

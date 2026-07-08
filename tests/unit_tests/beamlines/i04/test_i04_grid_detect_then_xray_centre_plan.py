@@ -507,14 +507,13 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     "mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan.get_results_and_move_to_xtal",
     new=MagicMock(),
 )
-def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses_grid_common(
+def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses_params(
     mock_fix_transmission: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
     mock_setup_beamline_for_oav: MagicMock,
     mock_grid_detect_then_xray_centre: MagicMock,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
     run_engine: RunEngine,
-    test_full_grid_scan_params: GenericGrid,
 ):
     expected_trans_frac = 1
     expected_exposure_time = 0.004
@@ -526,7 +525,7 @@ def test_i04_grid_detect_then_xrc_calculates_exposure_and_transmission_then_uses
     grid_common_params = mock_grid_detect_then_xray_centre.call_args.kwargs[
         "parameters"
     ]
-    assert isinstance(grid_common_params, GenericGrid)
+    assert isinstance(grid_common_params, DiffractionExperimentWithSample)
     assert grid_common_params.exposure_time_s == expected_exposure_time
     assert grid_common_params.transmission_frac == expected_trans_frac
 

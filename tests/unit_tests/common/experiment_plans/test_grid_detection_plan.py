@@ -33,7 +33,10 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.gridscan import GenericGrid, create_detector_params
+from mx_bluesky.common.parameters.gridscan import (
+    GenericGrid,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.common.utils.exceptions import WarningError
 
 from ...conftest import assert_event
@@ -224,7 +227,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
             ispyb_activation_wrapper(
                 do_grid_and_edge_detect(composite, params, tmp_path),
                 minimal_3d_gridscan_params,
-                create_detector_params(minimal_3d_gridscan_params),
+                create_detector_params_for_grid_scan(minimal_3d_gridscan_params),
             )
         )
 
@@ -290,7 +293,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
         ispyb_activation_wrapper(
             do_grid_and_edge_detect(composite, params, tmp_path),
             minimal_3d_gridscan_params,
-            create_detector_params(minimal_3d_gridscan_params),
+            create_detector_params_for_grid_scan(minimal_3d_gridscan_params),
         )
     )
 
@@ -336,7 +339,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
         ispyb_activation_wrapper(
             do_grid_and_edge_detect(composite, params, tmp_path),
             minimal_3d_gridscan_params,
-            create_detector_params(minimal_3d_gridscan_params),
+            create_detector_params_for_grid_scan(minimal_3d_gridscan_params),
         )
     )
 

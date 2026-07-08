@@ -37,7 +37,7 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    create_detector_params_with_hyperion_feature_settings,
+    create_detector_params_for_grid_scan_with_hyperion_feature_settings,
 )
 from tests.conftest import (
     RunEngineSimulator,
@@ -116,8 +116,8 @@ class TestFlyscanXrayCentrePlan:
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
                     minimal_diffraction_expt_with_sample,
-                    create_detector_params_with_hyperion_feature_settings(
-                        minimal_diffraction_expt_with_sample
+                    create_detector_params_for_grid_scan_with_hyperion_feature_settings(
+                        minimal_diffraction_expt_with_sample, grid_scan_params_3d
                     ),
                     grid_scan_params_3d,
                     beamline_specific,
@@ -178,8 +178,8 @@ class TestFlyscanXrayCentrePlan:
             common_flyscan_xray_centre(
                 hyperion_flyscan_xrc_composite,
                 minimal_diffraction_expt_with_sample,
-                create_detector_params_with_hyperion_feature_settings(
-                    minimal_diffraction_expt_with_sample
+                create_detector_params_for_grid_scan_with_hyperion_feature_settings(
+                    minimal_diffraction_expt_with_sample, grid_scan_params_3d
                 ),
                 grid_scan_params_3d,
                 beamline_specific,
@@ -216,8 +216,10 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
     ):
         minimal_diffraction_expt_with_sample.exposure_time_s = 0.01
-        detector_params = create_detector_params_with_hyperion_feature_settings(
-            minimal_diffraction_expt_with_sample
+        detector_params = (
+            create_detector_params_for_grid_scan_with_hyperion_feature_settings(
+                minimal_diffraction_expt_with_sample, grid_scan_params_3d
+            )
         )
 
         # this exception should only be raised if we're using the panda
@@ -272,8 +274,8 @@ class TestFlyscanXrayCentrePlan:
             common_flyscan_xray_centre(
                 fgs_composite_with_panda_pcap,
                 minimal_diffraction_expt_with_sample,
-                create_detector_params_with_hyperion_feature_settings(
-                    minimal_diffraction_expt_with_sample
+                create_detector_params_for_grid_scan_with_hyperion_feature_settings(
+                    minimal_diffraction_expt_with_sample, grid_scan_params_3d
                 ),
                 grid_scan_params_3d,
                 beamline_specific,

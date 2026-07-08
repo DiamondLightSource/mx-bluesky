@@ -10,5 +10,6 @@
     "run_number": 0,
     "use_roi_mode": false,
     "transmission_frac": 1.0,
-    "storage_directory": "{tmp_data}/xraycentring/123456/"
+    "storage_directory": "{tmp_data}/xraycentring/123456/",
+    "ispyb_experiment_type": "Mesh3D"
 }
