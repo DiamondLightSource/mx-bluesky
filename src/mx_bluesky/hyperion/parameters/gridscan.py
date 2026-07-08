@@ -5,13 +5,12 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParamsThreeD,
 )
+from pydantic import Field
 
-from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
-    DetectorMetadata,
-)
 from mx_bluesky.common.parameters.components import (
     DiffractionExperiment,
     DiffractionExperimentWithSample,
+    IspybExperimentType,
     OptionalGonioAngleStarts,
 )
 from mx_bluesky.common.parameters.gridscan import (
@@ -26,12 +25,8 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 
 def create_detector_params_for_grid_scan_with_hyperion_feature_settings(
     params: DiffractionExperiment,
-    detector_metadata: DetectorMetadata,
-    grid_scan_params: GridScanParams,
 ) -> DetectorParams:
-    detector_params = create_detector_params_for_grid_scan(
-        params, detector_metadata, grid_scan_params
-    )
+    detector_params = create_detector_params_for_grid_scan(params)
     detector_params.enable_dev_shm = get_hyperion_feature_settings().USE_GPU_RESULTS
     return detector_params
 
@@ -92,4 +87,9 @@ class OddYStepsError(Exception): ...
 class PinTipCentreThenXrayCentre(
     DiffractionExperimentWithSample, GridDetectionParams, OptionalGonioAngleStarts
 ):
+    # Override the default field type
+    ispyb_experiment_type: IspybExperimentType = Field(
+        default=IspybExperimentType.GRIDSCAN_3D
+    )
+
     tip_offset_um: float = 0

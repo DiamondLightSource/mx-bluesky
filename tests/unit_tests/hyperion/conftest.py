@@ -155,8 +155,3 @@ def launch_test_in_runner_event_loop(
         return future.result(TEST_SCRIPT_TIMEOUT_S)
 
     return executor.submit(_launch_in_new_thread)
-
-
-@pytest.fixture()
-def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
-    monkeypatch.setenv("BEAMLINE", "i03")

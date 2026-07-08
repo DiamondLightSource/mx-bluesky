@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from math import isclose
 from typing import cast
 
@@ -42,7 +41,6 @@ from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
 )
@@ -117,13 +115,13 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
 def _flyscan_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
-    detector_param_factory: Callable[[GridScanParams], DetectorParams],
+    detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_gridscan_plan(
         cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
-        detector_param_factory,
+        detector_params,
         oav_config_file,
     )
 
@@ -131,7 +129,7 @@ def _flyscan_plan_from_robot_load_params(
 def _robot_load_then_flyscan_plan(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
-    detector_params_factory: Callable[[GridScanParams], DetectorParams],
+    detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
@@ -140,7 +138,7 @@ def _robot_load_then_flyscan_plan(
     )
 
     yield from _flyscan_plan_from_robot_load_params(
-        composite, params, detector_param_factory, oav_config_file
+        composite, params, detector_params, oav_config_file
     )
 
 

@@ -170,6 +170,21 @@ def _error_and_kill_pending_tasks(
     return unfinished_tasks
 
 
+@pytest.fixture(autouse=True)
+def always_patch_config_client():
+    with patch(
+        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
+        create=True,
+        new=ConfigClient("http://localhost:8555"),
+    ):
+        yield
+
+
+@pytest.fixture()
+def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
+    monkeypatch.setenv("BEAMLINE", "i03")
+
+
 @pytest.fixture(autouse=True, scope="function")
 async def fail_test_on_unclosed_tasks(request: FixtureRequest):
     """
@@ -388,7 +403,6 @@ async def zebra_fast_grid_scan():
 async def fake_fgs_composite(
     smargon: Smargon,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
-    minimal_3d_gridscan_params: GridScanParams,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -407,9 +421,7 @@ async def fake_fgs_composite(
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
-        create_detector_params_for_grid_scan(
-            minimal_diffraction_expt_with_sample, minimal_3d_gridscan_params
-        )
+        create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
     )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True

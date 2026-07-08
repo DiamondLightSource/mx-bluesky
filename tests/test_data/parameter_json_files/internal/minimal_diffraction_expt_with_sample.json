@@ -11,5 +11,6 @@
     "use_roi_mode": false,
     "transmission_frac": 1.0,
     "storage_directory": "{tmp_data}/xraycentring/123456/",
-    "ispyb_experiment_type": "Mesh3D"
+    "ispyb_experiment_type": "Mesh3D",
+    "selected_aperture": "SMALL_APERTURE"
 }

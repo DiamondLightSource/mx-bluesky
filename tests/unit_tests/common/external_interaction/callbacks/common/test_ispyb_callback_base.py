@@ -10,6 +10,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import USE_NUMTRACKER
+from mx_bluesky.common.parameters.gridscan import create_detector_params_for_grid_scan
 
 
 def test_visit_extracted_from_numtracker(
@@ -82,6 +83,9 @@ def test_handle_ispyb_transmission_flux_read_if_no_beamsize_warning(
 ):
     callback = BaseISPyBCallback()
     callback.params = minimal_diffraction_expt_with_sample
+    callback.detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
     doc = _get_working_doc()
     callback._handle_ispyb_transmission_flux_read(doc)  # type: ignore
     mock_logger.warning.assert_has_calls(
@@ -96,8 +100,14 @@ def test_handle_ispyb_transmission_flux_read_if_params_specify_beamsize(
     mock_logger: MagicMock,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
+    minimal_diffraction_expt_with_sample.beam_size_x = 0  # type: ignore
+    minimal_diffraction_expt_with_sample.beam_size_y = 1  # type: ignore
+
     callback = BaseISPyBCallback()
     callback.params = minimal_diffraction_expt_with_sample
+    callback.detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
     doc = _get_working_doc()
     callback._handle_ispyb_transmission_flux_read(doc)  # type: ignore
 

@@ -870,8 +870,8 @@ async def hyperion_flyscan_xrc_composite(
     panda_fast_grid_scan,
     beamsize,
     oav,
-    pin_tip_detection,
-    beamstop,
+    pin_tip_detection_with_found_pin,
+    beamstop_phase1,
     detector_motion,
 ) -> HyperionFlyScanXRayCentreComposite:
     fake_composite = HyperionFlyScanXRayCentreComposite(
@@ -896,8 +896,8 @@ async def hyperion_flyscan_xrc_composite(
         sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
         beamsize=beamsize,
         oav=oav,
-        pin_tip_detection=pin_tip_detection,
-        beamstop=beamstop,
+        pin_tip_detection=pin_tip_detection_with_found_pin,
+        beamstop=beamstop_phase1,
         detector_motion=detector_motion,
     )
 
@@ -1166,6 +1166,16 @@ def nexus_test_diffraction_expt_with_sample(tmp_path: Path):
     return dummy_params
 
 
+def nexus_test_gridscan_params(tmp_path) -> GridScanParams:
+    grid_scan_params = GridScanParams(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/nexus_test_gridscan_params.json",
+            tmp_path,
+        )
+    )
+    return grid_scan_params
+
+
 def gridscan_callback_main_params(tmp_path) -> DiffractionExperimentWithSample:
     dummy_params = DiffractionExperimentWithSample(
         **raw_params_from_file(
@@ -1282,7 +1292,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "scan_id": 1,
             "plan_type": "generator",
             "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
-            "mx_bluesky_parameters": main_params,
+            "mx_bluesky_parameters": main_params.model_dump_json(),
             "detector_params": create_detector_params_for_grid_scan(
                 main_params
             ).model_dump_json(),
@@ -1310,6 +1320,7 @@ class _TestEventData(OavGridSnapshotTestEvents):
 
     @property
     def test_gridscan_outer_start_document(self):
+        params = nexus_test_diffraction_expt_with_sample(self._tmp_path)
         return {
             "uid": _UID_GRIDSCAN_OUTER,
             "time": 1666604299.6149616,
@@ -1319,7 +1330,11 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "plan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-            "mx_bluesky_parameters": nexus_test_diffraction_expt_with_sample(
+            "mx_bluesky_parameters": params.model_dump_json(),
+            "detector_params": create_detector_params_for_grid_scan(
+                params
+            ).model_dump_json(),
+            "grid_scan_parameters": nexus_test_gridscan_params(
                 self._tmp_path
             ).model_dump_json(),
         }

@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
+from dodal.devices.detector import DetectorParams
 from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
-    DetectorMetadata,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -51,7 +51,7 @@ def ispyb_activation_wrapper(
     plan_generator: MsgGenerator,
     parameters: BaseModel,
     grid_scan_params: GridScanParams,
-    detector_metadata: DetectorMetadata,
+    detector_params: DetectorParams,
 ):
     return bpp.set_run_key_wrapper(
         bpp.run_wrapper(
@@ -60,7 +60,7 @@ def ispyb_activation_wrapper(
                 "activate_callbacks": ["GridscanISPyBCallback"],
                 "subplan_name": PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
-                "detector_metadata": detector_metadata.model_dump_json(),
+                "detector_params": detector_params.model_dump_json(),
                 "grid_scan_params": grid_scan_params.model_dump_json(),
             },
         ),
@@ -112,14 +112,14 @@ class GridscanISPyBCallback(BaseISPyBCallback, Generic[T]):
                 f"uid: {self._start_of_fgs_uid}"
             )
             mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
-            detector_metadata_json = doc.get("detector_metadata")
+            detector_params_json = doc.get("detector_params")
             grid_scan_params_json = doc.get("grid_scan_params")
             assert isinstance(mx_bluesky_parameters, str)
-            assert isinstance(detector_metadata_json, str)
+            assert isinstance(detector_params_json, str)
             assert isinstance(grid_scan_params_json, str)
             self.params = self.param_type.model_validate_json(mx_bluesky_parameters)
-            self.detector_metadata = DetectorMetadata.model_validate_json(
-                detector_metadata_json
+            self.detector_params = DetectorParams.model_validate_json(
+                detector_params_json
             )
             self.grid_scan_params = GridScanParams.model_validate_json(
                 grid_scan_params_json
@@ -210,7 +210,7 @@ class GridscanISPyBCallback(BaseISPyBCallback, Generic[T]):
     ):
         assert self.params
         assert self.grid_scan_params
-        assert self.detector_metadata
+        assert self.detector_params
 
         # Do initial deposition using all info except grid info
         self.ispyb = StoreInIspyb(self.ispyb_config)
@@ -225,7 +225,7 @@ class GridscanISPyBCallback(BaseISPyBCallback, Generic[T]):
                         None,
                         DataCollectionInfo(),
                         self.params,
-                        self.detector_metadata,
+                        self.detector_params,
                     )
                 )
             )

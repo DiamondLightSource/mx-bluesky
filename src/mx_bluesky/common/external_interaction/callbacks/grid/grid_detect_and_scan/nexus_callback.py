@@ -47,6 +47,7 @@ def _create_writers_from_params(
                 detector_params,
                 data_shape,
                 grid_scan_params.scan_points[idx],
+                grid_scan_params.num_images,
                 run_number=run_number,
                 vds_start_index=grid_scan_params.scan_indices[idx],
                 omega_start_deg=grid_scan_params.omega_starts_deg[idx],

@@ -96,6 +96,9 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            create_detector_params_for_grid_scan(
+                test_pin_centre_then_xray_centre_params
+            ),
             test_config_files["oav_config_json"],
         )
     )
@@ -133,6 +136,9 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            create_detector_params_for_grid_scan(
+                test_pin_centre_then_xray_centre_params
+            ),
             test_config_files["oav_config_json"],
         )
     )
@@ -182,6 +188,9 @@ def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            create_detector_params_for_grid_scan(
+                test_pin_centre_then_xray_centre_params
+            ),
             test_config_files["oav_config_json"],
         )
     )
@@ -244,6 +253,7 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             params,
+            create_detector_params_for_grid_scan(params),
             test_config_files["oav_config_json"],
         )
     )
@@ -408,6 +418,9 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
+            create_detector_params_for_grid_scan(
+                test_pin_centre_then_xray_centre_params
+            ),
             test_config_files["oav_config_json"],
         )
     )

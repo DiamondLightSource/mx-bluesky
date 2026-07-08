@@ -7,7 +7,6 @@ from dodal.devices.zocalo import ZocaloStartInfo
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
-    DetectorMetadata,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -73,9 +72,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
             hyperion_params = doc.get("mx_bluesky_parameters")
             assert isinstance(hyperion_params, str)
             self.params = SingleRotationScan.model_validate_json(hyperion_params)
-            self.detector_metadata = DetectorMetadata(
-                **self.params.detector_params.model_dump()
-            )
+            self.detector_params = self.params.detector_params
             dcgid = (
                 self.ispyb_ids.data_collection_group_id
                 if (self.params.sample_id == self.last_sample_id)

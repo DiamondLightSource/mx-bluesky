@@ -4,7 +4,8 @@ from typing import Annotated, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
-from dodal.devices.detector.detector import DetectorParams, compute_full_filename
+from dodal.devices.detector.detector import DetectorParams, TriggerMode
+from dodal.devices.eiger import FREE_RUN_MAX_IMAGES
 from dodal.devices.fast_grid_scan import (
     GridScanParamsCommon,
     ZebraGridScanParamsThreeD,
@@ -15,9 +16,6 @@ from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Concat, Line, Product, Static
 
-from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
-    DetectorMetadata,
-)
 from mx_bluesky.common.parameters.components import (
     DiffractionExperiment,
     DiffractionExperimentWithSample,
@@ -210,53 +208,38 @@ class GenericGrid(
     tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
 
 
-def create_detector_metadata(params: DiffractionExperiment) -> DetectorMetadata:
-    run_number = (
-        get_run_number(params.storage_directory, params.file_name)
-        if params.run_number is None
-        else params.run_number
-    )
-    return DetectorMetadata(
-        detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
-        exposure_time_s=params.exposure_time_s,
-        directory=params.storage_directory,
-        prefix=params.file_name,
-        detector_distance=params.detector_distance_mm,
-        det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
-        use_roi_mode=params.use_roi_mode,
-        run_number=run_number,
-    )
-
-
 # We currently only arm the detector once, regardless of total grids. Detector params
 # must be the same for each grid
 def create_detector_params_for_grid_scan(
     params: DiffractionExperiment,
-    detector_metadata: DetectorMetadata,
-    grid_scan_params: GridScanParams,
 ) -> DetectorParams:
 
     assert params.detector_distance_mm is not None, (
         "Detector distance must be filled before generating DetectorParams"
     )
-    full_filename = compute_full_filename(
-        detector_metadata.prefix, detector_metadata.run_number
+    assert params.trigger_mode == TriggerMode.FREE_RUN, (
+        "Trigger mode SET_FRAMES is not supported for gridscans."
+    )
+    run_number = (
+        get_run_number(params.storage_directory, params.file_name)
+        if params.run_number is None
+        else params.run_number
     )
     return DetectorParams(
-        detector_size_constants=detector_metadata.detector_size_constants,
+        detector_size_constants=DETECTOR_SIZE_PER_BEAMLINE[get_beamline_name()],
         expected_energy_ev=params.demand_energy_ev,
-        exposure_time_s=detector_metadata.exposure_time_s,
-        directory=detector_metadata.storage_directory,
-        prefix=detector_metadata.file_name,
-        detector_distance=detector_metadata.detector_distance_mm,
+        exposure_time_s=params.exposure_time_s,
+        directory=params.storage_directory,
+        prefix=params.file_name,
+        detector_distance=params.detector_distance_mm,
         omega_start=0,  # Metadata we set on detector isn't currently accurate, but also not used downstream
         omega_increment=0,
         num_images_per_trigger=1,
-        num_triggers=grid_scan_params.num_images,
-        use_roi_mode=detector_metadata.use_roi_mode,
-        det_dist_to_beam_converter_path=detector_metadata.det_dist_to_beam_converter_path,
+        num_triggers=FREE_RUN_MAX_IMAGES,
+        use_roi_mode=params.use_roi_mode,
+        det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
+        run_number=run_number,
         trigger_mode=params.trigger_mode,
-        full_filename=full_filename,
     )
 
 

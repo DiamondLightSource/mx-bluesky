@@ -57,7 +57,7 @@ def create_nexus_writers(
 ):
     writers = _create_writers_from_params(
         parameters,
-        create_detector_params_for_grid_scan(parameters, grid_scan_params),
+        create_detector_params_for_grid_scan(parameters),
         grid_scan_params,
     )
     try:
@@ -106,9 +106,7 @@ def single_dummy_file(
     test_three_d_grid_params: GridScanParams,
 ):
     expt_params_for_nexus_tests.use_roi_mode = True
-    detector_params = create_detector_params_for_grid_scan(
-        expt_params_for_nexus_tests, test_three_d_grid_params
-    )
+    detector_params = create_detector_params_for_grid_scan(expt_params_for_nexus_tests)
     d_size = detector_params.detector_size_constants.det_size_pixels
     data_shape = (test_three_d_grid_params.scan_indices[1], d_size.width, d_size.height)
     nexus_writer = NexusWriter(
@@ -116,6 +114,7 @@ def single_dummy_file(
         detector_params,
         data_shape,
         scan_points=test_three_d_grid_params.scan_points[0],
+        full_num_of_images=test_three_d_grid_params.num_images,
         run_number=1,
     )
     yield nexus_writer
@@ -263,14 +262,15 @@ def test_nexus_file_entry_data_omega_written_correctly_independent_of_omega_dire
 ):
     test_rotation_params.storage_directory = str(tmp_path)
     det_size = (
-        test_rotation_params.detector_metadata.detector_size_constants.det_size_pixels
+        test_rotation_params.detector_params.detector_size_constants.det_size_pixels
     )
     shape = (test_rotation_params.num_images, det_size.width, det_size.height)
     nexus_writer = NexusWriter(
         test_rotation_params,
-        test_rotation_params.detector_metadata,
+        test_rotation_params.detector_params,
         shape,
         test_rotation_params.scan_points,
+        test_rotation_params.num_images,
         omega_start_deg=test_rotation_params.omega_start_deg,
         chi_start_deg=test_rotation_params.chi_start_deg or 0,
         phi_start_deg=test_rotation_params.phi_start_deg or 0,
@@ -355,9 +355,7 @@ def test_nexus_writer_writes_beamline_name_correctly(
     expt_params_for_nexus_tests: DiffractionExperimentWithSample,
     test_three_d_grid_params: GridScanParams,
 ):
-    detector_params = create_detector_params_for_grid_scan(
-        expt_params_for_nexus_tests, test_three_d_grid_params
-    )
+    detector_params = create_detector_params_for_grid_scan(expt_params_for_nexus_tests)
     d_size = detector_params.detector_size_constants.det_size_pixels
     data_shape = (expt_params_for_nexus_tests.num_images, d_size.width, d_size.height)
     nexus_writer = NexusWriter(
@@ -365,6 +363,7 @@ def test_nexus_writer_writes_beamline_name_correctly(
         detector_params,
         data_shape,
         test_three_d_grid_params.scan_points[0],
+        test_three_d_grid_params.num_images,
     )
     assert nexus_writer.source.beamline == "i03"
 

@@ -43,8 +43,8 @@ def test_gridscan_callback_start_calls_correct_funcs(
     doc = {
         "subplan_name": PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
         "mx_bluesky_parameters": minimal_diffraction_expt_with_sample.model_dump_json(),
-        "detector_metadata": create_detector_params_for_grid_scan(
-            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        "detector_params": create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample
         ).model_dump_json(),
         "grid_scan_params": grid_scan_params_3d.model_dump_json(),
     }
@@ -61,7 +61,7 @@ def test_populate_info_for_update(
     cb.params = minimal_diffraction_expt_with_sample
     cb.grid_scan_params = grid_scan_params_3d
     cb.detector_params = create_detector_params_for_grid_scan(
-        minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        minimal_diffraction_expt_with_sample
     )
     cb.ispyb_ids = IspybIds(data_collection_ids=(0, 1))
     cb._grid_num_to_id_map = {0: 0, 1: 1}
@@ -119,7 +119,7 @@ def test_fill_gridscan_deposition_and_store(
     cb.params = minimal_diffraction_expt_with_sample
     cb.grid_scan_params = grid_scan_params_3d
     cb.detector_params = create_detector_params_for_grid_scan(
-        minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        minimal_diffraction_expt_with_sample
     )
     ispyb = StoreInIspyb("")
     ispyb.begin_deposition = MagicMock()

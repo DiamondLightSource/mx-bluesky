@@ -126,7 +126,7 @@ class TestFlyscanXrayCentrePlan:
             error = AssertionError("Test Exception")
             mock_set.side_effect = FailedStatus(error)
             detector_params = create_detector_params_for_grid_scan(
-                minimal_diffraction_expt_with_sample, grid_scan_params_3d
+                minimal_diffraction_expt_with_sample
             )
             with pytest.raises(FailedStatus):
                 run_engine(
@@ -138,7 +138,7 @@ class TestFlyscanXrayCentrePlan:
                             grid_scan_params_3d,
                             beamline_specific,
                         ),
-                        grid_scan_params_3d,
+                        minimal_diffraction_expt_with_sample,
                         detector_params,
                     ),
                 )
@@ -194,7 +194,7 @@ class TestFlyscanXrayCentrePlan:
         run_engine, _ = run_engine_with_subs
 
         detector_params = create_detector_params_for_grid_scan(
-            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+            minimal_diffraction_expt_with_sample
         )
 
         def wrapped_gridscan_and_move():
@@ -371,7 +371,7 @@ class TestFlyscanXrayCentrePlan:
         ):
             [run_engine.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
             detector_params = create_detector_params_for_grid_scan(
-                minimal_diffraction_expt_with_sample, grid_scan_params_3d
+                minimal_diffraction_expt_with_sample
             )
             run_engine(
                 ispyb_activation_wrapper(
@@ -629,7 +629,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs
         detector_params = create_detector_params_for_grid_scan(
-            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+            minimal_diffraction_expt_with_sample
         )
 
         def _wrapped_gridscan_and_move():

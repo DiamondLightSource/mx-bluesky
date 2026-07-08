@@ -8,12 +8,12 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
+from dodal.devices.detector import DetectorParams
 from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
     D,
-    DetectorMetadata,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
@@ -64,7 +64,7 @@ T = TypeVar("T", bound="DiffractionExperimentWithSample")
 def ispyb_activation_wrapper(
     plan_generator: MsgGenerator,
     parameters: BaseModel,
-    detector_metadata: DetectorMetadata,
+    detector_params: DetectorParams,
 ):
     return bpp.set_run_key_wrapper(
         bpp.run_wrapper(
@@ -73,7 +73,7 @@ def ispyb_activation_wrapper(
                 "activate_callbacks": ["GridDetectAndScanISPyBCallback"],
                 "subplan_name": PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
-                "detector_metadata": detector_metadata.model_dump_json(),
+                "detector_params": detector_params.model_dump_json(),
             },
         ),
         PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN,
@@ -129,10 +129,10 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
             mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
             assert isinstance(mx_bluesky_parameters, str)
             self.params = self.param_type.model_validate_json(mx_bluesky_parameters)
-            detector_metadata_json = doc.get("detector_metadata")
-            assert isinstance(detector_metadata_json, str)
-            self.detector_metadata = DetectorMetadata.model_validate_json(
-                detector_metadata_json
+            detector_params_json = doc.get("detector_params")
+            assert isinstance(detector_params_json, str)
+            self.detector_params = DetectorParams.model_validate_json(
+                detector_params_json
             )
             assert isinstance(self.params, DiffractionExperimentWithSample)
             self.ispyb = StoreInIspyb(self.ispyb_config)
@@ -147,7 +147,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
                         None,
                         DataCollectionInfo(),
                         self.params,
-                        self.detector_metadata,
+                        self.detector_params,
                     ),
                 ),
                 ScanDataInfo(
@@ -156,7 +156,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
                         None,
                         DataCollectionInfo(),
                         self.params,
-                        self.detector_metadata,
+                        self.detector_params,
                     )
                 ),
             ]
@@ -191,7 +191,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
 
     def _handle_oav_grid_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
-        assert self.params and self.detector_metadata, (
+        assert self.params and self.detector_params, (
             "ISPyB handler didn't receive parameters!"
         )
         assert self.data_collection_group_info, "No data collection group"
@@ -203,7 +203,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
         )
         data_collection_number = self.data_collection_number_from_gridplane(grid_plane)
         file_template = (
-            f"{self.detector_metadata.prefix}_{data_collection_number}_master.h5"
+            f"{self.detector_params.prefix}_{data_collection_number}_master.h5"
         )
         data_collection_info = DataCollectionInfo(
             xtal_snapshot1=data.get("oav-grid_snapshot-last_path_full_overlay"),
@@ -333,8 +333,8 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
         return doc  # type: ignore
 
     def data_collection_number_from_gridplane(self, plane) -> int:
-        assert self.detector_metadata
-        base_number = self.detector_metadata.run_number
+        assert self.detector_params
+        base_number = self.detector_params.run_number
         return base_number if plane == GridscanPlane.OMEGA_XY else base_number + 1
 
 

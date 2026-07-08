@@ -8,7 +8,6 @@ from typing import Annotated, Any, Self
 from annotated_types import Len
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import DetectorParams
-from dodal.devices.detector.detector import compute_full_filename
 from dodal.devices.zebra.zebra import (
     RotationDirection,
 )
@@ -77,7 +76,6 @@ class RotationExperiment(DiffractionExperiment):
             else self.run_number
         )
         assert self.detector_distance_mm is not None
-        full_filename = compute_full_filename(self.file_name, run_number)
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,
             expected_energy_ev=self.demand_energy_ev,
@@ -91,7 +89,7 @@ class RotationExperiment(DiffractionExperiment):
             num_triggers=num_triggers,
             use_roi_mode=False,
             det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
-            full_filename=full_filename,
+            run_number=run_number,
         )
 
     def _detector_params(self, omega_start_deg: float) -> DetectorParams:
