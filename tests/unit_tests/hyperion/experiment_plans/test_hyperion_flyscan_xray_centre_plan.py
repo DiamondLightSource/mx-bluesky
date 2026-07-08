@@ -117,7 +117,7 @@ class TestFlyscanXrayCentrePlan:
                     hyperion_flyscan_xrc_composite,
                     minimal_diffraction_expt_with_sample,
                     create_detector_params_for_grid_scan_with_hyperion_feature_settings(
-                        minimal_diffraction_expt_with_sample, grid_scan_params_3d
+                        minimal_diffraction_expt_with_sample
                     ),
                     grid_scan_params_3d,
                     beamline_specific,
@@ -179,7 +179,7 @@ class TestFlyscanXrayCentrePlan:
                 hyperion_flyscan_xrc_composite,
                 minimal_diffraction_expt_with_sample,
                 create_detector_params_for_grid_scan_with_hyperion_feature_settings(
-                    minimal_diffraction_expt_with_sample, grid_scan_params_3d
+                    minimal_diffraction_expt_with_sample
                 ),
                 grid_scan_params_3d,
                 beamline_specific,
@@ -218,7 +218,7 @@ class TestFlyscanXrayCentrePlan:
         minimal_diffraction_expt_with_sample.exposure_time_s = 0.01
         detector_params = (
             create_detector_params_for_grid_scan_with_hyperion_feature_settings(
-                minimal_diffraction_expt_with_sample, grid_scan_params_3d
+                minimal_diffraction_expt_with_sample
             )
         )
 
@@ -275,7 +275,7 @@ class TestFlyscanXrayCentrePlan:
                 fgs_composite_with_panda_pcap,
                 minimal_diffraction_expt_with_sample,
                 create_detector_params_for_grid_scan_with_hyperion_feature_settings(
-                    minimal_diffraction_expt_with_sample, grid_scan_params_3d
+                    minimal_diffraction_expt_with_sample
                 ),
                 grid_scan_params_3d,
                 beamline_specific,

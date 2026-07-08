@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol, TypeVar
 
@@ -35,9 +34,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
     GridDetectionCallback,
     GridParamUpdate,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
-    DetectorMetadata,
-)
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_decorator,
 )
@@ -64,7 +60,7 @@ def grid_detect_then_xray_centre(
     composite: TGridDetectAndGridScanEssentialDevices,
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
-    detector_metadata: DetectorMetadata,
+    detector_params: DetectorParams,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
@@ -81,7 +77,7 @@ def grid_detect_then_xray_centre(
 
     grid_scan_params = None
 
-    @ispyb_activation_decorator(parameters, detector_metadata)
+    @ispyb_activation_decorator(parameters, detector_params)
     def plan_to_perform():
         nonlocal grid_scan_params
         grid_scan_params = yield from detect_grid_and_do_gridscan(
@@ -117,7 +113,7 @@ def detect_grid_and_do_gridscan(
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
     oav_params: OAVParameters,
-    detector_params_factory: Callable[[GridScanParams], DetectorParams],
+    detector_params: DetectorParams,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],

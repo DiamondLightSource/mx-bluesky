@@ -64,9 +64,7 @@ def test_get_scan_infos_gives_expected_output(
 ):
     callback = GridscanISPyBCallback(param_type=I02_1FgsParams)
     callback.params = fgs_params_two_d
-    callback.detector_params = create_detector_params_for_grid_scan(
-        fgs_params_two_d, grid_scan_params
-    )
+    callback.detector_params = create_detector_params_for_grid_scan(fgs_params_two_d)
     callback.grid_scan_params = grid_scan_params
     doc = {}
     doc["data"] = {

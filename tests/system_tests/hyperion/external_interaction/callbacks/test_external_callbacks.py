@@ -276,9 +276,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         fgs_composite_for_fake_zocalo, dummy_params, grid_scan_params
     )
 
-    detector_params = create_detector_params_for_grid_scan(
-        dummy_params, grid_scan_params
-    )
+    detector_params = create_detector_params_for_grid_scan(dummy_params)
 
     @zocalo_stage_decorator(fgs_composite_for_fake_zocalo.zocalo)
     @ispyb_activation_decorator(dummy_params, detector_params)
@@ -287,6 +285,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo,
             dummy_params,
+            detector_params,
             grid_scan_params,
             beamline_specific,
         )

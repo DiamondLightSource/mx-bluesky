@@ -6,10 +6,10 @@
     "visit": "cm31105-4",
     "file_name": "file_name",
     "sample_id": 364758,
-    "run_number": 0,
     "comment": "Descriptive comment.",
     "use_roi_mode": false,
     "transmission_frac": 1.0,
     "detector_distance_mm": 100.0,
-    "exposure_time_s": 0.1
+    "exposure_time_s": 0.1,
+    "ispyb_experiment_type": "Mesh3D"
 }

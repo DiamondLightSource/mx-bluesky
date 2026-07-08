@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.detector import DetectorParams
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -25,7 +23,6 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
@@ -44,7 +41,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 def pin_centre_then_gridscan_plan(
     composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: PinTipCentreThenXrayCentre,
-    detector_params_factory: Callable[[GridScanParams], DetectorParams],
+    detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     """Plan that performs a pin tip centre followed by a gridscan to determine the centre of interest."""
@@ -88,7 +85,7 @@ def pin_centre_then_gridscan_plan(
                     parameters,
                     parameters,
                     oav_params,
-                    detector_params_factory,
+                    detector_params,
                     construct_hyperion_specific_features,
                 )
             )

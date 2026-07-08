@@ -31,6 +31,7 @@ class NexusWriter:
         detector_params: DetectorParams,
         data_shape: tuple[int, int, int],
         scan_points: AxesPoints,
+        full_num_of_images: int,
         *,
         run_number: int | None = None,
         omega_start_deg: float = 0,
@@ -39,7 +40,6 @@ class NexusWriter:
         vds_start_index: int = 0,
         # override default values when there is more than one collection per
         # detector arming event:
-        full_num_of_images: int | None = None,
         meta_data_run_number: int | None = None,
         axis_direction: AxisDirection = AxisDirection.NEGATIVE,
     ) -> None:

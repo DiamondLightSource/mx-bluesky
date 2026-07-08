@@ -27,7 +27,7 @@ class GridscanISPyBCallback(CommonGridscanISPyBCallback):
         """
         assert isinstance(self.params, I02_1FgsParams)
         assert self.grid_scan_params
-        assert self.detector_metadata
+        assert self.detector_params
         assert self.ispyb_ids.data_collection_ids, "No current data collection"
         assert self.data_collection_group_info, "No data collection group"
         data = doc["data"]
@@ -41,9 +41,9 @@ class GridscanISPyBCallback(CommonGridscanISPyBCallback):
             ISPYB_ZOCALO_CALLBACK_LOGGER.info(
                 f"Generating dc info for gridplane XY, omega {omega}"
             )
-            data_collection_number = self.detector_metadata.run_number
+            data_collection_number = self.detector_params.run_number
             file_template = (
-                f"{self.detector_metadata.prefix}_{data_collection_number}_master.h5"
+                f"{self.detector_params.prefix}_{data_collection_number}_master.h5"
             )
             # Snapshots have already been taken in GDA
 

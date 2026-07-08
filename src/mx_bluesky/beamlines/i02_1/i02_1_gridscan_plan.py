@@ -61,7 +61,6 @@ from mx_bluesky.common.parameters.device_composites import (
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     PositiveFloat,
-    create_detector_metadata,
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.common.utils.log import LOGGER
@@ -225,13 +224,10 @@ def i02_1_gridscan_plan(
         composite, params, grid_scan_params
     )
     callbacks = create_gridscan_callbacks(grid_scan_params)
-    detector_metadata = create_detector_metadata(params)
-    detector_params = create_detector_params_for_grid_scan(
-        params, detector_metadata, grid_scan_params
-    )
+    detector_params = create_detector_params_for_grid_scan(params)
 
     @bpp.subs_decorator(callbacks)
-    @ispyb_activation_decorator(params, grid_scan_params, detector_metadata)
+    @ispyb_activation_decorator(params, grid_scan_params, detector_params)
     def decorated_flyscan_plan():
         yield from common_flyscan_xray_centre(
             composite,
