@@ -47,7 +47,6 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
-    GenericGrid,
     GridScanParams,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
@@ -468,7 +467,7 @@ async def test_given_no_diffraction_found_i04_grid_detect_then_xrc_returns_sampl
     set_mock_value(smargon.y.user_readback, initial_y)
     set_mock_value(smargon.z.user_readback, initial_z)
 
-    def fake_xray_centre(parameters: GenericGrid, **__) -> MsgGenerator[GridScanParams]:
+    def fake_xray_centre(*_, **__) -> MsgGenerator[GridScanParams]:
         yield Msg(command="open_run")
         return i04_grid_scan_params_3d
 

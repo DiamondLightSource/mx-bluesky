@@ -52,7 +52,7 @@ class NexusWriter:
         self.source: Source = Source(get_beamline_name(""))
         self.directory: Path = Path(parameters.storage_directory)
         self.start_index: int = vds_start_index
-        self.full_num_of_images: int = full_num_of_images or parameters.num_images
+        self.full_num_of_images: int = full_num_of_images
         self.data_filename: str = (
             f"{parameters.file_name}_{meta_data_run_number}"
             if meta_data_run_number
