@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import Annotated, TypeVar
+from typing import Annotated
 
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams, TriggerMode
 from dodal.devices.eiger import FREE_RUN_MAX_IMAGES
 from dodal.devices.fast_grid_scan import (
-    GridScanParamsCommon,
     ZebraGridScanParamsThreeD,
 )
 from dodal.utils import get_beamline_name, get_run_number
@@ -31,10 +30,6 @@ DETECTOR_SIZE_PER_BEAMLINE = {
     "i03": EIGER2_X_16M_SIZE,
     "i04": EIGER2_X_16M_SIZE,
 }
-
-GridScanParamType = TypeVar(
-    "GridScanParamType", bound=GridScanParamsCommon, covariant=True
-)
 
 
 class GridDetectionParams(BaseModel):
