@@ -81,6 +81,8 @@ def write_userlog(
         Pump status \t{parameters.pump_repeat}\n
         Pump exp time \t{parameters.laser_dwell_s}\n
         Pump delay \t{parameters.laser_delay_s}\n
+        Checker pattern \t{parameters.checker_pattern}\n
+        Pump2 expt time \t{parameters.pre_pump_exposure_s}\n
     """
     with open(userlog_path / userlog_fid, "w") as f:
         f.write(text)
@@ -345,6 +347,8 @@ def start_i24(
         # DCID process depends on detector PVs being set up already
         SSX_LOGGER.debug("Start DCID process")
         complete_filename = cagetstring(pv.eiger_od_filename_rbv)
+        if isinstance(complete_filename, bytes):
+            complete_filename = complete_filename.decode()
         filetemplate = f"{complete_filename}.nxs"
         dcid.generate_dcid(
             beam_settings=beam_settings,
@@ -384,6 +388,12 @@ def start_i24(
         SSX_LOGGER.error(msg)
         raise ValueError(msg)
 
+    # Test moved to start_i24
+    transmission = float(caget(pv.requested_transmission))
+    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+
+    write_userlog(parameters, complete_filename, transmission, wavelength)
+
     # Open the hutch shutter
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
@@ -403,15 +413,10 @@ def finish_i24(
         f"Finish I24 data collection with {parameters.detector_name} detector."
     )
 
-    complete_filename: str
-    transmission = float(caget(pv.requested_transmission))
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
-
     if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
         yield from sup.eiger("return-to-normal", None, dcm, detector_stage)
-        complete_filename = cagetstring(pv.eiger_od_filename_rbv)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name} unrecognised")
 
@@ -420,9 +425,6 @@ def finish_i24(
     yield from bps.trigger(pmac.to_xyz_zero)
     SSX_LOGGER.info("Closing shutter")
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
-
-    # Write a record of what was collected to the processing directory
-    write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
 def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
