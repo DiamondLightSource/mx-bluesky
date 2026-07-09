@@ -75,9 +75,12 @@ def create_nexus_writers(
 
 @pytest.fixture
 def dummy_nexus_writers(
-    parameters: DiffractionExperiment, grid_scan_params: GridScanParams
+    expt_params_for_nexus_tests: DiffractionExperiment,
+    test_three_d_grid_params: GridScanParams,
 ):
-    with create_nexus_writers(parameters, grid_scan_params) as (
+    with create_nexus_writers(
+        expt_params_for_nexus_tests, test_three_d_grid_params
+    ) as (
         nexus_writer_1,
         nexus_writer_2,
     ):
@@ -357,7 +360,7 @@ def test_nexus_writer_writes_beamline_name_correctly(
 ):
     detector_params = create_detector_params_for_grid_scan(expt_params_for_nexus_tests)
     d_size = detector_params.detector_size_constants.det_size_pixels
-    data_shape = (expt_params_for_nexus_tests.num_images, d_size.width, d_size.height)
+    data_shape = (test_three_d_grid_params.num_images, d_size.width, d_size.height)
     nexus_writer = NexusWriter(
         expt_params_for_nexus_tests,
         detector_params,

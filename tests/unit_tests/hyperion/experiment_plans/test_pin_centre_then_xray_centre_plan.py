@@ -397,23 +397,22 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
-    new=MagicMock(),
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.fetch_xrc_results_from_zocalo"
 )
 def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     mock_fetch_xrc_results: MagicMock,
+    mock_grid_detection_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
     grid_scan_params_3d: GridScanParams,
     test_config_files,
     run_engine: RunEngine,
 ):
-    # mock_create_flyscan_params.return_value = (
-    #     test_three_d_grid_params,
-    #     three_d_grid_scan_params,
-    # )
+    mock_grid_detection_callback.return_value.get_grid_parameters.return_value = (
+        grid_scan_params_3d.model_dump()
+    )
     run_engine(
         pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,

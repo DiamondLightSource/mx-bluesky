@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from abc import abstractmethod
 from collections.abc import Iterator
 from itertools import accumulate
 from typing import Annotated, Any, Self
@@ -72,7 +73,7 @@ class RotationExperiment(DiffractionExperiment):
         os.makedirs(self.storage_directory, exist_ok=True)
         run_number = (
             get_run_number(self.storage_directory, self.file_name)
-            if self.run_number is None
+            if not self.run_number
             else self.run_number
         )
         assert self.detector_distance_mm is not None
@@ -106,6 +107,10 @@ class RotationExperiment(DiffractionExperiment):
             return default_aperture
         else:
             return aperture_position
+
+    @property
+    @abstractmethod
+    def num_images(self) -> int: ...
 
 
 class SingleRotationScan(

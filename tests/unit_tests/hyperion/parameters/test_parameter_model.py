@@ -9,8 +9,10 @@ from pydantic import ValidationError
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
-from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperimentWithSample,
+    IspybExperimentType,
+)
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
@@ -43,19 +45,16 @@ def load_centre_collect_params_with_panda(tmp_path, request):
 
 
 @pytest.fixture()
-def minimal_3d_gridscan_params():
-    return {
-        "sample_id": 123,
-        "x_start_um": 0.123,
-        "y_starts_um": [0.777, 2],
-        "z_starts_um": [0.05, 2],
-        "parameter_model_version": "6.0.0",
-        "visit": "cm12345",
-        "file_name": "test_file_name",
-        "x_steps": 5,
-        "y_steps": [7, 9],
-        "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
-    }
+def minimal_diffraction_expt_params() -> DiffractionExperimentWithSample:
+    return DiffractionExperimentWithSample(
+        sample_id=123,
+        parameter_model_version="6.0.0",
+        visit="cm12345",
+        file_name="test_file_name",
+        storage_directory="/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
+        exposure_time_s=0.1,
+        ispyb_experiment_type=IspybExperimentType.GRIDSCAN_3D,
+    )
 
 
 @pytest.fixture()
@@ -88,17 +87,8 @@ def test_minimal_3d_gridscan_params(minimal_gridscan_params: GridScanParams):
         for scan_point in minimal_gridscan_params.scan_points
     )
 
+    assert minimal_gridscan_params.num_images == (5 * 7 + 5 * 9)
     assert minimal_gridscan_params.scan_indices == [0, 35]
-
-
-def test_minimal_expt_params(
-    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
-):
-    assert minimal_diffraction_expt_with_sample.num_images == (5 * 7 + 5 * 9)
-    assert (
-        minimal_diffraction_expt_with_sample.exposure_time_s
-        == GridscanParamConstants.EXPOSURE_TIME_S
-    )
 
 
 def test_cant_do_panda_fgs_with_odd_y_steps(
@@ -147,13 +137,13 @@ def test_param_version(minimal_diffraction_expt_with_sample, version: str, valid
 
 
 def test_default_snapshot_path(
-    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    minimal_diffraction_expt_params: DiffractionExperimentWithSample,
 ):
-    assert minimal_diffraction_expt_with_sample.snapshot_directory == Path(
+    assert minimal_diffraction_expt_params.snapshot_directory == Path(
         "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/snapshots"
     )
 
-    params_with_snapshot_path = minimal_diffraction_expt_with_sample.model_dump()
+    params_with_snapshot_path = minimal_diffraction_expt_params.model_dump()
     params_with_snapshot_path["snapshot_directory"] = "/tmp/my_snapshots"
 
     gridscan_params_with_snapshot_path = DiffractionExperimentWithSample(
