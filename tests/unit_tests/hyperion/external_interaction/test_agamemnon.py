@@ -298,6 +298,7 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
 
 
 @patch("mx_bluesky.common.parameters.rotation.os", new=MagicMock())
+@patch("dodal.utils.os", new=MagicMock())
 @patch("dodal.devices.detector.detector.Path", new=MagicMock())
 @pytest.mark.parametrize(
     "agamemnon_response",
