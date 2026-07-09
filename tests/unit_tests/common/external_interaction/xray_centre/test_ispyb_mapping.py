@@ -12,7 +12,9 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
 
 
 @patch("ispyb.open", autospec=True)
-def test_ispyb_deposition_rounds_position_to_int():
+def test_ispyb_deposition_rounds_position_to_int(
+    mock_ispyb_conn: MagicMock,
+):
     assert construct_comment_for_gridscan(
         DataCollectionGridInfo(
             0.1,

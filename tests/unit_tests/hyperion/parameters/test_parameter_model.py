@@ -48,7 +48,7 @@ def load_centre_collect_params_with_panda(tmp_path, request):
 def minimal_diffraction_expt_params() -> DiffractionExperimentWithSample:
     return DiffractionExperimentWithSample(
         sample_id=123,
-        parameter_model_version="6.0.0",
+        parameter_model_version="6.0.0",  # type: ignore
         visit="cm12345",
         file_name="test_file_name",
         storage_directory="/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",

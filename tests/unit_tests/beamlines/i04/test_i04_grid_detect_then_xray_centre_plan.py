@@ -594,7 +594,7 @@ def null_decorator(plan):
 
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_decorator",
-    lambda parameters: null_decorator,
+    lambda *_: null_decorator,
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
@@ -643,7 +643,7 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
 
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_decorator",
-    lambda parameters: null_decorator,
+    lambda *_: null_decorator,
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
