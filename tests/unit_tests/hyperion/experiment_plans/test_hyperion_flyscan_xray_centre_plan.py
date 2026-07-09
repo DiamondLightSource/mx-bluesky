@@ -102,7 +102,7 @@ class TestFlyscanXrayCentrePlan:
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
         run_engine_with_subs: ReWithSubs,
-        beamline_specific: BeamlineSpecificFGSFeatures,
+        beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
     ):
         run_engine, _ = run_engine_with_subs
 
@@ -120,7 +120,7 @@ class TestFlyscanXrayCentrePlan:
                         minimal_diffraction_expt_with_sample
                     ),
                     grid_scan_params_3d,
-                    beamline_specific,
+                    beamline_specific_with_hyperion_flyscan_xrc_composite,
                 )
             )
 
@@ -159,7 +159,7 @@ class TestFlyscanXrayCentrePlan:
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
-        beamline_specific: BeamlineSpecificFGSFeatures,
+        beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         zocalo: ZocaloResults,
     ):
         hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
@@ -182,7 +182,7 @@ class TestFlyscanXrayCentrePlan:
                     minimal_diffraction_expt_with_sample
                 ),
                 grid_scan_params_3d,
-                beamline_specific,
+                beamline_specific_with_hyperion_flyscan_xrc_composite,
             )
         )
 
@@ -212,9 +212,10 @@ class TestFlyscanXrayCentrePlan:
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
-        beamline_specific: BeamlineSpecificFGSFeatures,
+        beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         run_engine: RunEngine,
     ):
+        grid_scan_params_3d.x_step_size_um = 10000
         minimal_diffraction_expt_with_sample.exposure_time_s = 0.01
         detector_params = (
             create_detector_params_for_grid_scan_with_hyperion_feature_settings(
@@ -230,7 +231,7 @@ class TestFlyscanXrayCentrePlan:
                     minimal_diffraction_expt_with_sample,
                     detector_params,
                     grid_scan_params_3d,
-                    beamline_specific,
+                    beamline_specific_with_hyperion_flyscan_xrc_composite,
                 )
             )
 
@@ -260,7 +261,7 @@ class TestFlyscanXrayCentrePlan:
         grid_scan_params_3d: GridScanParams,
         fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
         sim_run_engine: RunEngineSimulator,
-        beamline_specific: BeamlineSpecificFGSFeatures,
+        beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
     ):
         sim_run_engine.add_read_handler_for(
@@ -278,7 +279,7 @@ class TestFlyscanXrayCentrePlan:
                     minimal_diffraction_expt_with_sample
                 ),
                 grid_scan_params_3d,
-                beamline_specific,
+                beamline_specific_with_hyperion_flyscan_xrc_composite,
             )
         )
 

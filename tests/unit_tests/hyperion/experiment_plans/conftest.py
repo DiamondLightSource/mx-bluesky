@@ -295,13 +295,13 @@ def grid_detection_callback_with_detected_grid():
 
 
 @pytest.fixture
-def beamline_specific(
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+def beamline_specific_with_hyperion_flyscan_xrc_composite(
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_grid_detect_xrc_devices,
+        hyperion_flyscan_xrc_composite,
         minimal_diffraction_expt_with_sample,
         grid_scan_params_3d,
     )

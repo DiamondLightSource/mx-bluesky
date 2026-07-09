@@ -222,7 +222,7 @@ def create_detector_params_for_grid_scan(
     )
     run_number = (
         get_run_number(params.storage_directory, params.file_name)
-        if params.run_number is None
+        if not params.run_number
         else params.run_number
     )
     return DetectorParams(

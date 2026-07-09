@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
@@ -13,6 +14,7 @@ from mx_bluesky.common.parameters.components import (
     IspybExperimentType,
     OptionalGonioAngleStarts,
 )
+from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
@@ -87,9 +89,10 @@ class OddYStepsError(Exception): ...
 class PinTipCentreThenXrayCentre(
     DiffractionExperimentWithSample, GridDetectionParams, OptionalGonioAngleStarts
 ):
-    # Override the default field type
+    # Overrides of defaults in superclasses
+    exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
-
+    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
     tip_offset_um: float = 0

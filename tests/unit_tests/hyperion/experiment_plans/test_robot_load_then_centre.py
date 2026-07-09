@@ -56,7 +56,7 @@ def sample_is_not_loaded(sim_run_engine, sample_is_loaded):
     mock_current_sample(sim_run_engine, SampleLocation(1, 1))
 
 
-def mock_pin_centre_then_gridscan_plan(_, __, ___):
+def mock_pin_centre_then_gridscan_plan(*args, **kwargs):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 

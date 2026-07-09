@@ -155,7 +155,7 @@ def test_create_detector_params_for_grid_scan_populates_from_diffraction_expt(
         detector_params.trigger_mode
         == minimal_diffraction_expt_with_sample.trigger_mode
     )
-    assert detector_params.run_number == 0
+    assert detector_params.run_number == 1
 
 
 @patch("mx_bluesky.common.parameters.gridscan.get_run_number")
