@@ -74,6 +74,12 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
     """
 
     def __init__(self, param_type: type[T]) -> None:
+        """
+        Construct a new instance of the callbacks.
+
+        Args:
+            param_type: Concrete type of the parameter model that will be deserialized in the start document.
+        """
         super().__init__(NEXUS_LOGGER)
         self.param_type: type[T] = param_type
         self.run_start_uid: str | None = None
