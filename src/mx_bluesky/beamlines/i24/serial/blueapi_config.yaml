@@ -16,7 +16,7 @@ stomp:
   enabled: true
   url: tcp://i24-control.diamond.ac.uk:61613
 logging:
-  level: "INFO"
+  level: "DEBUG"
   graylog:
     enabled: true
     url: tcp://graylog-log-target.diamond.ac.uk:12231/

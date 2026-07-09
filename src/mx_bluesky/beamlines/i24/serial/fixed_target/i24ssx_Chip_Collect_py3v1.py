@@ -385,6 +385,13 @@ def start_i24(
         SSX_LOGGER.error(msg)
         raise ValueError(msg)
 
+    # Test moved to start_i24
+    complete_filename: str
+    transmission = float(caget(pv.requested_transmission))
+    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+
+    write_userlog(parameters, complete_filename, transmission, wavelength)
+
     # Open the hutch shutter
     yield from bps.abs_set(shutter, ShutterDemand.OPEN, wait=True)
 
@@ -403,15 +410,15 @@ def finish_i24(
         f"Finish I24 data collection with {parameters.detector_name} detector."
     )
 
-    complete_filename: str
-    transmission = float(caget(pv.requested_transmission))
-    wavelength = yield from bps.rd(dcm.wavelength_in_a)
+    # complete_filename: str
+    # transmission = float(caget(pv.requested_transmission))
+    # wavelength = yield from bps.rd(dcm.wavelength_in_a)
 
     if parameters.detector_name == "eiger":
         SSX_LOGGER.debug("Finish I24 Eiger")
         yield from reset_zebra_when_collection_done_plan(zebra)
         yield from sup.eiger("return-to-normal", None, dcm)
-        complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
+        # complete_filename = cagetstring(pv.eiger_ODfilenameRBV)  # type: ignore
     else:
         raise ValueError(f"{parameters.detector_name} unrecognised")
 
@@ -422,7 +429,8 @@ def finish_i24(
     yield from bps.abs_set(shutter, ShutterDemand.CLOSE, wait=True)
 
     # Write a record of what was collected to the processing directory
-    write_userlog(parameters, complete_filename, transmission, wavelength)
+    # Test moved to start_i24
+    # write_userlog(parameters, complete_filename, transmission, wavelength)
 
 
 def run_aborted_plan(pmac: PMAC, dcid: DCID, exception: Exception):
@@ -577,6 +585,9 @@ def tidy_up_after_collection_plan(
 
     yield from finish_i24(zebra, pmac, shutter, dcm, parameters)
 
+    end_time = datetime.now()
+    SSX_LOGGER.debug(f"Collection end time {end_time}")
+    dcid.collection_complete(end_time, aborted=False)
     SSX_LOGGER.debug("Notify DCID of end of collection.")
     dcid.notify_end()
 
