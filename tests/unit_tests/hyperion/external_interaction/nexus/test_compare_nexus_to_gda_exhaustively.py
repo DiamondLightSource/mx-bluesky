@@ -352,13 +352,11 @@ def fake_rotation_scan(
 ):
     single_scan_parameters = next(parameters.single_rotation_scans)
 
-    @bpp.subs_decorator(subscription)
     @bpp.set_run_key_decorator("rotation_scan_with_cleanup_and_subs")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": CONST.PLAN.ROTATION_OUTER,
             "mx_bluesky_parameters": single_scan_parameters.model_dump_json(),
-            "activate_callbacks": "RotationNexusFileCallback",
         }
     )
     def plan():
@@ -371,4 +369,17 @@ def fake_rotation_scan(
             rotation_devices.beamsize,
         )
 
-    return plan()
+    @bpp.subs_decorator(subscription)
+    @bpp.set_run_key_decorator("multi_rotation_scan")
+    @bpp.run_decorator(
+        md={
+            "subplan_name": CONST.PLAN.ROTATION_MULTI,
+            "full_num_of_images": parameters.num_images,
+            "meta_data_run_number": parameters.detector_params.run_number,
+            "activate_callbacks": "RotationNexusFileCallback",
+        }
+    )
+    def multi_plan():
+        yield from plan()
+
+    return multi_plan()
