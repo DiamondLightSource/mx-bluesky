@@ -92,10 +92,6 @@ class IspybExperimentType(StrEnum):
     GRIDSCAN_3D = "Mesh3D"
 
 
-class WithNexusWriter(BaseModel):
-    indices_per_writer: tuple[int]
-
-
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
         extra="allow",
