@@ -70,7 +70,7 @@ from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import 
 )
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
+from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 PING_TIMEOUT_S = 1
 
@@ -83,9 +83,9 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=PinTipCentreThenXrayCentre),
+        GridscanNexusFileCallback(param_type=RobotLoadThenCentre),
         GridDetectAndScanISPyBCallback(
-            param_type=PinTipCentreThenXrayCentre,
+            param_type=RobotLoadThenCentre,
             emit=ZocaloCallback(
                 CONST.PLAN.DO_FGS,
                 CONST.ZOCALO_ENV,

@@ -107,6 +107,13 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
         *,
         emit: Callable[..., Any] | None = None,
     ) -> None:
+        """
+        Construct a new instance of the callbacks.
+
+        Args:
+            param_type: Concrete type of the parameter model that will be deserialized in the start document.
+            emit: Optional downstream callback that will be chained onto this callback to receive modified events.
+        """
         super().__init__(emit=emit)
         self.ispyb: StoreInIspyb
         self.param_type = param_type

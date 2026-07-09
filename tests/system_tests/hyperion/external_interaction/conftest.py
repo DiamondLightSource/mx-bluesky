@@ -1,6 +1,8 @@
 from collections.abc import Callable, Generator, Sequence
 from copy import deepcopy
+from dataclasses import asdict
 from functools import partial
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -18,6 +20,7 @@ from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
+from dodal.devices.fast_grid_scan import PandAFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -44,12 +47,15 @@ from ophyd_async.core import (
     completed_status,
     set_mock_value,
 )
+from ophyd_async.fastcs.panda import HDFPanda
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -61,13 +67,12 @@ from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ....conftest import (
     TEST_RESULT_MEDIUM,
     SimConstants,
+    nexus_test_diffraction_expt_with_sample,
     pin_tip_edge_data,
-    raw_params_from_file,
 )
 
 
@@ -194,20 +199,17 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 
 @pytest.fixture
-def dummy_params(tmp_path):
-    params_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-        tmp_path,
-    )
-
-    dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
-    dummy_params.visit = SimConstants.ST_VISIT
-    dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
-    return dummy_params
+def external_callback_grid_scan_params(nexus_test_gridscan_params) -> GridScanParams:
+    return nexus_test_gridscan_params
 
 
 @pytest.fixture
-def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
+def external_callback_expt_params(tmp_path: Path) -> DiffractionExperimentWithSample:
+    return nexus_test_diffraction_expt_with_sample(tmp_path)
+
+
+@pytest.fixture
+def dummy_ispyb(ispyb_config_path) -> StoreInIspyb:
     return StoreInIspyb(ispyb_config_path)
 
 
@@ -380,6 +382,20 @@ def fgs_composite_for_fake_zocalo(
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite
+
+
+@pytest.fixture
+def hyperion_flyscan_xrc_composite_for_external_callbacks(
+    fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
+    panda: HDFPanda,
+    panda_fast_grid_scan: PandAFastGridScan,
+) -> HyperionGridDetectThenXRayCentreComposite:
+
+    return HyperionGridDetectThenXRayCentreComposite(
+        panda=panda,
+        panda_fast_grid_scan=panda_fast_grid_scan,
+        **asdict(fgs_composite_for_fake_zocalo),
+    )
 
 
 @pytest.fixture

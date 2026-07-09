@@ -24,5 +24,4 @@ class RobotLoadThenCentre(PinTipCentreThenXrayCentre):
 
     @property
     def pin_centre_then_xray_centre_params(self) -> PinTipCentreThenXrayCentre:
-        my_params = self.model_dump()
-        return PinTipCentreThenXrayCentre(**my_params)
+        return self

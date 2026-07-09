@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Literal
 from unittest.mock import MagicMock, patch
 
@@ -29,6 +30,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 )
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
+    DataCollectionGroupInfo,
     DataCollectionInfo,
     Orientation,
     ScanDataInfo,
@@ -37,7 +39,14 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperimentWithSample,
+    IspybExperimentType,
+)
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -54,19 +63,20 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import (
-    GenericGridWithHyperionDetectorParams,
-    GridScanWithEdgeDetect,
-    HyperionSpecifiedThreeDGridScan,
-)
+from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
-from ....conftest import SimConstants, replace_all_tmp_paths
+from ....conftest import (
+    SimConstants,
+    nexus_test_diffraction_expt_with_sample,
+    nexus_test_gridscan_params,
+    raw_params_from_file,
+    replace_all_tmp_paths,
+)
 from ...conftest import (
     DATA_COLLECTION_COLUMN_MAP,
     compare_actual_and_expected,
     compare_comment,
 )
-from .conftest import raw_params_from_file
 
 EXPECTED_DATACOLLECTION_FOR_ROTATION = {
     "wavelength": 0.71,
@@ -109,19 +119,43 @@ GRID_INFO_COLUMN_MAP = {
 
 
 @pytest.fixture
-def dummy_data_collection_group_info(dummy_params):
+def dummy_data_collection_group_info(
+    gridscan_expt_params_for_ispyb,
+) -> DataCollectionGroupInfo:
     return populate_data_collection_group(
-        dummy_params,
+        gridscan_expt_params_for_ispyb,
     )
+
+
+@pytest.fixture()
+def gridscan_expt_params_for_ispyb(tmp_path: Path) -> DiffractionExperimentWithSample:
+    dummy_params = nexus_test_diffraction_expt_with_sample(tmp_path)
+    dummy_params.visit = SimConstants.ST_VISIT
+    dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
+    return dummy_params
+
+
+@pytest.fixture()
+def gridscan_params_for_ispyb(tmp_path) -> GridScanParams:
+    return nexus_test_gridscan_params(tmp_path)
 
 
 @pytest.fixture
-def dummy_scan_data_info_for_begin_xy(dummy_params):
+def dummy_scan_data_info_for_begin_xy(
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+):
+    detector_params = create_detector_params_for_grid_scan(
+        gridscan_expt_params_for_ispyb
+    )
     info = DataCollectionInfo(
-        data_collection_number=dummy_params.detector_params.run_number,
+        data_collection_number=detector_params.run_number,
     )
     info = populate_remaining_data_collection_info(
-        "MX-Bluesky: Xray centring 1 -", None, info, dummy_params
+        "MX-Bluesky: Xray centring 1 -",
+        None,
+        info,
+        gridscan_expt_params_for_ispyb,
+        detector_params,
     )
     return ScanDataInfo(
         data_collection_info=info,
@@ -129,14 +163,23 @@ def dummy_scan_data_info_for_begin_xy(dummy_params):
 
 
 @pytest.fixture
-def dummy_scan_data_info_for_begin_xz(dummy_params):
-    run_number = dummy_params.detector_params.run_number + 1
+def dummy_scan_data_info_for_begin_xz(
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+):
+    detector_params = create_detector_params_for_grid_scan(
+        gridscan_expt_params_for_ispyb
+    )
+    run_number = detector_params.run_number + 1
     info1 = DataCollectionInfo(
         data_collection_number=run_number,
     )
     info = info1
     info = populate_remaining_data_collection_info(
-        "MX-Bluesky: Xray centring 2 -", None, info, dummy_params
+        "MX-Bluesky: Xray centring 2 -",
+        None,
+        info,
+        gridscan_expt_params_for_ispyb,
+        detector_params,
     )
     return ScanDataInfo(
         data_collection_info=info,
@@ -149,29 +192,29 @@ def storage_directory(tmp_path) -> str:
 
 
 @pytest.fixture
-def grid_detect_then_xray_centre_parameters(tmp_path):
+def grid_detect_then_xray_centre_parameters(tmp_path) -> PinTipCentreThenXrayCentre:
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/ispyb_gridscan_system_test_parameters.json",
         tmp_path,
     )
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
     json_dict["visit"] = SimConstants.ST_VISIT
-    return GridScanWithEdgeDetect(**json_dict)
+    return PinTipCentreThenXrayCentre(**json_dict)
 
 
 def scan_xy_data_info_for_update(
     data_collection_group_id,
-    dummy_params: HyperionSpecifiedThreeDGridScan,
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+    gridscan_params_for_ispyb: GridScanParams,
     scan_data_info_for_begin,
 ):
     scan_data_info_for_update = deepcopy(scan_data_info_for_begin)
     scan_data_info_for_update.data_collection_info.parent_id = data_collection_group_id
-    assert dummy_params is not None
     scan_data_info_for_update.data_collection_grid_info = DataCollectionGridInfo(
-        dx_in_mm=dummy_params.x_step_size_um,
-        dy_in_mm=dummy_params.y_step_sizes_um[0],
-        steps_x=dummy_params.x_steps,
-        steps_y=dummy_params.y_steps[0],
+        dx_in_mm=gridscan_params_for_ispyb.x_step_size_um,
+        dy_in_mm=gridscan_params_for_ispyb.y_step_sizes_um[0],
+        steps_x=gridscan_params_for_ispyb.x_steps,
+        steps_y=gridscan_params_for_ispyb.y_steps[0],
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -191,20 +234,23 @@ def scan_xy_data_info_for_update(
 def scan_data_infos_for_update_3d(
     ispyb_ids,
     scan_xy_data_info_for_update,
-    dummy_params: HyperionSpecifiedThreeDGridScan,
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+    gridscan_params_for_ispyb: GridScanParams,
 ):
-    run_number = dummy_params.detector_params.run_number + 1
+    detector_params = create_detector_params_for_grid_scan(
+        gridscan_expt_params_for_ispyb
+    )
+    run_number = detector_params.run_number + 1
     info = DataCollectionInfo(
         data_collection_number=run_number,
     )
     xz_data_collection_info = info
 
-    assert dummy_params is not None
     data_collection_grid_info = DataCollectionGridInfo(
-        dx_in_mm=dummy_params.x_step_size_um,
-        dy_in_mm=dummy_params.y_step_sizes_um[1],
-        steps_x=dummy_params.x_steps,
-        steps_y=dummy_params.y_steps[1],
+        dx_in_mm=gridscan_params_for_ispyb.x_step_size_um,
+        dy_in_mm=gridscan_params_for_ispyb.y_step_sizes_um[1],
+        steps_x=gridscan_params_for_ispyb.x_steps,
+        steps_y=gridscan_params_for_ispyb.y_steps[1],
         microns_per_pixel_x=1.25,
         microns_per_pixel_y=1.25,
         # cast coordinates from numpy int64 to avoid mysql type conversion issues
@@ -217,14 +263,15 @@ def scan_data_infos_for_update_3d(
         construct_comment_for_gridscan(data_collection_grid_info),
         ispyb_ids.data_collection_group_id,
         xz_data_collection_info,
-        dummy_params,
+        gridscan_expt_params_for_ispyb,
+        detector_params,
     )
     xz_data_collection_info.parent_id = ispyb_ids.data_collection_group_id
 
     scan_xz_data_info_for_update = ScanDataInfo(
         data_collection_id=ispyb_ids.data_collection_ids[1],
         data_collection_info=xz_data_collection_info,
-        data_collection_grid_info=(data_collection_grid_info),
+        data_collection_grid_info=data_collection_grid_info,
     )
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
@@ -250,7 +297,7 @@ def test_ispyb_deposition_comment_correct_on_failure(
 @pytest.mark.system_test
 def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
     mock_datetime: MagicMock,
-    dummy_params,
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
     dummy_ispyb: StoreInIspyb,
     fetch_datacollection_attribute: Callable[..., Any],
     dummy_data_collection_group_info,
@@ -262,7 +309,9 @@ def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
         dummy_data_collection_group_info, [dummy_scan_data_info_for_begin_xy]
     )
     dummy_ispyb.end_deposition(
-        ispyb_ids, "fail", f"Failed with very big object repr {dummy_params}"
+        ispyb_ids,
+        "fail",
+        f"Failed with very big object repr {gridscan_expt_params_for_ispyb}",
     )
 
     expected_values = {"endTime": timestamp, "runStatus": "DataCollection Unsuccessful"}
@@ -277,7 +326,8 @@ def test_ispyb_deposition_comment_handles_long_comment_and_commits_end_status(
 def test_ispyb_deposition_comment_correct_for_3d_on_failure(
     dummy_ispyb: StoreInIspyb,
     fetch_comment: Callable[..., Any],
-    dummy_params,
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+    gridscan_params_for_ispyb: GridScanParams,
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin_xy,
     dummy_scan_data_info_for_begin_xz,
@@ -287,7 +337,8 @@ def test_ispyb_deposition_comment_correct_for_3d_on_failure(
         [dummy_scan_data_info_for_begin_xy, dummy_scan_data_info_for_begin_xz],
     )
     scan_data_infos = generate_scan_data_infos(
-        dummy_params,
+        gridscan_expt_params_for_ispyb,
+        gridscan_params_for_ispyb,
         dummy_scan_data_info_for_begin_xy,
         IspybExperimentType.GRIDSCAN_3D,
         ispyb_ids,
@@ -323,7 +374,8 @@ def test_can_store_2d_ispyb_data_correctly_when_in_error(
     exp_num_of_grids: Literal[1, 2],
     success: bool,
     fetch_comment: Callable[..., Any],
-    dummy_params,
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+    gridscan_params_for_ispyb: GridScanParams,
     dummy_data_collection_group_info,
     dummy_scan_data_info_for_begin_xy,
     dummy_scan_data_info_for_begin_xz,
@@ -337,7 +389,11 @@ def test_can_store_2d_ispyb_data_correctly_when_in_error(
         dummy_data_collection_group_info, scan_data_infos
     )
     scan_data_infos = generate_scan_data_infos(
-        dummy_params, dummy_scan_data_info_for_begin_xy, experiment_type, ispyb_ids
+        gridscan_expt_params_for_ispyb,
+        gridscan_params_for_ispyb,
+        dummy_scan_data_info_for_begin_xy,
+        experiment_type,
+        ispyb_ids,
     )
 
     ispyb_ids = ispyb.update_deposition(ispyb_ids, scan_data_infos)
@@ -374,8 +430,9 @@ def test_can_store_2d_ispyb_data_correctly_when_in_error(
 
 
 def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
-    dummy_params,
-    dummy_data_collection_group_info,
+    gridscan_expt_params_for_ispyb: DiffractionExperimentWithSample,
+    gridscan_params_for_ispyb: GridScanParams,
+    dummy_data_collection_group_info: DataCollectionGroupInfo,
     dummy_scan_data_info_for_begin_xy,
     dummy_scan_data_info_for_begin_xz,
     ispyb_config_path: str,
@@ -389,7 +446,11 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
         dummy_data_collection_group_info, scan_data_infos
     )
     scan_data_infos = generate_scan_data_infos(
-        dummy_params, dummy_scan_data_info_for_begin_xy, experiment_type, ispyb_ids
+        gridscan_expt_params_for_ispyb,
+        gridscan_params_for_ispyb,
+        dummy_scan_data_info_for_begin_xy,
+        experiment_type,
+        ispyb_ids,
     )
     scan_data_infos[-1].data_collection_info.xbeam = np.float64(
         scan_data_infos[-1].data_collection_info.xbeam
@@ -404,7 +465,7 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
 def test_ispyb_deposition_in_gridscan(
     run_engine: RunEngine,
     grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
-    grid_detect_then_xray_centre_parameters: GridScanWithEdgeDetect,
+    grid_detect_then_xray_centre_parameters: PinTipCentreThenXrayCentre,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
@@ -416,15 +477,16 @@ def test_ispyb_deposition_in_gridscan(
     set_mock_value(
         grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
     )
-    ispyb_callback = GridDetectAndScanISPyBCallback(
-        GenericGridWithHyperionDetectorParams
-    )
+    ispyb_callback = GridDetectAndScanISPyBCallback(DiffractionExperimentWithSample)
     run_engine.subscribe(ispyb_callback)
     run_engine(
         grid_detect_then_xray_centre(
             grid_detect_then_xray_centre_composite,
             grid_detect_then_xray_centre_parameters,
-            HyperionSpecifiedThreeDGridScan,
+            grid_detect_then_xray_centre_parameters,
+            create_detector_params_for_grid_scan(
+                grid_detect_then_xray_centre_parameters
+            ),
             construct_hyperion_specific_features,
         )
     )
@@ -608,18 +670,25 @@ def test_ispyb_deposition_in_rotation_plan(
 
 
 def generate_scan_data_infos(
-    dummy_params,
+    dummy_params: DiffractionExperimentWithSample,
+    grid_scan_params: GridScanParams,
     dummy_scan_data_info_for_begin: ScanDataInfo,
     experiment_type: IspybExperimentType,
     ispyb_ids: IspybIds,
 ) -> Sequence[ScanDataInfo]:
     xy_scan_data_info = scan_xy_data_info_for_update(
-        ispyb_ids.data_collection_group_id, dummy_params, dummy_scan_data_info_for_begin
+        ispyb_ids.data_collection_group_id,
+        dummy_params,
+        grid_scan_params,
+        dummy_scan_data_info_for_begin,
     )
     xy_scan_data_info.data_collection_id = ispyb_ids.data_collection_ids[0]
     if experiment_type == IspybExperimentType.GRIDSCAN_3D:
         scan_data_infos = scan_data_infos_for_update_3d(
-            ispyb_ids, xy_scan_data_info, dummy_params
+            ispyb_ids,
+            xy_scan_data_info,
+            dummy_params,
+            grid_scan_params,
         )
     else:
         scan_data_infos = [xy_scan_data_info]
