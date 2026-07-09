@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Annotated, TypeVar
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams, TriggerMode
 from dodal.devices.eiger import FREE_RUN_MAX_IMAGES
@@ -14,19 +13,14 @@ from dodal.utils import get_beamline_name, get_run_number
 from pydantic import BaseModel, Field, model_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
-from scanspec.specs import Concat, Line, Product, Static
+from scanspec.specs import Line, Product, Static
 
 from mx_bluesky.common.parameters.components import (
     DiffractionExperiment,
-    DiffractionExperimentWithSample,
-    IspybExperimentType,
-    OptionalGonioAngleStarts,
-    XyzStarts,
 )
 from mx_bluesky.common.parameters.constants import (
     DetectorParamConstants,
     GridscanParamConstants,
-    HardwareConstants,
 )
 
 # TODO Remove this https://github.com/DiamondLightSource/mx-bluesky/issues/1748
@@ -182,32 +176,6 @@ class GridScanParams3D(GridScanParams):
         return self
 
 
-class GenericGrid(
-    DiffractionExperimentWithSample,
-    OptionalGonioAngleStarts,
-):
-    """
-    Parameters used in every MX diffraction experiment using grids. This model should
-    be used by plans which have no knowledge of the grid specifications - i.e before
-    automatic grid detection has completed.
-
-    Params in GenericGrid currently must be the same for each grid in the gridscan.
-    """
-
-    # TODO remove these - now used in GridDetectionParams
-    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
-    grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
-
-    # Overrides of default values in the superclass
-    exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
-    ispyb_experiment_type: IspybExperimentType = Field(
-        default=IspybExperimentType.GRIDSCAN_3D
-    )
-    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
-
-    tip_offset_um: float = Field(default=HardwareConstants.TIP_OFFSET_UM)
-
-
 # We currently only arm the detector once, regardless of total grids. Detector params
 # must be the same for each grid
 def create_detector_params_for_grid_scan(
@@ -245,97 +213,6 @@ def create_detector_params_for_grid_scan(
 
 PositiveInt = Annotated[int, Field(gt=0)]
 PositiveFloat = Annotated[float, Field(gt=0)]
-
-
-class SpecifiedGrids(GenericGrid, XyzStarts):
-    """A specified grid is one which has defined values for the start position,
-    grid and box sizes, etc., as opposed to parameters for a plan which will create
-    those parameters at some point (e.g. through optical pin detection)."""
-
-    # See https://github.com/DiamondLightSource/mx-bluesky/issues/1634 for a better structure for this
-    # class
-
-    # TODO remove these - now used in GridScanParams
-    omega_starts_deg: list[int] = Field(
-        default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
-    )
-    x_step_size_um: PositiveFloat = Field(
-        default=GridscanParamConstants.BOX_WIDTH_UM
-    )  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
-    # In a 3D grid scan, y_steps[0] and y_steps[1] refers to Y and Z respectively.
-    # We do an omega rotation between scanning across N dimensions to make N different axes
-    y_step_sizes_um: list[PositiveFloat] = Field(
-        default=[GridscanParamConstants.BOX_WIDTH_UM] * 2
-    )
-    x_steps: PositiveInt  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
-    y_steps: list[PositiveInt]
-
-    @model_validator(mode="after")
-    def _check_lengths_are_same(self):
-        fields = {
-            "omega_starts_deg": self.omega_starts_deg,
-            "y_step_sizes_um": self.y_step_sizes_um,
-            "y_steps": self.y_steps,
-            "y_starts_um": self.y_starts_um,
-            "z_starts_um": self.z_starts_um,
-        }
-
-        name_and_length = {name: len(value) for name, value in fields.items()}
-        lengths = name_and_length.values()
-        if len(set(lengths)) != 1:
-            details = "\n".join(
-                f"  {name}: length={len(value)}, value={value}"
-                for name, value in fields.items()
-            )
-
-            raise ValueError("Fields must all have the same length:\n" + details)
-
-        return self
-
-    @property
-    def num_grids(self):
-        return len(self.y_steps)
-
-    def __len__(self) -> int:
-        return self.num_grids
-
-    @property
-    def grid_specs(self) -> list[Product[str]]:
-        _grid_specs = []
-        for idx in range(self.num_grids):
-            x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
-            y_end = self.y_starts_um[idx] + self.y_step_sizes_um[idx] * (
-                self.y_steps[idx] - 1
-            )
-            grid_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
-            grid_y = Line("sam_y", self.y_starts_um[idx], y_end, self.y_steps[idx])
-            grid_z = Static("sam_z", self.z_starts_um[idx])
-            _grid_specs.append(grid_y.zip(grid_z) * ~grid_x)
-        return _grid_specs
-
-    @property
-    def scan_spec(self) -> Product[str] | Concat[str]:
-        """A fully specified ScanSpec object representing all grids, with x, y, z and
-        omega positions."""
-
-        _scan_spec = self.grid_specs[0]
-
-        for idx in range(1, self.num_grids - 1):
-            _scan_spec = _scan_spec.concat(
-                self.grid_specs[idx].concat(self.grid_specs[idx + 1])
-            )
-        return _scan_spec
-
-    # TODO remove this in favour of GridScanParams.scan_points
-    @property
-    def scan_points(self) -> list[AxesPoints[str]]:
-        """A list of all the points in the scan_spec for each grid."""
-        _scan_points = []
-        for grid in range(self.num_grids):
-            _scan_points.append(
-                ScanPath(self.grid_specs[grid].calculate()).consume().midpoints
-            )
-        return _scan_points
 
 
 def fast_gridscan_params(

@@ -12,13 +12,8 @@ from mx_bluesky.common.parameters.constants import DetectorParamConstants
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     GridScanParams3D,
-    SpecifiedGrids,
     create_detector_params_for_grid_scan,
 )
-
-
-class GridParamsTest(SpecifiedGrids):
-    def fast_gridscan_params(self): ...  # type: ignore
 
 
 @pytest.mark.parametrize(

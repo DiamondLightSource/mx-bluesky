@@ -34,7 +34,6 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.gridscan import (
-    GenericGrid,
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.common.utils.exceptions import WarningError
@@ -218,7 +217,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, _ = fake_devices
-    cb = GridDetectAndScanISPyBCallback(param_type=GenericGrid)
+    cb = GridDetectAndScanISPyBCallback(param_type=DiffractionExperimentWithSample)
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     run_engine.subscribe(cb)
 

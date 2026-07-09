@@ -102,7 +102,6 @@ from mx_bluesky.common.parameters.device_composites import (
     GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import (
-    GenericGrid,
     GridDetectionParams,
     create_detector_params_for_grid_scan,
 )
@@ -468,15 +467,6 @@ def beamline_specific(
         read_pre_flyscan_plan=MagicMock(),
         read_during_collection_plan=MagicMock(),
     )
-
-
-@pytest.fixture
-def test_full_grid_scan_params(tmp_path):
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
-        tmp_path,
-    )
-    return GenericGrid(**params)
 
 
 @pytest.fixture

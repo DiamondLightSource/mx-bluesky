@@ -1149,13 +1149,6 @@ def simulate_xrc_result(
 # a better organisation of this
 
 
-def default_raw_gridscan_params(
-    tmp_path,
-    json_file="tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-):
-    return raw_params_from_file(json_file, tmp_path)
-
-
 def nexus_test_diffraction_expt_with_sample(tmp_path: Path):
     dummy_params = DiffractionExperimentWithSample(
         **raw_params_from_file(

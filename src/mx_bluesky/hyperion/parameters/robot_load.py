@@ -5,7 +5,6 @@ from mx_bluesky.common.parameters.components import (
     WithSnapshot,
     WithVisit,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
@@ -17,7 +16,7 @@ class RobotLoadAndEnergyChange(
     pass
 
 
-class RobotLoadThenCentre(GenericGrid):
+class RobotLoadThenCentre(PinTipCentreThenXrayCentre):
     @property
     def robot_load_params(self) -> RobotLoadAndEnergyChange:
         my_params = self.model_dump()
