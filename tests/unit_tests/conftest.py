@@ -41,7 +41,7 @@ from dodal.devices.fast_grid_scan import (
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.slits import MinimalSlits
@@ -438,7 +438,6 @@ async def fake_fgs_composite(
         eiger=i03.eiger.build(mock=True),
         gonio=smargon,
         synchrotron=synchrotron,
-        zocalo=zocalo,
     )
 
     set_mock_attr(
@@ -701,28 +700,6 @@ def oav_parameters_for_rotation(
     oav_config_path = test_config_files["oav_config_json"]
     # mock_daq_config[oav_config_path] = json.loads(oav_config_path)
     return OAVParameters(get_config_client(), oav_config_json=oav_config_path)
-
-
-@pytest.fixture
-def oav(mock_daq_config: PathToMockDataDict, test_config_files):
-    parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"],
-        test_config_files["display_config"],
-        get_config_client(),
-    )
-    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
-
-    set_mock_value(oav.zoom_controller.level, "5.0x")
-    set_mock_value(oav.grid_snapshot.x_size, 1024)
-    set_mock_value(oav.grid_snapshot.y_size, 768)
-
-    set_mock_attr(
-        oav.snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
-    )
-    set_mock_attr(
-        oav.grid_snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
-    )
-    yield oav
 
 
 @pytest.fixture()

@@ -34,7 +34,7 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
     SmargonSpeedError,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     create_detector_params_for_grid_scan_with_hyperion_feature_settings,
@@ -65,7 +65,7 @@ def _custom_msg(command_name: str):
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
 ):
     capture_table = DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64])
     set_mock_value(hyperion_flyscan_xrc_composite.panda.data.datasets, capture_table)
@@ -98,7 +98,7 @@ class TestFlyscanXrayCentrePlan:
         move_x_y_z: MagicMock,
         move_aperture: MagicMock,
         run_gridscan: MagicMock,
-        hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+        hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
         run_engine_with_subs: ReWithSubs,
@@ -259,7 +259,7 @@ class TestFlyscanXrayCentrePlan:
         use_panda: None,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        fgs_composite_with_panda_pcap: HyperionFlyScanXRayCentreComposite,
+        fgs_composite_with_panda_pcap: HyperionGridDetectThenXRayCentreComposite,
         sim_run_engine: RunEngineSimulator,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
