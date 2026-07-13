@@ -28,10 +28,10 @@ from mx_bluesky.hyperion.blueapi.parameters import (
     PinTypeParam,
     SingleSamplePinTypeParam,
 )
-from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
+from mx_bluesky.hyperion.plan_runner import PlanError
 
 T = TypeVar("T", bound=WithVisit)
 MULTIPIN_PREFIX = "multipin"
