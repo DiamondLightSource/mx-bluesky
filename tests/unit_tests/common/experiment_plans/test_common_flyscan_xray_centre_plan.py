@@ -129,9 +129,7 @@ class TestFlyscanXrayCentrePlan:
             "set",
             MagicMock(side_effect=FailedStatus(AssertionError("Test Exception"))),
         )
-        detector_params = create_detector_params_for_grid_scan(
-            minimal_diffraction_expt_with_sample
-        )
+        detector_params = create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
         with pytest.raises(FailedStatus):
             run_engine(
                 ispyb_activation_wrapper(
