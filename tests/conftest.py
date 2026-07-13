@@ -16,6 +16,7 @@ import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg, MsgGenerator
+from daq_config_server import ConfigClient
 from dodal.beamlines import aithre, i03
 from dodal.common.beamlines.commissioning_mode import set_commissioning_signal
 from dodal.devices.aperturescatterguard import (
@@ -41,6 +42,7 @@ from dodal.devices.beamlines.i04.transfocator import Transfocator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
+from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import SampleLocation
 from dodal.devices.scintillator import Scintillator
@@ -704,6 +706,24 @@ class ConfigFilesForTests(TypedDict):
     display_config: str
 
 
+@pytest.fixture
+def oav(test_config_files):
+    parameters = OAVConfigBeamCentre(
+        test_config_files["zoom_params_file"],
+        test_config_files["display_config"],
+        ConfigClient(""),
+    )
+    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
+
+    set_mock_value(oav.zoom_controller.level, "5.0x")
+    set_mock_value(oav.grid_snapshot.x_size, 1024)
+    set_mock_value(oav.grid_snapshot.y_size, 768)
+
+    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    yield oav
+
+
 @pytest.fixture()
 def test_config_files():
     return ConfigFilesForTests(
@@ -881,7 +901,7 @@ async def hyperion_flyscan_xrc_composite(
     fast_grid_scan,
     panda_fast_grid_scan,
     beamsize,
-    oav_for_system_test,
+    oav,
     pin_tip_detection_with_found_pin,
     beamstop_phase1,
     detector_motion,
@@ -907,7 +927,7 @@ async def hyperion_flyscan_xrc_composite(
         robot=i03.robot.build(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
         beamsize=beamsize,
-        oav=oav_for_system_test,
+        oav=oav,
         pin_tip_detection=pin_tip_detection_with_found_pin,
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
