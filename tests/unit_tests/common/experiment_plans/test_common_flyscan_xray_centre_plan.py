@@ -126,23 +126,21 @@ class TestFlyscanXrayCentrePlan:
             "set",
             MagicMock(side_effect=FailedStatus(AssertionError("Test Exception"))),
         )
-        detector_params = create_detector_params_for_grid_scan(
-                minimal_diffraction_expt_with_sample
-            )
-            with pytest.raises(FailedStatus):
-                run_engine(
-                    ispyb_activation_wrapper(
-                        common_flyscan_xray_centre(
-                            fake_fgs_composite,
-                            minimal_diffraction_expt_with_sample,
-                        detector_params,
-                            grid_scan_params_3d,
-                            beamline_specific,
-                        ),
+        detector_params = create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
+        with pytest.raises(FailedStatus):
+            run_engine(
+                ispyb_activation_wrapper(
+                    common_flyscan_xray_centre(
+                        fake_fgs_composite,
                         minimal_diffraction_expt_with_sample,
-                        detector_params,
+                    detector_params,
+                        grid_scan_params_3d,
+                        beamline_specific,
                     ),
-                )
+                    minimal_diffraction_expt_with_sample,
+                    detector_params,
+                ),
+            )
 
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),

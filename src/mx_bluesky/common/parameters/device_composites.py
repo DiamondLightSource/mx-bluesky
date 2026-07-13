@@ -32,7 +32,6 @@ class FlyScanEssentialDevices(Generic[GonioWithOmegaType]):
     eiger: EigerDetector
     synchrotron: Synchrotron
     gonio: GonioWithOmegaType
-    zocalo: ZocaloResults
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -52,3 +51,4 @@ class GridDetectAndGridScanEssentialDevices(
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop
     detector_motion: DetectorMotion
+    zocalo: ZocaloResults

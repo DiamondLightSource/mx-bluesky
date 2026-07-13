@@ -100,16 +100,16 @@ def fgs_composite(
     zebra: Zebra,
 ) -> I021FlyScanXRayCentreComposite:
     return I021FlyScanXRayCentreComposite(
-        eiger,
-        synchrotron,
-        goniometer,
-        zebra,
-        zebra_fgs_two_d,
-        dcm,
-        attenuator,
-        flux,
-        undulator,
-        slits,
+        eiger=eiger,
+        synchrotron=synchrotron,
+        gonio=goniometer,
+        zebra=zebra,
+        zebra_fast_grid_scan=zebra_fgs_two_d,
+        dcm=dcm,
+        attenuator=attenuator,
+        flux=flux,
+        undulator=undulator,
+        s4_slit_gaps=slits,
     )
 
 
