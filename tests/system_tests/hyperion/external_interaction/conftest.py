@@ -363,7 +363,6 @@ def fgs_composite_for_fake_zocalo(
     zocalo_for_fake_zocalo: ZocaloResults,
     oav_for_system_test: OAV,
 ) -> HyperionGridDetectThenXRayCentreComposite:
-    hyperion_flyscan_xrc_composite.oav = oav_for_system_test
     set_mock_value(
         hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
     )

@@ -219,6 +219,12 @@ def test_config_files():
 
 
 @pytest.fixture
+def oav(oav_for_system_test):
+    # Override top-level oav fixture
+    return oav_for_system_test
+
+
+@pytest.fixture
 def oav_for_system_test(
     config_client: ConfigClient, next_oav_system_test_image, test_config_files
 ):
