@@ -1,4 +1,9 @@
 Hyperion Parameter class hierarchy
 ==================================
 
-.. uml:: param_hierarchy.puml
+Below are outline diagrams for the internal parameter models for gridscans and rotations.
+Note that not all details are shown.
+
+.. uml:: internal_params_gridscan.puml
+
+.. uml:: internal_params_rotation.puml
