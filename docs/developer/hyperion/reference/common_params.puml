@@ -1,0 +1,53 @@
+package mx_bluesky.common.parameters {
+    together {
+        class WithSample{
+            int sample_id
+            int | None sample_puck
+            int | None sample_pin
+        }
+        class WithVisit{
+            str beamline
+            str visit
+            float | None detector_distance_mm
+        }
+        class WithSnapshot {
+            Path snapshot_directory
+            list[float] snapshot_omegas_deg
+            bool use_grid_snapshots
+        }
+        class WithOptionalEnergyChange {
+            float | None demand_energy_ev
+        }
+        class OptionalGonioAngleStarts {
+            list[int] omega_starts_deg
+            float | None phi_start_deg
+            float | None chi_start_deg
+            float | None kappa_start_deg
+        }
+    }
+    class MxBlueskyParameters{
+        SemanticVersion parameter_model_version
+    }
+    together {
+        class DiffractionExperiment {
+            str file_name
+            float exposure_time_s
+            str comment
+            TriggerMode trigger_mode
+            int run_number
+            ApertureValue selected_aperture
+            float transmission_frac
+            IspybExperimentType ispyb_experiment_type
+            str storage_directory
+            bool use_roi_mode
+        }
+        class DiffractionExperimentWithSample
+    }
+}
+
+MxBlueskyParameters <|-- DiffractionExperiment
+DiffractionExperiment <|-- DiffractionExperimentWithSample
+WithSample <|-- DiffractionExperimentWithSample
+WithSnapshot <|-- DiffractionExperiment
+WithOptionalEnergyChange <|-- DiffractionExperiment
+WithVisit <|-- DiffractionExperiment
