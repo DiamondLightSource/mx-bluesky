@@ -101,7 +101,7 @@ from mx_bluesky.common.utils.log import (
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.test_data.oav import (
     TEST_DISPLAY_CONFIG,
@@ -860,6 +860,18 @@ def panda_fast_grid_scan():
     return scan
 
 
+@pytest.fixture()
+def minimal_diffraction_expt_with_sample(
+    tmp_path: Path,
+) -> DiffractionExperimentWithSample:
+    return DiffractionExperimentWithSample(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/minimal_diffraction_expt_with_sample.json",
+            tmp_path,
+        )
+    )
+
+
 @pytest.fixture
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
@@ -876,12 +888,12 @@ async def hyperion_flyscan_xrc_composite(
     fast_grid_scan,
     panda_fast_grid_scan,
     beamsize,
-    oav,
+    oav_for_system_test,
     pin_tip_detection_with_found_pin,
     beamstop_phase1,
     detector_motion,
-) -> HyperionFlyScanXRayCentreComposite:
-    fake_composite = HyperionFlyScanXRayCentreComposite(
+) -> HyperionGridDetectThenXRayCentreComposite:
+    fake_composite = HyperionGridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -902,7 +914,7 @@ async def hyperion_flyscan_xrc_composite(
         robot=i03.robot.build(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
         beamsize=beamsize,
-        oav=oav,
+        oav=oav_for_system_test,
         pin_tip_detection=pin_tip_detection_with_found_pin,
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,

@@ -32,7 +32,6 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -125,7 +124,7 @@ def _panda_tidy(xrc_composite: HyperionGridDetectThenXRayCentreComposite):
 
 
 def _panda_triggering_setup(
-    xrc_composite: HyperionFlyScanXRayCentreComposite,
+    xrc_composite: HyperionGridDetectThenXRayCentreComposite,
     parameters: DiffractionExperiment,
     grid_scan_parameters: GridScanParams,
 ) -> MsgGenerator:
