@@ -1,6 +1,5 @@
 from collections.abc import Callable, Generator, Sequence
 from copy import deepcopy
-from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -20,7 +19,6 @@ from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import PandAFastGridScan
 from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -47,7 +45,6 @@ from ophyd_async.core import (
     completed_status,
     set_mock_value,
 )
-from ophyd_async.fastcs.panda import HDFPanda
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
@@ -64,7 +61,6 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
 
@@ -72,6 +68,7 @@ from ....conftest import (
     TEST_RESULT_MEDIUM,
     SimConstants,
     nexus_test_diffraction_expt_with_sample,
+    nexus_test_gridscan_params,
     pin_tip_edge_data,
 )
 
@@ -199,13 +196,16 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 
 @pytest.fixture
-def external_callback_grid_scan_params(nexus_test_gridscan_params) -> GridScanParams:
-    return nexus_test_gridscan_params
+def external_callback_grid_scan_params(tmp_path: Path) -> GridScanParams:
+    return nexus_test_gridscan_params(tmp_path)
 
 
 @pytest.fixture
 def external_callback_expt_params(tmp_path: Path) -> DiffractionExperimentWithSample:
-    return nexus_test_diffraction_expt_with_sample(tmp_path)
+    expt_params = nexus_test_diffraction_expt_with_sample(tmp_path)
+    expt_params.visit = SimConstants.ST_VISIT
+    expt_params.sample_id = SimConstants.ST_SAMPLE_ID
+    return expt_params
 
 
 @pytest.fixture
@@ -359,9 +359,9 @@ def grid_detect_then_xray_centre_composite(
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
     config_client,
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
-) -> HyperionFlyScanXRayCentreComposite:
+) -> HyperionGridDetectThenXRayCentreComposite:
     set_mock_value(
         hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
     )
@@ -382,20 +382,6 @@ def fgs_composite_for_fake_zocalo(
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite
-
-
-@pytest.fixture
-def hyperion_flyscan_xrc_composite_for_external_callbacks(
-    fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
-    panda: HDFPanda,
-    panda_fast_grid_scan: PandAFastGridScan,
-) -> HyperionGridDetectThenXRayCentreComposite:
-
-    return HyperionGridDetectThenXRayCentreComposite(
-        panda=panda,
-        panda_fast_grid_scan=panda_fast_grid_scan,
-        **asdict(fgs_composite_for_fake_zocalo),
-    )
 
 
 @pytest.fixture

@@ -4,6 +4,7 @@ from functools import partial
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
@@ -11,6 +12,7 @@ from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beamsize import Beamsize
 from dodal.devices.beamlines.i04.transfocator import Transfocator
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
@@ -85,7 +87,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    GridDetectThenXRayCentreComposite,
+    GridDetectAndGridScanEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -112,6 +114,23 @@ class I04AutoXrcParams(BaseModel):
     visit: str
     detector_distance_mm: float
     storage_directory: str
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class I04GridDetectThenXRayCentreComposite(GridDetectAndGridScanEssentialDevices):
+    """All devices which are required for the grid detect and XRC plan"""
+
+    attenuator: BinaryFilterAttenuator
+    beamsize: BeamsizeBase
+    dcm: DoubleCrystalMonochromator
+    zebra_fast_grid_scan: ZebraFastGridScanThreeD
+    flux: Flux
+    s4_slit_gaps: S4SlitGaps
+    undulator: UndulatorInKeV
+    xbpm_feedback: XBPMFeedback
+    zebra: Zebra
+    robot: BartRobot
+    sample_shutter: MXZebraShutter
 
 
 def _change_beamsize(
@@ -168,7 +187,7 @@ def i04_default_grid_detect_and_xray_centre(
     tidy-up.
     """
 
-    composite = GridDetectThenXRayCentreComposite(
+    composite = I04GridDetectThenXRayCentreComposite(
         eiger=eiger,
         synchrotron=synchrotron,
         gonio=smargon,
@@ -301,7 +320,7 @@ def create_gridscan_callbacks() -> tuple[
 
 
 def construct_i04_specific_features(
-    xrc_composite: GridDetectThenXRayCentreComposite,
+    xrc_composite: I04GridDetectThenXRayCentreComposite,
     xrc_parameters: DiffractionExperimentWithSample,
     grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:

@@ -67,6 +67,9 @@ from ophyd_async.core import (
 )
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
+    I04GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -99,7 +102,6 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
-    GridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -415,6 +417,7 @@ async def fake_fgs_composite(
         eiger=i03.eiger.build(mock=True),
         gonio=smargon,
         synchrotron=synchrotron,
+        zocalo=zocalo,
     )
 
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
@@ -492,7 +495,7 @@ async def grid_detect_xrc_devices(
     undulator,
     dcm,
 ):
-    yield GridDetectThenXRayCentreComposite(
+    yield I04GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -741,18 +744,6 @@ def fake_create_rotation_devices(
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
         thawer=thawer,
-    )
-
-
-@pytest.fixture()
-def minimal_diffraction_expt_with_sample(
-    tmp_path: Path,
-) -> DiffractionExperimentWithSample:
-    return DiffractionExperimentWithSample(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/internal/minimal_diffraction_expt_with_sample.json",
-            tmp_path,
-        )
     )
 
 

@@ -13,9 +13,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
 )
 from mx_bluesky.common.parameters.components import WithSample
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectThenXRayCentreComposite,
-)
+from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
 )
@@ -41,7 +39,7 @@ def _get_xrc_results(
 
 
 def get_results_and_move_to_xtal(
-    composite: GridDetectThenXRayCentreComposite,
+    composite: FlyScanEssentialDevices[Smargon],
     parameters: WithSample,
     grid_scan_params: GridScanParams,
     flyscan_event_handler: XRayCentreEventHandler,
@@ -49,20 +47,6 @@ def get_results_and_move_to_xtal(
     flyscan_results = yield from _get_xrc_results(
         composite.zocalo, parameters, grid_scan_params, flyscan_event_handler
     )
-    yield from move_to_xtal(flyscan_results[0], composite.gonio)
-
-
-# Currently not being used, but see https://github.com/DiamondLightSource/mx-bluesky/issues/561
-def get_results_then_change_aperture_and_move_to_xtal(
-    composite: GridDetectThenXRayCentreComposite,
-    parameters: WithSample,
-    grid_scan_params: GridScanParams,
-    flyscan_event_handler: XRayCentreEventHandler,
-):
-    flyscan_results = yield from _get_xrc_results(
-        composite.zocalo, parameters, grid_scan_params, flyscan_event_handler
-    )
-    yield from change_aperture(flyscan_results[0], composite.aperture_scatterguard)
     yield from move_to_xtal(flyscan_results[0], composite.gonio)
 
 
