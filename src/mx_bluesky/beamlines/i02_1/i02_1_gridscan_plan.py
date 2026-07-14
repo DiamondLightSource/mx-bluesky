@@ -7,6 +7,7 @@ from bluesky.utils import MsgGenerator
 from dodal.beamlines.i02_1 import ZebraFastGridScanTwoD
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
+from dodal.devices.beamlines.i02_1.fast_grid_scan import ZebraGridScanParamsTwoD
 from dodal.devices.beamlines.i02_1.flux import Flux
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
 from dodal.devices.fast_grid_scan import (
@@ -17,10 +18,7 @@ from dodal.devices.slits import Slits
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
 from pydantic import BaseModel
-from pydantic_extra_types.semantic_version import SemanticVersion
-from semver import Version
 
-from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -28,7 +26,7 @@ from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
 from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
 )
-from mx_bluesky.beamlines.i02_1.parameters.gridscan import fast_gridscan_params
+from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     common_flyscan_xray_centre,
@@ -64,8 +62,6 @@ from mx_bluesky.common.parameters.gridscan import (
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.common.utils.log import LOGGER
-
-DEFAULT_BOX_SIZE_UM = 2
 
 
 def create_gridscan_callbacks(
@@ -143,13 +139,6 @@ def _tidy_plan(
 ) -> MsgGenerator:
     LOGGER.info("Tidying up Zebra")
     yield from tidy_up_zebra_after_gridscan(fgs_composite.zebra)
-
-
-PARAMETER_VERSION = Version.parse("1.0.0")
-
-
-def get_internal_param_version() -> SemanticVersion:
-    return SemanticVersion.validate_from_str(str(PARAMETER_VERSION))
 
 
 class ExternalGridScanParams(BaseModel):
@@ -238,3 +227,20 @@ def i02_1_gridscan_plan(
         )
 
     yield from decorated_flyscan_plan()
+
+
+def fast_gridscan_params(
+    params: DiffractionExperiment, grid_scan_params: GridScanParams
+) -> ZebraGridScanParamsTwoD:
+    return ZebraGridScanParamsTwoD(
+        x_steps=grid_scan_params.x_steps,
+        y_steps=grid_scan_params.y_steps[0],
+        x_step_size_mm=grid_scan_params.x_step_size_um / 1000,
+        y_step_size_mm=grid_scan_params.y_step_sizes_um[0] / 1000,
+        x_start_mm=grid_scan_params.x_start_um / 1000,
+        y1_start_mm=grid_scan_params.y_starts_um[0] / 1000,
+        z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
+        set_stub_offsets=False,
+        transmission_fraction=0.5,
+        dwell_time_ms=params.exposure_time_s * 1000,
+    )
