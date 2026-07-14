@@ -6,11 +6,9 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from bluesky.utils import Msg, MsgGenerator
+from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
-from dodal.devices.detector import DetectorParams
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.xbpm_feedback import Pause
 from ophyd_async.core import get_mock_put
@@ -39,25 +37,6 @@ from tests.unit_tests.beamlines.i24.serial.conftest import fake_generator
 
 from ...conftest import raw_params_from_file
 from .conftest import FLYSCAN_RESULT_MED
-
-
-# TODO Remove this as is only used in tests
-def pin_tip_centre_then_gridscan_plan_wrapper(
-    composite: HyperionGridDetectThenXRayCentreComposite,
-    parameters: PinTipCentreThenXrayCentre,
-    detector_params: DetectorParams,
-    oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
-) -> MsgGenerator:
-    eiger: EigerDetector = composite.eiger
-
-    eiger.set_detector_parameters(detector_params)
-
-    def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
-        yield from pin_centre_then_gridscan_plan(
-            composite, parameters, detector_params, oav_config_file
-        )
-
-    yield from pin_centre_flyscan_then_fetch_results()
 
 
 @pytest.fixture
@@ -300,12 +279,13 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     test_pin_centre_then_xray_centre_params.transmission_frac = transmission_frac
 
     msgs = sim_run_engine.simulate_plan(
-        pin_tip_centre_then_gridscan_plan_wrapper(
+        pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            OavConstants.OAV_CONFIG_JSON,
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -358,12 +338,13 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ):
     msgs = sim_run_engine.simulate_plan(
-        pin_tip_centre_then_gridscan_plan_wrapper(
+        pin_centre_then_gridscan_plan(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            OavConstants.OAV_CONFIG_JSON,
         )
     )
 
