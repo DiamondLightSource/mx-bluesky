@@ -66,8 +66,7 @@ def entry_params(tmp_path) -> ExternalGridScanParams:
         upper_left_y=2,
         detector_distance_mm=100,
         sample_id=0,
-        x_step_size_um=20,
-        y_step_sizes_um=[10],
+        box_size_um=20,
         omega_start_deg=10,
     )
 
@@ -157,9 +156,6 @@ def test_i02_1_flyscan_xray_centre_in_re(
     new=MagicMock(),
 )
 @patch(
-    "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.get_internal_params",
-)
-@patch(
     "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.construct_i02_1_specific_features",
 )
 @patch(
@@ -168,7 +164,6 @@ def test_i02_1_flyscan_xray_centre_in_re(
 def test_ispyb_activated_correct_params(
     mock_store_ispyb: MagicMock,
     mock_create_features: MagicMock,
-    mock_get_internal_params: MagicMock,
     run_engine: RunEngine,
     fgs_params_two_d: I02_1FgsParams,
     grid_scan_params: GridScanParams,
@@ -176,7 +171,6 @@ def test_ispyb_activated_correct_params(
     entry_params: ExternalGridScanParams,
 ):
     mock_ispyb = MagicMock()
-    mock_get_internal_params.return_value = fgs_params_two_d, grid_scan_params
 
     mock_store_ispyb.return_value = mock_ispyb
     expected_features = construct_i02_1_specific_features(
@@ -187,6 +181,7 @@ def test_ispyb_activated_correct_params(
     mock_create_features.return_value = expected_features
 
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
+
     expected_group_info = populate_data_collection_group(fgs_params_two_d)
     expected_group_info.comments = f"Diffraction grid scan of {grid_scan_params.x_steps} by {grid_scan_params.y_steps[0]}.Zocalo processing took 0.00 s."
     expected_detector_params = create_detector_params_for_grid_scan(fgs_params_two_d)
