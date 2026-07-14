@@ -634,10 +634,10 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     )
     mock_get_results_and_move_to_xtal.assert_called_once()
     assert (
-        mock_get_results_and_move_to_xtal.call_args[0][1]
+        mock_get_results_and_move_to_xtal.call_args[0][2]
         == minimal_diffraction_expt_with_sample
     )
-    assert mock_get_results_and_move_to_xtal.call_args[0][2] == i04_grid_scan_params
+    assert mock_get_results_and_move_to_xtal.call_args[0][3] == i04_grid_scan_params
 
 
 @patch(

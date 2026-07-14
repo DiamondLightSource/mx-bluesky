@@ -261,7 +261,8 @@ def i04_default_grid_detect_and_xray_centre(
 
             try:
                 yield from get_results_and_move_to_xtal(
-                    composite,
+                    composite.gonio,
+                    composite.zocalo,
                     internal_params,
                     grid_scan_params,
                     flyscan_event_handler,
