@@ -10,7 +10,6 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     fetch_xrc_results_from_zocalo,
 )
 from mx_bluesky.common.parameters.components import WithSample
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
 )
@@ -36,15 +35,16 @@ def _get_xrc_results(
 
 
 def get_results_and_move_to_xtal(
-    composite: FlyScanEssentialDevices[Smargon],
+    gonio: Smargon,
+    zocalo: ZocaloResults,
     parameters: WithSample,
     grid_scan_params: GridScanParams,
     flyscan_event_handler: XRayCentreEventHandler,
 ):
     flyscan_results = yield from _get_xrc_results(
-        composite.zocalo, parameters, grid_scan_params, flyscan_event_handler
+        zocalo, parameters, grid_scan_params, flyscan_event_handler
     )
-    yield from move_to_xtal(flyscan_results[0], composite.gonio)
+    yield from move_to_xtal(flyscan_results[0], gonio)
 
 
 def move_to_xtal(
