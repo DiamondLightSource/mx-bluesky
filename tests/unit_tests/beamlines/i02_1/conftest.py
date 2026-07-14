@@ -2,7 +2,10 @@ import pytest
 from dodal.beamlines import i02_1
 
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import (
+    IspybExperimentType,
+    get_param_version,
+)
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 
 
@@ -22,6 +25,7 @@ def fgs_params_two_d(tmp_path) -> I02_1FgsParams:
         upper_left_x=0,
         upper_left_y=0,
         detector_distance_mm=100,
+        ispyb_experiment_type=IspybExperimentType.SAD,
     )
 
 
@@ -31,7 +35,8 @@ def grid_scan_params():
         x_start_um=0,
         y_starts_um=[0],
         z_starts_um=[0],
-        y_step_sizes_um=[10],
+        x_step_size_um=20,
+        y_step_sizes_um=[20],
         omega_starts_deg=[0],
         x_steps=5,
         y_steps=[3],
