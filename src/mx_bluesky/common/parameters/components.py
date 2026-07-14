@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
@@ -9,7 +9,6 @@ from typing import Self, SupportsInt
 
 from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import (
-    DetectorParams,
     TriggerMode,
 )
 from pydantic import (
@@ -20,7 +19,6 @@ from pydantic import (
     model_validator,
 )
 from pydantic_extra_types.semantic_version import SemanticVersion
-from scanspec.core import AxesPoints
 from semver import Version
 
 from mx_bluesky.common.parameters.constants import (
@@ -94,10 +92,6 @@ class IspybExperimentType(StrEnum):
     GRIDSCAN_3D = "Mesh3D"
 
 
-class WithNexusWriter(BaseModel):
-    indices_per_writer: tuple[int]
-
-
 class MxBlueskyParameters(BaseModel):
     model_config = ConfigDict(
         extra="allow",
@@ -160,7 +154,7 @@ class WithVisit(BaseModel):
 
 
 class DiffractionExperiment(
-    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit
+    MxBlueskyParameters, WithSnapshot, WithOptionalEnergyChange, WithVisit, ABC
 ):
     """For all experiments which use beam"""
 
@@ -174,6 +168,8 @@ class DiffractionExperiment(
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
     use_roi_mode: bool = Field(default=GridscanParamConstants.USE_ROI)
+
+    # Override of snapshot_directory defaults required for type-checking
     snapshot_directory: Path = None  # type:ignore # filled in on validation
 
     @model_validator(mode="before")
@@ -192,30 +188,6 @@ class DiffractionExperiment(
         else:
             values["snapshot_directory"] = Path("/tmp")
         return values
-
-    @property
-    def num_images(self) -> int:
-        return 0
-
-    @property
-    @abstractmethod
-    def detector_params(self) -> DetectorParams: ...
-
-
-class WithScan(BaseModel):
-    """For experiments where the scan is known"""
-
-    @property
-    @abstractmethod
-    def scan_points(self) -> list[AxesPoints]: ...
-
-    """Per grid"""
-
-    @property
-    @abstractmethod
-    def num_images(self) -> int: ...
-
-    """Must be same for each grid"""
 
 
 class WithPandaGridScan(BaseModel):

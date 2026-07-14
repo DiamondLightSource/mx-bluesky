@@ -67,6 +67,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER, emit=emit)
         self._oav_snapshot_event_idx: int = 0
         self.params: DiffractionExperimentWithSample | None = None
+        self.detector_params: DetectorParams | None = None
         self.ispyb: StoreInIspyb
         self.descriptors: dict[str, EventDescriptor] = {}
         self.ispyb_config = get_ispyb_config()
@@ -130,7 +131,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
     def _handle_ispyb_hardware_read(self, doc) -> Sequence[ScanDataInfo]:
         _data = doc["data"]
 
-        assert self.params, "Event handled before activity_gated_start received params"
+        assert self.params and self.detector_params, (
+            "Event handled before activity_gated_start received params"
+        )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             f"ISPyB handler received event from read hardware: {doc}"
         )
@@ -159,7 +162,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
 
         hwscan_data_collection_info = _update_based_on_energy(
-            doc, self.params.detector_params, hwscan_data_collection_info
+            doc, self.detector_params, hwscan_data_collection_info
         )
 
         hwscan_position_info = DataCollectionPositionInfo(
@@ -168,7 +171,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             pos_z=float(_data["gonio-z"]),
         )
         scan_data_infos = self.populate_info_for_update(
-            hwscan_data_collection_info, hwscan_position_info, self.params
+            hwscan_data_collection_info, hwscan_position_info
         )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after hardware read."
@@ -180,7 +183,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
     ) -> Sequence[ScanDataInfo]:
         _data = doc["data"]
 
-        assert self.params
+        assert self.params and self.detector_params
         aperture = _data.get(
             "aperture_scatterguard-selected_aperture", "Not implemented"
         )
@@ -193,6 +196,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         if not (beamsize_x_mm and beamsize_y_mm):
             # VMXm don't have a beamsize device in dodal yet, they get beamsize sent in from GDA
             try:
+                # XXX Deliberate abuse of the type system
                 beamsize_x_mm = self.params.beam_size_x  # type: ignore
                 beamsize_y_mm = self.params.beam_size_y  # type: ignore
             except Exception:
@@ -211,10 +215,10 @@ class BaseISPyBCallback(PlanReactiveCallback):
             # Ispyb wants the transmission in a percentage, we use fractions
             hwscan_data_collection_info.transmission = transmission * 100
         hwscan_data_collection_info = _update_based_on_energy(
-            doc, self.params.detector_params, hwscan_data_collection_info
+            doc, self.detector_params, hwscan_data_collection_info
         )
         scan_data_infos = self.populate_info_for_update(
-            hwscan_data_collection_info, None, self.params
+            hwscan_data_collection_info, None
         )
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after flux read."
@@ -227,7 +231,6 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         pass
 

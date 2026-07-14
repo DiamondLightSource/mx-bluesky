@@ -1,6 +1,7 @@
 from collections.abc import Callable, Generator, Sequence
 from copy import deepcopy
 from functools import partial
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -49,7 +50,9 @@ from sqlalchemy.orm import sessionmaker
 from workflows.recipe import RecipeWrapper
 
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import StoreInIspyb
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -58,16 +61,15 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from ....conftest import (
     TEST_RESULT_MEDIUM,
     SimConstants,
+    nexus_test_diffraction_expt_with_sample,
+    nexus_test_gridscan_params,
     pin_tip_edge_data,
-    raw_params_from_file,
 )
 
 
@@ -194,20 +196,20 @@ def fetch_blsample(sqlalchemy_sessionmaker) -> Callable[[int], BLSample]:
 
 
 @pytest.fixture
-def dummy_params(tmp_path):
-    params_dict = raw_params_from_file(
-        "tests/test_data/parameter_json_files/test_gridscan_param_defaults.json",
-        tmp_path,
-    )
-
-    dummy_params = HyperionSpecifiedThreeDGridScan(**params_dict)
-    dummy_params.visit = SimConstants.ST_VISIT
-    dummy_params.sample_id = SimConstants.ST_SAMPLE_ID
-    return dummy_params
+def external_callback_grid_scan_params(tmp_path: Path) -> GridScanParams:
+    return nexus_test_gridscan_params(tmp_path)
 
 
 @pytest.fixture
-def dummy_ispyb(ispyb_config_path, dummy_params) -> StoreInIspyb:
+def external_callback_expt_params(tmp_path: Path) -> DiffractionExperimentWithSample:
+    expt_params = nexus_test_diffraction_expt_with_sample(tmp_path)
+    expt_params.visit = SimConstants.ST_VISIT
+    expt_params.sample_id = SimConstants.ST_SAMPLE_ID
+    return expt_params
+
+
+@pytest.fixture
+def dummy_ispyb(ispyb_config_path) -> StoreInIspyb:
     return StoreInIspyb(ispyb_config_path)
 
 
@@ -355,24 +357,12 @@ def grid_detect_then_xray_centre_composite(
 
 
 @pytest.fixture
-def hyperion_fgs_params(tmp_path):
-    params = HyperionSpecifiedThreeDGridScan(
-        **(
-            raw_params_from_file(
-                "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
-                tmp_path,
-            )
-        )
-    )
-    return params
-
-
-@pytest.fixture
 def fgs_composite_for_fake_zocalo(
     config_client,
-    hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
-) -> HyperionFlyScanXRayCentreComposite:
+    oav_for_system_test: OAV,
+) -> HyperionGridDetectThenXRayCentreComposite:
     set_mock_value(
         hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
     )

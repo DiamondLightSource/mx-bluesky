@@ -29,6 +29,7 @@ from dodal.devices.beamlines.i24.commissioning_jungfrau import (
     CommissioningJungfrauDetector,
 )
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
@@ -38,7 +39,7 @@ from dodal.devices.fast_grid_scan import (
 from dodal.devices.flux import Flux
 from dodal.devices.hutch_shutter import ShutterState
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
@@ -66,6 +67,9 @@ from ophyd_async.core import (
 )
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
+    I04GridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -89,6 +93,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     EnvironmentConstants,
@@ -97,9 +102,11 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
-    GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.parameters.gridscan import GenericGrid, SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GridDetectionParams,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
@@ -164,6 +171,21 @@ def _error_and_kill_pending_tasks(
     return unfinished_tasks
 
 
+@pytest.fixture(autouse=True)
+def always_patch_config_client():
+    with patch(
+        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
+        create=True,
+        new=ConfigClient("http://localhost:8555"),
+    ):
+        yield
+
+
+@pytest.fixture()
+def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
+    monkeypatch.setenv("BEAMLINE", "i03")
+
+
 @pytest.fixture(autouse=True, scope="function")
 async def fail_test_on_unclosed_tasks(request: FixtureRequest):
     """
@@ -217,9 +239,9 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=SpecifiedThreeDGridScan),
+        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
         GridDetectAndScanISPyBCallback(
-            param_type=SpecifiedThreeDGridScan,
+            param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
@@ -259,7 +281,7 @@ def use_beamline_t01():
 
 
 @pytest.fixture
-def mock_subscriptions(test_three_d_grid_params):
+def mock_subscriptions():
     with (
         patch(
             "mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback.ZocaloTrigger",
@@ -331,7 +353,8 @@ def make_event_doc(data, descriptor="abc123") -> Event:
 
 def run_generic_ispyb_handler_setup(
     ispyb_handler: GridDetectAndScanISPyBCallback,
-    params: SpecifiedThreeDGridScan,
+    params: DiffractionExperimentWithSample,
+    detector_params: DetectorParams,
 ):
     """This is useful when testing 'run_gridscan_and_move(...)' because this stuff
     happens at the start of the outer plan."""
@@ -341,6 +364,7 @@ def run_generic_ispyb_handler_setup(
         {
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
             "mx_bluesky_parameters": params.model_dump_json(),
+            "detector_params": detector_params.model_dump_json(),
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
@@ -379,7 +403,7 @@ async def zebra_fast_grid_scan():
 @pytest.fixture
 async def fake_fgs_composite(
     smargon: Smargon,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     attenuator,
     xbpm_feedback,
     synchrotron,
@@ -398,7 +422,7 @@ async def fake_fgs_composite(
     fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
-        test_three_d_grid_params.detector_params
+        create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
     )
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
     fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
@@ -448,15 +472,6 @@ def beamline_specific(
 
 
 @pytest.fixture
-def test_full_grid_scan_params(tmp_path):
-    params = raw_params_from_file(
-        "tests/test_data/parameter_json_files/good_test_grid_with_edge_detect_parameters.json",
-        tmp_path,
-    )
-    return GenericGrid(**params)
-
-
-@pytest.fixture
 async def grid_detect_xrc_devices(
     aperture_scatterguard: ApertureScatterguard,
     backlight: Backlight,
@@ -479,7 +494,7 @@ async def grid_detect_xrc_devices(
     undulator,
     dcm,
 ):
-    yield GridDetectThenXRayCentreComposite(
+    yield I04GridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -658,24 +673,6 @@ def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
     )
 
 
-@pytest.fixture
-def oav(test_config_files):
-    parameters = OAVConfigBeamCentre(
-        test_config_files["zoom_params_file"],
-        test_config_files["display_config"],
-        ConfigClient(""),
-    )
-    oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
-
-    set_mock_value(oav.zoom_controller.level, "5.0x")
-    set_mock_value(oav.grid_snapshot.x_size, 1024)
-    set_mock_value(oav.grid_snapshot.y_size, 768)
-
-    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    yield oav
-
-
 @pytest.fixture()
 def fake_create_rotation_devices(
     beamstop_phase1: Beamstop,
@@ -728,4 +725,14 @@ def fake_create_rotation_devices(
         sample_shutter=sample_shutter,
         xbpm_feedback=xbpm_feedback,
         thawer=thawer,
+    )
+
+
+@pytest.fixture()
+def grid_detect_params(tmp_path: Path) -> GridDetectionParams:
+    return GridDetectionParams(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/internal/grid_detect_params.json",
+            tmp_path,
+        )
     )
