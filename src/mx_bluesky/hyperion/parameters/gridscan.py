@@ -25,6 +25,8 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 )
 
 
+# TODO Move these device-level parameter builders out of this module as they are not part of the mx-bluesky
+# parameter model. https://github.com/DiamondLightSource/mx-bluesky/issues/1793
 def create_detector_params_for_grid_scan_with_hyperion_feature_settings(
     params: DiffractionExperiment,
 ) -> DetectorParams:

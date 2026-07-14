@@ -22,6 +22,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 
 
+# TODO move this out of this package https://github.com/DiamondLightSource/mx-bluesky/issues/1793
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class HyperionGridDetectThenXRayCentreComposite(GridDetectAndGridScanEssentialDevices):
     """All devices which are directly or indirectly required by Hyperion Grid Detect and XRC plan"""
