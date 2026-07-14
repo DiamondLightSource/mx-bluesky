@@ -1445,12 +1445,18 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
             expected_omega_starts = np.linspace(
                 scan.omega_start_deg,
                 scan.omega_start_deg
-                + ((scan.num_images - 1) * multi_params.rotation_increment_deg),
+                + (
+                    (scan.num_images - 1)
+                    * multi_params.rotation_increment_deg
+                    * scan.rotation_direction.multiplier
+                ),
                 scan.num_images,
             )
             assert np.allclose(omega, expected_omega_starts)
             expected_omega_ends = (
-                expected_omega_starts + multi_params.rotation_increment_deg
+                expected_omega_starts
+                + multi_params.rotation_increment_deg
+                * scan.rotation_direction.multiplier
             )
             assert np.allclose(omega_end, expected_omega_ends)
             assert isinstance(
