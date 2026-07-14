@@ -84,3 +84,25 @@ def test_logging_alerting_service_raises_a_log_message_with_additional_metadata_
             Metadata.VISIT: "cm14451-2",
         },
     )
+
+
+@patch("mx_bluesky.common.external_interaction.alerting.log_based_service.LOGGER")
+def test_raise_error_alert_delegates_to_raise_alert(mock_logger: MagicMock):
+    set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID, WARNING))
+    get_alerting_service().raise_error_alert(
+        "Test message", {Metadata.SAMPLE_ID: "123456", Metadata.VISIT: "cm14451-2"}
+    )
+    mock_logger.log.assert_called_once_with(
+        WARNING,
+        "***ALERT*** summary=UDC encountered an error on i03 content=Test message",
+        extra={
+            ExtraMetadata.ALERT_SUMMARY: "UDC encountered an error on i03",
+            ExtraMetadata.ALERT_CONTENT: "Test message",
+            ExtraMetadata.BEAMLINE: "i03",
+            ExtraMetadata.GRAYLOG_URL: EXPECTED_GRAYLOG_URL,
+            ExtraMetadata.ISPYB_URL: "https://ispyb.diamond.ac.uk/samples/sid/123456",
+            Metadata.SAMPLE_ID: "123456",
+            ExtraMetadata.PROPOSAL: "cm14451",
+            Metadata.VISIT: "cm14451-2",
+        },
+    )
