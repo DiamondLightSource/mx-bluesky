@@ -15,6 +15,8 @@ The currently supported events that will generate alerts are:
 - When Hyperion moves on to a new container (puck).
 - When Hyperion is paused waiting for beam for more than 10 minutes (xbpm_feedback position stable. Repeats every 10 minutes)
 - When Hyperion data collection takes longer than 10 minutes (as measured from the last wait-for-beam check)
+- When Hyperion supervisor is unable to communicate with hyperion-blueapi
+- When Hyperion is unable to fetch the next instruction from agamemnon
 
 Graylog Alert Configuration
 ===========================
