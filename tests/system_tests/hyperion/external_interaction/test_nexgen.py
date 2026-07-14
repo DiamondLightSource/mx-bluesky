@@ -58,11 +58,14 @@ def test_params(tmp_path, config_client, request):
             "ins_8_5_expected_output.txt",
             RotationDirection.POSITIVE,
         ),
-        (
+        pytest.param(
             "tests/test_data/nexus_files/rotation",
             "ins_8_5",
             "ins_8_5_expected_output.txt",
             RotationDirection.NEGATIVE,
+            marks=pytest.mark.skip(
+                reason="https://github.com/DiamondLightSource/mx-bluesky/issues/1794"
+            ),
         ),
         (
             "tests/test_data/nexus_files/rotation_unicode_metafile",
