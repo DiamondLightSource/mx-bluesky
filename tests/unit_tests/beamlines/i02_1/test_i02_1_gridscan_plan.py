@@ -14,13 +14,13 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
 
-from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import (
     ExternalGridScanParams,
     I021FlyScanXRayCentreComposite,
     construct_i02_1_specific_features,
     i02_1_gridscan_plan,
 )
+from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
