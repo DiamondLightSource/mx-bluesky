@@ -67,8 +67,21 @@ def grid_detect_then_xray_centre(
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator[GridScanParams]:
     """
-    A plan which combines the collection of snapshots from the OAV and the determination
-    of the grid dimensions to use for the following grid scan.
+    Perform grid detection and a gridscan.
+    This is a wrapper for detect_grid_and_do_gridscan which activates callbacks for ispyb.
+    Plans that do pin tip detection should call detect_grid_and_do_gridscan directly as
+    callbacks will already have been registered earlier.
+
+    Args:
+        composite (TGridDetectAndGridScanEssentialDevices): Devices needed for this plan.
+        parameters (TParameters): The top-level experiment parameters.
+        grid_detection_params (GridDetectionParams): The base parameters used to define the detected grids.
+        detector_params (DetectorParams): Detector parameters.
+        construct_beamline_specific: Factory method that provides experiment plans for the beamline specific
+            customisation points.
+        oav_config (str): Optional path to the OAV configuration
+    Returns:
+        GridScanParams: The detected grid parameters.
     """
 
     eiger: EigerDetector = composite.eiger
@@ -107,7 +120,6 @@ def grid_detect_then_xray_centre(
     return grid_scan_params
 
 
-# This function should be private but is currently called by Hyperion, see https://github.com/DiamondLightSource/mx-bluesky/issues/1148
 def detect_grid_and_do_gridscan(
     composite: TGridDetectAndGridScanEssentialDevices,
     parameters: TParameters,
@@ -118,6 +130,20 @@ def detect_grid_and_do_gridscan(
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
 ) -> MsgGenerator[GridScanParams]:
+    """
+    Main experiment plan for grid detection and gridscan.
+
+    Args:
+        composite (TGridDetectAndGridScanEssentialDevices): Devices needed for this plan.
+        parameters (TParameters): The top-level experiment parameters.
+        grid_detection_params (GridDetectionParams): The base parameters used to define the detected grids.
+        oav_params (OAVParameters): Parameters for the OAV
+        detector_params (DetectorParams): Detector parameters.
+        construct_beamline_specific: Factory method that provides experiment plans for the beamline specific
+            customisation points.
+    Returns:
+        GridScanParams: The detected grid parameters.
+    """
     grid_detect_params = GridDetectionParams(
         box_size_um=grid_detection_params.box_size_um,
         grid_width_um=grid_detection_params.grid_width_um,
