@@ -167,8 +167,9 @@ def robot_load_then_xray_centre(
         current_chi, parameters.chi_start_deg, abs_tol=0.001
     )
 
-    # TODO this is probably no longer used in production since r_l_a_c is now only
+    # TODO this is no longer used in production since r_l_t_x_c is now only
     # ever called via agamemnon, so energy is always specified
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/1792
     detector_params = (
         create_detector_params_for_grid_scan_with_hyperion_feature_settings(parameters)
     )
@@ -199,8 +200,7 @@ def robot_load_then_xray_centre(
             LOGGER.info("Pin already loaded and chi not changed so doing nothing")
             return
 
-    # TODO this also appears to get called in common_flyscan_xray_centre, we should
-    # rationalise this
+    # Set the detector params so that we can pre-arm the detector
     eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
