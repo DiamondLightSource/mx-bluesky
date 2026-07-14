@@ -1,8 +1,8 @@
-from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
     _make_comment,
 )
+from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )

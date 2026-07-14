@@ -8,6 +8,7 @@ from mx_bluesky._version import version
 from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 
 
+# TODO move this module https://github.com/DiamondLightSource/mx-bluesky/issues/1793
 class HyperionMode(StrEnum):
     UDC = "udc"
     SUPERVISOR = "supervisor"

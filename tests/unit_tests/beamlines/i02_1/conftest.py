@@ -1,7 +1,7 @@
 import pytest
 from dodal.beamlines import i02_1
 
-from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
+from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
 from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 
