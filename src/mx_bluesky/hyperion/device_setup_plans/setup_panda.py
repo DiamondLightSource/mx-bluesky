@@ -5,7 +5,7 @@ from typing import cast
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.common.beamlines.beamline_utils import get_path_provider
+from dodal.common.beamlines.beamline_utils import PATH_PROVIDER_PANDA, get_path_provider
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
@@ -226,7 +226,7 @@ def set_panda_directory(panda_directory: Path) -> MsgGenerator:
     async def set_panda_dir():
         LOGGER.info("Getting path provider")
 
-        await cast(UpdatingPathProvider, get_path_provider()).update(
+        await cast(UpdatingPathProvider, get_path_provider(PATH_PROVIDER_PANDA)).update(
             directory=panda_directory, suffix=suffix
         )
 
