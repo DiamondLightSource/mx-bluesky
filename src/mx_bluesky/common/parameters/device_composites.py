@@ -6,7 +6,6 @@ import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -24,14 +23,17 @@ class GonioWithOmega(Protocol):
     wrapped_omega: WrappedAxis
 
 
-GonioWithOmegaType = TypeVar("GonioWithOmegaType", bound=GonioWithOmega)
+TGonioWithOmega = TypeVar("TGonioWithOmega", bound=GonioWithOmega)
+TDetector = TypeVar("TDetector")
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices(Generic[GonioWithOmegaType]):
-    eiger: EigerDetector
+class DiffractionEssentialDevices(Generic[TGonioWithOmega, TDetector]):
+    """The bare minimum of devices needed to do the innermost diffraction experiment plan"""
+
+    detector: TDetector
     synchrotron: Synchrotron
-    gonio: GonioWithOmegaType
+    gonio: TGonioWithOmega
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -45,10 +47,24 @@ class OavGridDetectionComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectAndGridScanEssentialDevices(
-    FlyScanEssentialDevices[Smargon], OavGridDetectionComposite
+class DiffractionExtendedDevices(
+    DiffractionEssentialDevices[Smargon, TDetector],
+    Generic[TDetector],
 ):
+    """An extended set of devices for running a diffraction experiment plan which
+    manages some additional diffraction parameters and retrieves results."""
+
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop
     detector_motion: DetectorMotion
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class GridDetectAndGridScanExtendedDevices(
+    DiffractionExtendedDevices[TDetector],
+    OavGridDetectionComposite,
+    Generic[TDetector],
+):
+    """The set of devices for running grid detection followed by a gridscan."""
+
     zocalo: ZocaloResults

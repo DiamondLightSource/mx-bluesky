@@ -155,3 +155,7 @@ def launch_test_in_runner_event_loop(
         return future.result(TEST_SCRIPT_TIMEOUT_S)
 
     return executor.submit(_launch_in_new_thread)
+
+
+@pytest.fixture(autouse=True)
+def always_patch_beamline_env_variable(patch_beamline_env_variable): ...

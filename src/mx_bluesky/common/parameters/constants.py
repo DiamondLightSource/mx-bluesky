@@ -128,6 +128,7 @@ class DetectorParamConstants:
 class PlanGroupCheckpointConstants:
     # For places to synchronise / stop and wait in plans, use as bluesky group names
     GRID_READY_FOR_DC = "grid_ready_for_data_collection"
+    GRIDSCAN_ARMING_COMPLETE = "gridscan_arming_complete"
     ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
     MOVE_GONIO_TO_START = "move_gonio_to_start"
     READY_FOR_OAV = "ready_for_oav"

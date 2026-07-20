@@ -15,7 +15,7 @@ from ophyd_async.core import (
     set_mock_value,
 )
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
@@ -25,7 +25,10 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionInternalGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
@@ -36,9 +39,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
 )
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
@@ -313,12 +313,11 @@ def grid_detection_callback_with_detected_grid():
 
 @pytest.fixture
 def beamline_specific_with_hyperion_flyscan_xrc_composite(
-    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite,
+        hyperion_internal_xrc_composite,
         minimal_diffraction_expt_with_sample,
-        grid_scan_params_3d,
     )

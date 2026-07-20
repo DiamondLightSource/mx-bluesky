@@ -10,6 +10,12 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.zocalo import ZocaloResults
 from dodal.utils import is_test_mode
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    BeamlineSpecificDetectorFeatures,
+)
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
@@ -59,8 +65,8 @@ results exchange, with the routing key 'xrc.i03'
         },
     }
 )
-def fake_fgs_plan(eiger: EigerDetector):
-    yield from read_hardware_for_zocalo(eiger)
+def fake_fgs_plan(beamline_specific: BeamlineSpecificDetectorFeatures):
+    yield from read_hardware_for_zocalo(beamline_specific)
 
 
 @pytest.fixture
@@ -75,6 +81,8 @@ def run_zocalo_with_dev_ispyb(
     smargon: Smargon,
     fake_grid_snapshot_plan,
 ):
+    beamline_specific = create_eiger_beamline_specific(eiger)
+
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         external_callback_expt_params.file_name = sample_name
         _, ispyb_callback = create_gridscan_callbacks()
@@ -99,7 +107,7 @@ def run_zocalo_with_dev_ispyb(
                 }
             )
             def inner_plan():
-                yield from fake_fgs_plan(eiger)
+                yield from fake_fgs_plan(beamline_specific)
 
             yield from inner_plan()
 

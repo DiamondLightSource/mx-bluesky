@@ -18,7 +18,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
     RotationScanComposite,
 )
 from mx_bluesky.beamlines.i24.parameters.constants import PlanNameConstants
-from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     read_hardware_plan,
 )
 from mx_bluesky.common.parameters.rotation import SingleRotationScan

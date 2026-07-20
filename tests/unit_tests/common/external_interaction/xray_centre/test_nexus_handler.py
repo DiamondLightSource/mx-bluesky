@@ -1,10 +1,12 @@
-from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from numpy.typing import DTypeLike
 
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringPayload,
+)
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
@@ -22,9 +24,11 @@ def nexus_writer():
 def test_writers_not_called_on_plan_start_doc(
     nexus_writer: MagicMock,
     test_event_data,
+    mock_hw_read_mapper,
 ):
     nexus_handler = GridscanNexusFileCallback(
-        param_type=DiffractionExperimentWithSample
+        param_type=DiffractionExperimentWithSample,
+        hw_read_mapper=mock_hw_read_mapper,
     )
     nexus_writer.assert_not_called()
     nexus_handler.activity_gated_start(
@@ -39,10 +43,12 @@ def test_writers_not_called_on_plan_start_doc(
 def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     mock_nexus_writer: MagicMock,
     test_event_data,
+    mock_hw_read_mapper,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
-        param_type=DiffractionExperimentWithSample
+        param_type=DiffractionExperimentWithSample,
+        hw_read_mapper=mock_hw_read_mapper,
     )
 
     assert not nexus_handler._writers
@@ -76,14 +82,17 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback.NexusWriter"
 )
 def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dataset_size(
-    mock_nexus_writer: MagicMock,
-    bit_depth: int,
-    vds_type: DTypeLike,
-    test_event_data,
+    mock_nexus_writer: MagicMock, bit_depth: int, vds_type: DTypeLike, test_event_data
 ):
+    mock_hw_read_mapper = lambda _: HWReadDuringPayload(
+        bit_depth=bit_depth,
+        ispyb_detector_id=78,
+        roi_mode=True,
+    )
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
-        param_type=DiffractionExperimentWithSample
+        param_type=DiffractionExperimentWithSample,
+        hw_read_mapper=mock_hw_read_mapper,
     )
 
     nexus_handler.activity_gated_start(
@@ -92,8 +101,7 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dat
     nexus_handler.activity_gated_descriptor(
         test_event_data.test_descriptor_document_during_data_collection
     )
-    event_doc = deepcopy(test_event_data.test_event_document_during_data_collection)
-    event_doc["data"]["eiger_bit_depth"] = bit_depth
+    event_doc = test_event_data.test_event_document_during_data_collection
 
     nexus_handler.activity_gated_event(event_doc)
 
@@ -113,10 +121,12 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dat
 def test_beam_and_attenuator_set_on_ispyb_transmission_event(
     mock_nexus_writer: MagicMock,
     test_event_data,
+    mock_hw_read_mapper,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
-        param_type=DiffractionExperimentWithSample
+        param_type=DiffractionExperimentWithSample,
+        hw_read_mapper=mock_hw_read_mapper,
     )
 
     nexus_handler.activity_gated_start(
@@ -138,9 +148,11 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
 def test_sensible_error_if_writing_triggered_before_params_received(
     nexus_writer: MagicMock,
     test_event_data,
+    mock_hw_read_mapper,
 ):
     nexus_handler = GridscanNexusFileCallback(
-        param_type=DiffractionExperimentWithSample
+        param_type=DiffractionExperimentWithSample,
+        hw_read_mapper=mock_hw_read_mapper,
     )
     nexus_handler.activity_gated_descriptor(
         test_event_data.test_descriptor_document_during_data_collection
