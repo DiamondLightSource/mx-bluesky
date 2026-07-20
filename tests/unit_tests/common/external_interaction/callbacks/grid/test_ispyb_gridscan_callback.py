@@ -38,7 +38,7 @@ def test_gridscan_callback_start_calls_correct_funcs(
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ):
-    cb = Callback(DiffractionExperimentWithSample)
+    cb = Callback(DiffractionExperimentWithSample, hw_read_during_mapper=MagicMock())
     cb.fill_gridscan_deposition_and_store = MagicMock()
     doc = {
         "subplan_name": PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
@@ -57,7 +57,7 @@ def test_populate_info_for_update(
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ):
-    cb = Callback(DiffractionExperimentWithSample)
+    cb = Callback(DiffractionExperimentWithSample, hw_read_during_mapper=MagicMock())
     cb.params = minimal_diffraction_expt_with_sample
     cb.grid_scan_params = grid_scan_params_3d
     cb.detector_params = create_detector_params_for_grid_scan(
@@ -74,7 +74,7 @@ def test_populate_info_for_update(
 
 
 def test_stop_errors_if_empty_ispyb_id():
-    cb = Callback(DiffractionExperimentWithSample)
+    cb = Callback(DiffractionExperimentWithSample, hw_read_during_mapper=MagicMock())
     cb.ispyb_ids = IspybIds()
     cb.data_collection_group_info = DataCollectionGroupInfo("", "", None)
     doc: RunStop = {
@@ -88,7 +88,7 @@ def test_stop_errors_if_empty_ispyb_id():
 
 
 def test_exception_added_onto_comments():
-    cb = Callback(DiffractionExperimentWithSample)
+    cb = Callback(DiffractionExperimentWithSample, hw_read_during_mapper=MagicMock())
     cb.ispyb = StoreInIspyb("")
     cb.ispyb.update_data_collection_group_table = MagicMock()
     cb.ispyb_ids = IspybIds(data_collection_ids=(0,))
@@ -115,7 +115,7 @@ def test_fill_gridscan_deposition_and_store(
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ):
-    cb = Callback(DiffractionExperimentWithSample)
+    cb = Callback(DiffractionExperimentWithSample, hw_read_during_mapper=MagicMock())
     cb.params = minimal_diffraction_expt_with_sample
     cb.grid_scan_params = grid_scan_params_3d
     cb.detector_params = create_detector_params_for_grid_scan(

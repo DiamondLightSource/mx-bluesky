@@ -26,7 +26,10 @@ EXPECTED_RUN_END_MESSAGE = {"event": "end", "run_start": "my_uuid"}
 class TestZocaloHandler:
     def _setup_handler(self):
         zocalo_handler = ZocaloCallback(
-            "test_plan_name", "test_env", generate_start_info_from_ordered_runs
+            "test_plan_name",
+            "test_env",
+            generate_start_info_from_ordered_runs,
+            hw_read_mapper=MagicMock(),
         )
         return zocalo_handler
 
@@ -240,7 +243,10 @@ class TestZocaloHandler:
         info_generator_factory.side_effect = info_generator
 
         zocalo_handler = ZocaloCallback(
-            "test_plan_name", "test_env", info_generator_factory
+            "test_plan_name",
+            "test_env",
+            info_generator_factory,
+            hw_read_mapper=MagicMock(),
         )
 
         zocalo_handler.start(EXPECTED_RUN_START_MESSAGE)  # type: ignore

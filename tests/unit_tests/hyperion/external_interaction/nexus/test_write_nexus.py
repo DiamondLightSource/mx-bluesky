@@ -16,6 +16,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraGridScanParamsThreeD,
 )
 
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import _fast_gridscan_3d_params
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     _create_writers_from_params,
 )
@@ -31,9 +32,6 @@ from mx_bluesky.common.parameters.components import (
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
-)
-from mx_bluesky.hyperion.parameters.gridscan import (
-    fast_gridscan_params,
 )
 
 """It's hard to effectively unit test the nexus writing so these are really system tests
@@ -157,8 +155,8 @@ def test_given_dummy_data_then_datafile_written_correctly(
 ):
     nexus_writer_1, nexus_writer_2 = dummy_nexus_writers
 
-    zebra_grid_scan_params: ZebraGridScanParamsThreeD = fast_gridscan_params(
-        expt_params_for_nexus_tests, test_three_d_grid_params
+    zebra_grid_scan_params: ZebraGridScanParamsThreeD = _fast_gridscan_3d_params(
+        expt_params_for_nexus_tests, test_three_d_grid_params, False
     )
     nexus_writer_1.create_nexus_file(np.uint16)
 

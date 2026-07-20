@@ -10,6 +10,10 @@ from ophyd_async.sim import SimMotor
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+    HWReadDuringPayload,
+)
 
 
 class MockReactiveCallback(PlanReactiveCallback):
@@ -24,6 +28,15 @@ class MockReactiveCallback(PlanReactiveCallback):
         self.activity_gated_descriptor = MagicMock(name="activity_gated_descriptor")  # type: ignore
         self.activity_gated_event = MagicMock(name="activity_gated_event")  # type: ignore
         self.activity_gated_stop = MagicMock(name="activity_gated_stop")  # type: ignore
+
+
+@pytest.fixture
+def mock_hw_read_mapper() -> HWReadDuringMapper:
+    return lambda _: HWReadDuringPayload(
+        bit_depth=8,
+        ispyb_detector_id=78,
+        roi_mode=True,
+    )
 
 
 @pytest.fixture
