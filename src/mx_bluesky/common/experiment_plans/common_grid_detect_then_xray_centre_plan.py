@@ -9,7 +9,6 @@ from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.backlight import InOut
 from dodal.devices.detector import DetectorParams, TriggerMode
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
@@ -84,8 +83,6 @@ def grid_detect_then_xray_centre(
         GridScanParams: The detected grid parameters.
     """
 
-    eiger: EigerDetector = composite.eiger
-
     oav_params = OAVParameters(get_config_client(), "xrayCentring", oav_config)
 
     grid_scan_params = None
@@ -105,11 +102,11 @@ def grid_detect_then_xray_centre(
     assert parameters.trigger_mode != TriggerMode.SET_FRAMES, (
         "Cannot pre-arm detector before grid detection when trigger mode is SET_FRAMES"
     )
-    eiger.set_detector_parameters(detector_params)
+    composite.detector.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
         composite.beamstop,
-        eiger,
+        composite.detector,
         composite.detector_motion,
         detector_params.detector_distance,
         plan_to_perform(),

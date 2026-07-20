@@ -57,11 +57,11 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
 )
 
 from ....conftest import (

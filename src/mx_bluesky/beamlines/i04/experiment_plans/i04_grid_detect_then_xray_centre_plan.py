@@ -41,6 +41,7 @@ from pydantic import BaseModel
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
+from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -117,9 +118,9 @@ class I04AutoXrcParams(BaseModel):
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I04GridDetectThenXRayCentreComposite(GridDetectAndGridScanEssentialDevices):
-    """All devices which are required for the grid detect and XRC plan"""
-
+class I04GridDetectThenXRayCentreComposite(
+    GridDetectAndGridScanEssentialDevices[EigerDetector]
+):
     attenuator: BinaryFilterAttenuator
     beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
@@ -188,7 +189,7 @@ def i04_default_grid_detect_and_xray_centre(
     """
 
     composite = I04GridDetectThenXRayCentreComposite(
-        eiger=eiger,
+        detector=eiger,
         synchrotron=synchrotron,
         gonio=smargon,
         aperture_scatterguard=aperture_scatterguard,
@@ -341,10 +342,10 @@ def construct_i04_specific_features(
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.eiger.bit_depth,
+        xrc_composite.detector.bit_depth,
         xrc_composite.beamsize,
-        xrc_composite.eiger.cam.roi_mode,
-        xrc_composite.eiger.ispyb_detector_id,
+        xrc_composite.detector.cam.roi_mode,
+        xrc_composite.detector.ispyb_detector_id,
     ]
 
     tidy_plan = partial(
@@ -362,15 +363,18 @@ def construct_i04_specific_features(
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_fast_gridscan_features(
-        partial(
-            setup_zebra_for_gridscan,
-        ),
+        _setup_zebra_for_gridscan,
         tidy_plan,
+        tidy_eiger,
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
+
+
+def _setup_zebra_for_gridscan(composite: I04GridDetectThenXRayCentreComposite, _, __):
+    yield from setup_zebra_for_gridscan(composite)
 
 
 def _create_internal_params(

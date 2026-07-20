@@ -3,23 +3,32 @@ from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 import bluesky.plan_stubs as bps
+from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     set_fast_grid_scan_params,
 )
 
+from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
     construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperiment
+from mx_bluesky.common.parameters.device_composites import TDetector
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionInternalGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
     set_panda_directory,
@@ -30,9 +39,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 )
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     fast_gridscan_params,
@@ -45,10 +51,12 @@ class SmargonSpeedError(Exception):
 
 
 def construct_hyperion_specific_features(
-    xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
     xrc_parameters: DiffractionExperiment,
     grid_scan_params: GridScanParams,
-):
+) -> BeamlineSpecificFGSFeatures[
+    HyperionInternalGridDetectThenXRayCentreComposite[TDetector], DiffractionExperiment
+]:
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
     """
@@ -65,13 +73,21 @@ def construct_hyperion_specific_features(
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.eiger.bit_depth,
         xrc_composite.beamsize,
-        xrc_composite.eiger.cam.roi_mode,
-        xrc_composite.eiger.ispyb_detector_id,
     ]
 
-    setup_trigger_plan: Callable[..., MsgGenerator]
+    signals_to_read_during_collection += _detector_signals_to_read_during_collection(
+        xrc_composite.detector
+    )
+
+    setup_trigger_plan: Callable[
+        [
+            HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
+            DiffractionExperiment,
+            GridScanParams,
+        ],
+        MsgGenerator,
+    ]
 
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = _panda_triggering_setup
@@ -85,9 +101,7 @@ def construct_hyperion_specific_features(
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
     else:
-        setup_trigger_plan = partial(
-            setup_zebra_for_gridscan,
-        )
+        setup_trigger_plan = _setup_zebra_for_gridscan
         tidy_plan = partial(
             tidy_up_zebra_after_gridscan,
             xrc_composite.zebra,
@@ -102,17 +116,38 @@ def construct_hyperion_specific_features(
             zebra_fgs_params,
         )
         fgs_motors = xrc_composite.zebra_fast_grid_scan
-    return construct_beamline_specific_fast_gridscan_features(
+    features = construct_beamline_specific_fast_gridscan_features(
         setup_trigger_plan,
         tidy_plan,
+        tidy_eiger,
         set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
-        signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
+        signals_to_read_during_collection,
+        # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
+    return features
 
 
-def _panda_tidy(xrc_composite: HyperionGridDetectThenXRayCentreComposite):
+def _setup_zebra_for_gridscan(
+    composite: HyperionInternalGridDetectThenXRayCentreComposite, _, __
+):
+    yield from setup_zebra_for_gridscan(composite)
+
+
+def _detector_signals_to_read_during_collection(detector: Any) -> list[Readable]:
+    match detector:
+        case EigerDetector():
+            return [  # type: ignore
+                detector.bit_depth,
+                detector.cam.roi_mode,
+                detector.ispyb_detector_id,
+            ]
+        case _:
+            raise ValueError(f"Unsupported detector type {type(detector)}")
+
+
+def _panda_tidy(xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite):
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(xrc_composite.panda, group)
@@ -124,7 +159,7 @@ def _panda_tidy(xrc_composite: HyperionGridDetectThenXRayCentreComposite):
 
 
 def _panda_triggering_setup(
-    xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
     parameters: DiffractionExperiment,
     grid_scan_parameters: GridScanParams,
 ) -> MsgGenerator:

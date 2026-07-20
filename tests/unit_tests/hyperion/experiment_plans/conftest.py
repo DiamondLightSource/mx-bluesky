@@ -8,6 +8,9 @@ from bluesky.utils import Msg
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    construct_hyperion_specific_features,
+)
 from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -20,8 +23,8 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -31,9 +34,6 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
 )
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(

@@ -39,6 +39,9 @@ from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
 )
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
 )
@@ -57,9 +60,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
     BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 

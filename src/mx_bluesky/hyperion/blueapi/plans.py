@@ -40,7 +40,7 @@ __all__ = [
     "robot_unload",
 ]
 
-from mx_bluesky.hyperion.parameters.device_composites import (
+from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 

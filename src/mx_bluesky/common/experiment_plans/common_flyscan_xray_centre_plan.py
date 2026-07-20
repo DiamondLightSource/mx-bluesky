@@ -3,14 +3,13 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
 from dodal.devices.detector import DetectorParams
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     FastGridScanCommon,
     FastGridScanThreeD,
@@ -31,7 +30,6 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
-    GonioWithOmegaType,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
@@ -42,9 +40,10 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
-TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
 TSetupParameters = TypeVar("TSetupParameters")
 TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
+# TFlyScanDevices: TypeAlias = FlyScanEssentialDevices[TGonioWithOmega, TDetector]
+TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
 
 
 @dataclasses.dataclass
@@ -53,6 +52,7 @@ class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TSetupParameters]):
         [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
     ]
     tidy_plan: Callable[..., MsgGenerator]
+    tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
     set_flyscan_params_plan: Callable[..., MsgGenerator]
     fgs_motors: FastGridScanCommon
     read_pre_flyscan_plan: Callable[
@@ -61,27 +61,17 @@ class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TSetupParameters]):
     read_during_collection_plan: Callable[..., MsgGenerator]
 
 
-def tidy_eiger(eiger: EigerDetector) -> MsgGenerator:
-    """Turn off Eiger dev/shm. Ran after the beamline-specific tidy plan"""
-
-    # Turn off dev/shm streaming to avoid filling disk, see https://github.com/DiamondLightSource/hyperion/issues/1395
-    LOGGER.info("Turning off Eiger dev/shm streaming")
-    # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-    yield from bps.abs_set(
-        eiger.odin.fan.dev_shm_enable,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
-        0,
-        wait=True,
-    )
-
-
 def construct_beamline_specific_fast_gridscan_features(
-    setup_trigger_plan: Callable[..., MsgGenerator],
+    setup_trigger_plan: Callable[
+        [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
+    ],
     tidy_plan: Callable[..., MsgGenerator],
+    tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator],
     set_flyscan_params_plan: Callable[..., MsgGenerator],
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: Sequence[Readable],
     signals_to_read_during_collection: Sequence[Readable],
-) -> BeamlineSpecificFGSFeatures:
+) -> BeamlineSpecificFGSFeatures[TFlyScanDevices, TSetupParameters]:
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
     Args:
@@ -90,6 +80,7 @@ def construct_beamline_specific_fast_gridscan_features(
 
         tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of
         whether or not it finished successfully. Zocalo and Eiger are cleaned up separately
+        tidy_detector_plan: The detector-specific plan for cleaning up the detector
 
         set_flyscan_params_plan (Callable): Set PV's for the relevant Fast Grid Scan dodal device
 
@@ -116,6 +107,7 @@ def construct_beamline_specific_fast_gridscan_features(
     return BeamlineSpecificFGSFeatures(
         setup_trigger_plan,
         tidy_plan,
+        tidy_detector_plan,
         set_flyscan_params_plan,
         fgs_motors,
         read_pre_flyscan_plan,
@@ -155,7 +147,7 @@ def common_flyscan_xray_centre(
 
     def _overall_tidy():
         yield from beamline_specific.tidy_plan()
-        yield from tidy_eiger(composite.eiger)
+        yield from beamline_specific.tidy_detector_plan(composite)
 
     def _decorated_flyscan():
         @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
@@ -172,7 +164,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
+            fgs_composite: TFlyScanDevices,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
             yield from beamline_specific.setup_trigger_plan(
@@ -188,14 +180,14 @@ def common_flyscan_xray_centre(
 
         yield from run_gridscan_and_tidy(composite, beamline_specific)
 
-    composite.eiger.set_detector_parameters(xrc_detector_params)
+    composite.detector.set_detector_parameters(xrc_detector_params)
     yield from _decorated_flyscan()
 
 
 def run_gridscan(
-    fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
+    fgs_composite: TFlyScanDevices,
     grid_scan_params: GridScanParams,
-    beamline_specific: BeamlineSpecificFGSFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures[TFlyScanDevices, Any],
 ):
     with TRACER.start_span("moving_omega_to_0"):
         yield from bps.abs_set(
@@ -221,11 +213,11 @@ def run_gridscan(
 
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
-    yield from bps.stage(fgs_composite.eiger, wait=True)
+    yield from bps.stage(fgs_composite.detector, wait=True)
 
     yield from kickoff_and_complete_gridscan(
         beamline_specific.fgs_motors,
-        fgs_composite.eiger,
+        fgs_composite.detector,
         fgs_composite.synchrotron,
         grid_scan_params.scan_points,
         grid_scan_params.omega_starts_deg,

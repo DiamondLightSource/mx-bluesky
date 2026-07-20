@@ -101,7 +101,7 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
-from mx_bluesky.hyperion.parameters.device_composites import (
+from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.test_data.oav import (

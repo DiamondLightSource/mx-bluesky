@@ -6,14 +6,14 @@ from dodal.devices.smargon import CombinedMove
 
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.blueapi.mixins import MultiXtalSelection
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     pin_centre_then_gridscan_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
     create_detector_params_for_grid_scan_with_hyperion_feature_settings,

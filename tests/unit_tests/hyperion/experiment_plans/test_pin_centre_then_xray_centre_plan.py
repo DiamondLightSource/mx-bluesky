@@ -19,6 +19,9 @@ from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
 )
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     pin_centre_then_gridscan_plan,
@@ -27,9 +30,6 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre import (
     pin_tip_centre_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )

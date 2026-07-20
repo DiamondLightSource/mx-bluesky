@@ -6,7 +6,6 @@ import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -24,14 +23,15 @@ class GonioWithOmega(Protocol):
     wrapped_omega: WrappedAxis
 
 
-GonioWithOmegaType = TypeVar("GonioWithOmegaType", bound=GonioWithOmega)
+TGonioWithOmega = TypeVar("TGonioWithOmega", bound=GonioWithOmega)
+TDetector = TypeVar("TDetector")
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices(Generic[GonioWithOmegaType]):
-    eiger: EigerDetector
+class FlyScanEssentialDevices(Generic[TGonioWithOmega, TDetector]):
+    detector: TDetector
     synchrotron: Synchrotron
-    gonio: GonioWithOmegaType
+    gonio: TGonioWithOmega
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -46,7 +46,9 @@ class OavGridDetectionComposite:
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class GridDetectAndGridScanEssentialDevices(
-    FlyScanEssentialDevices[Smargon], OavGridDetectionComposite
+    FlyScanEssentialDevices[Smargon, TDetector],
+    OavGridDetectionComposite,
+    Generic[TDetector],
 ):
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop

@@ -41,6 +41,9 @@ from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
 )
@@ -57,9 +60,6 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
     set_energy_plan,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.parameters.gridscan import (
     create_detector_params_for_grid_scan_with_hyperion_feature_settings,
 )

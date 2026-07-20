@@ -11,6 +11,9 @@ from dodal.devices.aperturescatterguard import (
 )
 from dodal.devices.zocalo import ZocaloResults
 from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
+from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
+    SmargonSpeedError,
+)
 from ophyd_async.core import completed_status, set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
@@ -30,10 +33,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import GridScanParams
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    SmargonSpeedError,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
+from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (

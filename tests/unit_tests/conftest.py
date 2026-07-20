@@ -107,11 +107,11 @@ from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     create_detector_params_for_grid_scan,
 )
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.conftest import TEST_BEAMLINE_PARAMETERS, raw_params_from_file
 from tests.test_data.oav import TEST_DISPLAY_CONFIG, TEST_OAV_ZOOM_LEVELS
