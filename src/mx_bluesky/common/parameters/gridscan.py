@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Annotated, Generic, TypeVar
 
 from dodal.devices.aperturescatterguard import ApertureValue
@@ -11,7 +10,7 @@ from dodal.devices.fast_grid_scan import (
     ZebraGridScanParamsThreeD,
 )
 from dodal.utils import get_beamline_name
-from pydantic import Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Concat, Line, Product, Static
@@ -45,6 +44,106 @@ GridScanParamType = TypeVar(
 )
 
 
+class GridDetectionParams(BaseModel):
+    """
+    Parameters that specify the characteristic dimensions of one or more grids to be detected.
+
+    Attributes:
+        box_size_um: The dimensions of the boxes in the grid in microns.
+        grid_width_um: The suggested width of the grid to be detected.
+    """
+
+    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
+    grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
+
+
+class GridScanParams(BaseModel):
+    """
+    Parameters that specify a series of grid scans to be carried out.
+    The grids to be scanned must all originate at the same x-coordinate, and have the same number of steps in x'.
+
+    Note for the purposes of this description, x, y, z are coordinates in sample space, whereas x', y' are coordinates
+    in grid space for the respective grid scans.
+
+    Attributes:
+        omega_starts_deg: value of omega for each of the scans, which defines the projection of y' onto the y, z axes.
+        x_start_um: sample x position at the origin of all grid scans in microns.
+        y_starts_um: sample y positions at the origins of each successive grid scan in microns.
+        z_starts_um: samply z positions at the origins of each successive grid scan in microns.
+        x_steps: number of grid steps in the x'-coordinate for each grid scan.
+        y_steps: number of grid steps in the y'-coordinate for each grid scan.
+        x_step_size_um:  Size of the steps in the x'-coordinate in microns
+        y_step_sizes_um: Sizes of the steps in the y'-coordinate for each grid scan in microns.
+    """
+
+    omega_starts_deg: list[int] = Field(
+        default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
+    )
+    x_start_um: float
+    y_starts_um: list[float]
+    z_starts_um: list[float]
+    x_steps: PositiveInt  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
+    y_steps: list[PositiveInt]
+    x_step_size_um: PositiveFloat = Field(
+        default=GridscanParamConstants.BOX_WIDTH_UM
+    )  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
+    # In a 3D grid scan, y_steps[0] and y_steps[1] refers to Y and Z respectively.
+    # We do an omega rotation between scanning across N dimensions to make N different axes
+    y_step_sizes_um: list[PositiveFloat] = Field(
+        default=[GridscanParamConstants.BOX_WIDTH_UM] * 2
+    )
+
+    @model_validator(mode="after")
+    def _check_lengths_are_same(self):
+        fields = {
+            "omega_starts_deg": self.omega_starts_deg,
+            "y_step_sizes_um": self.y_step_sizes_um,
+            "y_steps": self.y_steps,
+            "y_starts_um": self.y_starts_um,
+            "z_starts_um": self.z_starts_um,
+        }
+
+        name_and_length = {name: len(value) for name, value in fields.items()}
+        lengths = name_and_length.values()
+        if len(set(lengths)) != 1:
+            details = "\n".join(
+                f"  {name}: length={len(value)}, value={value}"
+                for name, value in fields.items()
+            )
+
+            raise ValueError("Fields must all have the same length:\n" + details)
+
+        return self
+
+    @property
+    def num_grids(self):
+        return len(self.y_steps)
+
+    @property
+    def grid_specs(self) -> list[Product[str]]:
+        _grid_specs = []
+        for idx in range(self.num_grids):
+            x_end = self.x_start_um + self.x_step_size_um * (self.x_steps - 1)
+            y_end = self.y_starts_um[idx] + self.y_step_sizes_um[idx] * (
+                self.y_steps[idx] - 1
+            )
+            grid_x = Line("sam_x", self.x_start_um, x_end, self.x_steps)
+            grid_y = Line("sam_y", self.y_starts_um[idx], y_end, self.y_steps[idx])
+            grid_z = Static("sam_z", self.z_starts_um[idx])
+            _grid_specs.append(grid_y.zip(grid_z) * ~grid_x)
+        return _grid_specs
+
+    @property
+    def scan_points(self) -> list[AxesPoints[str]]:
+        """A list of all the points in the scan_spec for each grid."""
+        _scan_points = []
+        for grid in range(self.num_grids):
+            _scan_points.append(
+                ScanPath(self.grid_specs[grid].calculate()).consume().midpoints
+            )
+        return _scan_points
+
+
 class GenericGrid(
     DiffractionExperimentWithSample,
     OptionalGonioAngleStarts,
@@ -57,8 +156,10 @@ class GenericGrid(
     Params in GenericGrid currently must be the same for each grid in the gridscan.
     """
 
+    # TODO remove these - now used in GridDetectionParams
     box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
     grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
+
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
 
     ispyb_experiment_type: IspybExperimentType = Field(
@@ -120,13 +221,13 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/1634 for a better structure for this
     # class
 
+    # TODO remove these - now used in GridScanParams
     omega_starts_deg: list[int] = Field(
         default=[GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
     )
     x_step_size_um: PositiveFloat = Field(
         default=GridscanParamConstants.BOX_WIDTH_UM
     )  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
-
     # In a 3D grid scan, y_steps[0] and y_steps[1] refers to Y and Z respectively.
     # We do an omega rotation between scanning across N dimensions to make N different axes
     y_step_sizes_um: list[PositiveFloat] = Field(
@@ -134,6 +235,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
     )
     x_steps: PositiveInt  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1632 for this not being a list
     y_steps: list[PositiveInt]
+
     _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
 
     @model_validator(mode="after")
@@ -157,10 +259,6 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
             raise ValueError("Fields must all have the same length:\n" + details)
 
         return self
-
-    @property
-    @abstractmethod
-    def fast_gridscan_params(self) -> GridScanParamType: ...
 
     def do_set_stub_offsets(self, value: bool):
         self._set_stub_offsets = value
@@ -213,6 +311,7 @@ class SpecifiedGrids(GenericGrid, XyzStarts, WithScan, Generic[GridScanParamType
             )
         return _scan_spec
 
+    # TODO remove this in favour of GridScanParams.scan_points
     @property
     def scan_points(self) -> list[AxesPoints[str]]:
         """A list of all the points in the scan_spec for each grid."""
@@ -252,21 +351,24 @@ class SpecifiedThreeDGridScan(
 
         return self
 
-    @property
-    def fast_gridscan_params(self) -> ZebraGridScanParamsThreeD:
-        return ZebraGridScanParamsThreeD(
-            x_steps=self.x_steps,
-            y_steps=self.y_steps[0],
-            z_steps=self.y_steps[1],
-            x_step_size_mm=self.x_step_size_um / 1000,
-            y_step_size_mm=self.y_step_sizes_um[0] / 1000,
-            z_step_size_mm=self.y_step_sizes_um[1] / 1000,
-            x_start_mm=self.x_start_um / 1000,
-            y1_start_mm=self.y_starts_um[0] / 1000,
-            z1_start_mm=self.z_starts_um[0] / 1000,
-            y2_start_mm=self.y_starts_um[1] / 1000,
-            z2_start_mm=self.z_starts_um[1] / 1000,
-            set_stub_offsets=self._set_stub_offsets,
-            dwell_time_ms=self.exposure_time_s * 1000,
-            transmission_fraction=self.transmission_frac,
-        )
+
+def fast_gridscan_params(
+    expt_params: SpecifiedGrids, grid_scan_params: GridScanParams
+) -> ZebraGridScanParamsThreeD:
+    return ZebraGridScanParamsThreeD(
+        x_steps=grid_scan_params.x_steps,
+        y_steps=grid_scan_params.y_steps[0],
+        z_steps=grid_scan_params.y_steps[1],
+        x_step_size_mm=grid_scan_params.x_step_size_um / 1000,
+        y_step_size_mm=grid_scan_params.y_step_sizes_um[0] / 1000,
+        z_step_size_mm=grid_scan_params.y_step_sizes_um[1] / 1000,
+        x_start_mm=grid_scan_params.x_start_um / 1000,
+        y1_start_mm=grid_scan_params.y_starts_um[0] / 1000,
+        z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
+        y2_start_mm=grid_scan_params.y_starts_um[1] / 1000,
+        z2_start_mm=grid_scan_params.z_starts_um[1] / 1000,
+        # TODO remove this private access
+        set_stub_offsets=expt_params._set_stub_offsets,  # noqa: SLF001
+        dwell_time_ms=expt_params.exposure_time_s * 1000,
+        transmission_fraction=expt_params.transmission_frac,
+    )

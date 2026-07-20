@@ -34,6 +34,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
@@ -1096,8 +1097,10 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
 @pytest.fixture
 def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
     load_centre_collect_composite: LoadCentreCollectComposite,
+    grid_detect_for_snapshot_generation: GridParamUpdate,
 ):
     wrapped = detect_grid_and_do_gridscan
+    grid_parameters = grid_detect_for_snapshot_generation
 
     # Before we do the grid scan, pretend we detected the pin at this position and move to it
     # This is the base snapshot position
@@ -1112,6 +1115,16 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
         )
 
         yield from wrapped(*args, **kwargs)
+        return GridScanParams(
+            omega_starts_deg=[0, 90],
+            x_start_um=grid_parameters["x_start_um"],
+            y_starts_um=grid_parameters["y_starts_um"],
+            z_starts_um=grid_parameters["z_starts_um"],
+            x_steps=grid_parameters["x_steps"],
+            y_steps=grid_parameters["y_steps"],
+            x_step_size_um=grid_parameters["x_step_size_um"],
+            y_step_sizes_um=grid_parameters["y_step_sizes_um"],
+        )
 
     with patch(
         "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.detect_grid_and_do_gridscan",

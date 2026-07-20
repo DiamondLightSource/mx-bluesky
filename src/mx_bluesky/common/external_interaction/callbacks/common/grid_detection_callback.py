@@ -12,21 +12,23 @@ T = TypeVar("T", int, float)
 
 class GridParamUpdate(TypedDict):
     """
-    Grid parameters extracted from the grid detection.
+    Generate grid parameters extracted from the grid detection for two 2D gridscans, one in xy-plane and the
+    second in the xz-plane.
+
+    Note, in this class y refers to both the y plane in absolute coordinate space, and to the secondary axis
+    for the 2D gridscan (i.e the y' axis where in the first gridscan x', y' = x, y, and in the
+    second gridscan x', y' = x, z)
+
     Positions are in motor-space.
 
     Attributes:
-        x_start_um: x position of the centre of the first xy-gridscan box in microns
-        y_start_um: y position of the centre of the first xy-gridscan box in microns
-        y2_start_um: y position of the centre of the first xz-gridscan box in microns
-        z_start_um: z position of the centre of the first xy-gridscan box in microns
-        z2_start_um: z position of the centre of the first xz-gridscan box in microns
-        x_steps: Number of grid boxes in x-direction for xy- and xz- gridscans
-        y_steps: Number of grid boxes in y-direction for xy-gridscan
-        z_steps: Number of grid boxes in z-direction for xz-gridscan
-        x_step_size_um: x-dimension of the grid box
-        y_step_size_um: y-dimension of the grid box
-        z_step_size_um: z-dimension of the grid box
+        x_start_um: x position of the centre of the first xy-gridscan box in microns for all gridscans
+        y_starts_um: y positions of the centre of the first xy-gridscan and xz-gridscan box in microns respectively
+        z_starts_um: z position of the centre of the first xy-gridscan and xz-gridscan box in microns respectively
+        x_steps: Number of grid boxes in x'-direction for xy- and xz- gridscans
+        y_steps: Number of grid boxes in y'-direction for xy-gridscan and xz-gridscan respectively
+        x_step_size_um: x'-dimension of the grid box
+        y_step_sizes_um: y'-dimension of the grid box for xy-gridscan and xz-gridscan respectively
     """
 
     x_start_um: float
