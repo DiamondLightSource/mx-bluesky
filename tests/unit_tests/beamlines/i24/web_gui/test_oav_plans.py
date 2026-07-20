@@ -9,6 +9,7 @@ from mx_bluesky.beamlines.i24.web_gui_plans.oav_plans import (
     focus_on_oav_view,
     move_block_on_arrow_click,
     move_nudge_on_arrow_click,
+    move_on_oav_view_click,
     move_window_on_arrow_click,
 )
 
@@ -103,3 +104,43 @@ async def test_focus_on_oav_view(
 ):
     run_engine(focus_on_oav_view(FocusDirection(direction), MoveSize(move_size), pmac))
     assert await pmac.z.user_readback.get_value() == expected_value
+
+
+@pytest.mark.parametrize(
+    "coordinates, microns_per_pixel_x, microns_per_pixel_y, expected_x, expected_y",
+    [
+        ((568, 321), 1.0, 1.0, 0.568, 0.321),
+        ((123, 789), 1.0, 1.0, 0.123, 0.789),
+        ((568, 321), 0.5, 2.0, 0.284, 0.642),
+        ((123, 789), 2.0, 0.5, 0.246, 0.3945),
+    ],
+)
+def test_move_on_oav_view_click(
+    coordinates,
+    microns_per_pixel_x,
+    microns_per_pixel_y,
+    expected_x,
+    expected_y,
+    oav,
+    pmac,
+    run_engine,
+):
+    def fake_rd(_signal):
+        if _signal == oav.microns_per_pixel_x:
+            return microns_per_pixel_x
+        if _signal == oav.microns_per_pixel_y:
+            return microns_per_pixel_y
+        return 1.0
+        yield
+
+    with (
+        patch(
+            "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.mv",
+        ) as mock_bps_mv,
+        patch(
+            "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.rd",
+            side_effect=fake_rd,
+        ),
+    ):
+        run_engine(move_on_oav_view_click(coordinates, oav, pmac))
+        mock_bps_mv.assert_any_call(pmac.x, expected_x, pmac.y, expected_y, wait=True)
