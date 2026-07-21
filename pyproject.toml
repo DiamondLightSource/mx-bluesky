@@ -55,7 +55,8 @@ dependencies = [
     "daq-config-server >= 1.3.7",
     "blueapi >= 1.12.0",
     "ophyd >= 1.10.5",
-    "ophyd-async >= 0.17a4",
+    # Pin ophyd-async until we support 0.2.0 https://github.com/DiamondLightSource/mx-bluesky/issues/1795
+    "ophyd-async == 0.19.4",
     "bluesky >= 1.14.6",
     "dls-dodal >= 2.5.3",
 ]
