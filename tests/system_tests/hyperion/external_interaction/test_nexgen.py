@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.preprocessors as bpp
 import pytest
+from dodal.devices.zebra.zebra import RotationDirection
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
@@ -28,7 +29,7 @@ DOCKER = environ.get("DOCKER", "docker")
 
 
 @pytest.fixture
-def test_params(tmp_path, config_client):
+def test_params(tmp_path, config_client, request):
     param_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json",
         tmp_path,
@@ -41,23 +42,39 @@ def test_params(tmp_path, config_client):
     params.y_start_um = 0
     params.z_start_um = 0
     params.exposure_time_s = 0.004
+    params.rotation_direction = request.param
+    params.omega_start_deg = (
+        0 if params.rotation_direction == RotationDirection.POSITIVE else 360
+    )
     return params
 
 
 @pytest.mark.parametrize(
-    "test_data_directory, prefix, reference_file",
+    "test_data_directory, prefix, reference_file, test_params",
     [
         (
             "tests/test_data/nexus_files/rotation",
             "ins_8_5",
             "ins_8_5_expected_output.txt",
+            RotationDirection.POSITIVE,
+        ),
+        pytest.param(
+            "tests/test_data/nexus_files/rotation",
+            "ins_8_5",
+            "ins_8_5_expected_output.txt",
+            RotationDirection.NEGATIVE,
+            marks=pytest.mark.skip(
+                reason="https://github.com/DiamondLightSource/mx-bluesky/issues/1794"
+            ),
         ),
         (
             "tests/test_data/nexus_files/rotation_unicode_metafile",
             "ins_8_5",
             "ins_8_5_expected_output.txt",
+            RotationDirection.POSITIVE,
         ),
     ],
+    indirect=["test_params"],
 )
 @patch(
     "mx_bluesky.common.external_interaction.nexus.nexus_utils.time.time",
