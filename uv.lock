@@ -2137,7 +2137,7 @@ requires-dist = [
     { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "ophyd", specifier = ">=1.10.5" },
-    { name = "ophyd-async", specifier = "==0.19.4" },
+    { name = "ophyd-async", specifier = "==0.19.3" },
     { name = "pydantic" },
     { name = "pydantic-extra-types", specifier = ">=2.10.1" },
     { name = "pyepics" },
@@ -2689,7 +2689,7 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.19.4"
+version = "0.19.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bluesky", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2703,9 +2703,9 @@ dependencies = [
     { name = "stamina", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "velocity-profile", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/17/07/22e05906c87e8cc1eb32b6753a09ad84bb382c723f332f5010f777bcf4d2/ophyd_async-0.19.4.tar.gz", hash = "sha256:f484c02487c6bcd82307db7caea42fe922cf66979680a3e6e11a1d9622e700ba", size = 643368, upload-time = "2026-07-15T15:30:01.865Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/20/1241051befc05c21c958206611f9ed058d81b8e8f92e3acf9f9d6936f2fc/ophyd_async-0.19.3.tar.gz", hash = "sha256:9cb76a8a08794a26c619a0420012e7248542501d036f16f3314221869e989984", size = 595679, upload-time = "2026-06-29T15:21:37.859Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/27/00fd0ce52333ffdc4527e3bb3b33b3170dfb851faa9214cbdd9566bdd3f4/ophyd_async-0.19.4-py3-none-any.whl", hash = "sha256:c161709f0fa18cd5c993a630aba8f40fb35213f8e600583f1f414d0b6ce17ecd", size = 253459, upload-time = "2026-07-15T15:30:00.058Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/2c/76ac5e485f6405fc0f1dbbd1c98b7c1137d4aa5c1e49ea9e69bbd8d22ae1/ophyd_async-0.19.3-py3-none-any.whl", hash = "sha256:ef6201edb52e5a54008d57cad1808626aa6493ba4a8fd015e08d14bcffbb697a", size = 232796, upload-time = "2026-06-29T15:21:36.46Z" },
 ]
 
 [package.optional-dependencies]
