@@ -810,8 +810,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.5.2.dev22+g684bc381d"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=684bc381d9ea5a924ed1ab4a444e71524765602f#684bc381d9ea5a924ed1ab4a444e71524765602f" }
+version = "2.5.3"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -833,6 +833,10 @@ dependencies = [
     { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "scanspec", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "zocalo", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a7/3c/36b192e29e1f26298f6fd1ec0f7d9c74fa12e45355fa0f404fdcc505f6ce/dls_dodal-2.5.3.tar.gz", hash = "sha256:32c6af01222c80a7c558b376f417e2c6d3bfd4ba03d6f8fb0114a7630e987afb", size = 1720734, upload-time = "2026-07-21T10:45:44.026Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/3d/fc1ad68dabdcb669ed3b273966d2a423ff8675db7386600e85643a6ad610/dls_dodal-2.5.3-py3-none-any.whl", hash = "sha256:dd1de29502be760ad679c6c7d991fb785cb3d38317334d22f79caf225398c95a", size = 437446, upload-time = "2026-07-21T10:45:42.565Z" },
 ]
 
 [[package]]
@@ -2121,7 +2125,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.3.7" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=684bc381d9ea5a924ed1ab4a444e71524765602f" },
+    { name = "dls-dodal", specifier = ">=2.5.3" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
@@ -2133,7 +2137,7 @@ requires-dist = [
     { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "ophyd", specifier = ">=1.10.5" },
-    { name = "ophyd-async", specifier = ">=0.17a4" },
+    { name = "ophyd-async", specifier = "==0.19.3" },
     { name = "pydantic" },
     { name = "pydantic-extra-types", specifier = ">=2.10.1" },
     { name = "pyepics" },
