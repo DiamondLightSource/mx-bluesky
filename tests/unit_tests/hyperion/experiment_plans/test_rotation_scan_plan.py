@@ -26,7 +26,7 @@ from dodal.devices.thawer import OnOff
 from dodal.devices.xbpm_feedback import Pause
 from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_attr, set_mock_value
 
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
@@ -385,25 +385,25 @@ def test_cleanup_happens(
         side_effect=MyTestError("Experiment fails because this is a test")
     )
 
-    with patch.object(fake_create_rotation_devices.gonio.omega, "set", failing_set):
-        # check main subplan part fails
-        params = next(test_rotation_params.single_rotation_scans)
-        with pytest.raises(MyTestError):
-            run_engine(
-                rotation_scan_plan(fake_create_rotation_devices, params, motion_values)
+    set_mock_attr(fake_create_rotation_devices.gonio.omega, "set", failing_set)
+    # check main subplan part fails
+    params = next(test_rotation_params.single_rotation_scans)
+    with pytest.raises(MyTestError):
+        run_engine(
+            rotation_scan_plan(fake_create_rotation_devices, params, motion_values)
+        )
+    cleanup_plan.assert_not_called()
+    # check that failure is handled in composite plan
+    with pytest.raises(FailedStatus) as exc:
+        run_engine(
+            rotation_scan_internal(
+                fake_create_rotation_devices,
+                test_rotation_params,
+                oav_parameters_for_rotation,
             )
-        cleanup_plan.assert_not_called()
-        # check that failure is handled in composite plan
-        with pytest.raises(FailedStatus) as exc:
-            run_engine(
-                rotation_scan_internal(
-                    fake_create_rotation_devices,
-                    test_rotation_params,
-                    oav_parameters_for_rotation,
-                )
-            )
-        assert "Experiment fails because this is a test" in str(exc.value)
-        cleanup_plan.assert_called_once()
+        )
+    assert "Experiment fails because this is a test" in str(exc.value)
+    cleanup_plan.assert_called_once()
 
 
 def test_rotation_plan_reads_hardware(

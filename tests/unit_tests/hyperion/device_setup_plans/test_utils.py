@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from bluesky import plan_stubs as bps
 from dodal.beamlines import i03
-from ophyd_async.core import get_mock_put
+from ophyd_async.core import get_mock_put, set_mock_attr
 
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
@@ -54,7 +54,7 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
     beamstop_phase1, mock_eiger, null_plan, run_engine
 ):
     detector_motion = MagicMock()
-    detector_motion.z.set = MagicMock(side_effect=MyTestError())
+    set_mock_attr(detector_motion.z, "set", MagicMock(side_effect=MyTestError()))
 
     with pytest.raises(MyTestError):
         run_engine(
@@ -71,7 +71,7 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
 def test_given_detector_move_fails_then_eiger_disarmed_and_correct_exception_returned(
     beamstop_phase1, mock_eiger, detector_motion, null_plan, run_engine
 ):
-    detector_motion.shutter.set = MagicMock(side_effect=MyTestError)
+    set_mock_attr(detector_motion.shutter, "set", MagicMock(side_effect=MyTestError))
 
     with pytest.raises(MyTestError):
         run_engine(

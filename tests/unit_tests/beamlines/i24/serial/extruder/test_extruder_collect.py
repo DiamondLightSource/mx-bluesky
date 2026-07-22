@@ -5,7 +5,7 @@ import pytest
 from dodal.beamlines.i24 import I24_ZEBRA_MAPPING
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from ophyd.sim import NullStatus
-from ophyd_async.core import get_mock_put, init_devices, set_mock_value
+from ophyd_async.core import get_mock_put, init_devices, set_mock_attr, set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 import (
     collection_complete_plan,
@@ -36,7 +36,7 @@ def zebra():
         set_mock_value(i24_zebra.pc.arm.armed, demand.value)
         return NullStatus()
 
-    i24_zebra.pc.arm.set = MagicMock(side_effect=mock_side)
+    set_mock_attr(i24_zebra.pc.arm, "set", MagicMock(side_effect=mock_side))
     return i24_zebra
 
 

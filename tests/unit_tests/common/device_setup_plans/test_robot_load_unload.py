@@ -9,7 +9,12 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureVal
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
-from ophyd_async.core import completed_status, get_mock_put, set_mock_value
+from ophyd_async.core import (
+    completed_status,
+    get_mock_put,
+    set_mock_attr,
+    set_mock_value,
+)
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     prepare_for_robot_load,
@@ -52,7 +57,9 @@ async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     smargon: Smargon,
     run_engine: RunEngine,
 ):
-    smargon.stub_offsets.set = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(
+        smargon.stub_offsets, "set", MagicMock(side_effect=lambda _: completed_status())
+    )
     get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
 
     set_mock_value(smargon.x.user_setpoint, 10)
@@ -258,7 +265,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     callback = RobotLoadISPyBCallback()
     callback.expeye = (mock_expeye := MagicMock())
     run_engine.subscribe(callback)
-    loaded_robot.set = MagicMock(side_effect=TestError("Bad Error"))
+    set_mock_attr(loaded_robot, "set", MagicMock(side_effect=TestError("Bad Error")))
 
     action_id = 1098
     mock_expeye.start_robot_action.return_value = action_id

@@ -23,6 +23,7 @@ from ophyd_async.core import (
     completed_status,
     get_mock_put,
     init_devices,
+    set_mock_attr,
     set_mock_value,
 )
 
@@ -319,7 +320,7 @@ async def max_pixel() -> MaxPixel:
     async with init_devices(mock=True):
         max_pixel = MaxPixel("TEST: MAX_PIXEL", "max_pixel")
 
-    max_pixel.trigger = MagicMock(return_value=completed_status())
+    set_mock_attr(max_pixel, "trigger", MagicMock(return_value=completed_status()))
     return max_pixel
 
 
@@ -378,7 +379,7 @@ def test_given_transmission_change_always_high_then_raises_stop_iteration(
     async def fake_attenuator_set(val):
         set_mock_value(attenuator.actual_transmission, val + 0.2)
 
-    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+    set_mock_attr(attenuator, "set", MagicMock(side_effect=fake_attenuator_set))
 
     with pytest.raises(RuntimeError) as e:
         run_engine(
@@ -655,7 +656,7 @@ async def centre_ellipse() -> CentreEllipseMethod:
     async with init_devices(mock=True):
         centre_ellipse = CentreEllipseMethod("", name="centre_ellipse")
 
-    centre_ellipse.trigger = MagicMock(return_value=completed_status())
+    set_mock_attr(centre_ellipse, "trigger", MagicMock(return_value=completed_status()))
     return centre_ellipse
 
 

@@ -62,6 +62,7 @@ from ophyd_async.core import (
     PathProvider,
     completed_status,
     init_devices,
+    set_mock_attr,
     set_mock_value,
 )
 from ophyd_async.fastcs.panda import HDFPanda
@@ -304,7 +305,9 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
     async def mock_complete(results):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
-    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
+    set_mock_attr(
+        zocalo, "trigger", MagicMock(side_effect=partial(mock_complete, result))
+    )
 
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
@@ -395,7 +398,11 @@ async def fake_fgs_composite(
         synchrotron=synchrotron,
     )
 
-    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        fake_composite.eiger,  # type: ignore
+        "stage",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
         test_three_d_grid_params.detector_params
@@ -417,7 +424,9 @@ async def fake_fgs_composite(
     async def mock_complete(result):
         await zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
-    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    set_mock_attr(
+        zocalo, "trigger", MagicMock(side_effect=partial(mock_complete, test_result))
+    )  # type: ignore
     zocalo.timeout_s = 3
     set_mock_value(fake_composite.gonio.x.max_velocity, 10)
 
@@ -671,8 +680,12 @@ def oav(test_config_files):
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
-    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        oav.snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
+    set_mock_attr(
+        oav.grid_snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
     yield oav
 
 
@@ -700,7 +713,7 @@ def fake_create_rotation_devices(
     sim_run_engine: RunEngineSimulator,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(undulator, "set", MagicMock(side_effect=lambda _: completed_status()))
     sim_run_engine.add_handler(
         "read",
         lambda msg: {

@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
-from ophyd_async.core import set_mock_value
+from ophyd_async.core import set_mock_attr, set_mock_value
 
 from mx_bluesky.beamlines.aithre_lasershaping.experiment_plans.robot_load_plan import (
     RobotLoadComposite,
@@ -123,11 +123,11 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
 
     mock_datetime.now.return_value.strftime.return_value = "TIME"
 
-    oav.snapshot.trigger = MagicMock(side_effect=oav.snapshot.trigger)
+    set_mock_attr(oav.snapshot, "trigger", MagicMock(side_effect=oav.snapshot.trigger))
 
     run_engine(_take_robot_snapshots(oav, Path(test_directory)))
 
-    oav.snapshot.trigger.assert_called_once()
+    oav.snapshot.trigger.assert_called_once()  # type: ignore
     assert await oav.snapshot.filename.get_value() == "TIME_oav-snapshot_after_load"
     assert await oav.snapshot.directory.get_value() == test_directory
 

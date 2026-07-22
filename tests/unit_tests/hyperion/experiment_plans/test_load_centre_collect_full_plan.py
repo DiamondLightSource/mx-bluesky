@@ -16,7 +16,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra.zebra import RotationDirection
-from ophyd_async.core import completed_status, set_mock_value
+from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 from pydantic import ValidationError
 
 from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
@@ -123,7 +123,11 @@ def composite(
 
     composite = LoadCentreCollectComposite(baton=baton, **(rlaec_args | rotation_args))
     composite.pin_tip_detection = pin_tip_detection_with_found_pin
-    composite.undulator_dcm.set = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(
+        composite.undulator_dcm,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
+    )
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
@@ -151,8 +155,10 @@ def composite(
         composite.pin_tip_detection.triggered_bottom_edge, bottom_edge_array
     )
     zoom_levels_list = ["1.0x", "3.0x", "5.0x", "7.5x", "10.0x"]
-    composite.oav.zoom_controller.level.describe = AsyncMock(
-        return_value={"level": {"choices": zoom_levels_list}}
+    set_mock_attr(
+        composite.oav.zoom_controller.level,
+        "describe",
+        AsyncMock(return_value={"level": {"choices": zoom_levels_list}}),
     )
     set_mock_value(composite.oav.zoom_controller.level, "1.0x")
 
