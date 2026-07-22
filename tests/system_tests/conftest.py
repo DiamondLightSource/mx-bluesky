@@ -39,6 +39,7 @@ from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.core import (
     AsyncStatus,
     completed_status,
+    set_mock_attr,
     set_mock_value,
 )
 from PIL import Image
@@ -245,11 +246,15 @@ def oav_for_system_test(
         with Image.open(next_oav_system_test_image()) as image:
             await self.post_processing(image)
 
-    oav.snapshot.trigger = MagicMock(
-        side_effect=partial(trigger_with_test_image, oav.snapshot)
+    set_mock_attr(
+        oav.snapshot,
+        "trigger",
+        MagicMock(side_effect=partial(trigger_with_test_image, oav.snapshot)),
     )
-    oav.grid_snapshot.trigger = MagicMock(
-        side_effect=partial(trigger_with_test_image, oav.grid_snapshot)
+    set_mock_attr(
+        oav.grid_snapshot,
+        "trigger",
+        MagicMock(side_effect=partial(trigger_with_test_image, oav.grid_snapshot)),
     )
 
     empty_response = AsyncMock(spec=ClientResponse)
@@ -365,7 +370,7 @@ def system_tests_rotation_devices(
     beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(undulator, "set", MagicMock(side_effect=lambda _: completed_status()))
     return RotationScanComposite(
         attenuator=attenuator,
         backlight=backlight,
