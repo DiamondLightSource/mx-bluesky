@@ -22,7 +22,10 @@ from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
-from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
+    DiffractionExperimentWithSample,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
@@ -40,7 +43,7 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
-TSetupParameters = TypeVar("TSetupParameters")
+TSetupParameters = TypeVar("TSetupParameters", bound=DiffractionExperiment)
 TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
 # TFlyScanDevices: TypeAlias = FlyScanEssentialDevices[TGonioWithOmega, TDetector]
 TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
@@ -53,7 +56,7 @@ class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TSetupParameters]):
     ]
     tidy_plan: Callable[..., MsgGenerator]
     tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
-    set_flyscan_params_plan: Callable[..., MsgGenerator]
+    set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator]
     fgs_motors: FastGridScanCommon
     read_pre_flyscan_plan: Callable[
         ..., MsgGenerator
@@ -67,7 +70,7 @@ def construct_beamline_specific_fast_gridscan_features(
     ],
     tidy_plan: Callable[..., MsgGenerator],
     tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator],
-    set_flyscan_params_plan: Callable[..., MsgGenerator],
+    set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator],
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: Sequence[Readable],
     signals_to_read_during_collection: Sequence[Readable],
@@ -202,7 +205,7 @@ def run_gridscan(
     LOGGER.info("Setting fgs params")
 
     try:
-        yield from beamline_specific.set_flyscan_params_plan()
+        yield from beamline_specific.set_flyscan_params_plan(grid_scan_params)
     except FailedStatus as e:
         if isinstance(e.__cause__, GridScanInvalidError):
             raise SampleError(

@@ -21,6 +21,7 @@ from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import completed_status, set_mock_value
 
+from mx_bluesky.common.device_setup_plans.gridscan import _fast_gridscan_3d_params
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     FlyScanEssentialDevices,
@@ -49,7 +50,6 @@ from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
-    fast_gridscan_params,
 )
 from mx_bluesky.common.utils.exceptions import (
     WarningError,
@@ -164,7 +164,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
-        fgs_params = fast_gridscan_params(
+        fgs_params = _fast_gridscan_3d_params(
             minimal_diffraction_expt_with_sample, grid_scan_params_3d
         )
         motor_position = fgs_params.grid_position_to_motor_position(np.array([1, 2, 3]))
@@ -256,7 +256,7 @@ class TestFlyscanXrayCentrePlan:
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
     ):
-        fgs_params = fast_gridscan_params(
+        fgs_params = _fast_gridscan_3d_params(
             minimal_diffraction_expt_with_sample, grid_scan_params_3d
         )
         beamline_specific.set_flyscan_params_plan = partial(

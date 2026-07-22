@@ -18,7 +18,6 @@ from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
-    set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.mx_phase1.beamstop import Beamstop
@@ -42,6 +41,7 @@ from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
 from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
+from mx_bluesky.common.device_setup_plans.gridscan import set_zebra_fgs_3d_params
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -92,9 +92,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
-    GridScanParams,
     create_detector_params_for_grid_scan,
-    fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
     set_transmission_and_trigger_xbpm_feedback_before_collection_decorator,
@@ -324,7 +322,6 @@ def create_gridscan_callbacks() -> tuple[
 def construct_i04_specific_features(
     xrc_composite: I04GridDetectThenXRayCentreComposite,
     xrc_parameters: DiffractionExperimentWithSample,
-    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     """
     Get all the information needed to do the i04 XRC flyscan.
@@ -355,18 +352,15 @@ def construct_i04_specific_features(
         group="flyscan_zebra_tidy",
         wait=True,
     )
-    zebra_fgs_params = fast_gridscan_params(xrc_parameters, grid_scan_params)
-    set_flyscan_params_plan = partial(
-        set_fast_grid_scan_params,
-        xrc_composite.zebra_fast_grid_scan,
-        zebra_fgs_params,
-    )
+
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_fast_gridscan_features(
         _setup_zebra_for_gridscan,
         tidy_plan,
         tidy_eiger,
-        set_flyscan_params_plan,
+        partial(
+            set_zebra_fgs_3d_params, xrc_composite.zebra_fast_grid_scan, xrc_parameters
+        ),
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076

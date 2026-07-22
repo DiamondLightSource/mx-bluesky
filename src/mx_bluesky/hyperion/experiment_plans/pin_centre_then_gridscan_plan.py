@@ -6,7 +6,6 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
-    TGridDetectAndGridScanEssentialDevices,
     detect_grid_and_do_gridscan,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
@@ -24,8 +23,12 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
+from mx_bluesky.common.parameters.device_composites import TDetector
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
+)
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionInternalGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     construct_hyperion_specific_features,
@@ -37,7 +40,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 
 
 def pin_centre_then_gridscan_plan(
-    composite: TGridDetectAndGridScanEssentialDevices,
+    composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,

@@ -8,13 +8,9 @@ from bluesky.utils import MsgGenerator
 from dodal.beamlines.i02_1 import ZebraFastGridScanTwoD
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
-from dodal.devices.beamlines.i02_1.fast_grid_scan import ZebraGridScanParamsTwoD
 from dodal.devices.beamlines.i02_1.flux import Flux
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import (
-    set_fast_grid_scan_params as set_flyscan_params_plan,
-)
 from dodal.devices.motors import XYZWrappedOmegaStage
 from dodal.devices.slits import Slits
 from dodal.devices.synchrotron import Synchrotron
@@ -31,6 +27,7 @@ from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_ca
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
 from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
+from mx_bluesky.common.device_setup_plans.gridscan import set_zebra_fgs_3d_params
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     common_flyscan_xray_centre,
@@ -134,16 +131,11 @@ def construct_i02_1_specific_features(
         fgs_composite.detector.ispyb_detector_id,
     ]
 
-    fgs_params = fast_gridscan_params(params, grid_scan_params)
     return construct_beamline_specific_fast_gridscan_features(
         _zebra_triggering_setup,
         partial(_tidy_plan, fgs_composite, group="flyscan_zebra_tidy", wait=True),
         tidy_eiger,
-        partial(
-            set_flyscan_params_plan,
-            fgs_composite.zebra_fast_grid_scan,
-            fgs_params,
-        ),
+        partial(set_zebra_fgs_3d_params, fgs_composite.zebra_fast_grid_scan, params),
         fgs_composite.zebra_fast_grid_scan,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # See : https://github.com/bluesky/bluesky/issues/1809
@@ -248,23 +240,6 @@ def i02_1_gridscan_plan(
         )
 
     yield from decorated_flyscan_plan()
-
-
-def fast_gridscan_params(
-    params: DiffractionExperiment, grid_scan_params: GridScanParams
-) -> ZebraGridScanParamsTwoD:
-    return ZebraGridScanParamsTwoD(
-        x_steps=grid_scan_params.x_steps,
-        y_steps=grid_scan_params.y_steps[0],
-        x_step_size_mm=grid_scan_params.x_step_size_um / 1000,
-        y_step_size_mm=grid_scan_params.y_step_sizes_um[0] / 1000,
-        x_start_mm=grid_scan_params.x_start_um / 1000,
-        y1_start_mm=grid_scan_params.y_starts_um[0] / 1000,
-        z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
-        set_stub_offsets=False,
-        transmission_fraction=0.5,
-        dwell_time_ms=params.exposure_time_s * 1000,
-    )
 
 
 def create_internal_composite(

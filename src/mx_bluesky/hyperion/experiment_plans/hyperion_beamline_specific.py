@@ -9,17 +9,20 @@ import bluesky.plan_stubs as bps
 from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import (
-    set_fast_grid_scan_params,
-)
 
 from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
+from mx_bluesky.common.device_setup_plans.gridscan import (
+    panda_fast_gridscan_params,
+    set_panda_fgs_params,
+    set_zebra_fgs_3d_params,
+)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
+    TSetupParameters,
     construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperiment
@@ -40,10 +43,6 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
-from mx_bluesky.hyperion.parameters.gridscan import (
-    fast_gridscan_params,
-    panda_fast_gridscan_params,
-)
 
 
 class SmargonSpeedError(Exception):
@@ -52,10 +51,10 @@ class SmargonSpeedError(Exception):
 
 def construct_hyperion_specific_features(
     xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
-    xrc_parameters: DiffractionExperiment,
+    xrc_parameters: TSetupParameters,
     grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures[
-    HyperionInternalGridDetectThenXRayCentreComposite[TDetector], DiffractionExperiment
+    HyperionInternalGridDetectThenXRayCentreComposite[TDetector], TSetupParameters
 ]:
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
@@ -92,11 +91,12 @@ def construct_hyperion_specific_features(
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = _panda_triggering_setup
         tidy_plan = partial(_panda_tidy, xrc_composite)
-        panda_fgs_params = panda_fast_gridscan_params(xrc_parameters, grid_scan_params)
         set_flyscan_params_plan = partial(
-            set_fast_grid_scan_params,
+            set_panda_fgs_params,
             xrc_composite.panda_fast_grid_scan,
-            panda_fgs_params,
+            xrc_parameters,
+            set_stub_offsets=get_hyperion_feature_settings().SET_STUB_OFFSETS,
+            run_up_distance_mm=get_hyperion_feature_settings().PANDA_RUNUP_DISTANCE_MM,
         )
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
@@ -109,11 +109,11 @@ def construct_hyperion_specific_features(
             group="flyscan_zebra_tidy",
             wait=True,
         )
-        zebra_fgs_params = fast_gridscan_params(xrc_parameters, grid_scan_params)
         set_flyscan_params_plan = partial(
-            set_fast_grid_scan_params,
+            set_zebra_fgs_3d_params,
             xrc_composite.zebra_fast_grid_scan,
-            zebra_fgs_params,
+            xrc_parameters,
+            set_stub_offsets=get_hyperion_feature_settings().SET_STUB_OFFSETS,
         )
         fgs_motors = xrc_composite.zebra_fast_grid_scan
     features = construct_beamline_specific_fast_gridscan_features(

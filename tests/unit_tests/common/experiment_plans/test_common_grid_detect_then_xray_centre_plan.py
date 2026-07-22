@@ -15,6 +15,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.core import get_mock_put
 
+from mx_bluesky.common.device_setup_plans.gridscan import _fast_gridscan_3d_params
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
 )
@@ -41,7 +42,6 @@ from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
     create_detector_params_for_grid_scan,
-    fast_gridscan_params,
 )
 
 from ....conftest import (
@@ -233,7 +233,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     actual_detector_params = mock_flyscan.call_args[0][2]
     grid_scan_params: GridScanParams = mock_flyscan.call_args[0][3]
     assert actual_detector_params.num_triggers == FREE_RUN_MAX_IMAGES
-    fgs_params = fast_gridscan_params(params, grid_scan_params)
+    fgs_params = _fast_gridscan_3d_params(params, grid_scan_params)
     assert fgs_params.x_axis.full_steps == 15
     assert fgs_params.y_axis.end == pytest.approx(-0.06329, 0.001)
 
