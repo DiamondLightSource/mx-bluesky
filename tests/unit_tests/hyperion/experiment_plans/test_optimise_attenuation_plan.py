@@ -6,7 +6,12 @@ import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
+from ophyd_async.core import (
+    AsyncStatus,
+    completed_status,
+    set_mock_attr,
+    set_mock_value,
+)
 
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.experiment_plans import optimise_attenuation_plan
@@ -49,19 +54,18 @@ async def fake_composite(attenuator) -> OptimizeAttenuationComposite:
 
 @pytest.fixture
 def fake_composite_mocked_sets(fake_composite: OptimizeAttenuationComposite):
-    with (
-        patch.object(
-            fake_composite.xspress3mini,
-            "stage",
-            MagicMock(side_effect=lambda: completed_status()),
-        ),
-        patch.object(
-            fake_composite.sample_shutter,
-            "set",
-            MagicMock(side_effect=lambda _: completed_status()),
-        ),
-    ):
-        yield fake_composite
+    set_mock_attr(
+        fake_composite.xspress3mini,
+        "stage",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
+    set_mock_attr(
+        fake_composite.sample_shutter,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
+    )
+
+    return fake_composite
 
 
 def test_is_deadtime_optimised_returns_true_once_direction_is_flipped_and_deadtime_goes_back_above_threshold():
@@ -307,7 +311,7 @@ def test_total_counts_gets_within_target(
         )
         return AsyncStatus(asyncio.sleep(0))
 
-    fake_composite_mocked_sets.attenuator.set = update_data
+    set_mock_attr(fake_composite_mocked_sets.attenuator, "set", update_data)
     iteration = 0
 
     run_engine(
@@ -350,9 +354,15 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     run_engine: RunEngine,
     fake_composite: OptimizeAttenuationComposite,
 ):
-    fake_composite.attenuator.set = MagicMock(side_effect=lambda _: completed_status())
-    fake_composite.xspress3mini.acquire_time.set = MagicMock(
-        side_effect=lambda _: completed_status()
+    set_mock_attr(
+        fake_composite.attenuator,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
+    )
+    set_mock_attr(
+        fake_composite.xspress3mini.acquire_time,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
     )
 
     run_engine(
@@ -368,6 +378,6 @@ def test_optimisation_attenuation_plan_runs_correct_functions(
     else:
         mock_total_counts_optimisation.assert_not_called()
         mock_deadtime_optimisation.assert_called_once()
-    fake_composite.attenuator.set.assert_called_once()
+    fake_composite.attenuator.set.assert_called_once()  # type: ignore
     mock_check_parameters.assert_called_once()
-    fake_composite.xspress3mini.acquire_time.set.assert_called_once()
+    fake_composite.xspress3mini.acquire_time.set.assert_called_once()  # type: ignore

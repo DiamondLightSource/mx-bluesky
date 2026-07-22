@@ -12,7 +12,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.areadetector.plugins.mjpg import MJPG
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.smargon import Smargon
-from ophyd_async.core import AsyncStatus, set_mock_value
+from ophyd_async.core import AsyncStatus, set_mock_attr, set_mock_value
 from PIL import Image
 
 from mx_bluesky.common.parameters.components import WithSnapshot
@@ -53,9 +53,15 @@ def oav_with_snapshots(oav: OAV, next_snapshot):
             # don't do full post-processing to save on slow PIL image save calls
             await mjpg._save_image(image)
 
-    oav.snapshot.trigger = MagicMock(side_effect=partial(fake_trigger, oav.snapshot))
-    oav.grid_snapshot.trigger = MagicMock(
-        side_effect=partial(fake_trigger, oav.grid_snapshot)
+    set_mock_attr(
+        oav.snapshot,
+        "trigger",
+        MagicMock(side_effect=partial(fake_trigger, oav.snapshot)),
+    )
+    set_mock_attr(
+        oav.grid_snapshot,
+        "trigger",
+        MagicMock(side_effect=partial(fake_trigger, oav.grid_snapshot)),
     )
     yield oav
 
