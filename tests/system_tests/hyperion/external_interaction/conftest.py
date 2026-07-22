@@ -42,6 +42,7 @@ from ophyd_async.core import (
     AsyncStatus,
     callback_on_mock_put,
     completed_status,
+    set_mock_attr,
     set_mock_value,
 )
 from sqlalchemy import create_engine
@@ -376,20 +377,26 @@ def fgs_composite_for_fake_zocalo(
     set_mock_value(
         hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
     )
-    hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(
-        side_effect=lambda: completed_status()
-    )  # type: ignore
-    hyperion_flyscan_xrc_composite.gonio.stub_offsets.set = MagicMock(
-        side_effect=lambda _: completed_status()
-    )  # type: ignore
+    set_mock_attr(
+        hyperion_flyscan_xrc_composite.eiger,  # type: ignore
+        "unstage",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
+    set_mock_attr(
+        hyperion_flyscan_xrc_composite.gonio.stub_offsets,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
+    )
     callback_on_mock_put(
         hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.run_cmd,
         lambda *args, **kwargs: set_mock_value(
             hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.status, 1
         ),
     )
-    hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.complete = MagicMock(
-        side_effect=lambda: completed_status()
+    set_mock_attr(
+        hyperion_flyscan_xrc_composite.zebra_fast_grid_scan,
+        "complete",
+        MagicMock(side_effect=lambda: completed_status()),
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite
@@ -452,8 +459,10 @@ def composite_for_rotation_scan(
     beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav_for_system_test.zoom_controller.level.describe = AsyncMock(
-        return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}
+    set_mock_attr(
+        oav_for_system_test.zoom_controller.level,
+        "describe",
+        AsyncMock(return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}),
     )
 
     fake_create_rotation_devices = RotationScanComposite(
