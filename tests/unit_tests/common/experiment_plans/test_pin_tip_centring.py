@@ -12,7 +12,12 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.oav.utils import PinNotFoundError
 from dodal.devices.smargon import Smargon
-from ophyd_async.core import completed_status, get_mock_put, set_mock_value
+from ophyd_async.core import (
+    completed_status,
+    get_mock_put,
+    set_mock_attr,
+    set_mock_value,
+)
 from ophyd_async.epics.motor import MotorLimitsError
 
 from mx_bluesky.common.device_setup_plans.gonio import (
@@ -65,11 +70,13 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
 ):
     set_mock_value(mock_pin_tip.triggered_tip, np.array([100, 200]))
 
-    mock_pin_tip.trigger = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        mock_pin_tip, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
 
     result = run_engine(move_pin_into_view(mock_pin_tip, smargon_with_limits))
 
-    mock_pin_tip.trigger.assert_called_once()
+    mock_pin_tip.trigger.assert_called_once()  # type: ignore
     assert await smargon_with_limits.x.user_setpoint.get_value() == 0
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)

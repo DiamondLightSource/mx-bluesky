@@ -8,7 +8,7 @@ from dodal.devices.beamlines.i24.aperture import AperturePositions
 from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from ophyd_async.core import completed_status, set_mock_value
+from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     DEFAULT_DETECTOR_DISTANCE_MM,
@@ -83,7 +83,7 @@ async def test_rotation_scan_plan_in_re(
     )
     # Test correct functions are called, but don't test bluesky messages
     mock_zebra_arm = MagicMock(side_effect=lambda _: completed_status())
-    rotation_composite.zebra.pc.arm.set = mock_zebra_arm
+    set_mock_attr(rotation_composite.zebra.pc.arm, "set", mock_zebra_arm)
     params = get_good_single_rotation_params(tmp_path)
     mock_calc_motion_profile.return_value = calculate_motion_profile(params, 1, 1)
     run_engine(single_rotation_plan(rotation_composite, params))
@@ -254,8 +254,10 @@ def test_cleanup_plan(
     rotation_composite: RotationScanComposite,
     run_engine: RunEngine,
 ):
-    rotation_composite.jungfrau.unstage = MagicMock(
-        side_effect=lambda: completed_status()
+    set_mock_attr(
+        rotation_composite.jungfrau,
+        "unstage",
+        MagicMock(side_effect=lambda: completed_status()),
     )
     run_engine(
         _cleanup_plan(
@@ -265,4 +267,4 @@ def test_cleanup_plan(
         )
     )
     mock_tidy_zebra.assert_called_once()
-    rotation_composite.jungfrau.unstage.assert_called_once()
+    rotation_composite.jungfrau.unstage.assert_called_once()  # type: ignore

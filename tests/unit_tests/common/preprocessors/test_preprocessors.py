@@ -6,7 +6,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import IllegalMessageSequence
-from ophyd_async.core import completed_status
+from ophyd_async.core import completed_status, set_mock_attr
 
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
@@ -93,8 +93,10 @@ def test_trigger_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
     run_engine: RunEngine,
 ):
-    xbpm_and_transmission_wrapper_composite.attenuator.set = MagicMock(
-        side_effect=lambda _: completed_status()
+    set_mock_attr(
+        xbpm_and_transmission_wrapper_composite.attenuator,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
     )
     mock_set_transmission = xbpm_and_transmission_wrapper_composite.attenuator.set
 
@@ -103,7 +105,7 @@ def test_trigger_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
     )
     @bpp.run_decorator()
     def first_plan():
-        mock_set_transmission.assert_called_once()
+        mock_set_transmission.assert_called_once()  # type: ignore
         yield from second_plan()
 
     @bpp.set_run_key_decorator(PlanNameConstants.GRID_DETECT_AND_DO_GRIDSCAN)
@@ -112,7 +114,7 @@ def test_trigger_xbpm_preprocessor_wraps_one_run_only_if_no_run_specified(
         yield from bps.null()
 
     run_engine(first_plan())
-    mock_set_transmission.assert_called_once()
+    mock_set_transmission.assert_called_once()  # type: ignore
 
 
 def assert_open_run_then_pause_xbpm_then_close_run_then_unpause(msgs):

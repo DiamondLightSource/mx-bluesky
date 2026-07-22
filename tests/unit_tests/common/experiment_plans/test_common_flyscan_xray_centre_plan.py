@@ -22,7 +22,7 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloStartInfo
 from ophyd.sim import NullStatus
 from ophyd.status import Status
-from ophyd_async.core import completed_status, set_mock_value
+from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -127,21 +127,22 @@ class TestFlyscanXrayCentrePlan:
         )
         run_engine.subscribe(ispyb_callback)
 
-        error = None
-        with patch.object(fake_fgs_composite.gonio.omega, "set") as mock_set:
-            error = AssertionError("Test Exception")
-            mock_set.side_effect = FailedStatus(error)
-            with pytest.raises(FailedStatus):
-                run_engine(
-                    ispyb_activation_wrapper(
-                        common_flyscan_xray_centre(
-                            fake_fgs_composite,
-                            test_three_d_grid_params,
-                            beamline_specific,
-                        ),
+        set_mock_attr(
+            fake_fgs_composite.gonio.omega,
+            "set",
+            MagicMock(side_effect=FailedStatus(AssertionError("Test Exception"))),
+        )
+        with pytest.raises(FailedStatus):
+            run_engine(
+                ispyb_activation_wrapper(
+                    common_flyscan_xray_centre(
+                        fake_fgs_composite,
                         test_three_d_grid_params,
+                        beamline_specific,
                     ),
-                )
+                    test_three_d_grid_params,
+                ),
+            )
 
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
@@ -212,12 +213,16 @@ class TestFlyscanXrayCentrePlan:
         test_three_d_grid_params: SpecifiedThreeDGridScan,
         fake_fgs_composite: FlyScanEssentialDevices,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(
-            side_effect=lambda: completed_status()
+        set_mock_attr(
+            fake_fgs_composite.eiger,  # type: ignore
+            "unstage",
+            MagicMock(side_effect=lambda: completed_status()),
         )
         fgs = i03.zebra_fast_grid_scan.build(connect_immediately=True, mock=True)
         fgs.KICKOFF_TIMEOUT = 0.1
-        fgs.complete = MagicMock(side_effect=lambda: completed_status())
+        set_mock_attr(
+            fgs, "complete", MagicMock(side_effect=lambda: completed_status())
+        )
         set_mock_value(fgs.motion_program.running, 1)
 
         def test_plan():
@@ -343,8 +348,10 @@ class TestFlyscanXrayCentrePlan:
             return_value=True
         )
         fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
-        fake_fgs_composite.eiger.stage = MagicMock(
-            return_value=Status(None, None, 0, True, True)
+        set_mock_attr(
+            fake_fgs_composite.eiger,  # type: ignore
+            "stage",
+            MagicMock(return_value=Status(None, None, 0, True, True)),
         )
 
         with patch(
@@ -392,14 +399,18 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(side_effect=completed_status)
+        set_mock_attr(
+            fake_fgs_composite.eiger,  # type: ignore
+            "unstage",
+            MagicMock(side_effect=completed_status),
+        )
         run_engine(
             run_gridscan(
                 fake_fgs_composite, test_three_d_grid_params, beamline_specific
             )
         )
         fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
-        fake_fgs_composite.eiger.unstage.assert_called_once()
+        fake_fgs_composite.eiger.unstage.assert_called_once()  # type: ignore
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
@@ -436,8 +447,10 @@ class TestFlyscanXrayCentrePlan:
 
         mock_complete.side_effect = CompleteError()
 
-        fake_fgs_composite.eiger.stage = MagicMock(
-            return_value=Status(None, None, 0, True, True)
+        set_mock_attr(
+            fake_fgs_composite.eiger,  # type: ignore
+            "stage",
+            MagicMock(return_value=Status(None, None, 0, True, True)),
         )
 
         fake_fgs_composite.eiger.filewriters_finished = NullStatus()
@@ -493,7 +506,11 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
 
         mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor
-        fake_fgs_composite.eiger.unstage = MagicMock(side_effect=completed_status)
+        set_mock_attr(
+            fake_fgs_composite.eiger,  # type: ignore
+            "unstage",
+            MagicMock(side_effect=completed_status),
+        )
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
 
         x_steps, y_steps, z_steps = 10, 20, 30

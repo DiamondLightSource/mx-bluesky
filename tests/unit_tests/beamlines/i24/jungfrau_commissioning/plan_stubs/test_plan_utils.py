@@ -12,6 +12,7 @@ from dodal.devices.beamlines.i24.commissioning_jungfrau import (
 from ophyd_async.core import (
     TriggerInfo,
     completed_status,
+    set_mock_attr,
     set_mock_value,
 )
 from ophyd_async.fastcs.jungfrau import GainMode
@@ -27,7 +28,7 @@ async def test_fly_jungfrau(
 ):
     set_mock_value(jungfrau.writer.frame_counter, 10)
     mock_stop = AsyncMock()
-    jungfrau.detector.acquisition_stop.trigger = mock_stop
+    set_mock_attr(jungfrau.detector.acquisition_stop, "trigger", mock_stop)
 
     filename = "test"
 
@@ -62,18 +63,24 @@ async def test_fly_jungfrau_does_read_plan_after_prepare(
     run_engine: RunEngine, jungfrau: CommissioningJungfrauDetector
 ):
     mock_stop = AsyncMock()
-    jungfrau.detector.acquisition_stop.trigger = mock_stop
+    set_mock_attr(jungfrau.detector.acquisition_stop, "trigger", mock_stop)
 
     read_hardware = MagicMock()
 
     filename = "test"
-    jungfrau.prepare = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(
+        jungfrau, "prepare", MagicMock(side_effect=lambda _: completed_status())
+    )
 
     parent_mock = MagicMock()
-    parent_mock.attach_mock(jungfrau.prepare, "jungfrau_prepare")
+    parent_mock.attach_mock(jungfrau.prepare, "jungfrau_prepare")  # type: ignore
     parent_mock.attach_mock(read_hardware, "read_hardware")
-    jungfrau.kickoff = MagicMock(side_effect=lambda: completed_status())
-    jungfrau.complete = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        jungfrau, "kickoff", MagicMock(side_effect=lambda: completed_status())
+    )
+    set_mock_attr(
+        jungfrau, "complete", MagicMock(side_effect=lambda: completed_status())
+    )
     test_trigger_info = TriggerInfo(livetime=1e-3, collections_per_event=5)
 
     @run_decorator(md={"detector_file_template": filename})

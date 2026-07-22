@@ -65,6 +65,7 @@ from ophyd_async.core import (
     completed_status,
     get_mock_put,
     init_devices,
+    set_mock_attr,
     set_mock_value,
 )
 from ophyd_async.epics.core import epics_signal_rw
@@ -366,9 +367,13 @@ def test_three_d_grid_params(tmp_path, patch_beamline_env_variable):
 @pytest.fixture
 def eiger():
     eiger = i03.eiger.build(mock=True)
-    eiger.stage = MagicMock(side_effect=lambda: completed_status())
-    eiger.do_arm.set = MagicMock(side_effect=lambda _: completed_status())
-    eiger.unstage = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(eiger, "stage", MagicMock(side_effect=lambda: completed_status()))  # type: ignore
+    set_mock_attr(
+        eiger.do_arm,  # type: ignore
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
+    )
+    set_mock_attr(eiger, "unstage", MagicMock(side_effect=lambda: completed_status()))  # type: ignore
     return eiger
 
 
@@ -475,7 +480,9 @@ def ophyd_pin_tip_detection():
 def transfocator():
     with init_devices(mock=True):
         transfocator = Transfocator("", "")
-    transfocator.set = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(
+        transfocator, "set", MagicMock(side_effect=lambda _: completed_status())
+    )
     return transfocator
 
 
@@ -491,7 +498,7 @@ def robot():
             set_mock_value(robot.current_puck, val.puck)
             set_mock_value(robot.sample_id, await robot.next_sample_id.get_value())
 
-    robot.set = MagicMock(side_effect=fake_load)
+    set_mock_attr(robot, "set", MagicMock(side_effect=fake_load))
     return robot
 
 
@@ -516,7 +523,7 @@ def attenuator():
     async def fake_attenuator_set(val):
         set_mock_value(attenuator.actual_transmission, val)
 
-    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+    set_mock_attr(attenuator, "set", MagicMock(side_effect=fake_attenuator_set))
 
     yield attenuator
 
@@ -549,7 +556,7 @@ def xbpm_feedback(
     baton: Baton,  # Ensure baton is cached with mock configuration
 ):
     xbpm = i03.xbpm_feedback.build(connect_immediately=True, mock=True)
-    xbpm.trigger = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(xbpm, "trigger", MagicMock(side_effect=lambda: completed_status()))
     yield xbpm
 
 
@@ -597,9 +604,9 @@ def lower_gonio(
 def mirror_voltages():
     voltages = i03.mirror_voltages.build(connect_immediately=True, mock=True)
     for vc in voltages.vertical_voltages.values():
-        vc.set = MagicMock(side_effect=lambda _: completed_status())
+        set_mock_attr(vc, "set", MagicMock(side_effect=lambda _: completed_status()))
     for vc in voltages.horizontal_voltages.values():
-        vc.set = MagicMock(side_effect=lambda _: completed_status())
+        set_mock_attr(vc, "set", MagicMock(side_effect=lambda _: completed_status()))
     yield voltages
 
 
@@ -734,8 +741,8 @@ def fake_create_devices(
 ):
     mock_omega_sets = MagicMock(side_effect=lambda _: completed_status())
 
-    smargon.omega.velocity.set = mock_omega_sets
-    smargon.omega.set = mock_omega_sets
+    set_mock_attr(smargon.omega.velocity, "set", mock_omega_sets)
+    set_mock_attr(smargon.omega, "set", mock_omega_sets)
 
     devices = {
         "beamstop": beamstop_phase1,
@@ -752,8 +759,8 @@ def fake_create_devices(
 @pytest.fixture
 def zocalo():
     zoc = i03.zocalo.build(connect_immediately=True, mock=True)
-    zoc.stage = MagicMock(side_effect=lambda: completed_status())
-    zoc.unstage = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(zoc, "stage", MagicMock(side_effect=lambda: completed_status()))
+    set_mock_attr(zoc, "unstage", MagicMock(side_effect=lambda: completed_status()))
     return zoc
 
 
@@ -768,7 +775,7 @@ async def enum_attenuator() -> EnumFilterAttenuator:
     async def fake_attenuator_set(val):
         set_mock_value(attenuator.actual_transmission, val)
 
-    attenuator.set = MagicMock(side_effect=fake_attenuator_set)
+    set_mock_attr(attenuator, "set", MagicMock(side_effect=fake_attenuator_set))
     return attenuator
 
 
@@ -839,8 +846,8 @@ async def async_status_done():
 
 
 def mock_gridscan_kickoff_complete(gridscan: FastGridScanCommon):
-    gridscan.kickoff = MagicMock(return_value=async_status_done)
-    gridscan.complete = MagicMock(return_value=async_status_done)
+    set_mock_attr(gridscan, "kickoff", MagicMock(return_value=async_status_done))
+    set_mock_attr(gridscan, "complete", MagicMock(return_value=async_status_done))
 
 
 @pytest.fixture
@@ -858,8 +865,8 @@ def panda_fast_grid_scan():
         set_mock_value(scan.status, 0)
         return completed_status()
 
-    with patch.object(scan, "complete", side_effect=mock_complete):
-        yield scan
+    set_mock_attr(scan, "complete", MagicMock(side_effect=mock_complete))
+    return scan
 
 
 @pytest.fixture
@@ -902,7 +909,11 @@ async def hyperion_flyscan_xrc_composite(
         beamsize=beamsize,
     )
 
-    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        fake_composite.eiger,  # type: ignore
+        "stage",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(hyperion_fgs_params.detector_params)
     fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
@@ -921,8 +932,10 @@ async def hyperion_flyscan_xrc_composite(
     async def mock_complete(result):
         await fake_composite.zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
-    fake_composite.zocalo.trigger = MagicMock(
-        side_effect=partial(mock_complete, test_result)
+    set_mock_attr(
+        fake_composite.zocalo,
+        "trigger",
+        MagicMock(side_effect=partial(mock_complete, test_result)),
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
     set_mock_value(fake_composite.gonio.x.max_velocity, 10)
@@ -1107,12 +1120,10 @@ def pin_tip_detection_with_found_pin(ophyd_pin_tip_detection: PinTipDetection):
         set_mock_value(ophyd_pin_tip_detection.triggered_top_edge, top_edge_array)  # type: ignore
         set_mock_value(ophyd_pin_tip_detection.triggered_bottom_edge, bottom_edge_array)  # type: ignore
 
-    with patch.object(
-        ophyd_pin_tip_detection,
-        "trigger",
-        side_effect=set_good_position,
-    ):
-        yield ophyd_pin_tip_detection
+    set_mock_attr(
+        ophyd_pin_tip_detection, "trigger", MagicMock(side_effect=set_good_position)
+    )
+    return ophyd_pin_tip_detection
 
 
 # Prevent pytest from catching exceptions when debugging in vscode so that break on
