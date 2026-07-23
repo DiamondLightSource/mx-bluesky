@@ -80,6 +80,9 @@ def pin_centre_then_gridscan_plan(
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def _grid_detect_and_gridscan_plan():
+            hyperion_specific_features = construct_hyperion_specific_features(
+                composite, parameters
+            )
             return (
                 yield from detect_grid_and_do_gridscan(
                     composite,
@@ -87,7 +90,7 @@ def pin_centre_then_gridscan_plan(
                     parameters,
                     oav_params,
                     detector_params,
-                    construct_hyperion_specific_features,
+                    hyperion_specific_features,
                 )
             )
 

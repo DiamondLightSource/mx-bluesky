@@ -112,7 +112,6 @@ class InternalGridScanComposite(
 def construct_i02_1_specific_features(
     fgs_composite: InternalGridScanComposite,
     params: DiffractionExperiment,
-    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     signals_to_read_pre_flyscan = [
         fgs_composite.synchrotron.synchrotron_mode,
@@ -222,9 +221,7 @@ def i02_1_gridscan_plan(
     params, grid_scan_params = get_internal_params(parameters)
 
     internal_composite = create_internal_composite(composite)
-    beamline_specific = construct_i02_1_specific_features(
-        internal_composite, params, grid_scan_params
-    )
+    beamline_specific = construct_i02_1_specific_features(internal_composite, params)
     callbacks = create_gridscan_callbacks(grid_scan_params)
     detector_params = create_detector_params_for_grid_scan(params)
 

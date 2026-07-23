@@ -11,11 +11,13 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
 )
 
+from mx_bluesky.common.device_setup_plans.gridscan import (
+    _setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     configure_zebra_and_shutter_for_auto_shutter,
-    setup_zebra_for_gridscan,
     setup_zebra_for_rotation,
-    tidy_up_zebra_after_gridscan,
 )
 
 
@@ -66,7 +68,7 @@ async def test_zebra_set_up_for_gridscan(
         sample_shutter: MXZebraShutter
 
     composite = Composite(zebra, zebra_shutter)
-    run_engine(setup_zebra_for_gridscan(composite, wait=True))
+    run_engine(_setup_zebra_for_gridscan(composite, wait=True))
     assert (
         await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.IN3_TTL

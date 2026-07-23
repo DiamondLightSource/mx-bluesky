@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol, TypeVar
+from typing import TypeVar
 
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
@@ -60,7 +60,7 @@ def grid_detect_then_xray_centre(
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
     detector_params: DetectorParams,
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures[
+    beamline_specific: BeamlineSpecificFGSFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
@@ -76,8 +76,7 @@ def grid_detect_then_xray_centre(
         parameters (TParameters): The top-level experiment parameters.
         grid_detection_params (GridDetectionParams): The base parameters used to define the detected grids.
         detector_params (DetectorParams): Detector parameters.
-        construct_beamline_specific: Factory method that provides experiment plans for the beamline specific
-            customisation points.
+        beamline_specific: Provides experiment plans for the beamline specific customisation points.
         oav_config (str): Optional path to the OAV configuration
     Returns:
         GridScanParams: The detected grid parameters.
@@ -96,7 +95,7 @@ def grid_detect_then_xray_centre(
             grid_detection_params,
             oav_params,
             detector_params,
-            construct_beamline_specific,
+            beamline_specific,
         )
 
     assert parameters.trigger_mode != TriggerMode.SET_FRAMES, (
@@ -123,7 +122,7 @@ def detect_grid_and_do_gridscan(
     grid_detection_params: GridDetectionParams,
     oav_params: OAVParameters,
     detector_params: DetectorParams,
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures[
+    beamline_specific: BeamlineSpecificFGSFeatures[
         TGridDetectAndGridScanEssentialDevices, TParameters
     ],
 ) -> MsgGenerator[GridScanParams]:
@@ -136,8 +135,7 @@ def detect_grid_and_do_gridscan(
         grid_detection_params (GridDetectionParams): The base parameters used to define the detected grids.
         oav_params (OAVParameters): Parameters for the OAV
         detector_params (DetectorParams): Detector parameters.
-        construct_beamline_specific: Factory method that provides experiment plans for the beamline specific
-            customisation points.
+        beamline_specific: Provides experiment plans for the beamline specific customisation points.
     Returns:
         GridScanParams: The detected grid parameters.
     """
@@ -190,9 +188,6 @@ def detect_grid_and_do_gridscan(
     grid_scan_params = create_parameters_for_flyscan_xray_centre(
         grid_params_callback.get_grid_parameters()
     )
-    beamline_specific = construct_beamline_specific(
-        composite, parameters, grid_scan_params
-    )
 
     yield from common_flyscan_xray_centre(
         composite, parameters, detector_params, grid_scan_params, beamline_specific
@@ -216,19 +211,6 @@ def _run_grid_detection_plan(
         grid_detect_params.grid_width_um,
         grid_detect_params.box_size_um,
     )
-
-
-class ConstructBeamlineSpecificFeatures(
-    Protocol[TGridDetectAndGridScanEssentialDevices, TParameters]
-):
-    def __call__(
-        self,
-        xrc_composite: TGridDetectAndGridScanEssentialDevices,
-        xrc_parameters: TParameters,
-        grid_scan_params: GridScanParams,
-    ) -> BeamlineSpecificFGSFeatures[
-        TGridDetectAndGridScanEssentialDevices, TParameters
-    ]: ...
 
 
 def create_parameters_for_flyscan_xray_centre(

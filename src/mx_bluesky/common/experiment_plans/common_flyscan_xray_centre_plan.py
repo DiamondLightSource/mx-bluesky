@@ -43,19 +43,36 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
-TSetupParameters = TypeVar("TSetupParameters", bound=DiffractionExperiment)
+TSetupParameters = TypeVar(
+    "TSetupParameters", bound=DiffractionExperiment, contravariant=True
+)
 TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
 # TFlyScanDevices: TypeAlias = FlyScanEssentialDevices[TGonioWithOmega, TDetector]
 TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
 
 
 @dataclasses.dataclass
-class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TSetupParameters]):
+class BeamlineSpecificDetectorFeatures(Generic[TFlyScanDevices]):
+    """Defines plans specific to arming and disarming the detector.
+    Attributes:
+        pre_arm_detector_plan: A plan that may be called early on to start arming the detector
+        arm_detector_plan: A plan that is called later to fully arm the detector
+        tidy_detector_plan: The detector-specific plan for cleaning up the detector
+    """
+
+    pre_arm_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
+    arm_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
+    tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
+
+
+@dataclasses.dataclass
+class BeamlineSpecificFGSFeatures(
+    BeamlineSpecificDetectorFeatures, Generic[TFlyScanDevices, TSetupParameters]
+):
     setup_trigger_plan: Callable[
         [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
     ]
     tidy_plan: Callable[..., MsgGenerator]
-    tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
     set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator]
     fgs_motors: FastGridScanCommon
     read_pre_flyscan_plan: Callable[
@@ -65,11 +82,11 @@ class BeamlineSpecificFGSFeatures(Generic[TFlyScanDevices, TSetupParameters]):
 
 
 def construct_beamline_specific_fast_gridscan_features(
+    detector_features: BeamlineSpecificDetectorFeatures[TFlyScanDevices],
     setup_trigger_plan: Callable[
         [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
     ],
     tidy_plan: Callable[..., MsgGenerator],
-    tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator],
     set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator],
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: Sequence[Readable],
@@ -78,12 +95,12 @@ def construct_beamline_specific_fast_gridscan_features(
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
     Args:
+        detector_features: The features specific to setting up the detector
         setup_trigger_plan (Callable): Configure triggering, for example with the Zebra or PandA device.
         Ran directly before kicking off the gridscan.
 
         tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of
         whether or not it finished successfully. Zocalo and Eiger are cleaned up separately
-        tidy_detector_plan: The detector-specific plan for cleaning up the detector
 
         set_flyscan_params_plan (Callable): Set PV's for the relevant Fast Grid Scan dodal device
 
@@ -108,13 +125,15 @@ def construct_beamline_specific_fast_gridscan_features(
     )
 
     return BeamlineSpecificFGSFeatures(
-        setup_trigger_plan,
-        tidy_plan,
-        tidy_detector_plan,
-        set_flyscan_params_plan,
-        fgs_motors,
-        read_pre_flyscan_plan,
-        read_during_collection_plan,
+        pre_arm_detector_plan=detector_features.pre_arm_detector_plan,
+        arm_detector_plan=detector_features.arm_detector_plan,
+        tidy_detector_plan=detector_features.tidy_detector_plan,
+        setup_trigger_plan=setup_trigger_plan,
+        tidy_plan=tidy_plan,
+        set_flyscan_params_plan=set_flyscan_params_plan,
+        fgs_motors=fgs_motors,
+        read_pre_flyscan_plan=read_pre_flyscan_plan,
+        read_during_collection_plan=read_during_collection_plan,
     )
 
 

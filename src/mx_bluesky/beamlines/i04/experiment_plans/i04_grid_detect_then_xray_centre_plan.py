@@ -41,8 +41,8 @@ from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
 from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
-from mx_bluesky.common.device_setup_plans.gridscan import set_zebra_fgs_3d_params
-from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+from mx_bluesky.common.device_setup_plans.gridscan import (
+    set_zebra_fgs_3d_params,
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
@@ -249,12 +249,15 @@ def i04_default_grid_detect_and_xray_centre(
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
+            beamline_specific = construct_i04_specific_features(
+                composite, internal_params
+            )
             grid_scan_params = yield from grid_detect_then_xray_centre(
                 composite=composite,
                 parameters=internal_params,
                 grid_detection_params=GridDetectionParams(),
                 detector_params=create_detector_params_for_grid_scan(internal_params),
-                construct_beamline_specific=construct_i04_specific_features,
+                beamline_specific=beamline_specific,
                 oav_config=oav_config,
             )
 
@@ -355,7 +358,7 @@ def construct_i04_specific_features(
 
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_fast_gridscan_features(
-        _setup_zebra_for_gridscan,
+        setup_zebra_for_gridscan,
         tidy_plan,
         tidy_eiger,
         partial(
@@ -365,10 +368,6 @@ def construct_i04_specific_features(
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
-
-
-def _setup_zebra_for_gridscan(composite: I04GridDetectThenXRayCentreComposite, _, __):
-    yield from setup_zebra_for_gridscan(composite)
 
 
 def _create_internal_params(

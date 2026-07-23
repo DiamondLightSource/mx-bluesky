@@ -6,10 +6,6 @@ import pytest
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
-from mx_bluesky.common.device_setup_plans.gridscan import (
-    OddYStepsError,
-    panda_fast_gridscan_params,
-)
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
@@ -20,6 +16,10 @@ from mx_bluesky.common.parameters.components import (
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
+)
+from mx_bluesky.hyperion.device_setup_plans.gridscan import (
+    OddYStepsError,
+    _panda_fast_gridscan_params,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     create_detector_params_for_grid_scan_with_hyperion_feature_settings,
@@ -98,7 +98,7 @@ def test_cant_do_panda_fgs_with_odd_y_steps(
     minimal_gridscan_params: GridScanParams,
 ):
     with pytest.raises(OddYStepsError):
-        _ = panda_fast_gridscan_params(
+        _ = _panda_fast_gridscan_params(
             minimal_diffraction_expt_with_sample, minimal_gridscan_params
         )
 
