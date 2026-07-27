@@ -19,6 +19,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import HWReadDuringMapper
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
@@ -105,6 +106,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
         self,
         param_type: type[T],
         *,
+        hw_read_during_mapper: HWReadDuringMapper,
         emit: Callable[..., Any] | None = None,
     ) -> None:
         """
@@ -114,7 +116,7 @@ class GridDetectAndScanISPyBCallback(BaseISPyBCallback, Generic[T]):
             param_type: Concrete type of the parameter model that will be deserialized in the start document.
             emit: Optional downstream callback that will be chained onto this callback to receive modified events.
         """
-        super().__init__(emit=emit)
+        super().__init__(emit=emit, hw_read_during_mapper=hw_read_during_mapper)
         self.ispyb: StoreInIspyb
         self.param_type = param_type
         self._start_of_fgs_uid: str | None = None

@@ -7,6 +7,8 @@ from dodal.devices.detector import DetectorParams
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import \
+    HWReadDuringMapper
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     vds_type_based_on_bit_depth,
@@ -73,7 +75,9 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self, param_type: type[T]) -> None:
+    def __init__(self,
+                 param_type: type[T],
+                 hw_read_mapper: HWReadDuringMapper) -> None:
         """
         Construct a new instance of the callbacks.
 
@@ -81,6 +85,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
             param_type: Concrete type of the parameter model that will be deserialized in the start document.
         """
         super().__init__(NEXUS_LOGGER)
+        self._hw_read_mapper = hw_read_mapper
         self.param_type: type[T] = param_type
         self.run_start_uid: str | None = None
         self.descriptors: dict[str, EventDescriptor] = {}
@@ -125,9 +130,8 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
                     data["flux-flux_reading"],
                     data["attenuator-actual_transmission"],
                 )
-                vds_data_type = vds_type_based_on_bit_depth(
-                    doc["data"]["eiger_bit_depth"]
-                )
+                payload = self._hw_read_mapper(doc)
+                vds_data_type = vds_type_based_on_bit_depth(payload.bit_depth)
                 nexus_writer.create_nexus_file(vds_data_type)
                 NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.data_filename}")
 

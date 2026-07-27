@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Generator
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, TypeAlias
 
 from bluesky.callbacks import CallbackBase
-from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 
+from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
 )
@@ -17,6 +18,14 @@ if TYPE_CHECKING:
 
 
 ZocaloInfoGenerator = Generator[list[ZocaloStartInfo], dict, None]
+
+
+@dataclass
+class ZocaloHWReadPayload:
+    file_name: str
+
+
+ZocaloHWReadEventMapper: TypeAlias = Callable[[Event], ZocaloHWReadPayload]
 
 
 class ZocaloCallback(CallbackBase):
@@ -45,8 +54,10 @@ class ZocaloCallback(CallbackBase):
         triggering_plan: str,
         zocalo_environment: str,
         start_info_generator_factory: Callable[[], ZocaloInfoGenerator],
+        hw_read_mapper: ZocaloHWReadEventMapper,
     ):
         super().__init__()
+        self._hw_read_mapper = hw_read_mapper
         self._info_generator_factory = start_info_generator_factory
         self.triggering_plan = triggering_plan
         self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
@@ -75,7 +86,8 @@ class ZocaloCallback(CallbackBase):
     def event(self, doc: Event) -> Event:
         event_descriptor = self.descriptors[doc["descriptor"]]
         if event_descriptor.get("name") == DocDescriptorNames.ZOCALO_HW_READ:
-            filename = doc["data"]["eiger_odin_file_writer_id"]
+            payload = self._hw_read_mapper(doc)
+            filename = payload.file_name
             for start_info in self.zocalo_info:
                 start_info.filename = filename
                 self.zocalo_interactor.run_start(start_info)

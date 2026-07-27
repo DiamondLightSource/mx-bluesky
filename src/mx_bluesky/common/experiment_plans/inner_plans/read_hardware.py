@@ -14,6 +14,7 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import BeamlineSpecificDetectorFeatures
 
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
@@ -32,12 +33,12 @@ def read_hardware_plan(
     yield from bps.save()
 
 
-def read_hardware_for_zocalo(detector: EigerDetector):
+def read_hardware_for_zocalo(beamline_specific: BeamlineSpecificDetectorFeatures):
     """ "
     If the RunEngine is subscribed to the ZocaloCallback, this plan will also trigger zocalo.
     """
     yield from read_hardware_plan(
-        [detector.odin.file_writer.id],  # type: ignore
+        beamline_specific.detector_zocalo_hw_read_signals,  # type: ignore
         DocDescriptorNames.ZOCALO_HW_READ,
     )
 

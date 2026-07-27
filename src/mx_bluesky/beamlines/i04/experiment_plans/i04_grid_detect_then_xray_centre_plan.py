@@ -40,7 +40,7 @@ from pydantic import BaseModel
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
-from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
+from mx_bluesky.common.device_setup_plans.detector._eiger import eiger_tidy
 from mx_bluesky.common.device_setup_plans.gridscan import (
     set_zebra_fgs_3d_params,
     setup_zebra_for_gridscan,
@@ -360,7 +360,7 @@ def construct_i04_specific_features(
     return construct_beamline_specific_fast_gridscan_features(
         setup_zebra_for_gridscan,
         tidy_plan,
-        tidy_eiger,
+        eiger_tidy,
         partial(
             set_zebra_fgs_3d_params, xrc_composite.zebra_fast_grid_scan, xrc_parameters
         ),

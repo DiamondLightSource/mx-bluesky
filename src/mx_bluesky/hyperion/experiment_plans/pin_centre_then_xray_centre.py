@@ -3,6 +3,7 @@ from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_dec
 from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import CombinedMove
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import BeamlineSpecificFGSFeatures
 
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.parameters.device_composites import TDetector
@@ -23,6 +24,7 @@ from mx_bluesky.hyperion.utils.centre_selection import samples_and_locations_to_
 
 
 def pin_tip_centre_then_xray_centre(
+    beamline_specific: BeamlineSpecificFGSFeatures,
     composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     centre_selection: MultiXtalSelection,
@@ -32,6 +34,7 @@ def pin_tip_centre_then_xray_centre(
     Performs pin-tip centring of the currently loaded sample,
     followed by x-ray gridscan and centring on the best sample.
     Args:
+        beamline_specific (BeamlineSpecificFGSFeatures): Beamline-specific plans
         composite (HyperionInternalGridDetectThenXRayCentreComposite): devices to use
         parameters (PinTipCentreThenXrayCentre): centring parameters
         centre_selection (MultiXtalSelection): The selection algorithm to determine the centres to select from the XRC results
@@ -39,12 +42,10 @@ def pin_tip_centre_then_xray_centre(
     Raises:
         CrystalNotFoundError: If no centres were found if commissioning mode was not selected.
     """
-    eiger: EigerDetector = composite.eiger
 
     detector_params = (
         create_detector_params_for_grid_scan_with_hyperion_feature_settings(parameters)
     )
-    eiger.set_detector_parameters(detector_params)
 
     xrc_event_handler = XRayCentreEventHandler()
 
@@ -64,7 +65,7 @@ def pin_tip_centre_then_xray_centre(
     )
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
         yield from pin_centre_then_gridscan_plan(
-            composite, parameters, detector_params, oav_config_file
+            beamline_specific, composite, parameters, detector_params, oav_config_file
         )
 
         results = xrc_event_handler.xray_centre_results

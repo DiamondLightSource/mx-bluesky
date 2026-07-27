@@ -1,40 +1,40 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from time import time
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.fast_grid_scan import FastGridScanCommon
+
+from dodal.devices.detector import DetectorParams
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zocalo.zocalo_results import (
     ZOCALO_STAGE_GROUP,
 )
 from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
-from scanspec.core import AxesPoints, Axis
-
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import BeamlineSpecificFGSFeatures
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
+from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.tracing import TRACER
 
 
 def _wait_for_zocalo_to_stage_then_do_fgs(
-    grid_scan_device: FastGridScanCommon,
-    detector: EigerDetector,
+    beamline_specific: BeamlineSpecificFGSFeatures,
+    grid_scan_params: GridScanParams,
+    detector_params: DetectorParams,
     synchrotron: Synchrotron,
     during_collection_plan: Callable[[], MsgGenerator] | None = None,
 ):
-    expected_images = yield from bps.rd(grid_scan_device.expected_images)
-    exposure_sec_per_image = yield from bps.rd(detector.cam.acquire_time)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     LOGGER.info("waiting for topup if necessary...")
     yield from check_topup_and_wait_if_necessary(
         synchrotron,
-        expected_images * exposure_sec_per_image,
+        grid_scan_params.num_images * detector_params.exposure_time_s,
         30.0,
     )
 
@@ -43,17 +43,17 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
     yield from bps.wait(ZOCALO_STAGE_GROUP)
 
     # Triggers Zocalo if run_engine is subscribed to ZocaloCallback
-    yield from read_hardware_for_zocalo(detector)
+    yield from read_hardware_for_zocalo(beamline_specific)
     LOGGER.info("Wait for all moves with no assigned group")
     yield from bps.wait()
 
     LOGGER.info("kicking off FGS")
-    yield from bps.kickoff(grid_scan_device, wait=True)
+    yield from bps.kickoff(beamline_specific.fgs_motors, wait=True)
     gridscan_start_time = time()
     if during_collection_plan:
         yield from during_collection_plan()
     LOGGER.info("completing FGS")
-    yield from bps.complete(grid_scan_device, wait=True)
+    yield from bps.complete(beamline_specific.fgs_motors, wait=True)
     # Remove this logging statement once metrics have been added
     LOGGER.info(
         f"Grid scan motion program took {round(time() - gridscan_start_time, 2)} to complete"
@@ -61,11 +61,10 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
 
 
 def kickoff_and_complete_gridscan(
-    gridscan: FastGridScanCommon,
-    detector: EigerDetector,  # Once Eiger inherits from StandardDetector, use that type instead
-    synchrotron: Synchrotron,
-    scan_points: list[AxesPoints[Axis]],
-    omega_starts_deg: Sequence[float],
+    beamline_specific: BeamlineSpecificFGSFeatures,
+    device_composite: FlyScanEssentialDevices,
+    grid_scan_params: GridScanParams,
+    detector_params: DetectorParams,
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
 ):
     """Triggers a grid scan motion program and waits for completion, accounting for synchrotron topup.
@@ -74,16 +73,16 @@ def kickoff_and_complete_gridscan(
     Can be used for multiple successive grid scans, see Hyperion's usage
 
     Args:
-        gridscan (FastGridScanCommon):          Device which can trigger a fast grid scan and wait for completion
-        detector (EigerDetector)                Detector device
-        synchrotron (Synchrotron):              Synchrotron device
-        scan_points (list[AxesPoints[Axis]]):   Each element in the list contains all the grid points for that grid scan.
-                                                Two elements in this list indicates that two grid scans will be done, eg for Hyperion's 3D grid scans.
+        beamline_specific (BeamlineSpecificFGSFeatures):    Beamline specific gridscan plans and devices
+        device_composite (FlyScanEssentialDevices): Composite container necessary devices
+        grid_scan_params (GridScanParams):      Parameters for the grid scan
+        detector_params (DetectorParams):       Detector parameters
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff and completion,
                                                 eg waiting on zocalo.
     """
 
     plan_name = PlanNameConstants.DO_FGS
+    omega_starts_deg = grid_scan_params.omega_starts_deg
 
     @TRACER.start_as_current_span(plan_name)
     @bpp.set_run_key_decorator(plan_name)
@@ -94,20 +93,21 @@ def kickoff_and_complete_gridscan(
                 # These have to be cast to strings due to a bug in orsjon. See
                 # https://github.com/ijl/orjson/issues/414
                 # See https://github.com/DiamondLightSource/mx-bluesky/issues/1631 regarding integer cast
-                str(int(omega_starts_deg[i])): scan_points[i]
+                str(int(omega_starts_deg[i])): grid_scan_params.scan_points[i]
                 for i in range(len(omega_starts_deg))
             },
         }
     )
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-        else_plan=lambda: (yield from bps.unstage(detector, wait=True)),
+        else_plan=lambda: (yield from beamline_specific.disarm_detector_plan(device_composite)),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(
-            gridscan,
-            detector,
-            synchrotron,
+            beamline_specific,
+            grid_scan_params,
+            detector_params,
+            device_composite.synchrotron,
             during_collection_plan=plan_during_collection,
         )
 

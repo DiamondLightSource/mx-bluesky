@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
+
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion

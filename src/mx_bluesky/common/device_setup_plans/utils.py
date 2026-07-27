@@ -3,20 +3,23 @@ from collections.abc import Generator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg
-from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 
+from dodal.devices.detector import DetectorParams
+from dodal.devices.detector.detector_motion import ShutterState
+from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 from mx_bluesky.common.device_setup_plans.position_detector import (
     set_detector_z_position,
     set_shutter,
 )
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import BeamlineSpecificDetectorFeatures
+from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import \
+    TGridDetectAndGridScanEssentialDevices
 
 
 def start_preparing_data_collection_then_do_plan(
-    beamstop: Beamstop,
-    eiger: EigerDetector,
-    detector_motion: DetectorMotion,
+    beamline_specific: BeamlineSpecificDetectorFeatures,
+    detector_params: DetectorParams,
+    device_composite: TGridDetectAndGridScanEssentialDevices,
     detector_distance_mm: float | None,
     plan_to_run: Generator[Msg, None, None],
     group="ready_for_data_collection",
@@ -32,18 +35,18 @@ def start_preparing_data_collection_then_do_plan(
     """
 
     def wrapped_plan():
-        yield from bps.abs_set(eiger.do_arm, 1, group=group)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        yield from beamline_specific.pre_arm_detector_plan(device_composite, detector_params, group)
         yield from bps.abs_set(
-            beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, group=group
+            device_composite.beamstop.selected_pos, BeamstopPositions.DATA_COLLECTION, group=group
         )
         if detector_distance_mm:
             yield from set_detector_z_position(
-                detector_motion, detector_distance_mm, group
+                device_composite.detector_motion, detector_distance_mm, group
             )
-        yield from set_shutter(detector_motion, ShutterState.OPEN, group)
+        yield from set_shutter(device_composite.detector_motion, ShutterState.OPEN, group)
         yield from plan_to_run
 
     yield from bpp.contingency_wrapper(
         wrapped_plan(),
-        except_plan=lambda e: (yield from bps.stop(eiger)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        except_plan=lambda e: (yield from bps.stop(device_composite.detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
     )

@@ -26,7 +26,7 @@ from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_ca
     GridscanISPyBCallback,
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
-from mx_bluesky.common.device_setup_plans.eiger import tidy_eiger
+from mx_bluesky.common.device_setup_plans.detector._eiger import eiger_tidy
 from mx_bluesky.common.device_setup_plans.gridscan import set_zebra_fgs_3d_params
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
@@ -133,7 +133,7 @@ def construct_i02_1_specific_features(
     return construct_beamline_specific_fast_gridscan_features(
         _zebra_triggering_setup,
         partial(_tidy_plan, fgs_composite, group="flyscan_zebra_tidy", wait=True),
-        tidy_eiger,
+        eiger_tidy,
         partial(set_zebra_fgs_3d_params, fgs_composite.zebra_fast_grid_scan, params),
         fgs_composite.zebra_fast_grid_scan,
         signals_to_read_pre_flyscan,

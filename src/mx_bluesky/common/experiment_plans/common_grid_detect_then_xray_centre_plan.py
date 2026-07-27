@@ -101,12 +101,11 @@ def grid_detect_then_xray_centre(
     assert parameters.trigger_mode != TriggerMode.SET_FRAMES, (
         "Cannot pre-arm detector before grid detection when trigger mode is SET_FRAMES"
     )
-    composite.detector.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(
-        composite.beamstop,
-        composite.detector,
-        composite.detector_motion,
+        beamline_specific,
+        detector_params,
+        composite,
         detector_params.detector_distance,
         plan_to_perform(),
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,

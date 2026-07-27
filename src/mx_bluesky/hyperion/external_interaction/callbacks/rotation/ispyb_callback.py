@@ -15,6 +15,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloInfoGenerator,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import HWReadDuringMapper
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     DataCollectionPositionInfo,
@@ -57,9 +58,10 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def __init__(
         self,
         *,
+        hw_read_during_mapper: HWReadDuringMapper,
         emit: Callable[..., Any] | None = None,
     ) -> None:
-        super().__init__(emit=emit)
+        super().__init__(emit=emit, hw_read_during_mapper=hw_read_during_mapper)
         self.last_sample_id: int | None = None
         self.ispyb_ids: IspybIds = IspybIds()
         self.ispyb = StoreInIspyb(self.ispyb_config)
