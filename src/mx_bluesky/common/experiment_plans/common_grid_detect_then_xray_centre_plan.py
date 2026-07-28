@@ -41,7 +41,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanEssentialDevices,
+    DiffractionExtendedDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -49,19 +49,19 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 
-TGridDetectAndGridScanEssentialDevices = TypeVar(
-    "TGridDetectAndGridScanEssentialDevices",
-    bound=GridDetectAndGridScanEssentialDevices,
+TDiffractionExtendedDevices = TypeVar(
+    "TDiffractionExtendedDevices",
+    bound=DiffractionExtendedDevices,
 )
 
 
 def grid_detect_then_xray_centre(
-    composite: TGridDetectAndGridScanEssentialDevices,
+    composite: TDiffractionExtendedDevices,
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
     detector_params: DetectorParams,
     beamline_specific: BeamlineSpecificFGSFeatures[
-        TGridDetectAndGridScanEssentialDevices, TParameters
+        TDiffractionExtendedDevices, TParameters
     ],
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator[GridScanParams]:
@@ -116,13 +116,13 @@ def grid_detect_then_xray_centre(
 
 
 def detect_grid_and_do_gridscan(
-    composite: TGridDetectAndGridScanEssentialDevices,
+    composite: TDiffractionExtendedDevices,
     parameters: TParameters,
     grid_detection_params: GridDetectionParams,
     oav_params: OAVParameters,
     detector_params: DetectorParams,
     beamline_specific: BeamlineSpecificFGSFeatures[
-        TGridDetectAndGridScanEssentialDevices, TParameters
+        TDiffractionExtendedDevices, TParameters
     ],
 ) -> MsgGenerator[GridScanParams]:
     """

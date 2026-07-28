@@ -18,6 +18,9 @@ from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
 from pydantic import BaseModel
 
+from mx_bluesky.beamlines.i02_1.device_setup_plans.gridscan import (
+    set_zebra_fgs_2d_params,
+)
 from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -26,8 +29,11 @@ from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_ca
     GridscanISPyBCallback,
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
-from mx_bluesky.common.device_setup_plans.detector._eiger import eiger_tidy
-from mx_bluesky.common.device_setup_plans.gridscan import set_zebra_fgs_3d_params
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+    eiger_hw_read_during_mapper,
+    eiger_zocalo_hw_read_mapper,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     common_flyscan_xray_centre,
@@ -55,7 +61,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    FlyScanEssentialDevices,
+    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
@@ -69,14 +75,18 @@ def create_gridscan_callbacks(
     grid_scan_params: GridScanParams,
 ) -> tuple[GridscanNexusFileCallback, GridscanISPyBCallback]:
     return (
-        GridscanNexusFileCallback(param_type=I02_1FgsParams),
+        GridscanNexusFileCallback(
+            param_type=I02_1FgsParams, hw_read_mapper=eiger_hw_read_during_mapper
+        ),
         GridscanISPyBCallback(
             param_type=I02_1FgsParams,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
                 lambda: generate_start_info_from_num_grids(grid_scan_params),
+                hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 
@@ -98,7 +108,7 @@ class I021FlyScanXRayCentreComposite:
 
 
 class InternalGridScanComposite(
-    FlyScanEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
+    DiffractionEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
 ):
     attenuator: ReadOnlyAttenuator
     dcm: DoubleCrystalMonochromatorBase
@@ -125,16 +135,16 @@ def construct_i02_1_specific_features(
         fgs_composite.attenuator.actual_transmission,
         fgs_composite.flux.flux_reading,
         fgs_composite.dcm.energy_in_keV,
-        fgs_composite.detector.bit_depth,
-        fgs_composite.detector.cam.roi_mode,
-        fgs_composite.detector.ispyb_detector_id,
     ]
 
+    beamline_specific_detector_features = create_eiger_beamline_specific(
+        fgs_composite.detector
+    )
     return construct_beamline_specific_fast_gridscan_features(
+        beamline_specific_detector_features,
         _zebra_triggering_setup,
         partial(_tidy_plan, fgs_composite, group="flyscan_zebra_tidy", wait=True),
-        eiger_tidy,
-        partial(set_zebra_fgs_3d_params, fgs_composite.zebra_fast_grid_scan, params),
+        partial(set_zebra_fgs_2d_params, fgs_composite.zebra_fast_grid_scan, params),
         fgs_composite.zebra_fast_grid_scan,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # See : https://github.com/bluesky/bluesky/issues/1809

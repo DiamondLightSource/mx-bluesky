@@ -31,7 +31,7 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
@@ -158,7 +158,7 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine: RunEngineSimulator,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
+        hyperion_flyscan_xrc_composite: DiffractionEssentialDevices,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         zocalo: ZocaloResults,
     ):
@@ -211,7 +211,7 @@ class TestFlyscanXrayCentrePlan:
         use_panda: None,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
+        hyperion_flyscan_xrc_composite: DiffractionEssentialDevices,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         run_engine: RunEngine,
     ):

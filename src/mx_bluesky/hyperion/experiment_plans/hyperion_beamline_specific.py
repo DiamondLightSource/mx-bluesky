@@ -4,17 +4,24 @@ from collections.abc import Callable
 from functools import partial
 
 from bluesky.utils import MsgGenerator
-
 from dodal.devices.eiger import EigerDetector as ClassicEigerDetector
-from mx_bluesky.common.device_setup_plans.detector.eiger import eiger_pre_arm, eiger_zocalo_hw_read_signals, eiger_arm, \
-    eiger_hw_read_during_signals, eiger_disarm
-from mx_bluesky.common.device_setup_plans.detector.eiger import eiger_tidy
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEigerDetector
+
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+)
+from mx_bluesky.common.device_setup_plans.detector.fastcs_eiger import (
+    create_fastcs_eiger_beamline_specific,
+)
 from mx_bluesky.common.device_setup_plans.gridscan import (
-    set_zebra_fgs_3d_params, tidy_up_zebra_after_gridscan, setup_zebra_for_gridscan, )
+    set_zebra_fgs_3d_params,
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
     TSetupParameters,
-    construct_beamline_specific_fast_gridscan_features, BeamlineSpecificDetectorFeatures,
+    construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.device_composites import TDetector
@@ -22,7 +29,11 @@ from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionInternalGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.device_setup_plans.gridscan import set_panda_fgs_params, panda_triggering_setup, panda_tidy
+from mx_bluesky.hyperion.device_setup_plans.gridscan import (
+    panda_tidy,
+    panda_triggering_setup,
+    set_panda_fgs_params,
+)
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
@@ -67,13 +78,15 @@ def construct_hyperion_specific_features(
     ]
 
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
-        setup_trigger_plan = partial(panda_triggering_setup, settings=get_hyperion_feature_settings())
+        setup_trigger_plan = partial(
+            panda_triggering_setup, settings=get_hyperion_feature_settings()
+        )
         tidy_plan = partial(panda_tidy, xrc_composite)
         set_flyscan_params_plan = partial(
             set_panda_fgs_params,
             xrc_composite.panda_fast_grid_scan,
             xrc_parameters,
-            settings=get_hyperion_feature_settings()
+            settings=get_hyperion_feature_settings(),
         )
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
@@ -94,13 +107,13 @@ def construct_hyperion_specific_features(
         )
         fgs_motors = xrc_composite.zebra_fast_grid_scan
     if isinstance(xrc_composite.detector, ClassicEigerDetector):
-        detector_features = BeamlineSpecificDetectorFeatures(
-            pre_arm_detector_plan=eiger_pre_arm,
-            arm_detector_plan=eiger_arm,
-            disarm_detector_plan=eiger_disarm,
-            tidy_detector_plan=eiger_tidy,
-            detector_zocalo_hw_read_signals=eiger_zocalo_hw_read_signals(xrc_composite.detector),
-            detector_hw_read_during_signals=eiger_hw_read_during_signals(xrc_composite.detector),
+        detector_features = create_eiger_beamline_specific(xrc_composite.detector)
+    else:
+        assert isinstance(xrc_composite.detector, FastCSEigerDetector), (
+            f"Unsupported detector type for detector {xrc_composite.detector}"
+        )
+        detector_features = create_fastcs_eiger_beamline_specific(
+            xrc_composite.detector
         )
 
     features = construct_beamline_specific_fast_gridscan_features(
@@ -114,4 +127,3 @@ def construct_hyperion_specific_features(
         # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     )
     return features
-

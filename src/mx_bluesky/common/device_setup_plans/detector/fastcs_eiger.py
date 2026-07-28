@@ -4,22 +4,43 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
-from event_model import Event
-
 from dodal.devices.detector import DetectorParams
-from dodal.plans.configure_arm_trigger_and_disarm_detector import configure_and_arm_detector
-from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import ZocaloHWReadPayload
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import \
-    HWReadDuringPayload
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
-from ophyd_async.core import TriggerInfo, DetectorTrigger
+from dodal.plans.configure_arm_trigger_and_disarm_detector import (
+    configure_and_arm_detector,
+)
+from event_model import Event
+from ophyd_async.core import DetectorTrigger, TriggerInfo
 from ophyd_async.fastcs.eiger import EigerDetector
+
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificDetectorFeatures,
+)
+from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
+    ZocaloHWReadPayload,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringPayload,
+)
+from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
+
+
+def create_fastcs_eiger_beamline_specific(
+    eiger: EigerDetector,
+) -> BeamlineSpecificDetectorFeatures:
+    return BeamlineSpecificDetectorFeatures(
+        pre_arm_detector_plan=fastcs_eiger_pre_arm,
+        arm_detector_plan=fastcs_eiger_arm,
+        disarm_detector_plan=fastcs_eiger_disarm,
+        tidy_detector_plan=fastcs_eiger_tidy,
+        detector_zocalo_hw_read_signals=fastcs_eiger_zocalo_hw_read_signals(eiger),
+        detector_hw_read_during_signals=fastcs_eiger_hw_read_during_signals(eiger),
+    )
 
 
 def fastcs_eiger_pre_arm(
-        device_composite: FlyScanEssentialDevices[Any, EigerDetector],
-        detector_params: DetectorParams,
-        group: str
+    device_composite: DiffractionEssentialDevices[Any, EigerDetector],
+    detector_params: DetectorParams,
+    group: str,
 ) -> MsgGenerator:
     yield from configure_and_arm_detector(
         eiger=device_composite.detector,
@@ -29,23 +50,28 @@ def fastcs_eiger_pre_arm(
             trigger=DetectorTrigger.EXTERNAL_EDGE,
             deadtime=0.0001,
         ),
-        group=group
+        group=group,
     )
 
 
-def fastcs_eiger_arm(device_composite: FlyScanEssentialDevices[Any, EigerDetector],
-                     detector_params: DetectorParams,
-                     group: str) -> MsgGenerator:
+def fastcs_eiger_arm(
+    device_composite: DiffractionEssentialDevices[Any, EigerDetector],
+    detector_params: DetectorParams,
+    group: str,
+) -> MsgGenerator:
     yield from bps.kickoff(device_composite.detector, group=group)
 
 
-def fastcs_eiger_disarm(device_composite: FlyScanEssentialDevices[Any, EigerDetector]) -> MsgGenerator:
+def fastcs_eiger_disarm(
+    device_composite: DiffractionEssentialDevices[Any, EigerDetector],
+) -> MsgGenerator:
     yield from bps.complete(device_composite.detector, wait=True)
 
 
 def fastcs_eiger_zocalo_hw_read_signals(eiger: EigerDetector) -> Sequence[Readable]:
     # TODO update for FastCS Odin
-    return [eiger.odin.id]
+    # return [eiger.odin.id]
+    return []
 
 
 def fastcs_eiger_zocalo_hw_read_mapper(doc: Event) -> ZocaloHWReadPayload:
@@ -54,17 +80,19 @@ def fastcs_eiger_zocalo_hw_read_mapper(doc: Event) -> ZocaloHWReadPayload:
 
 
 def fastcs_eiger_hw_read_during_signals(eiger: EigerDetector) -> Sequence[Readable]:
-    return [
-        eiger.detector.bit_depth_image
-    ]
+    return [eiger.detector.bit_depth_image]
 
 
 def fastcs_eiger_hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
     return HWReadDuringPayload(
-        bit_depth=doc["data"]["eiger-detector-bit_depth_image"]
+        bit_depth=doc["data"]["eiger-detector-bit_depth_image"],
+        ispyb_detector_id=0,  # TODO implement me
+        roi_mode=False,  # TODO implement me
     )
 
 
-def fastcs_eiger_tidy(device_composite: FlyScanEssentialDevices[Any, EigerDetector]) -> MsgGenerator:
+def fastcs_eiger_tidy(
+    device_composite: DiffractionEssentialDevices[Any, EigerDetector],
+) -> MsgGenerator:
     # TODO disable dev_shm for fastcs odin
     yield from bps.null()

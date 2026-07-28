@@ -4,7 +4,6 @@ from time import time
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
-
 from dodal.devices.detector import DetectorParams
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zocalo.zocalo_results import (
@@ -12,14 +11,17 @@ from dodal.devices.zocalo.zocalo_results import (
 )
 from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import BeamlineSpecificFGSFeatures
+
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.tracing import TRACER
 
@@ -62,7 +64,7 @@ def _wait_for_zocalo_to_stage_then_do_fgs(
 
 def kickoff_and_complete_gridscan(
     beamline_specific: BeamlineSpecificFGSFeatures,
-    device_composite: FlyScanEssentialDevices,
+    device_composite: DiffractionEssentialDevices,
     grid_scan_params: GridScanParams,
     detector_params: DetectorParams,
     plan_during_collection: Callable[[], MsgGenerator] | None = None,
@@ -74,7 +76,7 @@ def kickoff_and_complete_gridscan(
 
     Args:
         beamline_specific (BeamlineSpecificFGSFeatures):    Beamline specific gridscan plans and devices
-        device_composite (FlyScanEssentialDevices): Composite container necessary devices
+        device_composite (DiffractionEssentialDevices): Composite container necessary devices
         grid_scan_params (GridScanParams):      Parameters for the grid scan
         detector_params (DetectorParams):       Detector parameters
         plan_during_collection (Optional, MsgGenerator): Generic plan called in between kickoff and completion,
@@ -100,7 +102,9 @@ def kickoff_and_complete_gridscan(
     )
     @bpp.contingency_decorator(
         except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
-        else_plan=lambda: (yield from beamline_specific.disarm_detector_plan(device_composite)),
+        else_plan=lambda: (
+            yield from beamline_specific.disarm_detector_plan(device_composite)
+        ),
     )
     def _decorated_do_fgs():
         yield from _wait_for_zocalo_to_stage_then_do_fgs(

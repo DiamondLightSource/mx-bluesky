@@ -40,7 +40,11 @@ from pydantic import BaseModel
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
-from mx_bluesky.common.device_setup_plans.detector._eiger import eiger_tidy
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+    eiger_hw_read_during_mapper,
+    eiger_zocalo_hw_read_mapper,
+)
 from mx_bluesky.common.device_setup_plans.gridscan import (
     set_zebra_fgs_3d_params,
     setup_zebra_for_gridscan,
@@ -88,7 +92,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanEssentialDevices,
+    DiffractionExtendedDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -116,9 +120,7 @@ class I04AutoXrcParams(BaseModel):
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I04GridDetectThenXRayCentreComposite(
-    GridDetectAndGridScanEssentialDevices[EigerDetector]
-):
+class I04GridDetectThenXRayCentreComposite(DiffractionExtendedDevices[EigerDetector]):
     attenuator: BinaryFilterAttenuator
     beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
@@ -308,7 +310,10 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
+        GridscanNexusFileCallback(
+            param_type=DiffractionExperimentWithSample,
+            hw_read_mapper=eiger_hw_read_during_mapper,
+        ),
         GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
@@ -317,7 +322,9 @@ def create_gridscan_callbacks() -> tuple[
                 lambda: generate_start_info_from_omega_map(
                     [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
                 ),
+                hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 
@@ -342,10 +349,7 @@ def construct_i04_specific_features(
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.detector.bit_depth,
         xrc_composite.beamsize,
-        xrc_composite.detector.cam.roi_mode,
-        xrc_composite.detector.ispyb_detector_id,
     ]
 
     tidy_plan = partial(
@@ -357,10 +361,13 @@ def construct_i04_specific_features(
     )
 
     fgs_motors = xrc_composite.zebra_fast_grid_scan
+    beamline_specific_detector_features = create_eiger_beamline_specific(
+        xrc_composite.detector
+    )
     return construct_beamline_specific_fast_gridscan_features(
+        beamline_specific_detector_features,
         setup_zebra_for_gridscan,
         tidy_plan,
-        eiger_tidy,
         partial(
             set_zebra_fgs_3d_params, xrc_composite.zebra_fast_grid_scan, xrc_parameters
         ),

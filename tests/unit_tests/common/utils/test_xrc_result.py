@@ -9,7 +9,7 @@ from dodal.devices.zocalo import ZocaloResults
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     BeamlineSpecificFGSFeatures,
-    FlyScanEssentialDevices,
+    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
@@ -131,7 +131,7 @@ def test_dummy_result_returned_when_no_xtal_and_commissioning_mode_enabled(
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
-    fake_fgs_composite: FlyScanEssentialDevices,
+    fake_fgs_composite: DiffractionEssentialDevices,
     beamline_specific: BeamlineSpecificFGSFeatures,
     zocalo: ZocaloResults,
     baton_in_commissioning_mode,

@@ -32,7 +32,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    FlyScanEssentialDevices,
+    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
@@ -48,11 +48,13 @@ TSetupParameters = TypeVar(
 )
 TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
 # TFlyScanDevices: TypeAlias = FlyScanEssentialDevices[TGonioWithOmega, TDetector]
-TFlyScanDevices = TypeVar("TFlyScanDevices", bound=FlyScanEssentialDevices)
+TDiffractionEssentialDevices = TypeVar(
+    "TDiffractionEssentialDevices", bound=DiffractionEssentialDevices
+)
 
 
 @dataclasses.dataclass
-class BeamlineSpecificDetectorFeatures(Generic[TFlyScanDevices]):
+class BeamlineSpecificDetectorFeatures(Generic[TDiffractionEssentialDevices]):
     """Defines plans specific to arming and disarming the detector.
     Attributes:
         pre_arm_detector_plan: A plan that may be called early on to start arming the detector.
@@ -65,20 +67,25 @@ class BeamlineSpecificDetectorFeatures(Generic[TFlyScanDevices]):
         detector_hw_read_during_signals: The list of signals to read when generating the HARDWARE_READ_DURING event.
     """
 
-    pre_arm_detector_plan: Callable[[TFlyScanDevices, DetectorParams, str], MsgGenerator]
-    arm_detector_plan: Callable[[TFlyScanDevices, DetectorParams, str], MsgGenerator]
-    disarm_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
-    tidy_detector_plan: Callable[[TFlyScanDevices], MsgGenerator]
+    pre_arm_detector_plan: Callable[
+        [TDiffractionEssentialDevices, DetectorParams, str], MsgGenerator
+    ]
+    arm_detector_plan: Callable[
+        [TDiffractionEssentialDevices, DetectorParams, str], MsgGenerator
+    ]
+    disarm_detector_plan: Callable[[TDiffractionEssentialDevices], MsgGenerator]
+    tidy_detector_plan: Callable[[TDiffractionEssentialDevices], MsgGenerator]
     detector_zocalo_hw_read_signals: Sequence
     detector_hw_read_during_signals: Sequence
 
 
 @dataclasses.dataclass
 class BeamlineSpecificFGSFeatures(
-    BeamlineSpecificDetectorFeatures, Generic[TFlyScanDevices, TSetupParameters]
+    BeamlineSpecificDetectorFeatures,
+    Generic[TDiffractionEssentialDevices, TSetupParameters],
 ):
     setup_trigger_plan: Callable[
-        [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
+        [TDiffractionEssentialDevices, TSetupParameters, GridScanParams], MsgGenerator
     ]
     tidy_plan: Callable[..., MsgGenerator]
     set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator]
@@ -90,16 +97,16 @@ class BeamlineSpecificFGSFeatures(
 
 
 def construct_beamline_specific_fast_gridscan_features(
-    detector_features: BeamlineSpecificDetectorFeatures[TFlyScanDevices],
+    detector_features: BeamlineSpecificDetectorFeatures[TDiffractionEssentialDevices],
     setup_trigger_plan: Callable[
-        [TFlyScanDevices, TSetupParameters, GridScanParams], MsgGenerator
+        [TDiffractionEssentialDevices, TSetupParameters, GridScanParams], MsgGenerator
     ],
     tidy_plan: Callable[..., MsgGenerator],
     set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator],
     fgs_motors: FastGridScanCommon,
     signals_to_read_pre_flyscan: Sequence[Readable],
     signals_to_read_during_collection: Sequence[Readable],
-) -> BeamlineSpecificFGSFeatures[TFlyScanDevices, TSetupParameters]:
+) -> BeamlineSpecificFGSFeatures[TDiffractionEssentialDevices, TSetupParameters]:
     """Construct the class needed to do beamline-specific parts of the XRC FGS
 
     Args:
@@ -130,7 +137,10 @@ def construct_beamline_specific_fast_gridscan_features(
 
     read_during_collection_plan = partial(
         read_hardware_plan,
-        [*signals_to_read_during_collection, *detector_features.detector_hw_read_during_signals],
+        [
+            *signals_to_read_during_collection,
+            *detector_features.detector_hw_read_during_signals,
+        ],
         DocDescriptorNames.HARDWARE_READ_DURING,
     )
 
@@ -151,16 +161,18 @@ def construct_beamline_specific_fast_gridscan_features(
 
 
 def common_flyscan_xray_centre(
-    composite: TFlyScanDevices,
+    composite: TDiffractionEssentialDevices,
     parameters: TParameters,
     xrc_detector_params: DetectorParams,
     grid_scan_parameters: GridScanParams,
-    beamline_specific: BeamlineSpecificFGSFeatures[TFlyScanDevices, TParameters],
+    beamline_specific: BeamlineSpecificFGSFeatures[
+        TDiffractionEssentialDevices, TParameters
+    ],
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
     Args:
-        composite (FlyScanEssentialDevices): Devices required to perform this plan.
+        composite (DiffractionEssentialDevices): Devices required to perform this plan.
 
         xrc_detector_params (DetectorParams): Detector parameters to use during x-ray centring.
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
@@ -199,7 +211,7 @@ def common_flyscan_xray_centre(
         )
         @bpp.finalize_decorator(lambda: _overall_tidy())
         def run_gridscan_and_tidy(
-            fgs_composite: TFlyScanDevices,
+            fgs_composite: TDiffractionEssentialDevices,
         ) -> MsgGenerator:
             yield from beamline_specific.setup_trigger_plan(
                 fgs_composite, parameters, grid_scan_parameters
@@ -207,7 +219,10 @@ def common_flyscan_xray_centre(
 
             LOGGER.info("Starting grid scan")
             yield from run_gridscan(
-                fgs_composite, grid_scan_parameters, xrc_detector_params, beamline_specific
+                fgs_composite,
+                grid_scan_parameters,
+                xrc_detector_params,
+                beamline_specific,
             )
 
             LOGGER.info("Grid scan finished")
@@ -219,10 +234,10 @@ def common_flyscan_xray_centre(
 
 
 def run_gridscan(
-    fgs_composite: TFlyScanDevices,
+    fgs_composite: TDiffractionEssentialDevices,
     grid_scan_params: GridScanParams,
     detector_params: DetectorParams,
-    beamline_specific: BeamlineSpecificFGSFeatures[TFlyScanDevices, Any],
+    beamline_specific: BeamlineSpecificFGSFeatures[TDiffractionEssentialDevices, Any],
 ):
     with TRACER.start_span("moving_omega_to_0"):
         yield from bps.abs_set(
@@ -249,9 +264,11 @@ def run_gridscan(
     LOGGER.info("Waiting for pre-arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
 
-    yield from beamline_specific.arm_detector_plan(fgs_composite,
-                                                   detector_params,
-                                                   PlanGroupCheckpointConstants.GRIDSCAN_ARMING_COMPLETE)
+    yield from beamline_specific.arm_detector_plan(
+        fgs_composite,
+        detector_params,
+        PlanGroupCheckpointConstants.GRIDSCAN_ARMING_COMPLETE,
+    )
     LOGGER.info("Waiting for arming to finish")
     yield from bps.wait(PlanGroupCheckpointConstants.GRIDSCAN_ARMING_COMPLETE)
 

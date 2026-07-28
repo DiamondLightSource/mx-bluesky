@@ -28,7 +28,7 @@ from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanEssentialDevices,
+    DiffractionExtendedDevices,
     TDetector,
 )
 
@@ -68,7 +68,7 @@ class HyperionGridDetectThenXRayCentreComposite:
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class HyperionInternalGridDetectThenXRayCentreComposite(
-    GridDetectAndGridScanEssentialDevices[TDetector], Generic[TDetector]
+    DiffractionExtendedDevices[TDetector], Generic[TDetector]
 ):
     attenuator: BinaryFilterAttenuator
     beamsize: BeamsizeBase

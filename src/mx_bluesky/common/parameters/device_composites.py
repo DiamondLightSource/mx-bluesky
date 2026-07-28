@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 import pydantic
-
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.detector.detector_motion import DetectorMotion
@@ -29,7 +28,9 @@ TDetector = TypeVar("TDetector")
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FlyScanEssentialDevices(Generic[TGonioWithOmega, TDetector]):
+class DiffractionEssentialDevices(Generic[TGonioWithOmega, TDetector]):
+    """The bare minimum of devices needed to do the innermost diffraction experiment plan"""
+
     detector: TDetector
     synchrotron: Synchrotron
     gonio: TGonioWithOmega
@@ -46,11 +47,14 @@ class OavGridDetectionComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class GridDetectAndGridScanEssentialDevices(
-    FlyScanEssentialDevices[Smargon, TDetector],
+class DiffractionExtendedDevices(
+    DiffractionEssentialDevices[Smargon, TDetector],
     OavGridDetectionComposite,
     Generic[TDetector],
 ):
+    """An extended set of devices for running a diffraction experiment plan which
+    manages some additional diffraction parameters and retrieves results."""
+
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop
     detector_motion: DetectorMotion

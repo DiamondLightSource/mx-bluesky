@@ -101,7 +101,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    FlyScanEssentialDevices,
+    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -412,7 +412,7 @@ async def fake_fgs_composite(
     panda,
     backlight,
 ):
-    fake_composite = FlyScanEssentialDevices(
+    fake_composite = DiffractionEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger.build(mock=True),
         gonio=smargon,

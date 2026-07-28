@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, TypeVar, runtime_checkable, Protocol
+from typing import Protocol, runtime_checkable
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -16,11 +16,9 @@ from dodal.devices.fast_grid_scan import (
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
+from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.device_setup_plans.gridscan import tidy_up_zebra_after_gridscan
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    TSetupParameters,
-)
 from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.log import LOGGER
@@ -38,12 +36,11 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     SmargonSpeedError,
 )
-from ophyd_async.fastcs.panda import HDFPanda
 
 
 def set_panda_fgs_params(
     panda_fast_grid_scan: PandAFastGridScan,
-    expt_params: TSetupParameters,
+    expt_params: DiffractionExperiment,
     grid_scan_params: GridScanParams,
     settings: HyperionFeatureSettings,
 ) -> MsgGenerator:
@@ -62,11 +59,9 @@ class PandaGridScanSetupDevices(Protocol):
     zebra: Zebra
 
 
-TPandaGridScanDevices: TypeVar = TypeVar("TPandaGridScanDevices", bound=PandaGridScanSetupDevices)
-
 def panda_triggering_setup(
-    xrc_composite: TPandaGridScanDevices,
-    parameters: TSetupParameters,
+    xrc_composite: PandaGridScanSetupDevices,
+    parameters: DiffractionExperiment,
     grid_scan_parameters: GridScanParams,
     settings: HyperionFeatureSettings,
 ) -> MsgGenerator:

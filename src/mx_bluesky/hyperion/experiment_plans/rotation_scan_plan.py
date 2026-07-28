@@ -1,3 +1,5 @@
+from typing import cast
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
@@ -29,6 +31,9 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+)
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     setup_sample_environment,
@@ -54,6 +59,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
+from mx_bluesky.common.parameters.device_composites import DiffractionExtendedDevices
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     SingleRotationScan,
@@ -150,8 +156,10 @@ def rotation_scan_plan(
         yield from bps.wait(CONST.WAIT.ROTATION_READY_FOR_DC)
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
+        # TODO for now hard-coded until rest of rotation plan is properly beamline-generic
+        beamline_specific = create_eiger_beamline_specific(composite.eiger)
         # get some information for the ispyb deposition and trigger the callback
-        yield from read_hardware_for_zocalo(composite.eiger)
+        yield from read_hardware_for_zocalo(beamline_specific)
 
         yield from standard_read_hardware_pre_collection(
             composite.undulator,
@@ -304,10 +312,12 @@ def rotation_scan_internal(
         yield from bps.unstage(eiger, wait=True)
 
     LOGGER.info("setting up and staging eiger...")
+    # TODO for now hard-code to classic eiger until rotation is properly genericised
+    beamline_specific = create_eiger_beamline_specific(composite.eiger)
     yield from start_preparing_data_collection_then_do_plan(
-        composite.beamstop,
-        eiger,
-        composite.detector_motion,
+        beamline_specific,
+        parameters.detector_params,
+        cast(DiffractionExtendedDevices, composite),  # type: ignore
         parameters.detector_distance_mm,
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,

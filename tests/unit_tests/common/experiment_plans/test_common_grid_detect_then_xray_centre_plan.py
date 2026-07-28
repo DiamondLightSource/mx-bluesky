@@ -36,7 +36,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanEssentialDevices,
+    DiffractionExtendedDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -74,7 +74,7 @@ def construct_beamline_specific(
 async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     mock_flyscan: MagicMock,
     pin_tip_detection_with_found_pin: PinTipDetection,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: DiffractionExtendedDevices,
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
@@ -142,7 +142,7 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
     mock_grid_detect: MagicMock,
     mock_flyscan: MagicMock,
     mock_grid_detect_callback: MagicMock,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: DiffractionExtendedDevices,
     sim_run_engine: RunEngineSimulator,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
@@ -173,7 +173,7 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(
-    composite: GridDetectAndGridScanEssentialDevices,
+    composite: DiffractionExtendedDevices,
     test_config_files: ConfigFilesForTests,
     expt_params: DiffractionExperimentWithSample,
     grid_detection_params: GridDetectionParams,
@@ -199,7 +199,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_flyscan: MagicMock,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: DiffractionExtendedDevices,
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
@@ -252,7 +252,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     mock_flyscan,
     mock_grid_detection_plan,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: DiffractionExtendedDevices,
     sim_run_engine: RunEngineSimulator,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
@@ -319,7 +319,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
     mock_flyscan,
     mock_grid_detection_plan,
     sim_run_engine: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: DiffractionExtendedDevices,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
     test_config_files: dict[str, str],
@@ -420,7 +420,7 @@ def test_detect_grid_and_do_gridscan_waits_for_aperture_to_be_prepared_before_mo
 def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     mock_grid_detect_then_xray_centre: MagicMock,
     sim_run_engine: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: DiffractionExtendedDevices,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
