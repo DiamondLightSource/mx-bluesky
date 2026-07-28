@@ -18,7 +18,7 @@ from ophyd_async.core import set_mock_value
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
 )
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (

@@ -2,20 +2,17 @@ from __future__ import annotations
 
 from collections.abc import Callable, Generator
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TypeAlias
 
 from bluesky.callbacks import CallbackBase
-
 from dodal.devices.zocalo import ZocaloStartInfo, ZocaloTrigger
+from event_model.documents import Event, EventDescriptor, RunStart, RunStop
+
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
 )
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
 from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER
-
-if TYPE_CHECKING:
-    from event_model.documents import Event, EventDescriptor, RunStart, RunStop
-
 
 ZocaloInfoGenerator = Generator[list[ZocaloStartInfo], dict, None]
 

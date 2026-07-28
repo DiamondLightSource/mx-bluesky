@@ -3,7 +3,7 @@ from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_dec
 from bluesky.utils import MsgGenerator
 from dodal.devices.smargon import CombinedMove
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.parameters.constants import OavConstants

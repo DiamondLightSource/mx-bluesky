@@ -35,20 +35,25 @@ from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
 from dodal.log import LOGGER
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import BeamlineSpecificFGSFeatures
-from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import construct_hyperion_specific_features
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite, create_detector_specific_composite,
+    HyperionGridDetectThenXRayCentreComposite,
     HyperionInternalGridDetectThenXRayCentreComposite,
+    create_detector_specific_composite,
 )
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
+    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     pin_centre_then_gridscan_plan,
@@ -184,14 +189,23 @@ def robot_load_then_xray_centre(
         composite.dcm, detector_params
     )
 
-    grid_detect_and_gridscan_composite = create_detector_specific_composite(cast(HyperionGridDetectThenXRayCentreComposite, composite))
+    grid_detect_and_gridscan_composite = create_detector_specific_composite(
+        cast(HyperionGridDetectThenXRayCentreComposite, composite)
+    )
 
-    beamline_specific = construct_hyperion_specific_features(grid_detect_and_gridscan_composite, parameters)
+    beamline_specific = construct_hyperion_specific_features(
+        grid_detect_and_gridscan_composite, parameters
+    )
 
     if doing_sample_load:
         LOGGER.info("Pin not loaded, loading and centring")
         plan = _robot_load_then_flyscan_plan(
-            beamline_specific, composite, grid_detect_and_gridscan_composite, parameters, detector_params, oav_config_file
+            beamline_specific,
+            composite,
+            grid_detect_and_gridscan_composite,
+            parameters,
+            detector_params,
+            oav_config_file,
         )
     else:
         # Robot load normally sets the energy so we should do this explicitly if no load is
@@ -204,7 +218,11 @@ def robot_load_then_xray_centre(
 
         if doing_chi_change:
             plan = _flyscan_plan_from_robot_load_params(
-                beamline_specific, grid_detect_and_gridscan_composite, parameters, detector_params, oav_config_file
+                beamline_specific,
+                grid_detect_and_gridscan_composite,
+                parameters,
+                detector_params,
+                oav_config_file,
             )
             LOGGER.info("Pin already loaded but chi changed so centring")
         else:

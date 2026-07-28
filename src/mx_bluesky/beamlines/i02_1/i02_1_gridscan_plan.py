@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 
@@ -34,10 +33,12 @@ from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
     eiger_zocalo_hw_read_mapper,
 )
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
-    common_flyscan_xray_centre,
     construct_beamline_specific_fast_gridscan_features,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    common_flyscan_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -107,6 +108,7 @@ class I021FlyScanXRayCentreComposite:
     gonio: XYZWrappedOmegaStage
 
 
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class InternalGridScanComposite(
     DiffractionEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
 ):
@@ -252,6 +254,6 @@ def i02_1_gridscan_plan(
 def create_internal_composite(
     composite: I021FlyScanXRayCentreComposite,
 ) -> InternalGridScanComposite:
-    kwargs = asdict(composite)
+    kwargs = composite.__dict__
     kwargs["detector"] = kwargs["eiger"]
     return InternalGridScanComposite(**kwargs)

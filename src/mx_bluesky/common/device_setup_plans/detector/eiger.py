@@ -8,13 +8,12 @@ from collections.abc import Sequence
 from typing import Any
 
 from bluesky import plan_stubs as bps
-from bluesky.protocols import Readable
 from bluesky.utils import MsgGenerator
 from dodal.devices.detector import DetectorParams
 from dodal.devices.eiger import EigerDetector
 from event_model import Event
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
@@ -63,8 +62,8 @@ def eiger_disarm(
     yield from bps.unstage(device_composite.detector, wait=True)
 
 
-def eiger_zocalo_hw_read_signals(eiger: EigerDetector) -> Sequence[Readable]:
-    return [eiger.odin_file_writer.id]
+def eiger_zocalo_hw_read_signals(eiger: EigerDetector) -> Sequence:
+    return [eiger.odin.file_writer.id]
 
 
 def eiger_zocalo_hw_read_mapper(doc: Event) -> ZocaloHWReadPayload:

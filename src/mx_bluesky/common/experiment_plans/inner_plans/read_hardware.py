@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
-import bluesky.plan_stubs as bps
-from bluesky.protocols import Readable
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.beamsize.beamsize import BeamsizeBase
@@ -15,24 +11,16 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    read_hardware_plan,
 )
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
 )
 from mx_bluesky.common.utils.log import LOGGER
-
-
-def read_hardware_plan(
-    signals: Sequence[Readable],
-    event_name: str,
-):
-    LOGGER.info(f"Reading status of beamline for event, {event_name}")
-    yield from bps.create(name=event_name)
-    for signal in signals:
-        yield from bps.read(signal)
-    yield from bps.save()
 
 
 def read_hardware_for_zocalo(beamline_specific: BeamlineSpecificDetectorFeatures):

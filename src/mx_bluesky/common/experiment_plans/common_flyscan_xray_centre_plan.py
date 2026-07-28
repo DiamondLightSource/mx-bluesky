@@ -1,38 +1,31 @@
 from __future__ import annotations
 
-import dataclasses
-from collections.abc import Callable, Sequence
-from functools import partial
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from bluesky.protocols import Readable
 from bluesky.utils import FailedStatus, MsgGenerator
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
-    FastGridScanCommon,
     FastGridScanThreeD,
     GridScanInvalidError,
 )
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    TDiffractionEssentialDevices,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     kickoff_and_complete_gridscan,
 )
-from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
-    read_hardware_plan,
-)
 from mx_bluesky.common.parameters.components import (
-    DiffractionExperiment,
     DiffractionExperimentWithSample,
 )
 from mx_bluesky.common.parameters.constants import (
-    DocDescriptorNames,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
@@ -43,121 +36,7 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.tracing import TRACER
 
-TSetupParameters = TypeVar(
-    "TSetupParameters", bound=DiffractionExperiment, contravariant=True
-)
 TParameters = TypeVar("TParameters", bound=DiffractionExperimentWithSample)
-# TFlyScanDevices: TypeAlias = FlyScanEssentialDevices[TGonioWithOmega, TDetector]
-TDiffractionEssentialDevices = TypeVar(
-    "TDiffractionEssentialDevices", bound=DiffractionEssentialDevices
-)
-
-
-@dataclasses.dataclass
-class BeamlineSpecificDetectorFeatures(Generic[TDiffractionEssentialDevices]):
-    """Defines plans specific to arming and disarming the detector.
-    Attributes:
-        pre_arm_detector_plan: A plan that may be called early on to start arming the detector.
-            Supplied with a group name that will be waited on to ensure pre-arming completes.
-        arm_detector_plan: A plan that is called later to fully arm the detector. Supplied with a group name
-            that will be waited on to ensure arming completes.
-        disarm_detector_plan: A plan that will be called to complete the acquisition.
-        tidy_detector_plan: The detector-specific plan for cleaning up the detector.
-        detector_zocalo_hw_read_signals: The list of signals to read when generating the ZOCALO_HW_READ event.
-        detector_hw_read_during_signals: The list of signals to read when generating the HARDWARE_READ_DURING event.
-    """
-
-    pre_arm_detector_plan: Callable[
-        [TDiffractionEssentialDevices, DetectorParams, str], MsgGenerator
-    ]
-    arm_detector_plan: Callable[
-        [TDiffractionEssentialDevices, DetectorParams, str], MsgGenerator
-    ]
-    disarm_detector_plan: Callable[[TDiffractionEssentialDevices], MsgGenerator]
-    tidy_detector_plan: Callable[[TDiffractionEssentialDevices], MsgGenerator]
-    detector_zocalo_hw_read_signals: Sequence
-    detector_hw_read_during_signals: Sequence
-
-
-@dataclasses.dataclass
-class BeamlineSpecificFGSFeatures(
-    BeamlineSpecificDetectorFeatures,
-    Generic[TDiffractionEssentialDevices, TSetupParameters],
-):
-    setup_trigger_plan: Callable[
-        [TDiffractionEssentialDevices, TSetupParameters, GridScanParams], MsgGenerator
-    ]
-    tidy_plan: Callable[..., MsgGenerator]
-    set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator]
-    fgs_motors: FastGridScanCommon
-    read_pre_flyscan_plan: Callable[
-        ..., MsgGenerator
-    ]  # Eventually replace with https://github.com/DiamondLightSource/mx-bluesky/issues/819
-    read_during_collection_plan: Callable[..., MsgGenerator]
-
-
-def construct_beamline_specific_fast_gridscan_features(
-    detector_features: BeamlineSpecificDetectorFeatures[TDiffractionEssentialDevices],
-    setup_trigger_plan: Callable[
-        [TDiffractionEssentialDevices, TSetupParameters, GridScanParams], MsgGenerator
-    ],
-    tidy_plan: Callable[..., MsgGenerator],
-    set_flyscan_params_plan: Callable[[GridScanParams], MsgGenerator],
-    fgs_motors: FastGridScanCommon,
-    signals_to_read_pre_flyscan: Sequence[Readable],
-    signals_to_read_during_collection: Sequence[Readable],
-) -> BeamlineSpecificFGSFeatures[TDiffractionEssentialDevices, TSetupParameters]:
-    """Construct the class needed to do beamline-specific parts of the XRC FGS
-
-    Args:
-        detector_features: The features specific to setting up the detector
-        setup_trigger_plan (Callable): Configure triggering, for example with the Zebra or PandA device.
-        Ran directly before kicking off the gridscan.
-
-        tidy_plan (Callable): Tidy up states of devices. Ran at the end of the flyscan, regardless of
-        whether or not it finished successfully. Zocalo and Eiger are cleaned up separately
-
-        set_flyscan_params_plan (Callable): Set PV's for the relevant Fast Grid Scan dodal device
-
-        fgs_motors (Callable): Composite device representing the fast grid scan's motion program parameters.
-
-        signals_to_read_pre_flyscan (Callable): Signals which will be read and saved as a bluesky event document
-        after all configuration, but before the gridscan.
-
-        signals_to_read_during_collection (Callable): Signals which will be read and saved as a bluesky event
-        document whilst the gridscan motion is in progress
-
-        detector_signals_to_read: The list of detector signals to read when generating callback events
-    """
-    read_pre_flyscan_plan = partial(
-        read_hardware_plan,
-        signals_to_read_pre_flyscan,
-        DocDescriptorNames.HARDWARE_READ_PRE,
-    )
-
-    read_during_collection_plan = partial(
-        read_hardware_plan,
-        [
-            *signals_to_read_during_collection,
-            *detector_features.detector_hw_read_during_signals,
-        ],
-        DocDescriptorNames.HARDWARE_READ_DURING,
-    )
-
-    return BeamlineSpecificFGSFeatures(
-        pre_arm_detector_plan=detector_features.pre_arm_detector_plan,
-        arm_detector_plan=detector_features.arm_detector_plan,
-        disarm_detector_plan=detector_features.disarm_detector_plan,
-        tidy_detector_plan=detector_features.tidy_detector_plan,
-        detector_zocalo_hw_read_signals=detector_features.detector_zocalo_hw_read_signals,
-        detector_hw_read_during_signals=detector_features.detector_hw_read_during_signals,
-        setup_trigger_plan=setup_trigger_plan,
-        tidy_plan=tidy_plan,
-        set_flyscan_params_plan=set_flyscan_params_plan,
-        fgs_motors=fgs_motors,
-        read_pre_flyscan_plan=read_pre_flyscan_plan,
-        read_during_collection_plan=read_during_collection_plan,
-    )
 
 
 def common_flyscan_xray_centre(
@@ -172,7 +51,7 @@ def common_flyscan_xray_centre(
     """Main entry point of the MX-Bluesky x-ray centering flyscan
 
     Args:
-        composite (DiffractionEssentialDevices): Devices required to perform this plan.
+        composite (TDiffractionEssentialDevices): Devices required to perform this plan.
 
         xrc_detector_params (DetectorParams): Detector parameters to use during x-ray centring.
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
@@ -193,7 +72,7 @@ def common_flyscan_xray_centre(
     """
 
     def _overall_tidy():
-        yield from beamline_specific.tidy_plan()
+        yield from beamline_specific.tidy_plan(composite)
         yield from beamline_specific.tidy_detector_plan(composite)
 
     def _decorated_flyscan():

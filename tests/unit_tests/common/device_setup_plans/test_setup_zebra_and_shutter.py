@@ -1,4 +1,5 @@
 import dataclasses
+from types import SimpleNamespace
 
 import pytest
 from dodal.devices.zebra.zebra import (
@@ -11,7 +12,8 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
 )
 
-from mx_bluesky.common.device_setup_plans.gridscan import (
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
+    GridscanSetupDevices,
     _setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
@@ -37,6 +39,13 @@ async def _get_shutter_input_1(zebra: Zebra):
     )
 
 
+@pytest.fixture
+def gridscan_setup_devices(
+    zebra: Zebra, zebra_shutter: MXZebraShutter
+) -> GridscanSetupDevices:
+    return SimpleNamespace(zebra=zebra, sample_shutter=zebra_shutter)  # type: ignore
+
+
 async def test_configure_zebra_and_shutter_for_auto(
     run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter
 ):
@@ -50,23 +59,28 @@ async def test_configure_zebra_and_shutter_for_auto(
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
 
 
-async def test_zebra_cleanup(run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter):
-    run_engine(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
+async def test_zebra_cleanup(run_engine, gridscan_setup_devices):
+    run_engine(tidy_up_zebra_after_gridscan(gridscan_setup_devices, wait=True))
     assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
-        == zebra.mapping.sources.PC_PULSE
+        await gridscan_setup_devices.zebra.output.out_pvs[
+            gridscan_setup_devices.zebra.mapping.outputs.TTL_DETECTOR
+        ].get_value()
+        == gridscan_setup_devices.zebra.mapping.sources.PC_PULSE
     )
-    assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.PC_GATE
+    assert (
+        await _get_shutter_input_2(gridscan_setup_devices.zebra)
+        == gridscan_setup_devices.zebra.mapping.sources.PC_GATE
+    )
 
 
-async def test_zebra_set_up_for_gridscan(
-    run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter
-):
+async def test_zebra_set_up_for_gridscan(run_engine, gridscan_setup_devices):
     @dataclasses.dataclass
     class Composite:
         zebra: Zebra
         sample_shutter: MXZebraShutter
 
+    zebra = gridscan_setup_devices.zebra
+    zebra_shutter = gridscan_setup_devices.sample_shutter
     composite = Composite(zebra, zebra_shutter)
     run_engine(_setup_zebra_for_gridscan(composite, wait=True))
     assert (

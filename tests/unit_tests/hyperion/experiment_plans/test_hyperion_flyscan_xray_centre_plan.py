@@ -17,8 +17,10 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
 from ophyd_async.core import completed_status, set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (

@@ -13,15 +13,15 @@ from mx_bluesky.common.device_setup_plans.detector.eiger import (
 from mx_bluesky.common.device_setup_plans.detector.fastcs_eiger import (
     create_fastcs_eiger_beamline_specific,
 )
-from mx_bluesky.common.device_setup_plans.gridscan import (
-    set_zebra_fgs_3d_params,
-    setup_zebra_for_gridscan,
-    tidy_up_zebra_after_gridscan,
-)
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
     TSetupParameters,
     construct_beamline_specific_fast_gridscan_features,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
+    set_zebra_fgs_3d_params,
+    setup_zebra_for_gridscan,
+    tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.device_composites import TDetector
@@ -37,10 +37,6 @@ from mx_bluesky.hyperion.device_setup_plans.gridscan import (
 from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
-
-
-class SmargonSpeedError(Exception):
-    pass
 
 
 def construct_hyperion_specific_features(
@@ -81,7 +77,7 @@ def construct_hyperion_specific_features(
         setup_trigger_plan = partial(
             panda_triggering_setup, settings=get_hyperion_feature_settings()
         )
-        tidy_plan = partial(panda_tidy, xrc_composite)
+        tidy_plan = panda_tidy
         set_flyscan_params_plan = partial(
             set_panda_fgs_params,
             xrc_composite.panda_fast_grid_scan,
@@ -92,13 +88,7 @@ def construct_hyperion_specific_features(
 
     else:
         setup_trigger_plan = setup_zebra_for_gridscan
-        tidy_plan = partial(
-            tidy_up_zebra_after_gridscan,
-            xrc_composite.zebra,
-            xrc_composite.sample_shutter,
-            group="flyscan_zebra_tidy",
-            wait=True,
-        )
+        tidy_plan = (tidy_up_zebra_after_gridscan,)
         set_flyscan_params_plan = partial(
             set_zebra_fgs_3d_params,
             xrc_composite.zebra_fast_grid_scan,

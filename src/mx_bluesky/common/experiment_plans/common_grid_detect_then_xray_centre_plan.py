@@ -11,6 +11,9 @@ from dodal.devices.backlight import InOut
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -18,7 +21,6 @@ from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificFGSFeatures,
     TParameters,
     common_flyscan_xray_centre,
 )

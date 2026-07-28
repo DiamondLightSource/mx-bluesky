@@ -13,7 +13,7 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
 )
 from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (

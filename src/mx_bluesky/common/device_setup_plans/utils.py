@@ -8,12 +8,12 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.mx_phase1.beamstop import BeamstopPositions
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    BeamlineSpecificDetectorFeatures,
+)
 from mx_bluesky.common.device_setup_plans.position_detector import (
     set_detector_z_position,
     set_shutter,
-)
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificDetectorFeatures,
 )
 from mx_bluesky.common.parameters.device_composites import DiffractionExtendedDevices
 

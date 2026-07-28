@@ -1,4 +1,3 @@
-import types
 from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
@@ -9,10 +8,9 @@ import pytest
 from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
-from dodal.beamlines import i03
+from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
-    set_fast_grid_scan_params,
 )
 from dodal.devices.smargon import CombinedMove
 from dodal.devices.synchrotron import SynchrotronMode
@@ -21,16 +19,21 @@ from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import completed_status, set_mock_value
 
-from mx_bluesky.common.device_setup_plans.gridscan import _fast_gridscan_3d_params
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    eiger_hw_read_during_mapper,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
-    DiffractionEssentialDevices,
+    read_hardware_plan,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
+    _fast_gridscan_3d_params,
+    set_zebra_fgs_3d_params,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
     kickoff_and_complete_gridscan,
     run_gridscan,
-)
-from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
-    read_hardware_plan,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -47,6 +50,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
+from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
@@ -56,7 +60,6 @@ from mx_bluesky.common.utils.exceptions import (
 )
 from tests.conftest import (
     RunEngineSimulator,
-    create_dummy_scan_spec,
 )
 
 from ....conftest import TestData
@@ -74,6 +77,13 @@ class CompleteError(Exception):
 
 def mock_plan():
     yield from bps.null()
+
+
+@pytest.fixture
+def detector_params(
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+) -> DetectorParams:
+    return create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
 
 
 @pytest.fixture
@@ -102,12 +112,6 @@ def run_engine_with_subs_snapshots_already_taken(run_engine_with_subs, test_even
 class TestFlyscanXrayCentrePlan:
     td: TestData = TestData()
 
-    def test_when_run_gridscan_called_then_generator_returned(
-        self,
-    ):
-        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock())
-        assert isinstance(plan, types.GeneratorType)
-
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
         self,
         run_engine: RunEngine,
@@ -117,7 +121,8 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         ispyb_callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         )
         run_engine.subscribe(ispyb_callback)
 
@@ -165,7 +170,7 @@ class TestFlyscanXrayCentrePlan:
         from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
         fgs_params = _fast_gridscan_3d_params(
-            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+            minimal_diffraction_expt_with_sample, grid_scan_params_3d, False
         )
         motor_position = fgs_params.grid_position_to_motor_position(np.array([1, 2, 3]))
         run_engine(move_x_y_z(fake_fgs_composite.gonio, *motor_position))
@@ -220,22 +225,23 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
         grid_scan_params_3d: GridScanParams,
         fake_fgs_composite: DiffractionEssentialDevices,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        detector_params: DetectorParams,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(
+        fake_fgs_composite.detector.unstage = MagicMock(
             side_effect=lambda: completed_status()
         )
-        fgs = i03.zebra_fast_grid_scan.build(connect_immediately=True, mock=True)
+        fgs = beamline_specific.fgs_motors
         fgs.KICKOFF_TIMEOUT = 0.1
         fgs.complete = MagicMock(side_effect=lambda: completed_status())
         set_mock_value(fgs.motion_program.running, 1)
 
         def test_plan():
             yield from kickoff_and_complete_gridscan(
-                fgs,
-                fake_fgs_composite.eiger,
-                fake_fgs_composite.synchrotron,
-                grid_scan_params_3d.scan_points,
-                grid_scan_params_3d.omega_starts_deg,
+                beamline_specific,
+                fake_fgs_composite,
+                grid_scan_params_3d,
+                detector_params,
             )
 
         with pytest.raises(FailedStatus):
@@ -255,14 +261,12 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific: BeamlineSpecificFGSFeatures,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
+        detector_params: DetectorParams,
     ):
-        fgs_params = _fast_gridscan_3d_params(
-            minimal_diffraction_expt_with_sample, grid_scan_params_3d
-        )
         beamline_specific.set_flyscan_params_plan = partial(
-            set_fast_grid_scan_params,
+            set_zebra_fgs_3d_params,
             beamline_specific.fgs_motors,
-            fgs_params,
+            minimal_diffraction_expt_with_sample,
         )
 
         set_mock_value(beamline_specific.fgs_motors.device_scan_invalid, 1.0)  # type: ignore
@@ -272,6 +276,7 @@ class TestFlyscanXrayCentrePlan:
                 run_gridscan(
                     fake_fgs_composite,
                     grid_scan_params_3d,
+                    detector_params,
                     beamline_specific,
                 )
             )
@@ -286,6 +291,7 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: DiffractionEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         grid_scan_params_3d: GridScanParams,
+        detector_params: DetectorParams,
     ):
         exception = FailedStatus()
         exception.__cause__ = Exception()
@@ -297,6 +303,7 @@ class TestFlyscanXrayCentrePlan:
                 run_gridscan(
                     fake_fgs_composite,
                     grid_scan_params_3d,
+                    detector_params,
                     beamline_specific,
                 )
             )
@@ -352,16 +359,16 @@ class TestFlyscanXrayCentrePlan:
         run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs_snapshots_already_taken
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
-        fake_fgs_composite.eiger.disarm_detector = mock_parent.disarm
+        fake_fgs_composite.detector.disarm_detector = mock_parent.disarm
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
         ispyb_cb.emit_cb.zocalo_interactor.run_end = mock_parent.run_end
 
-        fake_fgs_composite.eiger.filewriters_finished = NullStatus()  # type: ignore
-        fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock(
+        fake_fgs_composite.detector.filewriters_finished = NullStatus()  # type: ignore
+        fake_fgs_composite.detector.odin.check_and_wait_for_odin_state = MagicMock(
             return_value=True
         )
-        fake_fgs_composite.eiger.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
-        fake_fgs_composite.eiger.stage = MagicMock(
+        fake_fgs_composite.detector.odin.file_writer.num_captured.sim_put(1200)  # type: ignore
+        fake_fgs_composite.detector.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
 
@@ -417,17 +424,19 @@ class TestFlyscanXrayCentrePlan:
         grid_scan_params_3d: GridScanParams,
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
+        detector_params: DetectorParams,
     ):
-        fake_fgs_composite.eiger.unstage = MagicMock(side_effect=completed_status)
+        fake_fgs_composite.detector.unstage = MagicMock(side_effect=completed_status)
         run_engine(
             run_gridscan(
                 fake_fgs_composite,
                 grid_scan_params_3d,
+                detector_params,
                 beamline_specific,
             )
         )
-        fake_fgs_composite.eiger.stage.assert_called_once()  # type: ignore
-        fake_fgs_composite.eiger.unstage.assert_called_once()
+        fake_fgs_composite.detector.stage.assert_called_once()  # type: ignore
+        fake_fgs_composite.detector.unstage.assert_called_once()
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
@@ -455,6 +464,7 @@ class TestFlyscanXrayCentrePlan:
         grid_scan_params_3d: GridScanParams,
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
+        detector_params: DetectorParams,
     ):
         beamline_specific.read_pre_flyscan_plan = partial(
             read_hardware_plan,
@@ -464,16 +474,16 @@ class TestFlyscanXrayCentrePlan:
 
         mock_complete.side_effect = CompleteError()
 
-        fake_fgs_composite.eiger.stage = MagicMock(
+        fake_fgs_composite.detector.stage = MagicMock(
             return_value=Status(None, None, 0, True, True)
         )
 
-        fake_fgs_composite.eiger.filewriters_finished = NullStatus()
+        fake_fgs_composite.detector.filewriters_finished = NullStatus()
 
-        fake_fgs_composite.eiger.odin.check_and_wait_for_odin_state = MagicMock()
+        fake_fgs_composite.detector.odin.check_and_wait_for_odin_state = MagicMock()
 
-        fake_fgs_composite.eiger.disarm_detector = MagicMock()
-        fake_fgs_composite.eiger.disable_roi_mode = MagicMock()
+        fake_fgs_composite.detector.disarm_detector = MagicMock()
+        fake_fgs_composite.detector.disable_roi_mode = MagicMock()
 
         with pytest.raises(CompleteError):
             run_engine(
@@ -481,13 +491,14 @@ class TestFlyscanXrayCentrePlan:
                     run_gridscan(
                         fake_fgs_composite,
                         grid_scan_params_3d,
+                        detector_params,
                         beamline_specific,
                     )
                 )
             )
 
-        fake_fgs_composite.eiger.disable_roi_mode.assert_called()
-        fake_fgs_composite.eiger.disarm_detector.assert_called()
+        fake_fgs_composite.detector.disable_roi_mode.assert_called()
+        fake_fgs_composite.detector.disarm_detector.assert_called()
 
     @patch(
         "mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan.bps.kickoff",
@@ -510,6 +521,9 @@ class TestFlyscanXrayCentrePlan:
         fake_fgs_composite: DiffractionEssentialDevices,
         dummy_rotation_data_collection_group_info,
         zebra_fast_grid_scan: ZebraFastGridScanThreeD,
+        beamline_specific: BeamlineSpecificFGSFeatures,
+        grid_scan_params_3d: GridScanParams,
+        detector_params: DetectorParams,
     ):
         id_1, id_2 = 100, 200
 
@@ -523,20 +537,20 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
 
         mock_zocalo_trigger = ispyb_cb.emit_cb.zocalo_interactor
-        fake_fgs_composite.eiger.unstage = MagicMock(side_effect=completed_status)
-        fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
+        fake_fgs_composite.detector.unstage = MagicMock(side_effect=completed_status)
+        fake_fgs_composite.detector.odin.file_writer.id.sim_put("test/filename")  # type: ignore
 
         x_steps, y_steps, z_steps = 10, 20, 30
-
+        grid_scan_params_3d.x_steps = 10
+        grid_scan_params_3d.y_steps = [y_steps, z_steps]
         run_engine.subscribe(ispyb_cb)
 
         run_engine(
             kickoff_and_complete_gridscan(
-                zebra_fast_grid_scan,
-                fake_fgs_composite.eiger,
-                fake_fgs_composite.synchrotron,
-                create_dummy_scan_spec(),
-                [0, 90],
+                beamline_specific,
+                fake_fgs_composite,
+                grid_scan_params_3d,
+                detector_params,
             )
         )
 
@@ -571,7 +585,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         beamline_specific.read_during_collection_plan = partial(
             read_hardware_plan,
-            [fake_fgs_composite.eiger.bit_depth],  # type: ignore
+            [fake_fgs_composite.detector.bit_depth],  # type: ignore
             DocDescriptorNames.HARDWARE_READ_DURING,
         )
         sim_run_engine.add_handler(

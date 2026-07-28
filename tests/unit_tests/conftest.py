@@ -70,10 +70,18 @@ from ophyd_async.fastcs.panda import HDFPanda
 from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
     I04GridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    BeamlineSpecificDetectorFeatures,
+)
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+    eiger_hw_read_during_mapper,
+    eiger_zocalo_hw_read_mapper,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -239,7 +247,10 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
+        GridscanNexusFileCallback(
+            param_type=DiffractionExperimentWithSample,
+            hw_read_mapper=eiger_hw_read_during_mapper,
+        ),
         GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
@@ -248,7 +259,9 @@ def create_gridscan_callbacks() -> tuple[
                 lambda: generate_start_info_from_omega_map(
                     [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
                 ),
+                hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 
@@ -411,21 +424,21 @@ async def fake_fgs_composite(
     zocalo,
     panda,
     backlight,
-):
+) -> DiffractionEssentialDevices:
     fake_composite = DiffractionEssentialDevices(
         # We don't use the eiger fixture here because .unstage() is used in some tests
-        eiger=i03.eiger.build(mock=True),
+        detector=i03.eiger.build(mock=True),
         gonio=smargon,
         synchrotron=synchrotron,
     )
 
-    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    fake_composite.detector.stage = MagicMock(side_effect=lambda: completed_status())
     # unstage should be mocked on a per-test basis because several rely on unstage
-    fake_composite.eiger.set_detector_parameters(
+    fake_composite.detector.set_detector_parameters(
         create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
     )
-    fake_composite.eiger.stop_odin_when_all_frames_collected = MagicMock()
-    fake_composite.eiger.odin.check_and_wait_for_odin_state = lambda timeout: True
+    fake_composite.detector.stop_odin_when_all_frames_collected = MagicMock()
+    fake_composite.detector.odin.check_and_wait_for_odin_state = lambda timeout: True
 
     test_result = {
         "centre_of_mass": [6, 6, 6],
@@ -458,10 +471,24 @@ def dummy_rotation_data_collection_group_info():
 
 
 @pytest.fixture
+def beamline_specific_detector(
+    eiger: EigerDetector,
+) -> BeamlineSpecificDetectorFeatures:
+    return create_eiger_beamline_specific(eiger)
+
+
+@pytest.fixture
 def beamline_specific(
     zebra_fast_grid_scan: ZebraFastGridScanThreeD,
+    beamline_specific_detector: BeamlineSpecificDetectorFeatures,
 ) -> BeamlineSpecificFGSFeatures:
     return BeamlineSpecificFGSFeatures(
+        pre_arm_detector_plan=beamline_specific_detector.pre_arm_detector_plan,
+        arm_detector_plan=beamline_specific_detector.arm_detector_plan,
+        disarm_detector_plan=beamline_specific_detector.disarm_detector_plan,
+        tidy_detector_plan=beamline_specific_detector.tidy_detector_plan,
+        detector_zocalo_hw_read_signals=beamline_specific_detector.detector_zocalo_hw_read_signals,
+        detector_hw_read_during_signals=beamline_specific_detector.detector_hw_read_during_signals,
         setup_trigger_plan=MagicMock(),
         tidy_plan=MagicMock(),
         set_flyscan_params_plan=MagicMock(),

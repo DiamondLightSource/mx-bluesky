@@ -12,7 +12,7 @@ from dodal.devices.zocalo.zocalo_results import (
 from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
@@ -101,7 +101,7 @@ def kickoff_and_complete_gridscan(
         }
     )
     @bpp.contingency_decorator(
-        except_plan=lambda e: (yield from bps.stop(detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+        except_plan=lambda e: (yield from bps.stop(device_composite.detector)),  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
         else_plan=lambda: (
             yield from beamline_specific.disarm_detector_plan(device_composite)
         ),

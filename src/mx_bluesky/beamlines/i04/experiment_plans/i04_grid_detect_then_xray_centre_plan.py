@@ -45,17 +45,17 @@ from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
     eiger_zocalo_hw_read_mapper,
 )
-from mx_bluesky.common.device_setup_plans.gridscan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+    construct_beamline_specific_fast_gridscan_features,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
     set_zebra_fgs_3d_params,
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     get_results_and_move_to_xtal,
-)
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificFGSFeatures,
-    construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
@@ -352,14 +352,6 @@ def construct_i04_specific_features(
         xrc_composite.beamsize,
     ]
 
-    tidy_plan = partial(
-        tidy_up_zebra_after_gridscan,
-        xrc_composite.zebra,
-        xrc_composite.sample_shutter,
-        group="flyscan_zebra_tidy",
-        wait=True,
-    )
-
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     beamline_specific_detector_features = create_eiger_beamline_specific(
         xrc_composite.detector
@@ -367,7 +359,7 @@ def construct_i04_specific_features(
     return construct_beamline_specific_fast_gridscan_features(
         beamline_specific_detector_features,
         setup_zebra_for_gridscan,
-        tidy_plan,
+        tidy_up_zebra_after_gridscan,
         partial(
             set_zebra_fgs_3d_params, xrc_composite.zebra_fast_grid_scan, xrc_parameters
         ),

@@ -4,10 +4,10 @@ from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.detector import DetectorParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
-from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )

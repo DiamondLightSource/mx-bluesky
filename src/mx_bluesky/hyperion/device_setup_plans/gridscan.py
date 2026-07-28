@@ -18,7 +18,9 @@ from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.fastcs.panda import HDFPanda
 
-from mx_bluesky.common.device_setup_plans.gridscan import tidy_up_zebra_after_gridscan
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
+    tidy_up_zebra_after_gridscan,
+)
 from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.log import LOGGER
@@ -33,9 +35,10 @@ from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
 from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
     setup_zebra_for_panda_flyscan,
 )
-from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
-    SmargonSpeedError,
-)
+
+
+class SmargonSpeedError(Exception):
+    pass
 
 
 def set_panda_fgs_params(
@@ -153,8 +156,6 @@ def panda_tidy(xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite)
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(xrc_composite.panda, group)
-    yield from tidy_up_zebra_after_gridscan(
-        xrc_composite.zebra, xrc_composite.sample_shutter, group=group, wait=False
-    )
+    yield from tidy_up_zebra_after_gridscan(xrc_composite, group=group, wait=False)
     yield from bps.unstage(xrc_composite.panda, group=group)
     yield from bps.wait(group, timeout=10)

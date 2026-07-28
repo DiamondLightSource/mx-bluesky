@@ -7,8 +7,10 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from dodal.devices.zocalo import ZocaloResults
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     DiffractionEssentialDevices,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP

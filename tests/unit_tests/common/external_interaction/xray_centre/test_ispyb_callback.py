@@ -7,7 +7,7 @@ from bluesky.preprocessors import run_decorator, subs_decorator
 from ophyd_async.core import init_devices
 from ophyd_async.epics.core import epics_signal_rw
 
-from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     read_hardware_plan,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (

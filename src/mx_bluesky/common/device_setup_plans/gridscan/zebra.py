@@ -15,12 +15,12 @@ from dodal.devices.zebra.zebra_controlled_shutter import (
     ZebraShutterControl,
 )
 
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    TSetupParameters,
+)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     configure_zebra_and_shutter_for_auto_shutter,
     set_shutter_auto_input,
-)
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    TSetupParameters,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.constants import ZEBRA_STATUS_TIMEOUT
@@ -77,8 +77,8 @@ def _fast_gridscan_3d_params(
 
 
 def tidy_up_zebra_after_gridscan(
-    zebra: Zebra,
-    zebra_shutter: MXZebraShutter,
+    composite: GridscanSetupDevices,
+    *,
     group="tidy_up_zebra_after_gridscan",
     wait=True,
     ttl_input_for_detector_to_use: int | None = None,
@@ -87,8 +87,7 @@ def tidy_up_zebra_after_gridscan(
     Set the zebra back to a state which is expected by GDA.
 
     Args:
-        zebra: Zebra device.
-        zebra_shutter: Zebra shutter device.
+        composite: The devices to use
         group: Bluesky group to use when waiting on completion.
         wait: If true, block until completion.
         ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
@@ -97,17 +96,21 @@ def tidy_up_zebra_after_gridscan(
 
     LOGGER.info("Tidying up Zebra")
 
-    ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
+    ttl_detector = (
+        ttl_input_for_detector_to_use or composite.zebra.mapping.outputs.TTL_DETECTOR
+    )
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
-        zebra.mapping.sources.PC_PULSE,
+        composite.zebra.output.out_pvs[ttl_detector],
+        composite.zebra.mapping.sources.PC_PULSE,
         group=group,
     )
     yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
+        composite.sample_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
     )
-    yield from set_shutter_auto_input(zebra, zebra.mapping.sources.PC_GATE, group=group)
+    yield from set_shutter_auto_input(
+        composite.zebra, composite.zebra.mapping.sources.PC_GATE, group=group
+    )
 
     if wait:
         yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)

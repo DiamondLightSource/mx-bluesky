@@ -10,11 +10,11 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.zocalo import ZocaloResults
 from dodal.utils import is_test_mode
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    BeamlineSpecificDetectorFeatures,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
-)
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificDetectorFeatures,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,

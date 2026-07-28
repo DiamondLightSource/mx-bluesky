@@ -12,7 +12,7 @@ from event_model import Event
 from ophyd_async.core import DetectorTrigger, TriggerInfo
 from ophyd_async.fastcs.eiger import EigerDetector
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (

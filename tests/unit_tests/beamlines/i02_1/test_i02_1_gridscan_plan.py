@@ -17,7 +17,9 @@ from dodal.devices.zebra.zebra import Zebra
 from mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan import (
     ExternalGridScanParams,
     I021FlyScanXRayCentreComposite,
+    InternalGridScanComposite,
     construct_i02_1_specific_features,
+    create_internal_composite,
     i02_1_gridscan_plan,
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
@@ -113,6 +115,13 @@ def fgs_composite(
     )
 
 
+@pytest.fixture
+def internal_composite(
+    fgs_composite: I021FlyScanXRayCentreComposite,
+) -> InternalGridScanComposite:
+    return create_internal_composite(fgs_composite)
+
+
 @patch(
     "mx_bluesky.beamlines.i02_1.i02_1_gridscan_plan.create_gridscan_callbacks",
     new=MagicMock(),
@@ -130,6 +139,7 @@ def test_i02_1_flyscan_xray_centre_in_re(
     fgs_params_two_d: I02_1FgsParams,
     grid_scan_params: GridScanParams,
     fgs_composite: I021FlyScanXRayCentreComposite,
+    internal_composite: InternalGridScanComposite,
     entry_params: ExternalGridScanParams,
 ):
     expected_fgs_params = fgs_params_two_d
@@ -140,7 +150,7 @@ def test_i02_1_flyscan_xray_centre_in_re(
     expected_fgs_params.upper_left_x = 1
     expected_fgs_params.upper_left_y = 2
     specific_features = construct_i02_1_specific_features(
-        fgs_composite, expected_fgs_params, grid_scan_params
+        internal_composite, expected_fgs_params
     )
     grid_scan_params.omega_starts_deg = [10]
     mock_create_features.return_value = specific_features
@@ -148,7 +158,11 @@ def test_i02_1_flyscan_xray_centre_in_re(
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
 
     mock_common_scan.assert_called_once_with(
-        fgs_composite, expected_fgs_params, ANY, grid_scan_params, specific_features
+        internal_composite,
+        expected_fgs_params,
+        ANY,
+        grid_scan_params,
+        specific_features,
     )
 
 
@@ -173,6 +187,7 @@ def test_ispyb_activated_correct_params(
     fgs_params_two_d: I02_1FgsParams,
     grid_scan_params: GridScanParams,
     fgs_composite: I021FlyScanXRayCentreComposite,
+    internal_composite: InternalGridScanComposite,
     entry_params: ExternalGridScanParams,
 ):
     mock_ispyb = MagicMock()
@@ -180,7 +195,7 @@ def test_ispyb_activated_correct_params(
 
     mock_store_ispyb.return_value = mock_ispyb
     expected_features = construct_i02_1_specific_features(
-        fgs_composite, fgs_params_two_d, grid_scan_params
+        internal_composite, fgs_params_two_d
     )
     run_engine.md["data"] = {}
 

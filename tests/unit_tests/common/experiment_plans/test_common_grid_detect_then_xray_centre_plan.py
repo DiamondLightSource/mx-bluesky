@@ -15,10 +15,10 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.core import get_mock_put
 
-from mx_bluesky.common.device_setup_plans.gridscan import _fast_gridscan_3d_params
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import _fast_gridscan_3d_params
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     ConstructBeamlineSpecificFeatures,
     detect_grid_and_do_gridscan,
