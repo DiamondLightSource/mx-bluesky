@@ -59,6 +59,8 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
+    create_detector_specific_composite,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -302,6 +304,7 @@ def grid_detect_then_xray_centre_composite(
         aperture_scatterguard=aperture_scatterguard,
         zebra=zebra,
         eiger=eiger,
+        fastcs_eiger=i03.fastcs_eiger.build(mock=True),
         panda=panda,
         robot=robot,
         oav=oav_for_system_test,
@@ -383,6 +386,21 @@ def fgs_composite_for_fake_zocalo(
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite
+
+
+@pytest.fixture
+def internal_grid_detect_and_gridscan_composite_with_zocalo_and_eiger_classic(
+    use_classic_eiger: None,
+    fgs_composite_for_fake_zocalo: HyperionGridDetectThenXRayCentreComposite,
+) -> HyperionInternalGridDetectThenXRayCentreComposite[EigerDetector]:
+    return create_detector_specific_composite(fgs_composite_for_fake_zocalo)
+
+
+@pytest.fixture
+def internal_grid_detect_and_gridscan_composite_with_eiger_classic(
+    use_classic_eiger: None, grid_detect_then_xray_centre_composite
+) -> HyperionInternalGridDetectThenXRayCentreComposite[EigerDetector]:
+    return create_detector_specific_composite(grid_detect_then_xray_centre_composite)
 
 
 @pytest.fixture

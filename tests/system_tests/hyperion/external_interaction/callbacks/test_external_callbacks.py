@@ -29,9 +29,6 @@ from bluesky_stomp.models import Broker, MessageTopic
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
 from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -58,7 +55,10 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
+    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -250,7 +250,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     run_engine_with_external_callbacks: RunEngine,
     external_callback_expt_params: DiffractionExperimentWithSample,
     external_callback_grid_scan_params: GridScanParams,
-    fgs_composite_for_fake_zocalo: HyperionGridDetectThenXRayCentreComposite,
+    internal_grid_detect_and_gridscan_composite_with_zocalo_and_eiger_classic: HyperionInternalGridDetectThenXRayCentreComposite,
     fetch_comment,  # noqa
     fetch_datacollection_ids_for_group_id,
     fake_grid_snapshot_plan,
@@ -258,7 +258,9 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     """
     This test requires fake zocalo, and a connection to the dev ISPyB database.
     """
-
+    composite = (
+        internal_grid_detect_and_gridscan_composite_with_zocalo_and_eiger_classic
+    )
     run_engine = run_engine_with_external_callbacks
 
     doc_catcher = DocumentCatcher()
@@ -267,28 +269,27 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     grid_scan_params = external_callback_grid_scan_params
     # Run the xray centring plan
     beamline_specific = construct_hyperion_specific_features(
-        fgs_composite_for_fake_zocalo,
+        composite,
         external_callback_expt_params,
-        grid_scan_params,
     )
 
     detector_params = create_detector_params_for_grid_scan(
         external_callback_expt_params
     )
 
-    @zocalo_stage_decorator(fgs_composite_for_fake_zocalo.zocalo)
+    @zocalo_stage_decorator(composite.zocalo)
     @ispyb_activation_decorator(external_callback_expt_params, detector_params)
     def wrapped_xray_centre():
         yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
-            fgs_composite_for_fake_zocalo,
+            composite,
             external_callback_expt_params,
             detector_params,
             grid_scan_params,
             beamline_specific,
         )
         yield from fetch_xrc_results_from_zocalo(
-            fgs_composite_for_fake_zocalo.zocalo,
+            composite.zocalo,
             grid_scan_params,
             external_callback_expt_params.sample_id,
         )
@@ -296,8 +297,8 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     run_engine(wrapped_xray_centre())
 
     # get dcids from zocalo device
-    dcid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcid.read()
-    dcgid_reading = await fgs_composite_for_fake_zocalo.zocalo.ispyb_dcgid.read()
+    dcid_reading = await composite.zocalo.ispyb_dcid.read()
+    dcgid_reading = await composite.zocalo.ispyb_dcgid.read()
 
     dcid = dcid_reading["zocalo-ispyb_dcid"]["value"]
     dcgid = dcgid_reading["zocalo-ispyb_dcgid"]["value"]

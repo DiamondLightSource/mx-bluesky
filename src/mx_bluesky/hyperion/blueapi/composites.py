@@ -48,7 +48,7 @@ class HyperionGridDetectThenXRayCentreComposite:
     dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
     eiger: EigerDetector
-    fast_cs_eiger: FastCSEiger
+    fastcs_eiger: FastCSEiger
     flux: Flux
     gonio: Smargon
     oav: OAV

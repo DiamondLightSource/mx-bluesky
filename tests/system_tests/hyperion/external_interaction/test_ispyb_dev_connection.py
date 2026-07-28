@@ -13,11 +13,14 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    eiger_hw_read_during_mapper,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
@@ -54,7 +57,10 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
+    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -461,33 +467,45 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
     ispyb_ids = ispyb.update_deposition(ispyb_ids, scan_data_infos)
 
 
+@pytest.fixture
+def hyperion_beamline_specific_features_classic_eiger(
+    internal_grid_detect_and_gridscan_composite_with_eiger_classic: HyperionInternalGridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_parameters: PinTipCentreThenXrayCentre,
+) -> BeamlineSpecificFGSFeatures:
+    return construct_hyperion_specific_features(
+        internal_grid_detect_and_gridscan_composite_with_eiger_classic,
+        grid_detect_then_xray_centre_parameters,
+    )
+
+
 @pytest.mark.system_test
 def test_ispyb_deposition_in_gridscan(
     run_engine: RunEngine,
-    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
+    internal_grid_detect_and_gridscan_composite_with_eiger_classic: HyperionInternalGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: PinTipCentreThenXrayCentre,
+    hyperion_beamline_specific_features_classic_eiger: BeamlineSpecificFGSFeatures,
     fetch_datacollection_attribute: Callable[..., Any],
     fetch_datacollection_grid_attribute: Callable[..., Any],
     fetch_datacollection_position_attribute: Callable[..., Any],
     storage_directory: str,
 ):
-    set_mock_value(
-        grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback, 0.1
+    composite = internal_grid_detect_and_gridscan_composite_with_eiger_classic
+    set_mock_value(composite.s4_slit_gaps.xgap.user_readback, 0.1)
+    set_mock_value(composite.s4_slit_gaps.ygap.user_readback, 0.1)
+    ispyb_callback = GridDetectAndScanISPyBCallback(
+        DiffractionExperimentWithSample,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
     )
-    set_mock_value(
-        grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
-    )
-    ispyb_callback = GridDetectAndScanISPyBCallback(DiffractionExperimentWithSample)
     run_engine.subscribe(ispyb_callback)
     run_engine(
         grid_detect_then_xray_centre(
-            grid_detect_then_xray_centre_composite,
+            composite,
             grid_detect_then_xray_centre_parameters,
             grid_detect_then_xray_centre_parameters,
             create_detector_params_for_grid_scan(
                 grid_detect_then_xray_centre_parameters
             ),
-            construct_hyperion_specific_features,
+            hyperion_beamline_specific_features_classic_eiger,
         )
     )
 
@@ -626,7 +644,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_datacollection_position_attribute: Callable[..., Any],
     tmp_path,
 ):
-    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb = RotationISPyBCallback(hw_read_during_mapper=eiger_hw_read_during_mapper)
     run_engine.subscribe(ispyb_cb)
 
     run_engine(
