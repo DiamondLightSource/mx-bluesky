@@ -5,6 +5,7 @@ from dodal.devices.areadetector.plugins.cam import ColorMode
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
+from dodal.devices.oav.pin_image_recognition.utils import ScanDirections
 from dodal.plans.device_setup_plans.setup_pin_tip_params import (
     setup_pin_tip_detection_params,
 )
@@ -43,6 +44,7 @@ def pre_centring_setup_oav(
     yield from setup_pin_tip_detection_params(
         pin_tip_detection_device,
         parameters,
+        ScanDirections.FORWARD,
         PlanGroupCheckpointConstants.READY_FOR_OAV,
         wait=False,
     )
