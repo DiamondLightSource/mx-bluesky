@@ -32,7 +32,7 @@ x 251
 y 139
 w 160
 h 21
-controlPv "BL24I-EA-DET-01:Y"
+controlPv "BL24I-MO-DET-01:Y"
 font "arial-medium-r-18.0"
 fgColor index 16
 bgColor index 10

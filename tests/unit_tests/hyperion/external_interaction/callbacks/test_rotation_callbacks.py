@@ -1,7 +1,10 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
+from bluesky.utils import MsgGenerator
+from dodal.devices.oav.oav_parameters import OAVParameters
 from event_model import RunStart
 
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
@@ -11,11 +14,14 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.parameters.components import IspybExperimentType
+from mx_bluesky.common.parameters.components import IspybExperimentType, WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import rotation_scan
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
+    rotation_scan_internal,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_rotation_callbacks,
 )
@@ -28,6 +34,26 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
 from mx_bluesky.hyperion.parameters.constants import CONST
 
 from .....conftest import raw_params_from_file
+
+
+def rotation_scan(
+    composite: RotationScanComposite,
+    parameters: RotationScan,
+    oav_params: OAVParameters | None = None,
+) -> MsgGenerator:
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
+        md={
+            "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
+        }
+    )
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
+
+    yield from _wrapped_rotation_scan()
 
 
 @pytest.fixture

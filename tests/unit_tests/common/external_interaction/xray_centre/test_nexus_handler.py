@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from numpy.typing import DTypeLike
 
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
@@ -34,7 +34,7 @@ def test_writers_not_called_on_plan_start_doc(
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback.NexusWriter"
 )
 def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     mock_nexus_writer: MagicMock,
@@ -45,8 +45,7 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
         param_type=HyperionSpecifiedThreeDGridScan
     )
 
-    assert nexus_handler.nexus_writer_1 is None
-    assert nexus_handler.nexus_writer_2 is None
+    assert not nexus_handler._writers
 
     nexus_handler.activity_gated_start(
         test_event_data.test_gridscan_outer_start_document
@@ -59,10 +58,10 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
         test_event_data.test_event_document_during_data_collection
     )
 
-    assert nexus_handler.nexus_writer_1 is not None
-    assert nexus_handler.nexus_writer_2 is not None
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_once()
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_once()
+    assert nexus_handler._writers[0] is not None
+    assert nexus_handler._writers[1] is not None
+    nexus_handler._writers[0].create_nexus_file.assert_called_once()  # type: ignore
+    nexus_handler._writers[1].create_nexus_file.assert_called_once()  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -74,7 +73,7 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     ],
 )
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback.NexusWriter"
 )
 def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dataset_size(
     mock_nexus_writer: MagicMock,
@@ -98,18 +97,18 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dat
 
     nexus_handler.activity_gated_event(event_doc)
 
-    assert nexus_handler.nexus_writer_1 is not None
-    assert nexus_handler.nexus_writer_2 is not None
-    nexus_handler.nexus_writer_1.create_nexus_file.assert_called_once_with(  # type:ignore
+    assert nexus_handler._writers[0] is not None
+    assert nexus_handler._writers[1] is not None
+    nexus_handler._writers[0].create_nexus_file.assert_called_once_with(  # type:ignore
         vds_type
     )
-    nexus_handler.nexus_writer_2.create_nexus_file.assert_called_once_with(  # type:ignore
+    nexus_handler._writers[1].create_nexus_file.assert_called_once_with(  # type:ignore
         vds_type
     )
 
 
 @patch(
-    "mx_bluesky.common.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter"
+    "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback.NexusWriter"
 )
 def test_beam_and_attenuator_set_on_ispyb_transmission_event(
     mock_nexus_writer: MagicMock,
@@ -130,7 +129,7 @@ def test_beam_and_attenuator_set_on_ispyb_transmission_event(
         test_event_data.test_event_document_during_data_collection
     )
 
-    for writer in [nexus_handler.nexus_writer_1, nexus_handler.nexus_writer_2]:
+    for writer in [nexus_handler._writers[0], nexus_handler._writers[1]]:
         assert writer is not None
         assert writer.attenuator is not None
         assert writer.beam is not None

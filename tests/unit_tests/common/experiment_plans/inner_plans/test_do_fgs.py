@@ -18,7 +18,7 @@ from ophyd_async.core import init_devices, set_mock_value
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import (
     kickoff_and_complete_gridscan,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridscanPlane,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -64,14 +64,16 @@ def test_kickoff_and_complete_gridscan_correct_messages(
             detector,
             synchrotron,
             scan_points=create_dummy_scan_spec(),
+            omega_starts_deg=[0, 90],
             plan_during_collection=null_plan,
         )
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj.name == "grid_scan_device-expected_images",
+        lambda msg: (
+            msg.command == "read" and msg.obj.name == "grid_scan_device-expected_images"
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -136,6 +138,7 @@ def test_kickoff_and_complete_gridscan_with_run_engine_correct_documents(
                 detector,
                 synchrotron,
                 scan_points=expected_scan_points,
+                omega_starts_deg=[0, 90],
             )
         )
 

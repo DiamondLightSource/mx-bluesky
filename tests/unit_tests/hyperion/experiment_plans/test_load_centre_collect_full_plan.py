@@ -1,5 +1,6 @@
 import dataclasses
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
@@ -18,9 +19,7 @@ from dodal.devices.zebra.zebra import RotationDirection
 from ophyd_async.core import completed_status, set_mock_value
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.components import (
-    TopNByMaxCountForEachSampleSelection,
-)
+from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     RotationScanPerSweep,
@@ -28,6 +27,9 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
+)
+from mx_bluesky.hyperion.blueapi.mixins import (
+    TopNByMaxCountForEachSampleSelection,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -86,6 +88,23 @@ POS_MED = {
 
 
 @pytest.fixture
+def load_centre_collect_params_with_patched_create_params(
+    load_centre_collect_params: LoadCentreCollect,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
+):
+    with patch(
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.create_parameters_for_grid_detection"
+    ) as mock_create_params:
+        load_centre_collect_params.robot_load_then_centre.set_specified_grid_params(
+            test_three_d_grid_params
+        )
+        mock_create_params.return_value = (
+            load_centre_collect_params.robot_load_then_centre
+        )
+        yield
+
+
+@pytest.fixture
 def composite(
     robot_load_composite,
     fake_create_rotation_devices,
@@ -108,23 +127,16 @@ def composite(
     minaxis = Location(setpoint=-2, readback=-2)
     maxaxis = Location(setpoint=2, readback=2)
     tip_x_px, tip_y_px, top_edge_array, bottom_edge_array = pin_tip_edge_data()
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-x-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-y-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: minaxis, "gonio-z-low_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-x-high_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-y-high_limit_travel")
+    sim_run_engine.add_handler("locate", lambda _: maxaxis, "gonio-z-high_limit_travel")
     sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-x-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-y-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: minaxis, "smargon-z-low_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-x-high_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-y-high_limit_travel"
-    )
-    sim_run_engine.add_handler(
-        "locate", lambda _: maxaxis, "smargon-z-high_limit_travel"
+        "locate",
+        lambda _: Location(setpoint=np.array([0, 0]), readback=np.array([0, 0])),
+        "gonio-wrapped_omega-offset_and_phase",
     )
     sim_run_engine.add_read_handler_for(
         composite.synchrotron.synchrotron_mode, SynchrotronMode.USER
@@ -267,9 +279,7 @@ def test_params_with_different_energy_for_rotation_gridscan_rejected(tmp_path):
         # WithVisit
         ["beamline", "i03"],
         ["visit", "cm12345"],
-        ["insertion_prefix", "SR03"],
         ["detector_distance_mm", 123],
-        ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
 def test_params_with_unexpected_info_in_robot_load_rejected(
@@ -297,9 +307,7 @@ def test_params_with_unexpected_info_in_robot_load_rejected(
         # WithVisit
         ["beamline", "i03"],
         ["visit", "cm12345"],
-        ["insertion_prefix", "SR03"],
         ["detector_distance_mm", 123],
-        ["det_dist_to_beam_converter_path", "/foo/bar"],
     ],
 )
 def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
@@ -311,6 +319,23 @@ def test_params_with_unexpected_info_in_multi_rotation_scan_rejected(
     params["multi_rotation_scan"][key] = value
     with pytest.raises(ValidationError, match="Unexpected keys in multi_rotation_scan"):
         LoadCentreCollect(**params)
+
+
+def test_params_with_snapshot_directory_overrides_defaults(tmp_path: Path):
+    params = raw_params_from_file(
+        GOOD_TEST_LOAD_CENTRE_COLLECT_MULTI_ROTATION, tmp_path
+    )
+    params["robot_load_then_centre"]["snapshot_directory"] = (
+        "/some/other/path/to/snapshots"
+    )
+    params["multi_rotation_scan"]["snapshot_directory"] = "/another/path/to/snapshots"
+    load_centre_collect = LoadCentreCollect(**params)
+    assert load_centre_collect.robot_load_then_centre.snapshot_directory == Path(
+        "/some/other/path/to/snapshots"
+    )
+    assert load_centre_collect.multi_rotation_scan.snapshot_directory == Path(
+        "/another/path/to/snapshots"
+    )
 
 
 def test_can_serialize_load_centre_collect_robot_load_params(
@@ -334,7 +359,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
     return_value=iter(
         [
             Msg(
@@ -357,7 +382,7 @@ def test_can_serialize_load_centre_collect_single_rotation_scans(
 def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flyscan_result(
     mock_rotation_scan: MagicMock,
     mock_full_robot_load_plan: MagicMock,
-    mock_pin_centre_then_xray_centre_plan: MagicMock,
+    mock_pin_centre_then_gridscan_plan: MagicMock,
     composite: LoadCentreCollectComposite,
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
@@ -382,19 +407,19 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-x"
+    #     and msg.obj.name == "gonio-x"
     #     and msg.args[0] == 0.1,
     # )
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-y"
+    #     and msg.obj.name == "gonio-y"
     #     and msg.args[0] == 0.2,
     # )
     # msgs = assert_message_and_return_remaining(
     #     msgs,
     #     lambda msg: msg.command == "set"
-    #     and msg.obj.name == "smargon-z"
+    #     and msg.obj.name == "gonio-z"
     #     and msg.args[0] == 0.3,
     # )
     msgs = assert_message_and_return_remaining(
@@ -405,7 +430,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[1]
     assert isinstance(robot_load_energy_change_composite, RobotLoadThenCentreComposite)
     assert isinstance(robot_load_energy_change_params, RobotLoadAndEnergyChange)
-    mock_pin_centre_then_xray_centre_plan.assert_called_once()
+    mock_pin_centre_then_gridscan_plan.assert_called_once()
     mock_rotation_scan.assert_called_once()
     rotation_scan_composite = mock_rotation_scan.mock_calls[0].args[0]
     rotation_scan_params = mock_rotation_scan.mock_calls[0].args[1]
@@ -519,7 +544,7 @@ def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.RotationScan.model_validate"
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan"
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy.do_plan_while_lower_gonio_at_home",
@@ -551,9 +576,11 @@ def test_load_centre_collect_moves_beamstop_into_place(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "set"
-        and msg.obj.name == "beamstop-selected_pos"
-        and msg.args[0] == BeamstopPositions.DATA_COLLECTION,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "beamstop-selected_pos"
+            and msg.args[0] == BeamstopPositions.DATA_COLLECTION
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, predicate=lambda msg: msg.command == "pin_tip_then_flyscan_plan"
@@ -591,7 +618,7 @@ def test_default_select_centres_is_top_n_by_max_count_n_is_1(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
     new=MagicMock(
         return_value=iter(
             [
@@ -688,7 +715,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
     new=MagicMock(
         return_value=iter(
             [
@@ -772,7 +799,7 @@ def _rotation_at(
     new=True,
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -889,7 +916,7 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -942,7 +969,7 @@ def test_load_centre_collect_full_plan_assigns_sample_ids_to_rotations_according
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_flyscan_plan",
+    "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_gridscan_plan",
     new=MagicMock(
         side_effect=lambda *args, **kwargs: iter(
             [
@@ -1034,15 +1061,19 @@ def test_load_centre_collect_creates_storage_directory_if_not_present(
 
 
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan"
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.detect_grid_and_do_gridscan"
 )
 @patch(
     "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
     MagicMock(),
 )
 @patch(
-    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.pin_tip_centre_plan",
     MagicMock(),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.fetch_xrc_results_from_zocalo",
+    new=MagicMock(),
 )
 def test_box_size_passed_through_to_gridscan(
     mock_detect_grid: MagicMock,
@@ -1050,16 +1081,16 @@ def test_box_size_passed_through_to_gridscan(
     load_centre_collect_params: LoadCentreCollect,
     oav_parameters_for_rotation: OAVParameters,
     run_engine: RunEngine,
+    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    load_centre_collect_params_with_patched_create_params,
 ):
-    load_centre_collect_params.robot_load_then_centre.box_size_um = 25
-
     run_engine(
         load_centre_collect_full(
             composite, load_centre_collect_params, oav_parameters_for_rotation
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == 25
+    assert detect_grid_call.args[1].box_size_um == test_three_d_grid_params.box_size_um
 
 
 @patch(
@@ -1078,9 +1109,9 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
     oav_parameters_for_rotation: OAVParameters,
     sim_run_engine: RunEngineSimulator,
 ):
-    sim_run_engine.add_read_handler_for(composite.smargon.x, 1.1)
-    sim_run_engine.add_read_handler_for(composite.smargon.y, 2.2)
-    sim_run_engine.add_read_handler_for(composite.smargon.z, 3.3)
+    sim_run_engine.add_read_handler_for(composite.gonio.x, 1.1)
+    sim_run_engine.add_read_handler_for(composite.gonio.y, 2.2)
+    sim_run_engine.add_read_handler_for(composite.gonio.z, 3.3)
 
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
@@ -1093,3 +1124,34 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
     assert rotation_scans[0].x_start_um == 1100
     assert rotation_scans[0].y_start_um == 2200
     assert rotation_scans[0].z_start_um == 3300
+
+
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
+    MagicMock(return_value=iter([])),
+)
+@patch(
+    "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.robot_load_then_xray_centre",
+    MagicMock(return_value=iter([Msg(command="robot_load_then_xray_centre")])),
+)
+def test_load_centre_collect_full_activates_beam_drawing_callback(
+    sim_run_engine: RunEngineSimulator,
+    composite: LoadCentreCollectComposite,
+    load_centre_collect_params: LoadCentreCollect,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    msgs = sim_run_engine.simulate_plan(
+        load_centre_collect_full(
+            composite, load_centre_collect_params, oav_parameters_for_rotation
+        )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "open_run"
+            and "BeamDrawingCallback" in msg.kwargs.get("activate_callbacks", [])
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "robot_load_then_xray_centre"
+    )

@@ -82,16 +82,20 @@ def test_when_stopped_at_point_then_omega_rotated_at_expected_speed(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio-omega-velocity"
-        and msg.args[0] == 1.0,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio-omega-velocity"
+            and msg.args[0] == 1.0
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio-omega"
-        and msg.args[0] == 30.0,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio-omega"
+            and msg.args[0] == 30.0
+        ),
     )
 
 
@@ -118,16 +122,18 @@ def test_omega_set_to_0_at_max_velo_during_grid_move(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio-omega-velocity"
-        and msg.args[0] == 90,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "gonio-omega-velocity"
+            and msg.args[0] == 90
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "wait")
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "gonio-omega"
-        and msg.args[0] == 0,
+        lambda msg: (
+            msg.command == "set" and msg.obj.name == "gonio-omega" and msg.args[0] == 0
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == "test"
@@ -144,9 +150,11 @@ def test_detector_moves_in_at_experiment_start(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "detector_motion-stage_position"
-        and msg.args[0] == "In",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "detector_motion-stage_position"
+            and msg.args[0] == "In"
+        ),
     )
 
 

@@ -4,13 +4,15 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.preprocessors import run_decorator
 from bluesky.utils import MsgGenerator
+from dodal.devices.beamlines.i24.aperture import AperturePositions
+from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
+from dodal.devices.beamlines.i24.commissioning_jungfrau import (
+    CommissioningJungfrauDetector,
+)
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.aperture import AperturePositions
-from dodal.devices.i24.beamstop import BeamstopPositions
-from dodal.devices.i24.commissioning_jungfrau import CommissioningJungfrau
-from dodal.devices.i24.dual_backlight import BacklightPositions
 from dodal.devices.zebra.zebra import ArmDemand, I24Axes, Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter
+from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
@@ -41,7 +43,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
+from mx_bluesky.common.parameters.components import get_param_version
 from mx_bluesky.common.parameters.constants import (
     USE_NUMTRACKER,
     PlanGroupCheckpointConstants,
@@ -85,7 +87,7 @@ def _get_internal_rotation_params(
     return SingleRotationScan(
         sample_id=entry_params.sample_id,
         visit=USE_NUMTRACKER,  # See https://github.com/DiamondLightSource/mx-bluesky/issues/1527
-        parameter_model_version=PARAMETER_VERSION,
+        parameter_model_version=get_param_version(),
         file_name=entry_params.filename,
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,
@@ -238,7 +240,7 @@ def single_rotation_plan(
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
                     composite.det_stage.z,
-                    composite.jungfrau._writer.file_path,  # noqa: SLF001 N
+                    composite.jungfrau.writer.file_path,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,
             )
@@ -280,8 +282,8 @@ def single_rotation_plan(
 
 def _cleanup_plan(
     zebra: Zebra,
-    jf: CommissioningJungfrau,
-    zebra_shutter: ZebraShutter,
+    jf: CommissioningJungfrauDetector,
+    zebra_shutter: MXZebraShutter,
     group="rotation cleanup",
 ):
     LOGGER.info("Tidying up Zebra and Jungfrau...")

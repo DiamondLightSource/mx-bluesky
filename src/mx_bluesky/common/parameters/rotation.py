@@ -22,11 +22,9 @@ from mx_bluesky.common.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
     OptionalGonioAngleStarts,
-    OptionalXyzStarts,
     RotationAxis,
     SplitScan,
     WithSample,
-    WithScan,
 )
 from mx_bluesky.common.parameters.constants import (
     DetectorParamConstants,
@@ -34,7 +32,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 
 
-class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts, WithSample):
+class RotationScanPerSweep(OptionalGonioAngleStarts, WithSample):
     """
     Describes a rotation scan about the specified axis.
 
@@ -48,6 +46,9 @@ class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts, WithSamp
         nexus_vds_start_img: The frame number of the first frame captured during the rotation
     """
 
+    x_start_um: float | None = None
+    y_start_um: float | None = None
+    z_start_um: float | None = None
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)
@@ -67,10 +68,6 @@ class RotationExperiment(DiffractionExperiment):
     def _detector_params_impl(
         self, omega_start_deg: float, num_images_per_trigger: int, num_triggers: int
     ) -> DetectorParams:
-        self.det_dist_to_beam_converter_path = (
-            self.det_dist_to_beam_converter_path
-            or DetectorParamConstants.BEAM_XY_LUT_PATH
-        )
         optional_args = {}
         if self.run_number:
             optional_args["run_number"] = self.run_number
@@ -88,7 +85,7 @@ class RotationExperiment(DiffractionExperiment):
             num_images_per_trigger=num_images_per_trigger,
             num_triggers=num_triggers,
             use_roi_mode=False,
-            det_dist_to_beam_converter_path=self.det_dist_to_beam_converter_path,
+            det_dist_to_beam_converter_path=DetectorParamConstants.BEAM_XY_LUT_PATH,
             **optional_args,
         )
 
@@ -109,7 +106,7 @@ class RotationExperiment(DiffractionExperiment):
 
 
 class SingleRotationScan(
-    WithScan, RotationExperiment, RotationScanPerSweep, DiffractionExperimentWithSample
+    RotationExperiment, RotationScanPerSweep, DiffractionExperimentWithSample
 ):
     @property
     def detector_params(self):

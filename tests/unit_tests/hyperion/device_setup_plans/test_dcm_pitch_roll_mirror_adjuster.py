@@ -3,12 +3,12 @@ from unittest.mock import MagicMock, call
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import (
     FocusingMirrorWithStripes,
     MirrorStripe,
     MirrorVoltages,
 )
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from ophyd_async.core import get_mock_put, set_mock_value
 
 from mx_bluesky.hyperion.device_setup_plans import dcm_pitch_roll_mirror_adjuster
@@ -36,9 +36,11 @@ def test_when_bare_mirror_stripe_selected_then_expected_voltages_set_and_waited(
     ):
         messages = assert_message_and_return_remaining(
             messages,
-            lambda msg: msg.command == "set"
-            and msg.obj == channel
-            and msg.args[0] == expected_voltage,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj == channel
+                and msg.args[0] == expected_voltage
+            ),
         )
         messages = assert_message_and_return_remaining(
             messages, lambda msg: msg.command == "wait"
@@ -51,9 +53,11 @@ def test_when_bare_mirror_stripe_selected_then_expected_voltages_set_and_waited(
     ):
         messages = assert_message_and_return_remaining(
             messages,
-            lambda msg: msg.command == "set"
-            and msg.obj == channel
-            and msg.args[0] == expected_voltage,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj == channel
+                and msg.args[0] == expected_voltage
+            ),
         )
         messages = assert_message_and_return_remaining(
             messages, lambda msg: msg.command == "wait"
@@ -90,10 +94,10 @@ def test_adjust_mirror_stripe(
     run_engine(adjust_mirror_stripe(energy_kev, vfm, mirror_voltages))
 
     expected_calls = [
-        call.stripe_set(expected_stripe, wait=True),
-        call.apply_stripe(None, wait=True),
-        call.lat_set(expected_lat, wait=True),
-        call.yaw_mrad(expected_yaw, wait=True),
+        call.stripe_set(expected_stripe),
+        call.apply_stripe(None),
+        call.lat_set(expected_lat),
+        call.yaw_mrad(expected_yaw),
     ]
     assert parent.method_calls == expected_calls
     mirror_voltages.vertical_voltages[0].set.assert_called_once_with(  # type: ignore
@@ -129,6 +133,7 @@ def test_adjust_mirror_stripe_does_nothing_if_stripe_already_correct(
 
 
 def test_adjust_dcm_pitch_roll_vfm_from_lut(
+    use_beamline_i03,
     undulator_dcm: UndulatorDCM,
     vfm: FocusingMirrorWithStripes,
     mirror_voltages: MirrorVoltages,
@@ -142,23 +147,29 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     # target bragg angle 15.288352 deg
     messages = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-xtal_1-pitch_in_mrad"
-        and abs(msg.args[0] - -0.78229639) < 1e-5
-        and msg.kwargs["group"] == "DCM_GROUP",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "dcm-xtal_1-pitch_in_mrad"
+            and abs(msg.args[0] - -0.78229639) < 1e-5
+            and msg.kwargs["group"] == "DCM_GROUP"
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "dcm-xtal_1-roll_in_mrad"
-        and abs(msg.args[0] - -0.2799) < 1e-5
-        and msg.kwargs["group"] == "DCM_GROUP",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "dcm-xtal_1-roll_in_mrad"
+            and abs(msg.args[0] - -0.2799) < 1e-5
+            and msg.kwargs["group"] == "DCM_GROUP"
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "vfm-stripe"
-        and msg.args == (MirrorStripe.RHODIUM,),
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "vfm-stripe"
+            and msg.args == (MirrorStripe.RHODIUM,)
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
@@ -170,20 +181,24 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj is vfm.x_mm
-        and msg.args == (10.0,)
-        and msg.kwargs["timeout"] == YAW_LAT_TIMEOUT_S,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is vfm.x_mm
+            and msg.args == (10.0,)
+            and msg.kwargs["timeout"] == YAW_LAT_TIMEOUT_S
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:], lambda msg: msg.command == "wait"
     )
     messages = assert_message_and_return_remaining(
         messages[1:],
-        lambda msg: msg.command == "set"
-        and msg.obj is vfm.yaw_mrad
-        and msg.args == (0.0,)
-        and msg.kwargs["timeout"] == YAW_LAT_TIMEOUT_S,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is vfm.yaw_mrad
+            and msg.args == (0.0,)
+            and msg.kwargs["timeout"] == YAW_LAT_TIMEOUT_S
+        ),
     )
     messages = assert_message_and_return_remaining(
         messages[1:], lambda msg: msg.command == "wait"
@@ -193,14 +208,18 @@ def test_adjust_dcm_pitch_roll_vfm_from_lut(
     ):
         messages = assert_message_and_return_remaining(
             messages[1:],
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"mirror_voltages-horizontal_voltages-{channel}"
-            and msg.args == (expected_voltage,),
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"mirror_voltages-horizontal_voltages-{channel}"
+                and msg.args == (expected_voltage,)
+            ),
         )
     for channel, expected_voltage in enumerate([124, 114, 34, 49, 19, -116, 4, -46]):
         messages = assert_message_and_return_remaining(
             messages[1:],
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"mirror_voltages-vertical_voltages-{channel}"
-            and msg.args == (expected_voltage,),
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"mirror_voltages-vertical_voltages-{channel}"
+                and msg.args == (expected_voltage,)
+            ),
         )

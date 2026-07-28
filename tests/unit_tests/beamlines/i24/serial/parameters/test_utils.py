@@ -9,7 +9,7 @@ from mx_bluesky.beamlines.i24.serial.parameters.utils import EmptyMapError
 
 @pytest.mark.parametrize(
     "chip_type, expected_num_blocks, expected_step_size, expected_num_steps",
-    [(0, 8, 0.125, 20), (1, 1, 0.6, 25), (3, 1, 0.125, 20)],
+    [(0, 8, 0.125, 20), (1, 8, 0.125, 20), (3, 1, 0.125, 20)],
 )
 def test_get_chip_format_for_oxford_chips(
     chip_type: int,

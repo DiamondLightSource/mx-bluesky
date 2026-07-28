@@ -49,7 +49,7 @@ class NexusWriter:
             run_number if run_number else parameters.detector_params.run_number
         )
         self.detector: Detector = create_detector_parameters(parameters.detector_params)
-        self.source: Source = Source(get_beamline_name("S03"))
+        self.source: Source = Source(get_beamline_name(""))
         self.directory: Path = Path(parameters.storage_directory)
         self.start_index: int = vds_start_index
         self.full_num_of_images: int = full_num_of_images or parameters.num_images

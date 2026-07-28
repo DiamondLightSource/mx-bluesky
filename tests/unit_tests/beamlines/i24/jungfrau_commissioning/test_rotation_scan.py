@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.beamlines.i24.aperture import AperturePositions
+from dodal.devices.beamlines.i24.beamstop import BeamstopPositions
+from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions
 from dodal.devices.hutch_shutter import ShutterState
-from dodal.devices.i24.aperture import AperturePositions
-from dodal.devices.i24.beamstop import BeamstopPositions
-from dodal.devices.i24.dual_backlight import BacklightPositions
 from ophyd_async.core import completed_status, set_mock_value
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
@@ -75,10 +75,10 @@ async def test_rotation_scan_plan_in_re(
         rotation_composite.dcm.energy_in_keV,
         rotation_composite.dcm.wavelength_in_a,
         rotation_composite.det_stage.z,
-        rotation_composite.jungfrau._writer.file_path,
+        rotation_composite.jungfrau.writer.file_path,
     ]
 
-    rotation_composite.jungfrau._writer.final_path = (
+    rotation_composite.jungfrau.writer.final_path = (
         tmp_path  # Normally done during jf prepare
     )
     # Test correct functions are called, but don't test bluesky messages
@@ -91,7 +91,9 @@ async def test_rotation_scan_plan_in_re(
         rotation_composite, DEFAULT_DETECTOR_DISTANCE_MM, 0.1
     )
     mock_calc_motion_profile.assert_called_once_with(
-        params, 1, await rotation_composite.gonio.omega.max_velocity.get_value()
+        params,
+        1,
+        await rotation_composite.gonio.omega.max_velocity.get_value(),
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()
@@ -124,15 +126,19 @@ def test_single_rotation_plan_in_simulator(
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "open_run"
-        and msg.run == "OUTER SINGLE ROTATION SCAN",
+        lambda msg: (
+            msg.command == "open_run" and msg.run == "OUTER SINGLE ROTATION SCAN"
+        ),
     )
 
     # Wait for rotation devices to be ready before reading metadata
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"]
+            == PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC
+        ),
     )
 
     # Set omega axis then wait for JF to complete
@@ -152,8 +158,10 @@ def test_single_rotation_plan_in_simulator(
     )
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "close_run"
-        and msg.run == PlanNameConstants.SINGLE_ROTATION_SCAN,
+        lambda msg: (
+            msg.command == "close_run"
+            and msg.run == PlanNameConstants.SINGLE_ROTATION_SCAN
+        ),
     )
 
 

@@ -13,9 +13,9 @@ from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight, InOut
+from dodal.devices.beamlines.i03.dcm import DCM
+from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.focusing_mirror import FocusingMirrorWithStripes, MirrorVoltages
-from dodal.devices.i03.dcm import DCM
-from dodal.devices.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.robot import BartRobot, SampleLocation
@@ -52,7 +52,7 @@ class RobotLoadAndEnergyChangeComposite:
     lower_gonio: XYZStage
     thawer: Thawer
     oav: OAV
-    smargon: Smargon
+    gonio: Smargon
     aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
 
@@ -153,9 +153,7 @@ def robot_load_and_change_energy_plan(
 
     sample_location = SampleLocation(params.sample_puck, params.sample_pin)
 
-    yield from prepare_for_robot_load(
-        composite.aperture_scatterguard, composite.smargon
-    )
+    yield from prepare_for_robot_load(composite.aperture_scatterguard, composite.gonio)
 
     yield from bpp.set_run_key_wrapper(
         bpp.run_wrapper(
@@ -174,5 +172,5 @@ def robot_load_and_change_energy_plan(
                 ],
             },
         ),
-        CONST.PLAN.ROBOT_LOAD_AND_SNAPSHOTS,
+        CONST.PLAN.ROBOT_LOAD,
     )

@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
-from dodal.devices.i24.beam_center import DetectorBeamCenter
-from dodal.devices.i24.dcm import DCM
-from dodal.devices.i24.focus_mirrors import FocusMirrorsMode
+from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
+from dodal.devices.beamlines.i24.dcm import DCM
+from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.i24.serial.dcid import (

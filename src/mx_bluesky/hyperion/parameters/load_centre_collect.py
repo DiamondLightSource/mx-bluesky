@@ -4,13 +4,13 @@ from pydantic import BaseModel, model_validator
 
 from mx_bluesky.common.parameters.components import (
     MxBlueskyParameters,
-    WithCentreSelection,
     WithSample,
     WithVisit,
 )
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
+from mx_bluesky.hyperion.blueapi.mixins import WithCentreSelection
 from mx_bluesky.hyperion.parameters.robot_load import (
     RobotLoadThenCentre,
 )
@@ -60,14 +60,14 @@ class LoadCentreCollect(
             keys_from_outer_load_centre_collect
             & values["robot_load_then_centre"].keys()
         )
-        assert not (duplicated_robot_load_then_centre_keys), (
+        assert not duplicated_robot_load_then_centre_keys, (
             f"Unexpected keys in robot_load_then_centre: {', '.join(duplicated_robot_load_then_centre_keys)}"
         )
 
         duplicated_multi_rotation_scan_keys = (
             keys_from_outer_load_centre_collect & values["multi_rotation_scan"].keys()
         )
-        assert not (duplicated_multi_rotation_scan_keys), (
+        assert not duplicated_multi_rotation_scan_keys, (
             f"Unexpected keys in multi_rotation_scan: {', '.join(duplicated_multi_rotation_scan_keys)}"
         )
 

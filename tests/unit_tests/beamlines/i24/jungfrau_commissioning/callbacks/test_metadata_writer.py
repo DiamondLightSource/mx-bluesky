@@ -8,6 +8,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from numpy.testing import assert_allclose
 from ophyd_async.core import SignalR
+from ophyd_async.epics.motor import Motor
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     READING_DUMP_FILENAME,
@@ -39,7 +40,7 @@ async def test_metadata_writer_produces_correct_output(
     await rotation_composite.dcm.wavelength_in_a.set(wavelength)
     await rotation_composite.dcm.energy_in_keV.set(energy)
     await rotation_composite.det_stage.z.set(det_z)
-    await rotation_composite.jungfrau._writer.file_path.set(tmp_path)
+    await rotation_composite.jungfrau.writer.file_path.set(tmp_path)
 
     expected_output = {
         "wavelength_in_a": wavelength,
@@ -53,7 +54,7 @@ async def test_metadata_writer_produces_correct_output(
                 rotation_composite.dcm.energy_in_keV,
                 rotation_composite.dcm.wavelength_in_a,
                 rotation_composite.det_stage.z,
-                rotation_composite.jungfrau._writer.file_path,
+                rotation_composite.jungfrau.writer.file_path,
             ],
             params,
             metadata_writer,
@@ -89,7 +90,7 @@ async def test_assertion_error_if_no_jf_path_found(
                     rotation_composite.dcm.energy_in_keV,
                     rotation_composite.dcm.wavelength_in_a,
                     rotation_composite.det_stage.z,
-                    rotation_composite.jungfrau._writer.file_path,
+                    rotation_composite.jungfrau.writer.file_path,
                 ],
                 params,
                 metadata_writer,
@@ -98,7 +99,9 @@ async def test_assertion_error_if_no_jf_path_found(
 
 
 def _do_metadata_writing_read(
-    signals: list[SignalR], params: SingleRotationScan, writer: JsonMetadataWriter
+    signals: list[SignalR | Motor],
+    params: SingleRotationScan,
+    writer: JsonMetadataWriter,
 ):
     @bpp.subs_decorator([writer])
     @bpp.set_run_key_decorator(PlanNameConstants.ROTATION_MAIN)

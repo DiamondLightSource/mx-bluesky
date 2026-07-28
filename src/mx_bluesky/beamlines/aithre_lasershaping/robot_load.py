@@ -1,8 +1,9 @@
 import datetime
+from pathlib import Path
 
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.motors import XYZOmegaStage
+from dodal.devices.motors import XYZWrappedOmegaStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
@@ -20,7 +21,7 @@ from mx_bluesky.beamlines.aithre_lasershaping.parameters.robot_load_parameters i
 
 def robot_load_and_snapshot(
     robot: BartRobot = inject("robot"),
-    gonio: XYZOmegaStage = inject("gonio"),
+    gonio: XYZWrappedOmegaStage = inject("gonio"),
     oav: OAV = inject("oav"),
     ptd: PinTipDetection = inject("ptd"),
     tip_offset_microns: float = 0,
@@ -39,7 +40,7 @@ def robot_load_and_snapshot(
         sample_id=sample_id,
         sample_puck=sample_puck,
         sample_pin=sample_pin,
-        snapshot_directory=snapshot_directory,
+        snapshot_directory=Path(snapshot_directory),
         visit=visit,
         beamline="BL23I",
     )
@@ -51,7 +52,7 @@ def robot_load_and_snapshot(
 
 def robot_unload(
     robot: BartRobot = inject("robot"),
-    gonio: XYZOmegaStage = inject("gonio"),
+    gonio: XYZWrappedOmegaStage = inject("gonio"),
     oav: OAV = inject("oav"),
     sample_puck: int = 0,
     sample_pin: int = 0,
@@ -67,7 +68,7 @@ def robot_unload(
         sample_id=sample_id,
         sample_puck=sample_puck,
         sample_pin=sample_pin,
-        snapshot_directory=snapshot_directory,
+        snapshot_directory=Path(snapshot_directory),
         visit=visit,
         beamline="BL23I",
     )

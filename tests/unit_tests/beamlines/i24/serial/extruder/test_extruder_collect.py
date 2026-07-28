@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
@@ -17,6 +18,7 @@ from mx_bluesky.beamlines.i24.serial.extruder.i24ssx_extruder_collect_py3v2 impo
     tidy_up_at_collection_end_plan,
 )
 from mx_bluesky.beamlines.i24.serial.parameters import BeamSettings, ExtruderParameters
+from mx_bluesky.beamlines.i24.serial.parameters.constants import DetectorName
 from mx_bluesky.beamlines.i24.serial.setup_beamline import Eiger
 
 from ..conftest import TEST_LUT, fake_generator
@@ -40,18 +42,18 @@ def zebra():
 
 @pytest.fixture
 def dummy_params():
-    params = {
-        "visit": "/tmp/dls/i24/extruder/foo",
-        "directory": "bar",
-        "filename": "protein",
-        "exposure_time_s": 0.1,
-        "detector_distance_mm": 100,
-        "detector_name": "eiger",
-        "transmission": 1.0,
-        "num_images": 10,
-        "pump_status": False,
-    }
-    return ExtruderParameters(**params)
+    params = ExtruderParameters(
+        visit=Path("/tmp/dls/i24/extruder/foo"),
+        directory="bar",
+        filename="protein",
+        exposure_time_s=0.1,
+        detector_distance_mm=100,
+        detector_name=DetectorName("eiger"),
+        transmission=1.0,
+        num_images=10,
+        pump_status=False,
+    )
+    return params
 
 
 @pytest.fixture
@@ -262,7 +264,7 @@ def test_tidy_up_at_collection_end_plan_with_eiger(
 
     mock_reset_zebra_plan.assert_called_once()
     mock_shutter = get_mock_put(shutter.control)
-    mock_shutter.assert_has_calls([call("Close", wait=True)])
+    mock_shutter.assert_has_calls([call("Close")])
 
     assert fake_dcid.notify_end.call_count == 1
     assert fake_caget.call_count == 1

@@ -30,7 +30,6 @@ data:
     environments:
 
       bluesky:
-        logging: graylog
         plugins:
           - default-transport
         {{- if .Values.zocalo.secrets }}

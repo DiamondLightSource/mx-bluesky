@@ -12,17 +12,17 @@ from dodal.beamlines import i03
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
 )
-from mx_bluesky.common.parameters.components import PARAMETER_VERSION
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
-from mx_bluesky.hyperion.parameters.components import Wait
+from mx_bluesky.hyperion._plan_runner_params import Wait
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     HyperionSpecifiedThreeDGridScan,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
-from mx_bluesky.hyperion.runner import BaseRunner
+from mx_bluesky.hyperion.plan_runner import PlanRunner
 from tests.conftest import (
     raw_params_from_file,
 )
@@ -39,9 +39,18 @@ AGAMEMNON_WAIT_FOR_TEST_STEP_S = 0.2
 AGAMEMNON_WAIT_INSTRUCTION = Wait.model_validate(
     {
         "duration_s": AGAMEMNON_WAIT_FOR_TEST_STEP_S,
-        "parameter_model_version": PARAMETER_VERSION,
     }
 )
+
+
+@pytest.fixture(autouse=True)
+def override_hyperion_blueapi_logging_setup(request):
+    log_path = Path("/tmp/logs/bluesky")
+    with patch(
+        "mx_bluesky.common.utils.log._get_logging_dirs",
+        return_value=(log_path, log_path),
+    ):
+        yield
 
 
 @pytest.fixture(scope="session")
@@ -52,12 +61,21 @@ def executor() -> Generator[Executor, Any, Any]:
 
 
 @pytest.fixture
-def load_centre_collect_params(tmp_path):
+def load_centre_collect_params(tmp_path) -> LoadCentreCollect:
     json_dict = raw_params_from_file(
         "tests/test_data/parameter_json_files/good_test_load_centre_collect_params.json",
         tmp_path,
     )
     return LoadCentreCollect(**json_dict)
+
+
+@pytest.fixture
+def external_load_centre_collect_params(tmp_path) -> LoadCentreCollectParams:
+    json_dict = raw_params_from_file(
+        "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
+        tmp_path,
+    )
+    return LoadCentreCollectParams(**json_dict)
 
 
 @pytest.fixture(autouse=True)
@@ -101,15 +119,6 @@ def test_multi_rotation_params(tmp_path):
     )
 
 
-@pytest.fixture
-def test_fgs_params(tmp_path):
-    return HyperionSpecifiedThreeDGridScan(
-        **raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json", tmp_path
-        )
-    )
-
-
 @pytest.fixture(params=[False, True])
 def test_omega_flip(request):
     with patch(
@@ -122,11 +131,11 @@ def test_omega_flip(request):
 @pytest.fixture
 def fgs_params_use_panda(tmp_path):
     with patch(
-        "mx_bluesky.common.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
+        "mx_bluesky.hyperion.external_interaction.config_server.GDA_DOMAIN_PROPERTIES_PATH",
         new="tests/test_data/test_domain_properties_with_panda",
     ):
         params = raw_params_from_file(
-            "tests/test_data/parameter_json_files/good_test_parameters.json",
+            "tests/test_data/parameter_json_files/good_test_specified_three_d_grid_params.json",
             tmp_path,
         )
         yield HyperionSpecifiedThreeDGridScan(**params)
@@ -150,7 +159,7 @@ def dummy_rotation_data_collection_group_info():
 
 
 def launch_test_in_runner_event_loop(
-    async_func, udc_runner: BaseRunner, executor
+    async_func, udc_runner: PlanRunner, executor
 ) -> Future:
     """Launch the async func in a separate thread because the RunEngine under
     test must run in the main thread and block our test code, and return
@@ -163,3 +172,8 @@ def launch_test_in_runner_event_loop(
         return future.result(TEST_SCRIPT_TIMEOUT_S)
 
     return executor.submit(_launch_in_new_thread)
+
+
+@pytest.fixture()
+def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
+    monkeypatch.setenv("BEAMLINE", "i03")

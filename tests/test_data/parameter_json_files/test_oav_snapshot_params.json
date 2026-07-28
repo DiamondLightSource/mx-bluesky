@@ -1,5 +1,10 @@
 {
-    "parameter_model_version": "5.0.0",
+    "parameter_model_version": "6.0.0",
     "snapshot_directory": "/tmp/my_snapshots",
-    "snapshot_omegas_deg": [0, 90, 180, 270]
+    "snapshot_omegas_deg": [
+        0,
+        90,
+        180,
+        270
+    ]
 }

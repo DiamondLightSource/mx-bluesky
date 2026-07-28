@@ -4,7 +4,7 @@ from dodal.devices.zebra.zebra import (
     Zebra,
 )
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
 )
 
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
@@ -19,7 +19,7 @@ def arm_zebra(zebra: Zebra):
 
 def setup_zebra_for_panda_flyscan(
     zebra: Zebra,
-    zebra_shutter: ZebraShutter,
+    zebra_shutter: MXZebraShutter,
     group="setup_zebra_for_panda_flyscan",
     wait=True,
 ):

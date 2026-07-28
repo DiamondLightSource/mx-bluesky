@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 from bluesky.preprocessors import run_decorator
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.beamlines.i24 import CommissioningJungfrau
+from dodal.beamlines.i24 import CommissioningJungfrauDetector
 from ophyd_async.core import set_mock_value
 from ophyd_async.fastcs.jungfrau import GainMode
 
@@ -19,7 +19,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 
 
 def test_full_do_internal_acquisition(
-    run_engine: RunEngine, jungfrau: CommissioningJungfrau, caplog
+    run_engine: RunEngine, jungfrau: CommissioningJungfrauDetector, caplog
 ):
     @run_decorator(
         md={
@@ -34,11 +34,11 @@ def test_full_do_internal_acquisition(
         val = 0
         while not status.done:
             val += 1
-            set_mock_value(jungfrau._writer.frame_counter, val)
+            set_mock_value(jungfrau.writer.frame_counter, val)
             yield from bps.wait_for([partial(asyncio.sleep, 0)])
         yield from bps.wait(JF_COMPLETE_GROUP)
 
-    jungfrau._controller.arm = AsyncMock()
+    jungfrau._acquire_logic.start_acquiring = AsyncMock()  # type: ignore
     run_engine(test_plan())
     assert "Jungfrau data collection triggers received: 100%" in caplog.messages
 
@@ -49,7 +49,7 @@ def test_full_do_internal_acquisition(
 )
 def test_do_internal_acquisition_does_wait(
     sim_run_engine: RunEngineSimulator,
-    jungfrau: CommissioningJungfrau,
+    jungfrau: CommissioningJungfrauDetector,
 ):
     msgs = sim_run_engine.simulate_plan(
         do_internal_acquisition(0.01, GainMode.DYNAMIC, 1, jungfrau, wait=True)

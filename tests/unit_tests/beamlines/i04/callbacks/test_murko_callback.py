@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+import redis.exceptions
 from event_model import Event
 
 from mx_bluesky.beamlines.i04.callbacks.murko_callback import (
@@ -44,7 +45,7 @@ test_oav_roi_event = event_template(
         "oav-beam_centre_j": 342,
     }
 )
-test_smargon_event = event_template({"smargon-omega": test_smargon_data})
+test_smargon_event = event_template({"gonio-omega": test_smargon_data})
 
 test_start_document = {
     "uid": "event_uuid",
@@ -112,7 +113,7 @@ def test_given_image_data_when_first_two_sets_of_smargon_data_arrive_then_murko_
 
     murko_with_mock_call.call_murko.reset_mock()  # type: ignore
 
-    murko_with_mock_call.event(event_template({"smargon-omega": (second_omega := 30)}))
+    murko_with_mock_call.event(event_template({"gonio-omega": (second_omega := 30)}))
     murko_with_mock_call.call_murko.assert_called_once_with(  # type: ignore
         test_oav_uuid, second_omega
     )
@@ -122,8 +123,8 @@ def test_given_two_sets_of_smargon_data_then_next_image_calls_murko_with_extrapo
     murko_with_mock_call: MurkoCallback,
 ):
     murko_with_mock_call.event(test_oav_full_screen_event)
-    murko_with_mock_call.event(event_template({"smargon-omega": 10}, 0))
-    murko_with_mock_call.event(event_template({"smargon-omega": 15}, 5))
+    murko_with_mock_call.event(event_template({"gonio-omega": 10}, 0))
+    murko_with_mock_call.event(event_template({"gonio-omega": 15}, 5))
 
     murko_with_mock_call.call_murko.reset_mock()  # type:ignore
 
@@ -138,9 +139,9 @@ def test_given_three_sets_of_smargon_data_then_next_image_calls_murko_with_extra
     murko_with_mock_call: MurkoCallback,
 ):
     murko_with_mock_call.event(test_oav_full_screen_event)
-    murko_with_mock_call.event(event_template({"smargon-omega": 10}, 0))
-    murko_with_mock_call.event(event_template({"smargon-omega": 15}, 5))
-    murko_with_mock_call.event(event_template({"smargon-omega": 17}, 6))
+    murko_with_mock_call.event(event_template({"gonio-omega": 10}, 0))
+    murko_with_mock_call.event(event_template({"gonio-omega": 15}, 5))
+    murko_with_mock_call.event(event_template({"gonio-omega": 17}, 6))
 
     murko_with_mock_call.call_murko.reset_mock()  # type:ignore
 
@@ -286,15 +287,17 @@ def test_if_redis_connection_fails_then_there_is_no_error(
     mock_check_redis_connection.return_value = False
     callback = MurkoCallback("", "")
     doc = {}
-    callback.start(doc)
-    callback.event(doc)
-    callback.stop(doc)
+    callback.start(doc)  # type: ignore
+    callback.event(doc)  # type: ignore
+    callback.stop(doc)  # type: ignore
 
 
-def test_warning_is_logged_if_redis_connection_fails(caplog):
-    callback = MurkoCallback("", "")
+@patch("mx_bluesky.beamlines.i04.callbacks.murko_callback.StrictRedis")
+def test_warning_is_logged_if_redis_connection_fails(mock_redis: MagicMock, caplog):
+    mock_redis.return_value.ping.side_effect = redis.exceptions.ConnectionError()
+    callback = MurkoCallback("ubuntu.com", "")
     doc = {}
-    callback.start(doc)
+    callback.start(doc)  # type: ignore
     log_message = caplog.records[-1]
     assert log_message.levelname == "WARNING"
     assert "Failed to connect to redis: " in log_message.message

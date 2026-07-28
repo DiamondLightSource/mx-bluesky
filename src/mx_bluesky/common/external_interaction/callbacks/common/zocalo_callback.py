@@ -85,13 +85,15 @@ class ZocaloCallback(CallbackBase):
 
     def stop(self, doc: RunStop):
         if doc.get("run_start") == self.run_uid:
-            ISPYB_ZOCALO_CALLBACK_LOGGER.info(
-                f"Zocalo handler received stop document, for run {doc.get('run_start')}."
-            )
-            if not self._started_zocalo_collections:
-                raise ISPyBDepositionNotMadeError(
-                    f"No ISPyB IDs received by the end of {self.triggering_plan=}"
+            try:
+                ISPYB_ZOCALO_CALLBACK_LOGGER.info(
+                    f"Zocalo handler received stop document, for run {doc.get('run_start')}."
                 )
-            for info in self._started_zocalo_collections:
-                self.zocalo_interactor.run_end(info.ispyb_dcid)
-            self._reset_state()
+                if not self._started_zocalo_collections:
+                    raise ISPyBDepositionNotMadeError(
+                        f"No ISPyB IDs received by the end of {self.triggering_plan=}"
+                    )
+                for info in self._started_zocalo_collections:
+                    self.zocalo_interactor.run_end(info.ispyb_dcid)
+            finally:
+                self._reset_state()

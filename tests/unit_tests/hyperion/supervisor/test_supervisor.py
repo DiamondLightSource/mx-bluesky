@@ -1,11 +1,22 @@
 from concurrent.futures import Executor
 from threading import Event
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, call, patch
 
 import pytest
 from blueapi.client.event_bus import BlueskyStreamingError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    InvalidParametersError,
+    NoContentError,
+    ServiceUnavailableError,
+    UnauthorisedAccessError,
+    UnknownPlanError,
+)
 from blueapi.core import BlueskyContext
-from blueapi.service.model import TaskRequest
+from blueapi.service.model import TaskRequest, WorkerTask
+from blueapi.worker import TaskStatus, WorkerState
+from blueapi.worker.event import TaskError, TaskResult
 from bluesky import RunEngine, RunEngineInterrupted
 from bluesky import plan_stubs as bps
 
@@ -14,7 +25,14 @@ from mx_bluesky.common.parameters.components import (
     get_param_version,
 )
 from mx_bluesky.common.parameters.constants import Status
-from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState, Wait
+from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, SampleError
+from mx_bluesky.hyperion._plan_runner_params import (
+    RobotUnload,
+    UDCCleanup,
+    UDCDefaultState,
+    Wait,
+)
+from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError
 from mx_bluesky.hyperion.supervisor import SupervisorRunner
@@ -32,7 +50,15 @@ def mock_blueapi_client():
     with patch(
         "mx_bluesky.hyperion.supervisor._supervisor.BlueapiClient"
     ) as mock_class:
-        yield mock_class.from_config.return_value
+        mock_client = mock_class.from_config.return_value
+        yield mock_client
+
+
+@pytest.fixture(autouse=True)
+def mock_blueapi_client_state(mock_blueapi_client):
+    mock_state = PropertyMock(return_value=WorkerState.IDLE)
+    type(mock_blueapi_client).state = mock_state
+    yield mock_state
 
 
 @pytest.fixture
@@ -47,20 +73,44 @@ def runner(mock_bluesky_context, blueapi_config):
         yield runner
 
 
-def test_decode_and_execute_load_centre_collect(
-    mock_blueapi_client: MagicMock, runner: SupervisorRunner, load_centre_collect_params
+@patch("mx_bluesky.hyperion.supervisor._supervisor.TaskMonitor")
+def test_decode_and_execute_load_centre_collect_executes_and_monitors_the_task_and_returns_the_new_visit(
+    mock_task_monitor: MagicMock,
+    mock_blueapi_client: MagicMock,
+    runner: SupervisorRunner,
+    external_load_centre_collect_params,
 ):
-    runner.context.run_engine(
-        runner.decode_and_execute(TEST_VISIT, [load_centre_collect_params])
+    parent = MagicMock()
+    parent.attach_mock(mock_blueapi_client, "blueapi_client")
+    parent.attach_mock(mock_task_monitor, "TaskMonitor")
+    parent.attach_mock(mock_task_monitor.return_value, "task_monitor")
+
+    current_visit = TEST_VISIT
+    expected_visit = external_load_centre_collect_params.visit
+    assert expected_visit != current_visit
+
+    result = runner.context.run_engine(
+        runner.decode_and_execute(current_visit, [external_load_centre_collect_params])
     )
 
-    mock_blueapi_client.run_task.assert_called_once_with(
-        TaskRequest(
-            name="load_centre_collect",
-            params={"parameters": load_centre_collect_params},
-            instrument_session=TEST_VISIT,
-        )
+    expected_task_request = TaskRequest(
+        name="load_centre_collect",
+        params={"parameters": external_load_centre_collect_params},
+        instrument_session=expected_visit,
     )
+    parent.assert_has_calls(
+        [
+            call.TaskMonitor(mock_blueapi_client, expected_task_request),
+            call.task_monitor.__enter__(),
+            call.blueapi_client.run_task(
+                expected_task_request,
+                on_event=mock_task_monitor.return_value.__enter__.return_value.on_blueapi_event,
+            ),
+            call.task_monitor.__exit__(None, None, None),
+        ]
+    )
+
+    assert result.plan_result == expected_visit  # type: ignore
 
 
 def test_decode_and_execute_wait(
@@ -108,7 +158,23 @@ def test_decode_and_execute_default_state(
     mock_blueapi_client.run_task.assert_called_once_with(
         TaskRequest(
             name="move_to_udc_default_state", params={}, instrument_session=TEST_VISIT
-        )
+        ),
+        on_event=ANY,
+    )
+
+
+def test_decode_and_execute_robot_unload(
+    mock_blueapi_client: MagicMock, runner: SupervisorRunner
+):
+    runner.context.run_engine(runner.decode_and_execute(TEST_VISIT, [RobotUnload()]))
+
+    mock_blueapi_client.run_task.assert_called_once_with(
+        TaskRequest(
+            name="robot_unload",
+            params={"visit": TEST_VISIT},
+            instrument_session=TEST_VISIT,
+        ),
+        on_event=ANY,
     )
 
 
@@ -129,9 +195,10 @@ def test_decode_and_execute_udc_cleanup(
     mock_blueapi_client.run_task.assert_called_once_with(
         TaskRequest(
             name="clean_up_udc",
-            params={"visit": TEST_VISIT},
+            params={},
             instrument_session=TEST_VISIT,
-        )
+        ),
+        on_event=ANY,
     )
 
 
@@ -146,9 +213,15 @@ def test_current_status_set_to_busy_during_execution(
         assert runner.current_status == Status.BUSY
         check_complete.set()
 
-    def wait_for_check(_):
+    def wait_for_check(*args, **kwargs):
         task_executing.set()
         check_complete.wait(1)
+        return TaskStatus(
+            task_id="TASK_ID",
+            result=TaskResult(result=None, type="None"),
+            task_complete=True,
+            task_failed=False,
+        )
 
     mock_blueapi_client.run_task.side_effect = wait_for_check
 
@@ -172,11 +245,17 @@ def test_current_status_set_to_busy_during_execution(
 def test_current_status_set_to_failed_on_exception_and_raise_plan_error(
     mock_blueapi_client: MagicMock, runner: SupervisorRunner
 ):
-    mock_blueapi_client.run_task.side_effect = BlueskyStreamingError(
-        "Simulated exception"
+    status = TaskStatus(
+        task_id="TASK_ID",
+        result=TaskError(type="RuntimeError", message="Simulated exception"),
+        task_complete=True,
+        task_failed=True,
     )
+    mock_blueapi_client.run_task.return_value = status
 
-    with pytest.raises(PlanError, match="Exception raised.*: Simulated exception"):
+    with pytest.raises(
+        PlanError, match="Exception raised.* message='Simulated exception'"
+    ):
         runner.context.run_engine(
             runner.decode_and_execute(
                 TEST_VISIT,
@@ -191,16 +270,20 @@ def test_current_status_set_to_failed_on_exception_and_raise_plan_error(
 
 
 def test_is_connected_queries_blueapi_client(
-    runner: SupervisorRunner, mock_blueapi_client: MagicMock
+    runner: SupervisorRunner,
+    mock_blueapi_client: MagicMock,
+    mock_blueapi_client_state: PropertyMock,
 ):
     assert runner.is_connected()
-    mock_blueapi_client.get_state.assert_called_once()
+    mock_blueapi_client_state.assert_called_once()
 
 
 def test_is_connected_returns_false_on_exception(
-    runner: SupervisorRunner, mock_blueapi_client: MagicMock
+    runner: SupervisorRunner,
+    mock_blueapi_client: MagicMock,
+    mock_blueapi_client_state: PropertyMock,
 ):
-    mock_blueapi_client.get_state.side_effect = RuntimeError("Simulated exception")
+    mock_blueapi_client_state.side_effect = RuntimeError("Simulated exception")
     assert not runner.is_connected()
 
 
@@ -228,7 +311,7 @@ def test_shutdown_sends_abort_to_blueapi_client_when_running_then_aborts(
         task_running.wait(1)
         runner.shutdown()
 
-    def mock_run_task(_):
+    def mock_run_task(*args, **kwargs):
         task_running.set()
         remote_abort_requested.wait(1)
         raise BlueskyStreamingError("Simulated abort exception")
@@ -282,3 +365,92 @@ def test_unrecognised_instruction_raises_assertion_error(runner: SupervisorRunne
                 ],
             )
         )
+
+
+@pytest.mark.parametrize(
+    "exception_type", [SampleError.__name__, CrystalNotFoundError.__name__]
+)
+def test_sample_error_skips_subsequent_instructions(
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+    exception_type: str,
+):
+    mock_blueapi_client.run_task.return_value = TaskStatus(
+        task_id="TASK_ID",
+        result=TaskError(type=exception_type, message="Simulated sample error"),
+        task_complete=True,
+        task_failed=True,
+    )
+    runner.context.run_engine(
+        runner.decode_and_execute(
+            TEST_VISIT,
+            [external_load_centre_collect_params, external_load_centre_collect_params],
+        )
+    )
+    mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
+
+
+@patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
+def test_supervisor_retries_service_unavailable_error(
+    mock_sleep: MagicMock,
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+    mock_alert_service: MagicMock,
+):
+    mock_blueapi_client.run_task.side_effect = ServiceUnavailableError()
+    parent = MagicMock()
+    parent.attach_mock(mock_sleep, "sleep")
+    parent.attach_mock(mock_blueapi_client.run_task, "run_task")
+    with pytest.raises(PlanError, match="Unable to connect to hyperion-blueapi"):
+        runner.context.run_engine(
+            runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
+        )
+    parent.assert_has_calls(
+        [
+            call.run_task(ANY, on_event=ANY),
+            call.sleep(2),
+            call.run_task(ANY, on_event=ANY),
+            call.sleep(4),
+            call.run_task(ANY, on_event=ANY),
+        ]
+    )
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "UDC was stopped because hyperion-supervisor was unable to connect to hyperion-blueapi.",
+        {},
+    )
+
+
+@pytest.mark.parametrize(
+    "exception_to_raise",
+    [
+        BlueskyRemoteControlError(),
+        NoContentError(WorkerTask),
+        UnauthorisedAccessError(),
+        UnknownPlanError(),
+        InvalidParametersError([]),
+        BlueskyRequestError(422, "Test message"),
+    ],
+)
+@patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
+def test_supervisor_hands_back_baton_if_non_retryable_error(
+    mock_sleep: MagicMock,
+    runner: SupervisorRunner,
+    external_load_centre_collect_params: LoadCentreCollectParams,
+    mock_blueapi_client: MagicMock,
+    exception_to_raise: Exception,
+    mock_alert_service: MagicMock,
+):
+    mock_blueapi_client.run_task.side_effect = exception_to_raise
+    with pytest.raises(
+        PlanError, match="Unexpected error communicating with hyperion-blueapi"
+    ):
+        runner.context.run_engine(
+            runner.decode_and_execute(TEST_VISIT, [external_load_centre_collect_params])
+        )
+    mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
+    mock_sleep.assert_not_called()
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "Unexpected error communicating with hyperion-blueapi", {}
+    )

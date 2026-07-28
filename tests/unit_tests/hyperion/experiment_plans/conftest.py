@@ -17,7 +17,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from mx_bluesky.common.xrc_result import XRayCentreResult
+from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     construct_hyperion_specific_features,
 )
@@ -65,6 +65,10 @@ FLYSCAN_RESULT_HIGH_NO_SAMPLE_ID = XRayCentreResult(
 )
 
 
+@pytest.fixture(autouse=True)
+def always_use_i03_beamline(use_beamline_i03): ...
+
+
 @pytest.fixture
 def sim_run_engine_for_rotation(sim_run_engine):
     sim_run_engine.add_handler(
@@ -78,7 +82,7 @@ def sim_run_engine_for_rotation(sim_run_engine):
         "synchrotron-top_up_start_countdown",
     )
     sim_run_engine.add_handler(
-        "read", lambda msg: {"values": {"value": -1}}, "smargon_omega"
+        "read", lambda msg: {"values": {"value": -1}}, "gonio_omega"
     )
     return sim_run_engine
 
@@ -110,10 +114,10 @@ def mock_subscriptions():
             autospec=True,
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.append_to_comment"
+            "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb.append_to_comment"
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.begin_deposition",
+            "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb.begin_deposition",
             new=MagicMock(
                 return_value=IspybIds(
                     data_collection_ids=(0, 0), data_collection_group_id=0
@@ -121,7 +125,7 @@ def mock_subscriptions():
             ),
         ),
         patch(
-            "mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback.StoreInIspyb.update_deposition",
+            "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb.update_deposition",
             new=MagicMock(
                 return_value=IspybIds(
                     data_collection_ids=(0, 0),
@@ -191,7 +195,7 @@ def robot_load_composite(
         flux=flux,
         oav=oav,
         pin_tip_detection=pin_tip_detection_with_found_pin,
-        smargon=smargon,
+        gonio=smargon,
         synchrotron=synchrotron,
         s4_slit_gaps=s4_slit_gaps,
         undulator=undulator,
@@ -244,7 +248,7 @@ def robot_load_and_energy_change_composite(
         aperture_scatterguard,
         backlight,
     )
-    composite.smargon.stub_offsets.set = MagicMock(
+    composite.gonio.stub_offsets.set = MagicMock(
         side_effect=lambda _: completed_status()
     )
     composite.aperture_scatterguard.set = MagicMock(
@@ -278,16 +282,13 @@ def grid_detection_callback_with_detected_grid():
             "transmission_frac": 1.0,
             "exposure_time_s": 0,
             "x_start_um": 0,
-            "y_start_um": 0,
-            "y2_start_um": 0,
-            "z_start_um": 0,
-            "z2_start_um": 0,
+            "y_starts_um": [0, 0],
+            "z_starts_um": [0, 0],
             "x_steps": 10,
-            "y_steps": 10,
-            "z_steps": 10,
+            "y_steps": [10, 10],
             "x_step_size_um": 0.1,
-            "y_step_size_um": 0.1,
-            "z_step_size_um": 0.1,
+            "y_step_sizes_um": [0.1, 0.1],
+            "omega_starts_deg": [0, 90],
         }
         yield callback
 

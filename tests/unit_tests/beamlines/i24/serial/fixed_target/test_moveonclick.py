@@ -2,7 +2,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import cv2 as cv
 import pytest
-from dodal.devices.i24.pmac import PMAC
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.oav.oav_detector import OAV
 from ophyd_async.core import get_mock_put
 
@@ -62,8 +62,8 @@ def test_move_on_mouse_click_gets_beam_position_and_sends_correct_str(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(expected_xmove, wait=True),
-            call(expected_ymove, wait=True),
+            call(expected_xmove),
+            call(expected_ymove),
         ]
     )
 

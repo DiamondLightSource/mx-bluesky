@@ -21,6 +21,7 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 
 TEST_SAMPLE_ID = 10
 TEST_VISIT = "cm1234-67"
+TEST_CONTAINER = 8
 
 
 def wrap_plan(container: int, plan):

@@ -1,7 +1,8 @@
+from typing import Any
+
 import pydantic
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.common.beamlines.beamline_parameters import GDABeamlineParameters
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
@@ -10,7 +11,10 @@ from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.ipin import IPin, IPinGain
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.xbpm_feedback import XBPMFeedback
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutter, ZebraShutterState
+from dodal.devices.zebra.zebra_controlled_shutter import (
+    MXZebraShutter,
+    ZebraShutterState,
+)
 from ophyd_async.core import InOut
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
@@ -35,7 +39,7 @@ class BeamstopCheckDevices:
     beamstop: Beamstop
     detector_motion: DetectorMotion
     ipin: IPin
-    sample_shutter: ZebraShutter
+    sample_shutter: MXZebraShutter
     xbpm_feedback: XBPMFeedback
 
 
@@ -50,7 +54,7 @@ class BeamObstructedError(BeamlineCheckFailureError): ...
 
 def move_beamstop_in_and_verify_using_diode(
     devices: BeamstopCheckDevices,
-    beamline_parameters: GDABeamlineParameters,
+    beamline_parameters: dict[str, Any],
     detector_min_z_mm: float,
     detector_max_z_mm: float,
 ) -> MsgGenerator:
@@ -163,7 +167,7 @@ def _start_moving_detector_if_needed(
     devices: BeamstopCheckDevices,
     detector_min_z_mm: float,
     detector_max_z_mm: float,
-    group: str = None,
+    group: str | None = None,
 ):
     detector_current_z = yield from bps.rd(devices.detector_motion.z)
     target_z = max(min(detector_current_z, detector_max_z_mm), detector_min_z_mm)

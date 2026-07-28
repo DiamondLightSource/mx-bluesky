@@ -9,7 +9,6 @@ from mx_bluesky.hyperion.parameters.constants import HyperionConstants
 
 
 class HyperionMode(StrEnum):
-    GDA = "gda"
     UDC = "udc"
     SUPERVISOR = "supervisor"
 
@@ -75,8 +74,8 @@ def parse_cli_args() -> HyperionArgs:
     )
     parser.add_argument(
         "--mode",
-        help="Launch in the specified mode (default is 'gda')",
-        default=HyperionMode.GDA,
+        help="Launch in the specified mode (default is 'udc')",
+        default=HyperionMode.UDC,
         type=HyperionMode,
         choices=HyperionMode.__members__.values(),
     )

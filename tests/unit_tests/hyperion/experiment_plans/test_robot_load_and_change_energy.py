@@ -199,17 +199,21 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
     for axis in initial_values.keys():
         messages = assert_message_and_return_remaining(
             messages,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args == (0,),
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"lower_gonio-{axis}"
+                and msg.args == (0,)
+            ),
         )
 
     for axis, initial in initial_values.items():
         messages = assert_message_and_return_remaining(
             messages,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args == (initial,),
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"lower_gonio-{axis}"
+                and msg.args == (initial,)
+            ),
         )
 
 
@@ -246,17 +250,21 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     for axis in initial_values.keys():
         messages = assert_message_and_return_remaining(
             messages,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"lower_gonio-{axis}"
-            and msg.args == (0,),
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"lower_gonio-{axis}"
+                and msg.args == (0,)
+            ),
         )
 
     for axis, initial in initial_values.items():
         messages = assert_message_and_return_remaining(
             messages,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"lower_gonio-{axis}"  # noqa
-            and msg.args == (initial,),  # noqa
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"lower_gonio-{axis}"  # noqa
+                and msg.args == (initial,)
+            ),  # noqa
         )
 
 
@@ -284,9 +292,11 @@ def test_when_plan_run_then_thawing_turned_on(
 
     assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "thawer"
-        and msg.args[0] == OnOff.ON,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "thawer"
+            and msg.args[0] == OnOff.ON
+        ),
     )
 
 
@@ -318,17 +328,20 @@ def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
 
     msgs = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "backlight"
-        and msg.args[0] == InOut.IN,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "backlight"
+            and msg.args[0] == InOut.IN
+        ),
     )
 
     backlight_move_group = msgs[0].kwargs.get("group")
 
     msgs = assert_message_and_return_remaining(
         messages,
-        lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == backlight_move_group,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == backlight_move_group
+        ),
     )
 
     assert_message_and_return_remaining(

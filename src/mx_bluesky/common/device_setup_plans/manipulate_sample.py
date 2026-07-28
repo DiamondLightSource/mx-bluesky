@@ -6,7 +6,7 @@ from dodal.devices.aperturescatterguard import (
     ApertureValue,
 )
 from dodal.devices.backlight import Backlight, InOut
-from dodal.devices.detector.detector_motion import DetectorMotion
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.thawer import OnOff, Thawer
 
@@ -71,7 +71,7 @@ def cleanup_sample_environment(
 
     yield from bps.abs_set(
         detector_motion.shutter,
-        int(not LOWER_DETECTOR_SHUTTER_AFTER_SCAN),
+        ShutterState.CLOSED if LOWER_DETECTOR_SHUTTER_AFTER_SCAN else ShutterState.OPEN,
         group=group,
     )
 
@@ -93,20 +93,17 @@ def move_x_y_z(
         yield from bps.wait(group)
 
 
-def move_phi_chi_omega(
+def move_phi_chi(
     smargon: Smargon,
     phi: float | None = None,
     chi: float | None = None,
-    omega: float | None = None,
     wait=False,
     group="move_phi_chi_omega",
 ):
-    """Move the x, y, and z axes of the given smargon to the specified position. All
+    """Move the phi, chi of the given smargon to the specified position. All
     axes are optional."""
 
-    LOGGER.info(f"Moving smargon to phi, chi, omega: {(phi, chi, omega)}")
-    yield from bps.abs_set(
-        smargon, CombinedMove(phi=phi, chi=chi, omega=omega), group=group
-    )
+    LOGGER.info(f"Moving smargon to phi, chi: {(phi, chi)}")
+    yield from bps.abs_set(smargon, CombinedMove(phi=phi, chi=chi), group=group)
     if wait:
         yield from bps.wait(group)

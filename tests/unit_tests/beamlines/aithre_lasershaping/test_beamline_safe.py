@@ -11,13 +11,8 @@ from mx_bluesky.beamlines.aithre_lasershaping import (
 
 
 @pytest.fixture
-def goniometer() -> Goniometer:
-    return aithre.goniometer(connect_immediately=True, mock=True)
-
-
-@pytest.fixture
 def robot() -> LaserRobot:
-    return aithre.robot(connect_immediately=True, mock=True)
+    return aithre.robot.build(connect_immediately=True, mock=True)
 
 
 @pytest.mark.parametrize(
@@ -34,7 +29,7 @@ def robot() -> LaserRobot:
 async def test_beamline_safe_reads_unsafe_correctly(
     sim_run_engine: RunEngineSimulator,
     robot: LaserRobot,
-    goniometer: Goniometer,
+    aithre_gonio: Goniometer,
     set_pv_name: str,
     set_value: float,
 ):
@@ -44,43 +39,49 @@ async def test_beamline_safe_reads_unsafe_correctly(
 
     sim_run_engine.add_handler("locate", locate_pv, "goniometer-" + set_pv_name)
 
-    msgs = sim_run_engine.simulate_plan(set_beamline_safe_on_robot(robot, goniometer))
+    msgs = sim_run_engine.simulate_plan(set_beamline_safe_on_robot(robot, aithre_gonio))
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "robot-set_beamline_safe"
-        and msg.args[0] == "No",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "robot-set_beamline_safe"
+            and msg.args[0] == "No"
+        ),
     )
 
 
 async def test_beamline_safe_reads_safe_correctly(
     sim_run_engine: RunEngineSimulator,
     robot: LaserRobot,
-    goniometer: Goniometer,
+    aithre_gonio: Goniometer,
 ):
-    msgs = sim_run_engine.simulate_plan(set_beamline_safe_on_robot(robot, goniometer))
+    msgs = sim_run_engine.simulate_plan(set_beamline_safe_on_robot(robot, aithre_gonio))
 
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "robot-set_beamline_safe"
-        and msg.args[0] == "On",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "robot-set_beamline_safe"
+            and msg.args[0] == "On"
+        ),
     )
 
 
 @pytest.mark.parametrize("wait", [True, False])
 async def test_go_to_zero_gives_expected_result(
-    sim_run_engine: RunEngineSimulator, goniometer: Goniometer, wait: bool
+    sim_run_engine: RunEngineSimulator, aithre_gonio: Goniometer, wait: bool
 ):
-    msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=goniometer, wait=wait))
+    msgs = sim_run_engine.simulate_plan(go_to_zero(goniometer=aithre_gonio, wait=wait))
 
     for name in ["omega", "x", "y", "z", "sampy", "sampz"]:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == f"goniometer-{name}"
-            and msg.args[0] == 0
-            and msg.kwargs["group"] == "move_to_zero",
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == f"goniometer-{name}"
+                and msg.args[0] == 0
+                and msg.kwargs["group"] == "move_to_zero"
+            ),
         )
     if wait:
         assert_message_and_return_remaining(

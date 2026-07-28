@@ -95,7 +95,7 @@ class MurkoCallback(CallbackBase):
                     }
                 )
 
-        if (latest_omega := data.get("smargon-omega")) is not None:
+        if (latest_omega := data.get("gonio-omega")) is not None:
             if len(self.previous_omegas) <= 2 and self.last_uuid:
                 # For the first few images there's not enough data to extrapolate so we
                 # match them one to one
@@ -103,7 +103,7 @@ class MurkoCallback(CallbackBase):
             self.previous_omegas.append(
                 OmegaReading(
                     value=latest_omega,
-                    timestamp=doc["timestamps"]["smargon-omega"],
+                    timestamp=doc["timestamps"]["gonio-omega"],
                 )
             )
         elif (uuid := doc["data"].get("oav_to_redis_forwarder-uuid")) is not None:

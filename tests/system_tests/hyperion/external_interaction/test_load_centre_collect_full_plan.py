@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
+from daq_config_server import ConfigClient
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -27,16 +28,18 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     get_proposal_and_session_from_visit_string,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
+    GridDetectAndScanISPyBCallback,
+)
 from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
     SampleHandlingCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
-    GridscanISPyBCallback,
-)
-from mx_bluesky.common.parameters.components import TopNByMaxCountForEachSampleSelection
 from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
+)
+from mx_bluesky.hyperion.blueapi.mixins import (
+    TopNByMaxCountForEachSampleSelection,
 )
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -56,7 +59,9 @@ from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import GridCommonWithHyperionDetectorParams
+from mx_bluesky.hyperion.parameters.gridscan import (
+    GenericGridWithHyperionDetectorParams,
+)
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
 from ....conftest import (
@@ -100,11 +105,17 @@ def load_centre_collect_params(tmp_path):
     )
     json_dict["visit"] = SimConstants.ST_VISIT
     json_dict["sample_id"] = SimConstants.ST_SAMPLE_ID
-    return LoadCentreCollect(**json_dict)
+    with patch(
+        "mx_bluesky.common.parameters.gridscan.DetectorParamConstants.BEAM_XY_LUT_PATH",
+        "/dls_sw/i03/software/daq_configuration/lookup/DetDistToBeamXYConverter_load_centre_collect.txt",
+    ):
+        yield LoadCentreCollect(
+            **json_dict,
+        )
 
 
 @pytest.fixture
-def load_centre_collect_msp_params(load_centre_collect_params):
+def load_centre_collect_msp_params(load_centre_collect_params: LoadCentreCollect):
     load_centre_collect_params.select_centres = TopNByMaxCountForEachSampleSelection(
         n=5
     )
@@ -141,7 +152,7 @@ def load_centre_collect_composite(
         eiger=grid_detect_then_xray_centre_composite.eiger,
         flux=composite_for_rotation_scan.flux,
         robot=composite_for_rotation_scan.robot,
-        smargon=composite_for_rotation_scan.smargon,
+        gonio=composite_for_rotation_scan.gonio,
         undulator=composite_for_rotation_scan.undulator,
         synchrotron=composite_for_rotation_scan.synchrotron,
         s4_slit_gaps=composite_for_rotation_scan.s4_slit_gaps,
@@ -277,6 +288,15 @@ def composite_with_no_diffraction(
         yield load_centre_collect_composite
 
 
+@pytest.mark.parametrize(
+    "initial_omega",
+    [
+        0,
+        360,
+        -800,
+        1120,
+    ],
+)
 @pytest.mark.system_test
 def test_execute_load_centre_collect_full(
     load_centre_collect_composite: LoadCentreCollectComposite,
@@ -287,11 +307,12 @@ def test_execute_load_centre_collect_full(
     fetch_datacollectiongroup_attribute: Callable[..., Any],
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
     fetch_blsample: Callable[[int], BLSample],
+    initial_omega: float,
     tmp_path,
     robot_load_cb: RobotLoadISPyBCallback,
 ):
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -301,13 +322,16 @@ def test_execute_load_centre_collect_full(
     run_engine.subscribe(ispyb_gridscan_cb)
     run_engine.subscribe(snapshot_cb)
     run_engine.subscribe(robot_load_cb)
-    run_engine(
-        load_centre_collect_full(
+
+    def move_to_omega_then_collect():
+        yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
+        yield from load_centre_collect_full(
             load_centre_collect_composite,
             load_centre_collect_params,
             oav_parameters_for_rotation,
         )
-    )
+
+    run_engine(move_to_omega_then_collect())
 
     expected_proposal, expected_visit = get_proposal_and_session_from_visit_string(
         load_centre_collect_params.visit
@@ -466,11 +490,11 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
     set_mock_value(load_centre_collect_composite.robot.current_puck, 2)
 
     def move_to_initial_omega():
-        yield from bps.mv(load_centre_collect_composite.smargon.omega, initial_omega)
+        yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
 
     run_engine(move_to_initial_omega())
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -561,8 +585,8 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
@@ -595,8 +619,8 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
@@ -647,8 +671,8 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
@@ -679,8 +703,8 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
@@ -737,8 +761,8 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     load_centre_collect_composite.zocalo.my_zocalo_result = _with_sample_ids(
         zocalo_result, [SimConstants.ST_SAMPLE_ID]
     )
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     set_mock_value(
@@ -771,8 +795,8 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
 ):
     load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
 
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -853,8 +877,8 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     fetch_datacollection_attribute: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -906,8 +930,8 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -972,8 +996,8 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     robot_load_cb: RobotLoadISPyBCallback,
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -1029,8 +1053,8 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
     fetch_blsample: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridscanISPyBCallback(
-        param_type=GridCommonWithHyperionDetectorParams
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=GenericGridWithHyperionDetectorParams
     )
     ispyb_rotation_cb = RotationISPyBCallback()
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
@@ -1079,18 +1103,18 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
     # This is the base snapshot position
     def wrapper(*args, **kwargs):
         yield from bps.mv(
-            load_centre_collect_composite.smargon.x,
+            load_centre_collect_composite.gonio.x,
             -0.614,
-            load_centre_collect_composite.smargon.y,
+            load_centre_collect_composite.gonio.y,
             0.0259,
-            load_centre_collect_composite.smargon.z,
+            load_centre_collect_composite.gonio.z,
             0.250,
         )
 
         yield from wrapped(*args, **kwargs)
 
     with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
+        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.detect_grid_and_do_gridscan",
     ) as patched_detect_grid:
         patched_detect_grid.side_effect = wrapper
         yield patched_detect_grid
@@ -1100,16 +1124,12 @@ def patch_detect_grid_and_do_gridscan_with_detected_pin_position(
 def grid_detect_for_snapshot_generation():
     fake_grid_params = GridParamUpdate(
         x_start_um=-598.4,
-        y_start_um=-215.3,
-        y2_start_um=-215.3,
-        z_start_um=150.6,
-        z2_start_um=150.6,
+        y_starts_um=[-215.3] * 2,
+        z_starts_um=[150.6] * 2,
         x_steps=30,
-        y_steps=20,
-        z_steps=13,
+        y_steps=[20, 13],
         x_step_size_um=20,
-        y_step_size_um=20,
-        z_step_size_um=20,
+        y_step_sizes_um=[20, 20],
     )
     with patch(
         "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback"
@@ -1121,10 +1141,11 @@ def grid_detect_for_snapshot_generation():
 class TestGenerateSnapshot:
     @pytest.fixture()
     def test_config_files(self):
+        """Override the default system test config"""
         return {
-            "zoom_params_file": "tests/test_data/test_jCameraManZoomLevels.xml",
-            "oav_config_json": "tests/test_data/test_daq_configuration/OAVCentring_hyperion.json",
-            "display_config": "tests/test_data/test_daq_configuration/display.configuration",
+            "zoom_params_file": "/dls_sw/i03/software/gda/configurations/i03-config/xml/jCameraManZoomLevels.xml",
+            "oav_config_json": "/dls_sw/i03/software/daq_configuration/json/OAVCentring_snapshot.json",
+            "display_config": "/dls_sw/i03/software/gda_versions/var/snapshot_display.configuration",
         }
 
     @pytest.mark.system_test
@@ -1140,8 +1161,10 @@ class TestGenerateSnapshot:
         test_config_files: dict,
         fetch_datacollection_attribute: Callable[..., Any],
         fetch_datacollection_ids_for_group_id: Callable[..., Any],
+        config_client: ConfigClient,
     ):
         oav_parameters = OAVParameters(
+            config_client,
             oav_config_json=test_config_files["oav_config_json"],
             context="xrayCentring",
         )
@@ -1167,8 +1190,8 @@ class TestGenerateSnapshot:
             SNAPSHOT_GENERATION_ZOCALO_RESULT
         )
 
-        ispyb_gridscan_cb = GridscanISPyBCallback(
-            param_type=GridCommonWithHyperionDetectorParams
+        ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+            param_type=GenericGridWithHyperionDetectorParams
         )
         ispyb_rotation_cb = RotationISPyBCallback()
         snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)

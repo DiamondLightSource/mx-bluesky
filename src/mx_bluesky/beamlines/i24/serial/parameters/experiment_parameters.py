@@ -33,7 +33,7 @@ class SerialExperiment(BaseModel):
 
     @field_validator("visit", mode="before")
     @classmethod
-    def _parse_visit(cls, visit: str | Path):
+    def _parse_visit(cls, visit: str | Path) -> Path:
         if isinstance(visit, str):
             return Path(visit)
         return visit

@@ -19,21 +19,29 @@ import pytest
 import zmq
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext, DataEvent, EventPublisher
+from bluesky import preprocessors as bpp
 from bluesky.callbacks import CallbackBase
 from bluesky.callbacks.zmq import Publisher
 from bluesky.run_engine import RunEngine
+from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker, MessageTopic
 from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from zmq.utils.monitor import recv_monitor_message
 
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
-from mx_bluesky.common.external_interaction.callbacks.xray_centre.ispyb_callback import (
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    fetch_xrc_results_from_zocalo,
+    zocalo_stage_decorator,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_decorator,
 )
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -43,7 +51,8 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan impo
     construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    rotation_scan,
+    RotationScanComposite,
+    rotation_scan_internal,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import (
     BLUEAPI_EVENT_TOPIC,
@@ -75,6 +84,26 @@ class DocumentCatcher(CallbackBase):
         self.descriptor = MagicMock()
         self.event = MagicMock()
         self.stop = MagicMock()
+
+
+def rotation_scan(
+    composite: RotationScanComposite,
+    parameters: RotationScan,
+    oav_params: OAVParameters | None = None,
+) -> MsgGenerator:
+    @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MULTI_OUTER)
+    @bpp.run_decorator(
+        md={
+            "activate_callbacks": ["BeamDrawingCallback"],
+            "with_snapshot": parameters.model_dump_json(
+                include=WithSnapshot.model_fields.keys()  # type: ignore
+            ),
+        }
+    )
+    def _wrapped_rotation_scan():
+        yield from rotation_scan_internal(composite, parameters, oav_params)
+
+    yield from _wrapped_rotation_scan()
 
 
 def event_monitor(monitor: zmq.Socket, connection_active_lock: threading.Lock) -> None:
@@ -136,6 +165,7 @@ def bluesky_context_with_stomp(run_engine: RunEngine):
     loader.use_values_from_yaml(Path("tests/test_data/stomp_callback_test_config.yaml"))
     config = loader.load()
     context = BlueskyContext(configuration=config, run_engine=run_engine)
+    assert config.stomp.url.host is not None and config.stomp.url.port is not None
     stomp_client = StompClient.for_broker(
         broker=Broker(
             host=config.stomp.url.host,
@@ -232,11 +262,15 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
         fgs_composite_for_fake_zocalo, dummy_params
     )
 
+    @zocalo_stage_decorator(fgs_composite_for_fake_zocalo.zocalo)
     @ispyb_activation_decorator(dummy_params)
     def wrapped_xray_centre():
         yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo, dummy_params, beamline_specific
+        )
+        yield from fetch_xrc_results_from_zocalo(
+            fgs_composite_for_fake_zocalo.zocalo, dummy_params
         )
 
     run_engine(wrapped_xray_centre())

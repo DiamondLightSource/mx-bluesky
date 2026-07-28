@@ -3,8 +3,8 @@ import bluesky.preprocessors as bpp
 from bluesky.preprocessors import contingency_decorator, run_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.i04.constants import RedisConstants
-from dodal.devices.i04.murko_results import MurkoResultsDevice
+from dodal.devices.beamlines.i04.constants import RedisConstants
+from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -18,7 +18,7 @@ def thaw(
     time_to_thaw: float,
     rotation: float = 360,
     thawer: Thawer = inject("thawer"),
-    smargon: Smargon = inject("smargon"),
+    smargon: Smargon = inject("gonio"),
 ) -> MsgGenerator:
     """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
     rotates {rotation} degrees back and turns the thawer off. The speed of the goniometer
@@ -54,7 +54,7 @@ def thaw_and_murko_centre(
     rotation: float = 360,
     robot: BartRobot = inject("robot"),
     thawer: Thawer = inject("thawer"),
-    smargon: Smargon = inject("smargon"),
+    smargon: Smargon = inject("gonio"),
     murko_results: MurkoResultsDevice = inject("murko_results"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
@@ -157,7 +157,7 @@ def thaw_and_stream_to_redis(
     rotation: float = 360,
     robot: BartRobot = inject("robot"),
     thawer: Thawer = inject("thawer"),
-    smargon: Smargon = inject("smargon"),
+    smargon: Smargon = inject("gonio"),
     oav_to_redis_forwarder: OAVToRedisForwarder = inject("oav_to_redis_forwarder"),
 ) -> MsgGenerator:
     """Turns on the thawer and rotates the sample by {rotation} degrees to thaw it, then
@@ -243,7 +243,7 @@ def _rotate_in_one_direction_and_stream_to_redis(
     )
 
     yield from get_metadata_from_current_oav()
-    yield from bps.monitor(smargon.omega.user_readback, name="smargon")
+    yield from bps.monitor(smargon.omega.user_readback, name="gonio")
     yield from bps.monitor(oav_to_redis_forwarder.uuid, name="oav")
 
     yield from bps.kickoff(oav_to_redis_forwarder, wait=True)

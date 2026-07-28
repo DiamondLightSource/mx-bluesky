@@ -1,13 +1,14 @@
 import json
 from functools import partial
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
+from daq_config_server import ConfigClient
 from dodal.beamlines import i04
-from dodal.devices.i04.murko_results import MurkoResultsDevice
+from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
 from dodal.devices.robot import BartRobot
@@ -29,9 +30,7 @@ from mx_bluesky.beamlines.i04.thawing_plan import (
     thaw_and_murko_centre,
     thaw_and_stream_to_redis,
 )
-
-DISPLAY_CONFIGURATION = "tests/test_data/test_display.configuration"
-ZOOM_LEVELS_XML = "tests/test_data/test_jCameraManZoomLevels.xml"
+from tests.conftest import ConfigFilesForTests
 
 
 class MyError(Exception):
@@ -39,16 +38,12 @@ class MyError(Exception):
 
 
 @pytest.fixture
-async def oav_full_screen() -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML)
+async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV(
             "", config=oav_config, name="oav_full_screen", mjpeg_prefix="XTAL"
         )
-    zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
     set_mock_value(oav.zoom_controller.level, "1.0x")
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
@@ -56,15 +51,10 @@ async def oav_full_screen() -> OAV:
 
 
 @pytest.fixture
-async def oav_roi() -> OAV:
-    oav_config = OAVConfig(ZOOM_LEVELS_XML)
+async def oav_roi(test_config_files: ConfigFilesForTests) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="oav")
-    zoom_levels_list = ["1.0x", "2.0x", "5.0x"]
-    oav.zoom_controller._get_allowed_zoom_levels = AsyncMock(
-        return_value=zoom_levels_list
-    )
-
     set_mock_value(oav.zoom_controller.level, "5.0x")
     set_mock_value(oav.grid_snapshot.x_size, 512)
     set_mock_value(oav.grid_snapshot.y_size, 384)
@@ -74,7 +64,7 @@ async def oav_roi() -> OAV:
 
 @pytest.fixture
 async def smargon() -> Smargon:
-    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="smargon")
+    smargon = Smargon(prefix="BL04I-MO-SGON-01:", name="gonio")
     await smargon.connect(mock=True)
 
     set_mock_value(smargon.omega.user_readback, 0.0)
@@ -88,7 +78,7 @@ def thawer() -> Thawer:
 
 
 @pytest.fixture
-@patch("dodal.devices.i04.murko_results.StrictRedis")
+@patch("dodal.devices.beamlines.i04.murko_results.StrictRedis")
 async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
     murko_results = MurkoResultsDevice(name="murko_results")
     murko_results.trigger = MagicMock(side_effect=completed_status)
@@ -128,9 +118,9 @@ def _do_thaw_and_confirm_cleanup(
     smargon.omega.set = move_mock
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer._control).call_args_list[-1]
-    assert last_thawer_call == call(OnOff.OFF, wait=ANY)
+    assert last_thawer_call == call(OnOff.OFF)
     last_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[-1]
-    assert last_velocity_call == call(initial_velocity, wait=ANY)
+    assert last_velocity_call == call(initial_velocity)
 
 
 def test_given_thaw_succeeds_then_velocity_restored_and_thawer_turned_off(
@@ -177,7 +167,7 @@ def test_given_different_rotations_and_times_then_velocity_correct(
 ):
     run_engine(thaw(time, rotation, thawer=thawer, smargon=smargon))
     first_velocity_call = get_mock_put(smargon.omega.velocity).call_args_list[0]
-    assert first_velocity_call == call(expected_speed, wait=ANY)
+    assert first_velocity_call == call(expected_speed)
 
 
 @pytest.mark.parametrize(
@@ -199,8 +189,8 @@ def test_given_different_rotations_then_motor_moved_relative(
     set_mock_value(smargon.omega.user_setpoint, start_pos)
     run_engine(thaw(10, rotation, thawer=thawer, smargon=smargon))
     assert get_mock_put(smargon.omega.user_setpoint).call_args_list == [
-        call(expected_end, wait=ANY),
-        call(start_pos, wait=ANY),
+        call(expected_end),
+        call(start_pos),
     ]
 
 
@@ -258,7 +248,7 @@ def test_thaw_and_stream_adds_murko_callback_and_produces_expected_messages(
     oav_updates = [
         e for e in event_params if "oav_to_redis_forwarder-uuid" in e["data"].keys()
     ]
-    smargon_updates = [e for e in event_params if "smargon-omega" in e["data"].keys()]
+    smargon_updates = [e for e in event_params if "gonio-omega" in e["data"].keys()]
     assert len(oav_updates) > 0
     assert len(smargon_updates) > 0
 
@@ -305,23 +295,27 @@ def _test_plan_will_switch_murko_source_half_way_through_thaw(
     for source in [Source.FULL_SCREEN.value, Source.ROI.value]:
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set"
-            and msg.obj.name == "oav_to_redis_forwarder-selected_source"
-            and msg.args[0] == source,
+            lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == "oav_to_redis_forwarder-selected_source"
+                and msg.args[0] == source
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "kickoff"
-            and msg.obj.name == "oav_to_redis_forwarder",
+            lambda msg: (
+                msg.command == "kickoff" and msg.obj.name == "oav_to_redis_forwarder"
+            ),
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "set" and msg.obj.name == "smargon-omega",
+            lambda msg: msg.command == "set" and msg.obj.name == "gonio-omega",
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "complete"
-            and msg.obj.name == "oav_to_redis_forwarder",
+            lambda msg: (
+                msg.command == "complete" and msg.obj.name == "oav_to_redis_forwarder"
+            ),
         )
 
 
@@ -368,7 +362,7 @@ def _run_thaw_and_stream_and_assert_zoom_changes(
         run_plan()
 
     mock_level_set = get_mock_put(oav_full_screen.zoom_controller.level)
-    mock_level_set.assert_has_calls([call("1.0x", wait=True), call("2.0x", wait=True)])
+    mock_level_set.assert_has_calls([call("1.0x"), call("2.0x")])
 
 
 @patch("mx_bluesky.beamlines.i04.thawing_plan.MurkoCallback")
@@ -505,12 +499,12 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_after_both_rot
         ),
     )
 
-    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(1.0, wait=True)])
-    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(2.0, wait=True)])
-    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(3.0, wait=True)])
-    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(5.0, wait=True)])
-    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(7.0, wait=True)])
-    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(9.0, wait=True)])
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(1.0)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(2.0)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(3.0)])
+    get_mock_put(smargon.x.user_setpoint).assert_has_calls([call(5.0)])
+    get_mock_put(smargon.y.user_setpoint).assert_has_calls([call(7.0)])
+    get_mock_put(smargon.z.user_setpoint).assert_has_calls([call(9.0)])
 
 
 def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
@@ -531,9 +525,11 @@ def test_thaw_and_murko_centre_will_set_sample_id_before_triggering_results(
 
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set"
-        and msg.obj.name == "murko_results-sample_id"
-        and msg.args[0] == "1234",
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "murko_results-sample_id"
+            and msg.args[0] == "1234"
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "trigger" and msg.obj.name == "murko_results"
@@ -627,8 +623,8 @@ def test_plans_carry_on_thaw_if_redis_connection_check_fails(
         omega_put = get_mock_put(smargon.omega.user_setpoint)
 
         assert omega_put.call_args_list == [
-            call(360.0, wait=True),
-            call(0.0, wait=True),
+            call(360.0),
+            call(0.0),
         ]
 
         omega_put.reset_mock()

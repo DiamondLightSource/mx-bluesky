@@ -190,7 +190,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
                 },
                 "attenuator": {"attenuator_transmission": np.isclose},
                 "beam": {"incident_wavelength": np.isclose},
-                "name": b"DIAMOND BEAMLINE S03",
+                "name": b"DIAMOND BEAMLINE i03",
             },
             "sample": {
                 "beam": {"incident_wavelength": np.isclose},

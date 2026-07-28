@@ -1,5 +1,5 @@
 from bluesky.utils import MsgGenerator
-from dodal.beamlines.i24 import CommissioningJungfrau
+from dodal.beamlines.i24 import CommissioningJungfrauDetector
 from dodal.common import inject
 from ophyd_async.core import (
     WatchableAsyncStatus,
@@ -19,7 +19,7 @@ def do_internal_acquisition(
     exp_time_s: float,
     gain_mode: GainMode,
     total_frames: PositiveInt = 1,
-    jungfrau: CommissioningJungfrau = inject("jungfrau"),
+    jungfrau: CommissioningJungfrauDetector = inject("jungfrau"),
     path_of_output_file: str | None = None,
     wait: bool = False,
 ) -> MsgGenerator[WatchableAsyncStatus]:

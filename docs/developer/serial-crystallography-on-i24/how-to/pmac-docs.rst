@@ -12,7 +12,7 @@ Among these:
 - Laser control
 
 
-For reference, see also the PMAC device implementation in dodal: `PMAC docs <https://diamondlightsource.github.io/dodal/main/reference/generated/dodal.devices.i24.pmac.html>`_
+For reference, see also the PMAC device implementation in dodal: `PMAC docs <https://diamondlightsource.github.io/dodal/main/reference/generated/dodal.devices.beamlines.i24.pmac.html>`_
 
 
 Stage motor moves using the PMAC device

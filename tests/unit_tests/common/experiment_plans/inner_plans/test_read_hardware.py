@@ -12,9 +12,9 @@ from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
 )
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
+from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.i03.dcm import DCM
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -30,12 +30,12 @@ from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 
 
 @pytest.fixture
-def ispyb_plan(test_fgs_params: SpecifiedThreeDGridScan):
+def ispyb_plan(test_three_d_grid_params: SpecifiedThreeDGridScan):
     @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
             "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": test_fgs_params.model_dump_json(),
+            "mx_bluesky_parameters": test_three_d_grid_params.model_dump_json(),
         }
     )
     def standalone_read_hardware_for_ispyb(*args):
@@ -102,7 +102,8 @@ def test_read_hardware_correct_messages(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "read"
-        and msg.obj.name == "eiger_odin_file_writer_id",
+        lambda msg: (
+            msg.command == "read" and msg.obj.name == "eiger_odin_file_writer_id"
+        ),
     )
     msgs = assert_message_and_return_remaining(msgs, lambda msg: msg.command == "save")

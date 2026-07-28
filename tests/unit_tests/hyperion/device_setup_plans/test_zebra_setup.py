@@ -2,7 +2,7 @@ from dodal.devices.zebra.zebra import (
     Zebra,
 )
 from dodal.devices.zebra.zebra_controlled_shutter import (
-    ZebraShutter,
+    MXZebraShutter,
     ZebraShutterControl,
 )
 
@@ -28,7 +28,7 @@ async def _get_shutter_input_1(zebra: Zebra):
 
 
 async def test_zebra_set_up_for_panda_gridscan(
-    run_engine, zebra: Zebra, zebra_shutter: ZebraShutter
+    run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter
 ):
     run_engine(setup_zebra_for_panda_flyscan(zebra, zebra_shutter, wait=True))
     assert (

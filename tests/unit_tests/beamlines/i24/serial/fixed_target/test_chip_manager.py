@@ -3,9 +3,9 @@ from pathlib import Path
 from unittest.mock import ANY, MagicMock, call, mock_open, patch
 
 import pytest
-from dodal.devices.i24.beamstop import Beamstop
-from dodal.devices.i24.dual_backlight import DualBacklight
-from dodal.devices.i24.pmac import PMAC
+from dodal.devices.beamlines.i24.beamstop import Beamstop
+from dodal.devices.beamlines.i24.dual_backlight import DualBacklight
+from dodal.devices.beamlines.i24.pmac import PMAC
 from dodal.devices.motors import YZStage
 from ophyd_async.core import get_mock_put
 
@@ -125,10 +125,10 @@ async def test_initialise(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call("m508=100 m509=150", wait=True),
-            call("m608=100 m609=150", wait=True),
-            call("m708=100 m709=150", wait=True),
-            call("m808=100 m809=150", wait=True),
+            call("m508=100 m509=150"),
+            call("m608=100 m609=150"),
+            call("m708=100 m709=150"),
+            call("m808=100 m809=150"),
         ]
     )
 
@@ -150,10 +150,10 @@ def test_upload_chip_map_to_geobrick(
     assert mock_pmac_str.call_count == tot_blocks
 
     pvar_zero_calls = [
-        call(f"P3{i:02d}1=0", wait=True) for i in range(1, 65) if i not in fake_chip_map
+        call(f"P3{i:02d}1=0") for i in range(1, 65) if i not in fake_chip_map
     ]
 
-    pvar_one_calls = [call(f"P3{i:02d}1=1", wait=True) for i in fake_chip_map]
+    pvar_one_calls = [call(f"P3{i:02d}1=1") for i in fake_chip_map]
 
     assert len(pvar_zero_calls) == tot_blocks - len(fake_chip_map)
     assert len(pvar_one_calls) == len(fake_chip_map)
@@ -242,8 +242,8 @@ async def test_moveto_preset_with_pmac_move(
     [
         ("laser1on", " M712=1 M711=1"),
         ("laser1off", " M712=0 M711=1"),
-        ("laser2on", " M812=1 M811=1"),
-        ("laser2off", " M812=0 M811=1"),
+        ("laser2on", " M612=1 M611=1"),
+        ("laser2off", " M612=0 M611=1"),
     ],
 )
 async def test_laser_control_on_and_off(
@@ -268,8 +268,8 @@ def test_laser_control_burn_1_setting(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(" M712=1 M711=1", wait=True),
-            call(" M712=0 M711=1", wait=True),
+            call(" M712=1 M711=1"),
+            call(" M712=0 M711=1"),
         ]
     )
 
@@ -288,8 +288,8 @@ def test_laser_control_burn_2_setting(
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call(" M812=1 M811=1", wait=True),
-            call(" M812=0 M811=1", wait=True),
+            call(" M612=1 M611=1"),
+            call(" M612=0 M611=1"),
         ]
     )
 
@@ -367,10 +367,10 @@ def test_cs_pmac_str_set(pmac: PMAC, run_engine):
     mock_pmac_str = get_mock_put(pmac.pmac_string)
     mock_pmac_str.assert_has_calls(
         [
-            call("&2", wait=True),
-            call("#1->-10000X+0Y+0Z", wait=True),
-            call("#2->+0X+10000Y+0Z", wait=True),
-            call("#3->0X+0Y+10000Z", wait=True),
+            call("&2"),
+            call("#1->-10000X+0Y+0Z"),
+            call("#2->+0X+10000Y+0Z"),
+            call("#3->0X+0Y+10000Z"),
         ]
     )
 
@@ -461,7 +461,7 @@ def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, run_engine
     fake_caget.side_effect = [0.01, 0.005]
     run_engine(pumpprobe_calc())
     assert fake_caget.call_count == 2
-    assert fake_caput.call_count == 5
+    assert fake_caput.call_count == 9
     fake_caput.assert_has_calls(
         [
             call(ANY, 0.86),

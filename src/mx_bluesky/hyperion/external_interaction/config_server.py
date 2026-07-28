@@ -1,16 +1,14 @@
-from functools import cache
-
-from mx_bluesky.common.external_interaction.config_server import MXConfigClient
-from mx_bluesky.hyperion.parameters.constants import (
+from daq_config_server.models.feature_settings.hyperion_feature_settings import (
     HyperionFeatureSettings,
-    HyperionFeatureSettingsSources,
 )
+from dodal.beamlines.i03 import DAQ_CONFIGURATION_PATH
+from dodal.common.beamlines.beamline_utils import get_config_client
+
+GDA_DOMAIN_PROPERTIES_PATH = DAQ_CONFIGURATION_PATH + "/domain/domain.properties"
 
 
-@cache
-def get_hyperion_config_client() -> MXConfigClient[HyperionFeatureSettings]:
-    return MXConfigClient(
-        feature_sources=HyperionFeatureSettingsSources,
-        feature_dc=HyperionFeatureSettings,
-        url="https://daq-config.diamond.ac.uk",
+def get_hyperion_feature_settings() -> HyperionFeatureSettings:
+    return get_config_client().get_file_contents(
+        GDA_DOMAIN_PROPERTIES_PATH,
+        desired_return_type=HyperionFeatureSettings,
     )

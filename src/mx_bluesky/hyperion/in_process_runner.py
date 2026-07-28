@@ -10,8 +10,8 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
+from pydantic import BaseModel
 
-from mx_bluesky.common.parameters.components import MxBlueskyParameters
 from mx_bluesky.common.parameters.constants import Status
 from mx_bluesky.common.utils.context import (
     device_composite_from_context,
@@ -19,14 +19,23 @@ from mx_bluesky.common.utils.context import (
 )
 from mx_bluesky.common.utils.exceptions import WarningError
 from mx_bluesky.common.utils.log import LOGGER
-from mx_bluesky.hyperion.blueapi_plans import clean_up_udc, move_to_udc_default_state
-from mx_bluesky.hyperion.experiment_plans import load_centre_collect_full
+from mx_bluesky.hyperion._plan_runner_params import (
+    RobotUnload,
+    UDCCleanup,
+    UDCDefaultState,
+    Wait,
+)
+from mx_bluesky.hyperion.blueapi.in_process import (
+    LoadCentreCollectParams,
+    clean_up_udc,
+    load_centre_collect,
+    move_to_udc_default_state,
+    robot_unload,
+)
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     create_devices,
 )
 from mx_bluesky.hyperion.experiment_plans.udc_default_state import UDCDefaultDevices
-from mx_bluesky.hyperion.parameters.components import UDCCleanup, UDCDefaultState, Wait
-from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.plan_runner import PlanError, PlanRunner
 
 
@@ -38,32 +47,44 @@ class InProcessRunner(PlanRunner):
         self._current_status: Status = Status.IDLE
 
     def decode_and_execute(
-        self, current_visit: str | None, parameter_list: Sequence[MxBlueskyParameters]
+        self, current_visit: str | None, parameter_list: Sequence[BaseModel]
     ) -> MsgGenerator:
-        for parameters in parameter_list:
-            LOGGER.info(
-                f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
-            )
-            match parameters:
-                case LoadCentreCollect():
-                    current_visit = parameters.visit
-                    devices: Any = create_devices(self.context)
-                    yield from self.execute_plan(
-                        partial(load_centre_collect_full, devices, parameters)
-                    )
-                case Wait():
-                    yield from self.execute_plan(partial(_runner_sleep, parameters))
-                case UDCDefaultState():
-                    udc_default_devices: UDCDefaultDevices = (
-                        device_composite_from_context(self.context, UDCDefaultDevices)
-                    )
-                    yield from move_to_udc_default_state(udc_default_devices)
-                case UDCCleanup():
-                    yield from _clean_up_udc(self.context, current_visit)
-                case _:
-                    raise AssertionError(
-                        f"Unsupported instruction decoded from agamemnon {type(parameters)}"
-                    )
+        current_visit = current_visit or ""
+        try:
+            for parameters in parameter_list:
+                LOGGER.info(
+                    f"Executing plan with parameters: {parameters.model_dump_json(indent=2)}"
+                )
+                match parameters:
+                    case LoadCentreCollectParams():
+                        current_visit = parameters.visit
+                        devices: Any = create_devices(self.context)
+                        yield from self.execute_plan(
+                            partial(
+                                load_centre_collect,
+                                parameters,
+                                devices,
+                            )
+                        )
+                    case RobotUnload():
+                        yield from _robot_unload(self.context, current_visit)
+                    case Wait():
+                        yield from self.execute_plan(partial(_runner_sleep, parameters))
+                    case UDCDefaultState():
+                        udc_default_devices: UDCDefaultDevices = (
+                            device_composite_from_context(
+                                self.context, UDCDefaultDevices
+                            )
+                        )
+                        yield from move_to_udc_default_state(udc_default_devices)
+                    case UDCCleanup():
+                        yield from _clean_up_udc(self.context)
+                    case _:
+                        raise AssertionError(
+                            f"Unsupported instruction decoded from agamemnon {type(parameters)}"
+                        )
+        except WarningError:
+            pass
         return current_visit
 
     def execute_plan(
@@ -86,6 +107,7 @@ class InProcessRunner(PlanRunner):
         except WarningError as e:
             LOGGER.warning("Plan failed with warning", exc_info=e)
             self._current_status = Status.FAILED
+            raise
         except RequestAbort:
             # This will occur when the run engine processes an abort when we shut down
             LOGGER.info("UDC Runner aborting")
@@ -114,19 +136,24 @@ def _runner_sleep(parameters: Wait) -> MsgGenerator:
     yield from bps.sleep(parameters.duration_s)
 
 
-def _clean_up_udc(context: BlueskyContext, visit: str) -> MsgGenerator:
+def _robot_unload(context: BlueskyContext, visit: str) -> MsgGenerator:
     robot = find_device_in_context(context, "robot", BartRobot)
-    smargon = find_device_in_context(context, "smargon", Smargon)
+    smargon = find_device_in_context(context, "gonio", Smargon)
     aperture_scatterguard = find_device_in_context(
         context, "aperture_scatterguard", ApertureScatterguard
     )
     lower_gonio = find_device_in_context(context, "lower_gonio", XYZStage)
-    detector_motion = find_device_in_context(context, "detector_motion", DetectorMotion)
-    yield from clean_up_udc(
+    yield from robot_unload(
         visit,
         robot=robot,
         smargon=smargon,
         aperture_scatterguard=aperture_scatterguard,
         lower_gonio=lower_gonio,
+    )
+
+
+def _clean_up_udc(context: BlueskyContext) -> MsgGenerator:
+    detector_motion = find_device_in_context(context, "detector_motion", DetectorMotion)
+    yield from clean_up_udc(
         detector_motion=detector_motion,
     )
