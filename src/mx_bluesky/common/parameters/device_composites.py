@@ -49,7 +49,6 @@ class OavGridDetectionComposite:
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class DiffractionExtendedDevices(
     DiffractionEssentialDevices[Smargon, TDetector],
-    OavGridDetectionComposite,
     Generic[TDetector],
 ):
     """An extended set of devices for running a diffraction experiment plan which
@@ -58,4 +57,14 @@ class DiffractionExtendedDevices(
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop
     detector_motion: DetectorMotion
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class GridDetectAndGridScanExtendedDevices(
+    DiffractionExtendedDevices[TDetector],
+    OavGridDetectionComposite,
+    Generic[TDetector],
+):
+    """The set of devices for running grid detection followed by a gridscan."""
+
     zocalo: ZocaloResults

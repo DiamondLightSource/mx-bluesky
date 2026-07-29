@@ -1,10 +1,10 @@
 from functools import partial
 from unittest.mock import ANY, MagicMock, call, patch
 
-import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
+from bluesky.preprocessors import run_wrapper
 from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
@@ -73,10 +73,6 @@ from ...conftest import (
 class CompleteError(Exception):
     # To avoid having to run through the entire plan during tests
     pass
-
-
-def mock_plan():
-    yield from bps.null()
 
 
 @pytest.fixture
@@ -273,11 +269,13 @@ class TestFlyscanXrayCentrePlan:
 
         with pytest.raises(WarningError):
             run_engine(
-                run_gridscan(
-                    fake_fgs_composite,
-                    grid_scan_params_3d,
-                    detector_params,
-                    beamline_specific,
+                run_wrapper(
+                    run_gridscan(
+                        fake_fgs_composite,
+                        grid_scan_params_3d,
+                        detector_params,
+                        beamline_specific,
+                    ),
                 )
             )
 
@@ -300,11 +298,13 @@ class TestFlyscanXrayCentrePlan:
 
         with pytest.raises(FailedStatus) as e:
             run_engine(
-                run_gridscan(
-                    fake_fgs_composite,
-                    grid_scan_params_3d,
-                    detector_params,
-                    beamline_specific,
+                run_wrapper(
+                    run_gridscan(
+                        fake_fgs_composite,
+                        grid_scan_params_3d,
+                        detector_params,
+                        beamline_specific,
+                    )
                 )
             )
 
@@ -359,8 +359,10 @@ class TestFlyscanXrayCentrePlan:
         run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs_snapshots_already_taken
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
-        fake_fgs_composite.detector.disarm_detector = mock_parent.disarm
+        fake_fgs_composite.detector.unstage = mock_parent.unstage
+        mock_parent.unstage.side_effect = lambda: completed_status()
         assert isinstance(ispyb_cb.emit_cb, ZocaloCallback)
+        beamline_specific.read_during_collection_plan = MagicMock()
         ispyb_cb.emit_cb.zocalo_interactor.run_end = mock_parent.run_end
 
         fake_fgs_composite.detector.filewriters_finished = NullStatus()  # type: ignore
@@ -395,7 +397,7 @@ class TestFlyscanXrayCentrePlan:
             )
 
         mock_parent.assert_has_calls(
-            [call.disarm(), call.run_end(100), call.run_end(200)]
+            [call.unstage(), call.run_end(100), call.run_end(200)]
         )
 
     @patch(
@@ -428,11 +430,13 @@ class TestFlyscanXrayCentrePlan:
     ):
         fake_fgs_composite.detector.unstage = MagicMock(side_effect=completed_status)
         run_engine(
-            run_gridscan(
-                fake_fgs_composite,
-                grid_scan_params_3d,
-                detector_params,
-                beamline_specific,
+            run_wrapper(
+                run_gridscan(
+                    fake_fgs_composite,
+                    grid_scan_params_3d,
+                    detector_params,
+                    beamline_specific,
+                )
             )
         )
         fake_fgs_composite.detector.stage.assert_called_once()  # type: ignore
@@ -582,6 +586,7 @@ class TestFlyscanXrayCentrePlan:
         grid_scan_params_3d: GridScanParams,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
+        detector_params: DetectorParams,
     ):
         beamline_specific.read_during_collection_plan = partial(
             read_hardware_plan,
@@ -602,6 +607,7 @@ class TestFlyscanXrayCentrePlan:
             run_gridscan(
                 fake_fgs_composite,
                 grid_scan_params_3d,
+                detector_params,
                 beamline_specific,
             )
         )

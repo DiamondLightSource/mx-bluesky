@@ -45,7 +45,7 @@ def eiger_pre_arm(
     group: str,
 ) -> MsgGenerator:
     device_composite.detector.set_detector_parameters(detector_params)
-    yield from bps.abs_set(eiger.do_arm, 1, group=group)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
+    yield from bps.abs_set(device_composite.detector.do_arm, 1, group=group)  # type: ignore # Fix types in ophyd-async (https://github.com/DiamondLightSource/mx-bluesky/issues/855)
 
 
 def eiger_arm(
@@ -82,7 +82,7 @@ def eiger_hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
     return HWReadDuringPayload(
         bit_depth=doc["data"]["eiger_bit_depth"],
         ispyb_detector_id=doc["data"]["eiger-ispyb_detector_id"],
-        roi_mode=bool(doc["data"]["eiger-cam-roi_mode"]),
+        roi_mode=bool(doc["data"]["eiger_cam_roi_mode"]),
     )
 
 

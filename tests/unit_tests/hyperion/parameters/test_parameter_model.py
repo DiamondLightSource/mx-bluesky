@@ -3,6 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from daq_config_server.models.feature_settings.hyperion_feature_settings import (
+    HyperionFeatureSettings,
+)
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
@@ -99,7 +102,9 @@ def test_cant_do_panda_fgs_with_odd_y_steps(
 ):
     with pytest.raises(OddYStepsError):
         _ = _panda_fast_gridscan_params(
-            minimal_diffraction_expt_with_sample, minimal_gridscan_params
+            minimal_diffraction_expt_with_sample,
+            minimal_gridscan_params,
+            HyperionFeatureSettings(),
         )
 
 

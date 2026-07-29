@@ -5,7 +5,7 @@ from collections.abc import Generator
 from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -67,9 +67,6 @@ from ophyd_async.core import (
 )
 from ophyd_async.fastcs.panda import HDFPanda
 
-from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_plan import (
-    I04GridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
 )
@@ -80,6 +77,7 @@ from mx_bluesky.common.device_setup_plans.detector.eiger import (
 )
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
+    construct_beamline_specific_fast_gridscan_features,
 )
 from mx_bluesky.common.experiment_plans.beamstop_check import BeamstopCheckDevices
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
@@ -116,7 +114,7 @@ from mx_bluesky.common.parameters.gridscan import (
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -232,6 +230,7 @@ BASIC_POST_SETUP_DOC = {
     "beamsize-y_um": 20.0,
     "eiger_cam_roi_mode": True,
     "eiger-ispyb_detector_id": 78,
+    "eiger_bit_depth": 8,
 }
 
 
@@ -424,10 +423,10 @@ async def fake_fgs_composite(
     zocalo,
     panda,
     backlight,
+    eiger,
 ) -> DiffractionEssentialDevices:
     fake_composite = DiffractionEssentialDevices(
-        # We don't use the eiger fixture here because .unstage() is used in some tests
-        detector=i03.eiger.build(mock=True),
+        detector=eiger,
         gonio=smargon,
         synchrotron=synchrotron,
     )
@@ -482,19 +481,14 @@ def beamline_specific(
     zebra_fast_grid_scan: ZebraFastGridScanThreeD,
     beamline_specific_detector: BeamlineSpecificDetectorFeatures,
 ) -> BeamlineSpecificFGSFeatures:
-    return BeamlineSpecificFGSFeatures(
-        pre_arm_detector_plan=beamline_specific_detector.pre_arm_detector_plan,
-        arm_detector_plan=beamline_specific_detector.arm_detector_plan,
-        disarm_detector_plan=beamline_specific_detector.disarm_detector_plan,
-        tidy_detector_plan=beamline_specific_detector.tidy_detector_plan,
-        detector_zocalo_hw_read_signals=beamline_specific_detector.detector_zocalo_hw_read_signals,
-        detector_hw_read_during_signals=beamline_specific_detector.detector_hw_read_during_signals,
+    return construct_beamline_specific_fast_gridscan_features(
+        detector_features=beamline_specific_detector,
         setup_trigger_plan=MagicMock(),
         tidy_plan=MagicMock(),
         set_flyscan_params_plan=MagicMock(),
         fgs_motors=zebra_fast_grid_scan,
-        read_pre_flyscan_plan=MagicMock(),
-        read_during_collection_plan=MagicMock(),
+        signals_to_read_pre_flyscan=[],
+        signals_to_read_during_collection=[],
     )
 
 
@@ -521,14 +515,14 @@ async def grid_detect_xrc_devices(
     undulator,
     dcm,
 ):
-    yield I04GridDetectThenXRayCentreComposite(
+    yield HyperionInternalGridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
         beamsize=beamsize,
         detector_motion=detector_motion,
-        eiger=eiger,
+        detector=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
@@ -541,17 +535,17 @@ async def grid_detect_xrc_devices(
         zebra=zebra,
         zocalo=zocalo,
         dcm=dcm,
-        robot=MagicMock(spec=BartRobot),
+        panda=MagicMock(spec=HDFPanda),
+        panda_fast_grid_scan=MagicMock(spec=PandAFastGridScan),
         sample_shutter=zebra_shutter,
     )
 
 
 @pytest.fixture
-async def hyperion_grid_detect_xrc_devices(grid_detect_xrc_devices):
-    composite = cast(HyperionGridDetectThenXRayCentreComposite, grid_detect_xrc_devices)
-    composite.panda = MagicMock(spec=HDFPanda)
-    composite.panda_fast_grid_scan = MagicMock(spec=PandAFastGridScan)
-    return composite
+async def hyperion_grid_detect_xrc_devices(
+    grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
+):
+    return grid_detect_xrc_devices
 
 
 class _BasePathProvider(PathProvider):

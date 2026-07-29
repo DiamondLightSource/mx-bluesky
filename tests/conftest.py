@@ -103,6 +103,8 @@ from mx_bluesky.common.utils.log import (
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
+    create_detector_specific_composite,
 )
 from tests.test_data.oav import (
     TEST_DISPLAY_CONFIG,
@@ -964,6 +966,13 @@ async def hyperion_flyscan_xrc_composite(
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
     return fake_composite
+
+
+@pytest.fixture
+def hyperion_internal_xrc_composite(
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+) -> HyperionInternalGridDetectThenXRayCentreComposite:
+    return create_detector_specific_composite(hyperion_flyscan_xrc_composite)
 
 
 def fake_read(obj, initial_positions, _):

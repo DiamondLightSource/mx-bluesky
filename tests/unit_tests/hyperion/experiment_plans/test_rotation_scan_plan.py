@@ -34,6 +34,10 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+    HWReadDuringPayload,
+)
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
@@ -127,6 +131,13 @@ def motion_values(test_rotation_params: RotationScan):
         params,
         0.005,  # time for acceleration
         222,
+    )
+
+
+@pytest.fixture
+def mock_hw_read_mapper() -> HWReadDuringMapper:
+    return lambda _: HWReadDuringPayload(
+        bit_depth=8, ispyb_detector_id=78, roi_mode=False
     )
 
 
@@ -921,7 +932,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    mock_ispyb_callback = RotationISPyBCallback()
+    mock_ispyb_callback = RotationISPyBCallback(hw_read_during_mapper=MagicMock())
     run_engine.subscribe(mock_ispyb_callback)
     with (
         patch("bluesky.plan_stubs.wait", autospec=True),
@@ -955,9 +966,14 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
     oav_parameters_for_rotation: OAVParameters,
 ):
     mock_zocalo_callback = ZocaloCallback(
-        CONST.PLAN.ROTATION_MAIN, "env", generate_start_info_from_ordered_runs
+        CONST.PLAN.ROTATION_MAIN,
+        "env",
+        generate_start_info_from_ordered_runs,
+        hw_read_mapper=MagicMock(),
     )
-    mock_ispyb_callback = RotationISPyBCallback(emit=mock_zocalo_callback)
+    mock_ispyb_callback = RotationISPyBCallback(
+        emit=mock_zocalo_callback, hw_read_during_mapper=MagicMock()
+    )
     mock_store_in_ispyb.return_value.update_deposition.return_value = IspybIds(
         data_collection_ids=(0, 1)
     )
@@ -1475,7 +1491,7 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     oav_parameters_for_rotation: OAVParameters,
     ispyb_config_path: str,
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=MagicMock())
     mock_ispyb_store = MagicMock()
     callback.ispyb = mock_ispyb_store
     _run_multi_rotation_plan(
@@ -1513,9 +1529,10 @@ def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
     test_multi_rotation_params: RotationScan,
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
+    mock_hw_read_mapper: HWReadDuringMapper,
 ):
     number_of_scans = len(test_multi_rotation_params.rotation_scans)
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
     _run_multi_rotation_plan(
         run_engine,
         test_multi_rotation_params,

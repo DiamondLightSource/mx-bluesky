@@ -13,6 +13,9 @@ from dodal.devices.smargon import CombinedMove
 from dodal.devices.xbpm_feedback import Pause
 from ophyd_async.core import get_mock_put
 
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
@@ -20,9 +23,12 @@ from mx_bluesky.common.parameters.gridscan import (
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
+    construct_hyperion_specific_features,
+)
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
     pin_centre_then_gridscan_plan,
 )
@@ -51,6 +57,16 @@ def test_pin_centre_then_xray_centre_params(
     return params
 
 
+@pytest.fixture
+def beamline_specific_fgs(
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
+    test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+) -> BeamlineSpecificFGSFeatures:
+    return construct_hyperion_specific_features(
+        hyperion_grid_detect_xrc_devices, test_pin_centre_then_xray_centre_params
+    )
+
+
 @patch(
     "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.pin_tip_centre_plan",
     autospec=True,
@@ -67,12 +83,14 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
     mock_detect_and_do_gridscan: MagicMock,
     mock_pin_tip_centre: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     test_config_files,
     run_engine: RunEngine,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     run_engine(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
@@ -103,8 +121,9 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
     mock_pin_tip_centre_plan,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     test_config_files,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
         [Msg("detect_grid_and_do_gridscan")]
@@ -113,6 +132,7 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
@@ -153,10 +173,11 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
 def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     mock_detect_grid_and_do_gridscan.return_value = iter(
         [Msg("detect_grid_and_do_gridscan")]
@@ -165,6 +186,7 @@ def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
@@ -218,6 +240,7 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
     hyperion_grid_detect_xrc_devices,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     params = test_pin_centre_then_xray_centre_params
     mock_detect_grid_and_do_gridscan.return_value = iter(
@@ -230,6 +253,7 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             params,
             create_detector_params_for_grid_scan(params),
@@ -273,13 +297,15 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
     grid_detection_callback_with_detected_grid,
     transmission_frac: float,
     sim_run_engine: RunEngineSimulator,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     test_pin_centre_then_xray_centre_params.transmission_frac = transmission_frac
 
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
@@ -333,12 +359,14 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
 )
 def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
     mock_fetch_results_and_move: MagicMock,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     msgs = sim_run_engine.simulate_plan(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
@@ -386,16 +414,18 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     mock_fetch_xrc_results: MagicMock,
     mock_grid_detection_callback: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     grid_scan_params_3d: GridScanParams,
     test_config_files,
     run_engine: RunEngine,
+    beamline_specific_fgs,
 ):
     mock_grid_detection_callback.return_value.get_grid_parameters.return_value = (
         grid_scan_params_3d.model_dump()
     )
     run_engine(
         pin_centre_then_gridscan_plan(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             create_detector_params_for_grid_scan(
@@ -415,8 +445,9 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
 def test_pin_tip_centre_then_xray_centre_moves_to_xtal(
     mock_pin_centre_then_gridscan_plan: MagicMock,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
     run_engine: RunEngine,
+    beamline_specific_fgs: BeamlineSpecificFGSFeatures,
 ):
     @bpp.set_run_key_decorator(PlanNameConstants.FLYSCAN_RESULTS)
     @bpp.run_decorator(
@@ -428,6 +459,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_xtal(
     mock_pin_centre_then_gridscan_plan.side_effect = fire_xrc_xtal_event
     run_engine(
         pin_tip_centre_then_xray_centre(
+            beamline_specific_fgs,
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             TopNByMaxCountSelection(n=1),

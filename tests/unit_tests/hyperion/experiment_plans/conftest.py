@@ -8,9 +8,6 @@ from bluesky.utils import Msg
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
 from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
@@ -24,7 +21,10 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    HyperionInternalGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
+    construct_hyperion_specific_features,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
@@ -296,12 +296,11 @@ def grid_detection_callback_with_detected_grid():
 
 @pytest.fixture
 def beamline_specific_with_hyperion_flyscan_xrc_composite(
-    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_flyscan_xrc_composite,
+        hyperion_internal_xrc_composite,
         minimal_diffraction_expt_with_sample,
-        grid_scan_params_3d,
     )

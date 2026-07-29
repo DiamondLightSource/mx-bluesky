@@ -50,9 +50,12 @@ def mock_store_in_ispyb(config, *args, **kwargs) -> StoreInIspyb:
     mock_store_in_ispyb,
 )
 class TestXrayCentreIspybHandler:
-    def test_fgs_failing_results_in_bad_run_status_in_ispyb(self, test_event_data):
+    def test_fgs_failing_results_in_bad_run_status_in_ispyb(
+        self, test_event_data, mock_hw_read_mapper
+    ):
         ispyb_handler = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -84,10 +87,11 @@ class TestXrayCentreIspybHandler:
         )
 
     def test_fgs_raising_no_exception_results_in_good_run_status_in_ispyb(
-        self, test_event_data
+        self, test_event_data, mock_hw_read_mapper
     ):
         ispyb_handler = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -121,7 +125,7 @@ class TestXrayCentreIspybHandler:
 
     @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_started_writing_to_ispyb_when_messages_logged_then_they_contain_dcgid(
-        self, test_event_data
+        self, test_event_data, mock_hw_read_mapper
     ):
         setup_logging(True)
         gelf_handler: MagicMock = next(
@@ -133,7 +137,8 @@ class TestXrayCentreIspybHandler:
         gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -157,7 +162,7 @@ class TestXrayCentreIspybHandler:
 
     @pytest.mark.skip_log_setup
     def test_given_ispyb_callback_finished_writing_to_ispyb_when_messages_logged_then_they_do_not_contain_dcgid(
-        self, test_event_data
+        self, test_event_data, mock_hw_read_mapper
     ):
         setup_logging(True)
         gelf_handler: MagicMock = next(
@@ -169,7 +174,8 @@ class TestXrayCentreIspybHandler:
         gelf_handler.emit = MagicMock()
 
         ispyb_handler = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         ispyb_handler.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -203,10 +209,14 @@ class TestXrayCentreIspybHandler:
         new=MagicMock(side_effect=[2]),
     )
     def test_given_fgs_plan_finished_when_zocalo_results_event_then_expected_comment_deposited(
-        self, dummy_rotation_data_collection_group_info, test_event_data
+        self,
+        dummy_rotation_data_collection_group_info,
+        test_event_data,
+        mock_hw_read_mapper,
     ):
         ispyb_handler = GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
 
         ispyb_handler.activity_gated_start(

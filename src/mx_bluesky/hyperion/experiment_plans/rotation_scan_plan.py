@@ -1,5 +1,3 @@
-from typing import cast
-
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
@@ -314,11 +312,20 @@ def rotation_scan_internal(
     LOGGER.info("setting up and staging eiger...")
     # TODO for now hard-code to classic eiger until rotation is properly genericised
     beamline_specific = create_eiger_beamline_specific(composite.eiger)
+
     yield from start_preparing_data_collection_then_do_plan(
         beamline_specific,
         parameters.detector_params,
-        cast(DiffractionExtendedDevices, composite),  # type: ignore
+        _create_detector_agnostic_composite(composite),
         parameters.detector_distance_mm,
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
+
+
+# TODO Remove this once rotation is genericised
+def _create_detector_agnostic_composite(
+    composite: RotationScanComposite,
+) -> DiffractionExtendedDevices:
+    device_map = composite.__dict__ | {"detector": composite.eiger}
+    return DiffractionExtendedDevices(**device_map)  # type: ignore

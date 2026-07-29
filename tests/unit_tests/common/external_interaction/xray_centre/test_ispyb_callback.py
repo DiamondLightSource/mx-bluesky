@@ -10,6 +10,9 @@ from ophyd_async.epics.core import epics_signal_rw
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     read_hardware_plan,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+)
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridDetectAndScanISPyBCallback,
     GridscanPlane,
@@ -70,9 +73,12 @@ EXPECTED_END_TIME = "2024-02-08 14:04:01"
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 class TestXrayCentreISPyBCallback:
-    def test_activity_gated_start_3d(self, mock_ispyb_conn, test_event_data, tmp_path):
+    def test_activity_gated_start_3d(
+        self, mock_ispyb_conn, test_event_data, tmp_path, mock_hw_read_mapper
+    ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -112,10 +118,15 @@ class TestXrayCentreISPyBCallback:
         "mx_bluesky.common.external_interaction.ispyb.ispyb_store.StoreInIspyb.update_data_collection_group_table",
     )
     def test_reason_provided_if_crystal_not_found_error(
-        self, mock_update_data_collection_group_table, mock_ispyb_conn, test_event_data
+        self,
+        mock_update_data_collection_group_table,
+        mock_ispyb_conn,
+        test_event_data,
+        mock_hw_read_mapper,
     ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -134,9 +145,12 @@ class TestXrayCentreISPyBCallback:
             == "Diffraction not found, skipping sample."
         )
 
-    def test_hardware_read_event_3d(self, mock_ispyb_conn, test_event_data):
+    def test_hardware_read_event_3d(
+        self, mock_ispyb_conn, test_event_data, mock_hw_read_mapper
+    ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -163,9 +177,12 @@ class TestXrayCentreISPyBCallback:
         assert update_dc_requests[0].body == expected_upsert
         assert update_dc_requests[1].body == expected_upsert
 
-    def test_flux_read_events_3d(self, mock_ispyb_conn, test_event_data):
+    def test_flux_read_events_3d(
+        self, mock_ispyb_conn, test_event_data, mock_hw_read_mapper
+    ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -228,9 +245,11 @@ class TestXrayCentreISPyBCallback:
         test_event_data,
         snapshot_events: list[str],
         first_comment: str,
+        mock_hw_read_mapper: HWReadDuringMapper,
     ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.activity_gated_start(
             test_event_data.test_grid_detect_and_gridscan_start_document
@@ -330,10 +349,15 @@ class TestXrayCentreISPyBCallback:
         )
 
     async def test_ispyb_callback_handles_read_hardware_in_run_engine(
-        self, run_engine, mock_ispyb_conn, dummy_rotation_data_collection_group_info
+        self,
+        run_engine,
+        mock_ispyb_conn,
+        dummy_rotation_data_collection_group_info,
+        mock_hw_read_mapper,
     ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback._handle_ispyb_hardware_read = MagicMock()
         callback._handle_ispyb_transmission_flux_read = MagicMock()
@@ -378,9 +402,11 @@ class TestXrayCentreISPyBCallback:
         mock_update_deposition,
         mock__handle_oav_grid_snapshot_triggered,
         test_event_data,
+        mock_hw_read_mapper,
     ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.activity_gated_descriptor(
             test_event_data.test_descriptor_document_oav_snapshot
@@ -396,10 +422,11 @@ class TestXrayCentreISPyBCallback:
         assert "No data collection group info" in str(e.value)
 
     def test_ispyb_callback_clears_state_after_run_stop(
-        self, test_event_data, mock_ispyb_conn
+        self, test_event_data, mock_ispyb_conn, mock_hw_read_mapper
     ):
         callback = GridDetectAndScanISPyBCallback(
-            param_type=DiffractionExperimentWithSample
+            param_type=DiffractionExperimentWithSample,
+            hw_read_during_mapper=mock_hw_read_mapper,
         )
         callback.active = True
         callback.start(test_event_data.test_grid_detect_and_gridscan_start_document)  # type: ignore

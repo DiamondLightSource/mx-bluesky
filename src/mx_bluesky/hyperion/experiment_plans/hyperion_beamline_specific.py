@@ -88,7 +88,7 @@ def construct_hyperion_specific_features(
 
     else:
         setup_trigger_plan = setup_zebra_for_gridscan
-        tidy_plan = (tidy_up_zebra_after_gridscan,)
+        tidy_plan = tidy_up_zebra_after_gridscan
         set_flyscan_params_plan = partial(
             set_zebra_fgs_3d_params,
             xrc_composite.zebra_fast_grid_scan,

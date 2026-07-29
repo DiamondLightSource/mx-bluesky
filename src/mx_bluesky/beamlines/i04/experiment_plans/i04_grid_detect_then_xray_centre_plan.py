@@ -92,7 +92,7 @@ from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
 from mx_bluesky.common.parameters.device_composites import (
-    DiffractionExtendedDevices,
+    GridDetectAndGridScanExtendedDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -120,7 +120,9 @@ class I04AutoXrcParams(BaseModel):
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I04GridDetectThenXRayCentreComposite(DiffractionExtendedDevices[EigerDetector]):
+class I04GridDetectThenXRayCentreComposite(
+    GridDetectAndGridScanExtendedDevices[EigerDetector]
+):
     attenuator: BinaryFilterAttenuator
     beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator

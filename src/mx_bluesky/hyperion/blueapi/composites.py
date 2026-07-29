@@ -1,5 +1,4 @@
 # TODO move this out of this package https://github.com/DiamondLightSource/mx-bluesky/issues/1793
-from dataclasses import asdict
 from typing import Generic
 
 import pydantic
@@ -28,7 +27,7 @@ from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.parameters.device_composites import (
-    DiffractionExtendedDevices,
+    GridDetectAndGridScanExtendedDevices,
     TDetector,
 )
 
@@ -68,7 +67,7 @@ class HyperionGridDetectThenXRayCentreComposite:
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class HyperionInternalGridDetectThenXRayCentreComposite(
-    DiffractionExtendedDevices[TDetector], Generic[TDetector]
+    GridDetectAndGridScanExtendedDevices[TDetector], Generic[TDetector]
 ):
     attenuator: BinaryFilterAttenuator
     beamsize: BeamsizeBase
@@ -79,6 +78,7 @@ class HyperionInternalGridDetectThenXRayCentreComposite(
     s4_slit_gaps: S4SlitGaps
     sample_shutter: MXZebraShutter
     undulator: UndulatorInKeV
+    xbpm_feedback: XBPMFeedback
     zebra: Zebra
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
 
@@ -86,8 +86,7 @@ class HyperionInternalGridDetectThenXRayCentreComposite(
 def create_detector_specific_composite(
     composite: HyperionGridDetectThenXRayCentreComposite,
 ) -> HyperionInternalGridDetectThenXRayCentreComposite:
-    kwargs = asdict(composite)
-    kwargs["detector"] = (
-        kwargs["fast_cs_eiger"] if use_fast_cs_eiger else kwargs["eiger"]
-    )
-    return HyperionInternalGridDetectThenXRayCentreComposite(**kwargs)
+    kwargs = {**composite.__dict__} | {
+        "detector": composite.fastcs_eiger if use_fast_cs_eiger else composite.eiger
+    }
+    return HyperionInternalGridDetectThenXRayCentreComposite(**kwargs)  # type: ignore
