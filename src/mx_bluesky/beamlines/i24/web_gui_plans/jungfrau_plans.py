@@ -1,4 +1,5 @@
 import bluesky.preprocessors as bpp
+from bluesky.utils import MsgGenerator
 from dodal.common import inject
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.composites import (
@@ -21,7 +22,7 @@ def gui_run_jf_rotation_scan(
     sample_id: int,
     transmissions: list[float],
     composite: RotationScanComposite = inject(),
-):
+) -> MsgGenerator:
     params = ExternalRotationScanParams(
         transmission_fractions=transmissions,
         exposure_time_s=exposure_time_s,

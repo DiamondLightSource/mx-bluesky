@@ -261,7 +261,7 @@ def gui_run_extruder_collection(
     mirrors: FocusMirrorsMode = inject("focus_mirrors"),
     attenuator: EnumFilterAttenuator = inject("attenuator"),
     beam_center_eiger: DetectorBeamCenter = inject("eiger_beam_center"),
-):
+) -> MsgGenerator:
     """Set parameter model for extruder and run the data collection.
     Args:
         sub_dir (str): subdirectory of the visit to write data in.

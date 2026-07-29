@@ -41,14 +41,16 @@ def _move_direction(magnitude: float, direction: Direction, pmac):
     yield from bps.abs_set(pmac.y, y_move, wait=True)
 
 
-def move_block_on_arrow_click(direction: Direction, pmac: PMAC = inject("pmac")):
+def move_block_on_arrow_click(
+    direction: Direction, pmac: PMAC = inject("pmac")
+) -> MsgGenerator:
     magnitude = 3.1750
     yield from _move_direction(magnitude, direction, pmac)
 
 
 def move_window_on_arrow_click(
     direction: Direction, size_of_move: MoveSize, pmac: PMAC = inject("pmac")
-):
+) -> MsgGenerator:
     match size_of_move:
         case MoveSize.SMALL:
             magnitude = 0.1250
@@ -60,7 +62,7 @@ def move_window_on_arrow_click(
 
 def move_nudge_on_arrow_click(
     direction: Direction, size_of_move: MoveSize, pmac: PMAC = inject("pmac")
-):
+) -> MsgGenerator:
     match size_of_move:
         case MoveSize.SMALL:
             magnitude = 0.0010

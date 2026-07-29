@@ -2,6 +2,10 @@ env:
   sources:
     - kind: deviceManager
       module: dodal.beamlines.i24
+    # The web UI plans, and the serial plans the edms still invoke by name. Remove
+    # the second source once the edms are gone.
+    - kind: planFunctions
+      module: mx_bluesky.beamlines.i24
     - kind: planFunctions
       module: mx_bluesky.beamlines.i24.serial
   events:
