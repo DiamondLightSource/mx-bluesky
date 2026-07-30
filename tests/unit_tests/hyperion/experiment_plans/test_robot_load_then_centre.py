@@ -83,7 +83,7 @@ def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_ex
     )
 
     for name, value in vars(composite_passed).items():
-        assert name == "detector" or value == getattr(robot_load_composite, name)
+        assert name == "_detector" or value == getattr(robot_load_composite, name)
 
     for (
         name

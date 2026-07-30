@@ -521,7 +521,7 @@ async def grid_detect_xrc_devices(
         beamstop=beamstop_phase1,
         beamsize=beamsize,
         detector_motion=detector_motion,
-        detector=eiger,
+        _detector=eiger,
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,

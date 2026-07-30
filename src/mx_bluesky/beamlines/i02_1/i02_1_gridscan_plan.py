@@ -93,7 +93,9 @@ def create_gridscan_callbacks(
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I021FlyScanXRayCentreComposite:
+class I021FlyScanXRayCentreComposite(
+    DiffractionEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
+):
     """All devices which are directly or indirectly required by this plan"""
 
     zebra: Zebra
@@ -107,25 +109,13 @@ class I021FlyScanXRayCentreComposite:
     synchrotron: Synchrotron
     gonio: XYZWrappedOmegaStage
 
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class InternalGridScanComposite(
-    DiffractionEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
-):
-    detector: EigerDetector
-    synchrotron: Synchrotron
-    gonio: XYZWrappedOmegaStage
-    attenuator: ReadOnlyAttenuator
-    dcm: DoubleCrystalMonochromatorBase
-    flux: Flux
-    s4_slit_gaps: Slits
-    undulator: BaseUndulator
-    zebra: Zebra
-    zebra_fast_grid_scan: ZebraFastGridScanTwoD
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def construct_i02_1_specific_features(
-    fgs_composite: InternalGridScanComposite,
+    fgs_composite: I021FlyScanXRayCentreComposite,
     params: DiffractionExperiment,
 ) -> BeamlineSpecificFGSFeatures:
     signals_to_read_pre_flyscan = [
@@ -156,12 +146,12 @@ def construct_i02_1_specific_features(
     )
 
 
-def _zebra_triggering_setup(fgs_composite: InternalGridScanComposite, _, __):
+def _zebra_triggering_setup(fgs_composite: I021FlyScanXRayCentreComposite, _, __):
     yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
 
 def _tidy_plan(
-    fgs_composite: InternalGridScanComposite, group, wait=True
+    fgs_composite: I021FlyScanXRayCentreComposite, group, wait=True
 ) -> MsgGenerator:
     LOGGER.info("Tidying up Zebra")
     yield from tidy_up_zebra_after_gridscan(fgs_composite.zebra)
@@ -235,8 +225,7 @@ def i02_1_gridscan_plan(
 
     params, grid_scan_params = get_internal_params(parameters)
 
-    internal_composite = create_internal_composite(composite)
-    beamline_specific = construct_i02_1_specific_features(internal_composite, params)
+    beamline_specific = construct_i02_1_specific_features(composite, params)
     callbacks = create_gridscan_callbacks(grid_scan_params)
     detector_params = create_detector_params_for_grid_scan(params)
 
@@ -244,7 +233,7 @@ def i02_1_gridscan_plan(
     @ispyb_activation_decorator(params, grid_scan_params, detector_params)
     def decorated_flyscan_plan():
         yield from common_flyscan_xray_centre(
-            internal_composite,
+            composite,
             params,
             detector_params,
             grid_scan_params,
@@ -252,11 +241,3 @@ def i02_1_gridscan_plan(
         )
 
     yield from decorated_flyscan_plan()
-
-
-def create_internal_composite(
-    composite: I021FlyScanXRayCentreComposite,
-) -> InternalGridScanComposite:
-    kwargs = composite.__dict__
-    kwargs["detector"] = kwargs["eiger"]
-    return InternalGridScanComposite(**kwargs)

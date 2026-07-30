@@ -87,6 +87,6 @@ def create_detector_specific_composite(
     composite: HyperionGridDetectThenXRayCentreComposite,
 ) -> HyperionInternalGridDetectThenXRayCentreComposite:
     kwargs = {**composite.__dict__} | {
-        "detector": composite.fastcs_eiger if use_fast_cs_eiger else composite.eiger
+        "_detector": composite.fastcs_eiger if use_fast_cs_eiger else composite.eiger
     }
     return HyperionInternalGridDetectThenXRayCentreComposite(**kwargs)  # type: ignore

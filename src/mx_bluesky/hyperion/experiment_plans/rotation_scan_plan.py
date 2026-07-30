@@ -57,7 +57,6 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
-from mx_bluesky.common.parameters.device_composites import DiffractionExtendedDevices
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     SingleRotationScan,
@@ -95,6 +94,11 @@ class RotationScanComposite(OavSnapshotComposite):
     oav: OAV
     xbpm_feedback: XBPMFeedback
     thawer: Thawer
+
+    # TODO resolve this according to settings when rotation supports fastcs eiger
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def rotation_scan_plan(
@@ -316,16 +320,8 @@ def rotation_scan_internal(
     yield from start_preparing_data_collection_then_do_plan(
         beamline_specific,
         parameters.detector_params,
-        _create_detector_agnostic_composite(composite),
+        composite,
         parameters.detector_distance_mm,
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,
     )
-
-
-# TODO Remove this once rotation is genericised
-def _create_detector_agnostic_composite(
-    composite: RotationScanComposite,
-) -> DiffractionExtendedDevices:
-    device_map = composite.__dict__ | {"detector": composite.eiger}
-    return DiffractionExtendedDevices(**device_map)  # type: ignore

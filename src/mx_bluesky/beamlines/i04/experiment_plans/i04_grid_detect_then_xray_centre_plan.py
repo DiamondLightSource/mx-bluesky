@@ -191,7 +191,7 @@ def i04_default_grid_detect_and_xray_centre(
     """
 
     composite = I04GridDetectThenXRayCentreComposite(
-        detector=eiger,
+        _detector=eiger,
         synchrotron=synchrotron,
         gonio=smargon,
         aperture_scatterguard=aperture_scatterguard,
