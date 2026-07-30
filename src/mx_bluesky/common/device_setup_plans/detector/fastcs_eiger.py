@@ -69,13 +69,13 @@ def fastcs_eiger_disarm(
 
 
 def fastcs_eiger_zocalo_hw_read_signals(eiger: EigerDetector) -> Sequence[Readable]:
-    # TODO update for FastCS Odin
+    # TODO update for FastCS Odin https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     # return [eiger.odin.id]
     return []
 
 
 def fastcs_eiger_zocalo_hw_read_mapper(doc: Event) -> ZocaloHWReadPayload:
-    # TODO
+    # TODO implement for FastCS Eiger https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     ...
 
 
@@ -84,6 +84,7 @@ def fastcs_eiger_hw_read_during_signals(eiger: EigerDetector) -> Sequence[Readab
 
 
 def fastcs_eiger_hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
+    # TODO implement properly for FastCS Eiger https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     return HWReadDuringPayload(
         bit_depth=doc["data"]["eiger-detector-bit_depth_image"],
         ispyb_detector_id=0,  # TODO implement me
@@ -94,5 +95,5 @@ def fastcs_eiger_hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
 def fastcs_eiger_tidy(
     device_composite: DiffractionEssentialDevices[Any, EigerDetector],
 ) -> MsgGenerator:
-    # TODO disable dev_shm for fastcs odin
+    # TODO disable dev_shm for fastcs odin https://github.com/DiamondLightSource/mx-bluesky/issues/1076
     yield from bps.null()
