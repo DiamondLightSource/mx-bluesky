@@ -26,9 +26,9 @@ from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.parameters.device_composites import (
     GridDetectAndGridScanExtendedDevices,
-    TDetector,
 )
 
 # TODO replace this switch with a config server switch

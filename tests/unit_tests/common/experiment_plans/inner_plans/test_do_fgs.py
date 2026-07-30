@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,6 +19,9 @@ from event_model.documents import Event, RunStart
 from numpy.testing import assert_equal
 from ophyd_async.core import init_devices, set_mock_value
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    DiffractionEssentialDevices,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
 )
@@ -34,7 +38,6 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
@@ -58,7 +61,7 @@ def fgs_devices(run_engine, eiger):
 def fgs_composite(
     synchrotron: Synchrotron, eiger: EigerDetector, smargon: Smargon
 ) -> DiffractionEssentialDevices:
-    return DiffractionEssentialDevices(
+    return SimpleNamespace(  # type: ignore
         detector=eiger, synchrotron=synchrotron, gonio=smargon
     )
 

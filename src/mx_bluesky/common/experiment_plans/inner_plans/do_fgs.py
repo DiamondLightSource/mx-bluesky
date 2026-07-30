@@ -12,6 +12,9 @@ from dodal.devices.zocalo.zocalo_results import (
 from dodal.log import LOGGER
 from dodal.plan_stubs.check_topup import check_topup_and_wait_if_necessary
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    DiffractionEssentialDevices,
+)
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -21,7 +24,6 @@ from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
 from mx_bluesky.common.parameters.constants import (
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.tracing import TRACER
 
