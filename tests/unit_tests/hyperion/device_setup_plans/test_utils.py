@@ -5,8 +5,8 @@ from bluesky import RunEngine
 from bluesky import plan_stubs as bps
 from dodal.beamlines import i03
 from dodal.devices.aperturescatterguard import ApertureScatterguard
-from dodal.devices.beamlines.i19.diffractometer import DetectorMotion
 from dodal.devices.detector import DetectorParams
+from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.smargon import Smargon

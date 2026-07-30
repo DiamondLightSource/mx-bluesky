@@ -78,18 +78,18 @@ def beamline_specific_fgs(
         detector_hw_read_during_signals=beamline_specific_detector.detector_hw_read_during_signals,
         detector_zocalo_hw_read_signals=beamline_specific_detector.detector_zocalo_hw_read_signals,
         setup_trigger_plan=MagicMock(
-            side_effect=lambda *args: (yield Msg("setup_trigger_plan"))
+            side_effect=lambda *args: (yield Msg("setup_trigger_plan"))  # type: ignore
         ),
-        tidy_plan=MagicMock(side_effect=lambda *args: (yield Msg("tidy_plan"))),
+        tidy_plan=MagicMock(side_effect=lambda *args: (yield Msg("tidy_plan"))),  # type: ignore
         set_flyscan_params_plan=MagicMock(
-            lambda *args: (yield Msg("set_flyscan_params_plan"))
+            lambda *args: (yield Msg("set_flyscan_params_plan"))  # type: ignore
         ),
         fgs_motors=zebra_fast_grid_scan,
         read_pre_flyscan_plan=MagicMock(
-            lambda *args: (yield Msg("read_pre_flyscan_plan"))
+            lambda *args: (yield Msg("read_pre_flyscan_plan"))  # type: ignore
         ),
         read_during_collection_plan=MagicMock(
-            lambda *args: (yield Msg("read_during_collection_plan"))
+            lambda *args: (yield Msg("read_during_collection_plan"))  # type: ignore
         ),
     )
 

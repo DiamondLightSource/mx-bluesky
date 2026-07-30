@@ -261,7 +261,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         beamline_specific.set_flyscan_params_plan = partial(
             set_zebra_fgs_3d_params,
-            beamline_specific.fgs_motors,
+            beamline_specific.fgs_motors,  # type: ignore
             minimal_diffraction_expt_with_sample,
         )
 
