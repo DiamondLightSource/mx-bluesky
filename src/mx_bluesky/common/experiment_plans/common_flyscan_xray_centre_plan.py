@@ -108,7 +108,6 @@ def common_flyscan_xray_centre(
 
         yield from run_gridscan_and_tidy(composite)
 
-    composite.detector.set_detector_parameters(xrc_detector_params)
     yield from _decorated_flyscan()
 
 
