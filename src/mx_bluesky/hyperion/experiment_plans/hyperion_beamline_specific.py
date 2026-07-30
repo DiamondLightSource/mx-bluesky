@@ -7,6 +7,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector as ClassicEigerDetector
 from ophyd_async.fastcs.eiger import EigerDetector as FastCSEigerDetector
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
 )
@@ -24,7 +25,6 @@ from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperiment
-from mx_bluesky.common.parameters.device_composites import TDetector
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionInternalGridDetectThenXRayCentreComposite,
@@ -73,6 +73,9 @@ def construct_hyperion_specific_features(
         MsgGenerator,
     ]
 
+    tidy_plan: Callable[
+        [HyperionInternalGridDetectThenXRayCentreComposite[TDetector]], MsgGenerator
+    ]
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = partial(
             panda_triggering_setup, settings=get_hyperion_feature_settings()

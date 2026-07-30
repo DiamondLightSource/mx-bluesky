@@ -15,6 +15,7 @@ from event_model import Event
 
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
+    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloHWReadPayload,
@@ -22,7 +23,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
     HWReadDuringPayload,
 )
-from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.utils.log import LOGGER
 
 

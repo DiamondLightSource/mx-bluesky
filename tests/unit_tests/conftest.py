@@ -5,6 +5,7 @@ from collections.abc import Generator
 from contextlib import ExitStack
 from functools import partial
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -69,6 +70,7 @@ from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
+    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
@@ -105,9 +107,6 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     GridscanParamConstants,
     PlanNameConstants,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -425,7 +424,7 @@ async def fake_fgs_composite(
     backlight,
     eiger,
 ) -> DiffractionEssentialDevices:
-    fake_composite = DiffractionEssentialDevices(
+    fake_composite = SimpleNamespace(
         detector=eiger,
         gonio=smargon,
         synchrotron=synchrotron,
@@ -457,7 +456,7 @@ async def fake_fgs_composite(
     zocalo.timeout_s = 3
     set_mock_value(fake_composite.gonio.x.max_velocity, 10)
 
-    return fake_composite
+    return fake_composite  # type: ignore
 
 
 @pytest.fixture

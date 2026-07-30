@@ -19,6 +19,9 @@ from ophyd.sim import NullStatus
 from ophyd.status import Status
 from ophyd_async.core import completed_status, set_mock_value
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    DiffractionEssentialDevices,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
 )
@@ -50,7 +53,6 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
-from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,

@@ -3,11 +3,11 @@ from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_dec
 from bluesky.utils import MsgGenerator
 from dodal.devices.smargon import CombinedMove
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.parameters.constants import OavConstants
-from mx_bluesky.common.parameters.device_composites import TDetector
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionInternalGridDetectThenXRayCentreComposite,
