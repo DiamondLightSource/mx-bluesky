@@ -7,6 +7,7 @@ imported directly by other components as it is intended only as the entry-point 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.robot import BartRobot
 
 from mx_bluesky.common.utils.log import setup_hyperion_blueapi_logging
 from mx_bluesky.hyperion.blueapi.in_process import (
@@ -45,7 +46,6 @@ __all__ = [
 
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
-    create_detector_specific_composite,
 )
 
 
@@ -61,27 +61,25 @@ def pin_tip_centre_then_xray_centre(
     visit: str,
     storage_directory: str,
     composite: HyperionGridDetectThenXRayCentreComposite = inject(),
+    robot: BartRobot = inject("robot"),
 ) -> MsgGenerator:
     """
     Run a commissioning pin-tip-detection and XRC, using the same settings as for hyperion UDC as far as
     is possible.
     Raises: CrystalNotFoundError if no crystal is found
     """
-    sample_id = yield from bps.rd(composite.robot.sample_id)
-    sample_puck = yield from bps.rd(composite.robot.current_puck)
-    sample_pin = yield from bps.rd(composite.robot.current_pin)
+    sample_id = yield from bps.rd(robot.sample_id)
+    sample_puck = yield from bps.rd(robot.current_puck)
+    sample_pin = yield from bps.rd(robot.current_pin)
 
     internal_params = pin_tip_centre_then_xray_centre_to_internal(
         visit, storage_directory, sample_id, sample_puck, sample_pin
     )
-    internal_composite = create_detector_specific_composite(composite)
-    beamline_specific = construct_hyperion_specific_features(
-        internal_composite, internal_params
-    )
+    beamline_specific = construct_hyperion_specific_features(composite, internal_params)
 
     yield from _pin_tip_centre_then_xray_centre(
         beamline_specific,
-        internal_composite,
+        composite,
         internal_params,
         TopNByMaxCountSelection(n=1),
     )

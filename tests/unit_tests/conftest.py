@@ -69,6 +69,7 @@ from ophyd_async.core import (
     set_mock_attr,
     set_mock_value,
 )
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
@@ -116,7 +117,7 @@ from mx_bluesky.common.parameters.gridscan import (
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
@@ -541,14 +542,15 @@ async def grid_detect_xrc_devices(
     undulator,
     dcm,
 ):
-    yield HyperionInternalGridDetectThenXRayCentreComposite(
+    yield HyperionGridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,
         beamsize=beamsize,
         detector_motion=detector_motion,
-        _detector=eiger,
+        eiger=eiger,
+        fastcs_eiger=MagicMock(spec=FastCSEiger),  # type: ignore
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
@@ -569,7 +571,7 @@ async def grid_detect_xrc_devices(
 
 @pytest.fixture
 async def hyperion_grid_detect_xrc_devices(
-    grid_detect_xrc_devices: HyperionInternalGridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
 ):
     return grid_detect_xrc_devices
 

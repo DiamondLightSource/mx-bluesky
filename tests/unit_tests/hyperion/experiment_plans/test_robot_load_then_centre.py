@@ -12,7 +12,7 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
@@ -83,11 +83,9 @@ def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_ex
     )
 
     for name, value in vars(composite_passed).items():
-        assert name == "_detector" or value == getattr(robot_load_composite, name)
+        assert name == "detector" or value == getattr(robot_load_composite, name)
 
-    for (
-        name
-    ) in HyperionInternalGridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
+    for name in HyperionGridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
         assert getattr(composite_passed, name), f"{name} not in composite"
 
     assert composite_passed.detector is robot_load_composite.eiger

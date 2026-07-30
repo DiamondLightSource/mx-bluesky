@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal
 from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 
@@ -90,7 +91,7 @@ def fake_devices(
         mock_response.read.return_value = b""
         mock_image_class.open.return_value.__aenter__.return_value = b""
 
-        composite = OavGridDetectionComposite(
+        composite = SimpleNamespace(
             backlight=backlight,
             oav=oav,
             gonio=smargon,
