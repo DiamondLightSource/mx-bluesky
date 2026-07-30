@@ -29,7 +29,7 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
     GridDetectAndGridScanExtendedDevices,
 )
 
-# TODO replace this switch with a config server switch
+# TODO replace this switch with a config server switch https://github.com/DiamondLightSource/mx-bluesky/issues/1810
 use_fast_cs_eiger: bool = False
 
 
