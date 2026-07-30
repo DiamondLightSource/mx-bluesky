@@ -96,6 +96,7 @@ class RotationScanComposite(OavSnapshotComposite):
     thawer: Thawer
 
     # TODO resolve this according to settings when rotation supports fastcs eiger
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/1809
     @property
     def detector(self) -> EigerDetector:
         return self.eiger
@@ -159,6 +160,7 @@ def rotation_scan_plan(
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
         # TODO for now hard-coded until rest of rotation plan is properly beamline-generic
+        # https://github.com/DiamondLightSource/mx-bluesky/issues/1809
         beamline_specific = create_eiger_beamline_specific(composite.eiger)
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_zocalo(beamline_specific)
@@ -315,6 +317,7 @@ def rotation_scan_internal(
 
     LOGGER.info("setting up and staging eiger...")
     # TODO for now hard-code to classic eiger until rotation is properly genericised
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/1809
     beamline_specific = create_eiger_beamline_specific(composite.eiger)
 
     yield from start_preparing_data_collection_then_do_plan(
