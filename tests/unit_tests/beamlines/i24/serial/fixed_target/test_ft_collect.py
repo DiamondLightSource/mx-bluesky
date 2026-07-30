@@ -238,7 +238,7 @@ def test_start_i24_with_eiger(
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
 
-    fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
+    fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_0001", 1.0, 0.6)
 
 
 @patch(
