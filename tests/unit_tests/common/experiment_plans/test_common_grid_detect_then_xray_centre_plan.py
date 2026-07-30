@@ -20,6 +20,7 @@ from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
 )
 from mx_bluesky.common.device_setup_plans.gridscan.zebra import _fast_gridscan_3d_params
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    GridDetectAndGridScanExtendedDevices,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
@@ -33,9 +34,6 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanExtendedDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,

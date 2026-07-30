@@ -31,7 +31,7 @@ from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -41,7 +41,7 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 
 def pin_centre_then_gridscan_plan(
     hyperion_specific_features: BeamlineSpecificFGSFeatures,
-    composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
+    composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,

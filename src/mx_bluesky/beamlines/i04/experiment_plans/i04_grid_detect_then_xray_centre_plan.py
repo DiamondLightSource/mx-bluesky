@@ -58,6 +58,7 @@ from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     get_results_and_move_to_xtal,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    GridDetectAndGridScanExtendedDevices,
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
@@ -90,9 +91,6 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
     PlanNameConstants,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanExtendedDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
@@ -134,6 +132,20 @@ class I04GridDetectThenXRayCentreComposite(
     zebra: Zebra
     robot: BartRobot
     sample_shutter: MXZebraShutter
+    eiger: EigerDetector
+    backlight: Backlight
+    oav: OAV
+    gonio: Smargon
+    pin_tip_detection: PinTipDetection
+    zocalo: ZocaloResults
+    synchrotron: Synchrotron
+    aperture_scatterguard: ApertureScatterguard
+    beamstop: Beamstop
+    detector_motion: DetectorMotion
+
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def _change_beamsize(
@@ -191,7 +203,7 @@ def i04_default_grid_detect_and_xray_centre(
     """
 
     composite = I04GridDetectThenXRayCentreComposite(
-        _detector=eiger,
+        eiger=eiger,
         synchrotron=synchrotron,
         gonio=smargon,
         aperture_scatterguard=aperture_scatterguard,

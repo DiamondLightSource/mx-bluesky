@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypeVar
+from typing import Protocol, TypeVar, runtime_checkable
 
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
@@ -10,7 +10,9 @@ from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.backlight import InOut
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.oav.oav_parameters import OAVParameters
+from dodal.devices.zocalo import ZocaloResults
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -18,6 +20,7 @@ from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
 from mx_bluesky.common.device_setup_plans.utils import (
+    DiffractionExtendedDevices,
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
@@ -42,14 +45,23 @@ from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
 )
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanExtendedDevices,
-)
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
 )
 from mx_bluesky.common.utils.log import LOGGER
+
+
+@runtime_checkable
+class GridDetectAndGridScanExtendedDevices(
+    DiffractionExtendedDevices[TDetector],
+    OavGridDetectionComposite,
+    Protocol[TDetector],
+):
+    """The set of devices for running grid detection followed by a gridscan."""
+
+    zocalo: ZocaloResults
+
 
 TGridDetectAndGridScanExtendedDevices = TypeVar(
     "TGridDetectAndGridScanExtendedDevices",

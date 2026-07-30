@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import bluesky.plan_stubs as bps
 import numpy as np
-from blueapi.core import BlueskyContext
 from bluesky.utils import MsgGenerator
 from dodal.common.maths import AngleWithPhase
+from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import NONE_VALUE
@@ -21,8 +21,6 @@ from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     HardwareConstants,
 )
-from mx_bluesky.common.parameters.device_composites import OavGridDetectionComposite
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import catch_exception_and_warn
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -30,8 +28,14 @@ if TYPE_CHECKING:
     from dodal.devices.oav.oav_parameters import OAVParameters
 
 
-def create_devices(context: BlueskyContext) -> OavGridDetectionComposite:
-    return device_composite_from_context(context, OavGridDetectionComposite)
+@runtime_checkable
+class OavGridDetectionComposite(Protocol):
+    """All devices which are required for OAV Grid Detection"""
+
+    backlight: Backlight
+    oav: OAV
+    gonio: Smargon
+    pin_tip_detection: PinTipDetection
 
 
 def get_min_and_max_y_of_pin(

@@ -10,7 +10,7 @@ from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.blueapi.mixins import MultiXtalSelection
 from mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan import (
@@ -26,7 +26,7 @@ from mx_bluesky.hyperion.utils.centre_selection import samples_and_locations_to_
 
 def pin_tip_centre_then_xray_centre(
     beamline_specific: BeamlineSpecificFGSFeatures,
-    composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
+    composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     centre_selection: MultiXtalSelection,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,

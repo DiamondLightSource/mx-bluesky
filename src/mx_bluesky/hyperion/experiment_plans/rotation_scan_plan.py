@@ -8,8 +8,8 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i03 import Beamstop
-from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -80,7 +80,7 @@ class RotationScanComposite(OavSnapshotComposite):
     backlight: Backlight
     beamsize: BeamsizeBase
     beamstop: Beamstop
-    dcm: DCM
+    dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
     eiger: EigerDetector
     flux: Flux

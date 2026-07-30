@@ -55,7 +55,7 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     construct_hyperion_specific_features,
@@ -250,7 +250,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     run_engine_with_external_callbacks: RunEngine,
     external_callback_expt_params: DiffractionExperimentWithSample,
     external_callback_grid_scan_params: GridScanParams,
-    internal_grid_detect_and_gridscan_composite_with_zocalo_and_eiger_classic: HyperionInternalGridDetectThenXRayCentreComposite,
+    fgs_composite_for_fake_zocalo: HyperionGridDetectThenXRayCentreComposite,
     fetch_comment,  # noqa
     fetch_datacollection_ids_for_group_id,
     fake_grid_snapshot_plan,
@@ -258,9 +258,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     """
     This test requires fake zocalo, and a connection to the dev ISPyB database.
     """
-    composite = (
-        internal_grid_detect_and_gridscan_composite_with_zocalo_and_eiger_classic
-    )
+    composite = fgs_composite_for_fake_zocalo
     run_engine = run_engine_with_external_callbacks
 
     doc_catcher = DocumentCatcher()

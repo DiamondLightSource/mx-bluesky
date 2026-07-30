@@ -57,7 +57,7 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     construct_hyperion_specific_features,
@@ -469,11 +469,11 @@ def test_ispyb_store_can_deal_with_data_collection_info_with_numpy_float64(
 
 @pytest.fixture
 def hyperion_beamline_specific_features_classic_eiger(
-    internal_grid_detect_and_gridscan_composite_with_eiger_classic: HyperionInternalGridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: PinTipCentreThenXrayCentre,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        internal_grid_detect_and_gridscan_composite_with_eiger_classic,
+        grid_detect_then_xray_centre_composite,
         grid_detect_then_xray_centre_parameters,
     )
 
@@ -481,7 +481,7 @@ def hyperion_beamline_specific_features_classic_eiger(
 @pytest.mark.system_test
 def test_ispyb_deposition_in_gridscan(
     run_engine: RunEngine,
-    internal_grid_detect_and_gridscan_composite_with_eiger_classic: HyperionInternalGridDetectThenXRayCentreComposite,
+    grid_detect_then_xray_centre_composite: HyperionGridDetectThenXRayCentreComposite,
     grid_detect_then_xray_centre_parameters: PinTipCentreThenXrayCentre,
     hyperion_beamline_specific_features_classic_eiger: BeamlineSpecificFGSFeatures,
     fetch_datacollection_attribute: Callable[..., Any],
@@ -489,7 +489,7 @@ def test_ispyb_deposition_in_gridscan(
     fetch_datacollection_position_attribute: Callable[..., Any],
     storage_directory: str,
 ):
-    composite = internal_grid_detect_and_gridscan_composite_with_eiger_classic
+    composite = grid_detect_then_xray_centre_composite
     set_mock_value(composite.s4_slit_gaps.xgap.user_readback, 0.1)
     set_mock_value(composite.s4_slit_gaps.ygap.user_readback, 0.1)
     ispyb_callback = GridDetectAndScanISPyBCallback(

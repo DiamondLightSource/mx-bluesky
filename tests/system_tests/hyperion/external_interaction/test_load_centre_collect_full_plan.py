@@ -152,6 +152,7 @@ def load_centre_collect_composite(
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
+        fastcs_eiger=None,  # type: ignore
         flux=composite_for_rotation_scan.flux,
         robot=composite_for_rotation_scan.robot,
         gonio=composite_for_rotation_scan.gonio,
