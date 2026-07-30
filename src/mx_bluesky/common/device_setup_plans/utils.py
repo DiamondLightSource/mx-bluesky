@@ -1,21 +1,41 @@
+from __future__ import annotations
+
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Protocol
 
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.detector import DetectorParams
-from dodal.devices.detector.detector_motion import ShutterState
-from dodal.devices.mx_phase1.beamstop import BeamstopPositions
+from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
+from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.smargon import Smargon
+from dodal.devices.synchrotron import Synchrotron
 
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
+    DiffractionEssentialDevices,
+    TDetector,
 )
 from mx_bluesky.common.device_setup_plans.position_detector import (
     set_detector_z_position,
     set_shutter,
 )
-from mx_bluesky.common.parameters.device_composites import DiffractionExtendedDevices
+
+
+class DiffractionExtendedDevices(
+    DiffractionEssentialDevices[Smargon, TDetector],
+    Protocol[TDetector],
+):
+    """An extended set of devices for running a diffraction experiment plan which
+    manages some additional diffraction parameters and retrieves results."""
+
+    synchrotron: Synchrotron
+    gonio: Smargon
+    aperture_scatterguard: ApertureScatterguard
+    beamstop: Beamstop
+    detector_motion: DetectorMotion
 
 
 def start_preparing_data_collection_then_do_plan(

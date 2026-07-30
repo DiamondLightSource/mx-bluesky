@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -17,10 +18,10 @@ from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
 )
 from mx_bluesky.common.device_setup_plans.utils import (
+    DiffractionExtendedDevices,
     start_preparing_data_collection_then_do_plan,
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
-from mx_bluesky.common.parameters.device_composites import DiffractionExtendedDevices
 from mx_bluesky.common.parameters.gridscan import create_detector_params_for_grid_scan
 
 
@@ -42,7 +43,7 @@ def diffraction_extended_devices(
     synchrotron: Synchrotron,
     smargon: Smargon,
 ) -> DiffractionExtendedDevices:
-    return DiffractionExtendedDevices(
+    return SimpleNamespace(  # type: ignore
         aperture_scatterguard=aperture_scatterguard,
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,

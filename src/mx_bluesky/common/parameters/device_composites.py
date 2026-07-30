@@ -14,9 +14,9 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.zocalo import ZocaloResults
 
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
-    DiffractionEssentialDevices,
     TDetector,
 )
+from mx_bluesky.common.device_setup_plans.utils import DiffractionExtendedDevices
 
 # MX gridscans only uses the gonio to set omega to 0. Other motors are only accessed in the motion program
 
@@ -32,22 +32,6 @@ class OavGridDetectionComposite:
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class DiffractionExtendedDevices(
-    DiffractionEssentialDevices[Smargon, TDetector],
-    Generic[TDetector],
-):
-    """An extended set of devices for running a diffraction experiment plan which
-    manages some additional diffraction parameters and retrieves results."""
-
-    detector: TDetector
-    synchrotron: Synchrotron
-    gonio: Smargon
-    aperture_scatterguard: ApertureScatterguard
-    beamstop: Beamstop
-    detector_motion: DetectorMotion
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class GridDetectAndGridScanExtendedDevices(
     DiffractionExtendedDevices[TDetector],
     OavGridDetectionComposite,
@@ -55,4 +39,15 @@ class GridDetectAndGridScanExtendedDevices(
 ):
     """The set of devices for running grid detection followed by a gridscan."""
 
+    _detector: TDetector
+    synchrotron: Synchrotron
+    gonio: Smargon
+    aperture_scatterguard: ApertureScatterguard
+    beamstop: Beamstop
+    detector_motion: DetectorMotion
+
     zocalo: ZocaloResults
+
+    @property
+    def detector(self) -> TDetector:
+        return self._detector
