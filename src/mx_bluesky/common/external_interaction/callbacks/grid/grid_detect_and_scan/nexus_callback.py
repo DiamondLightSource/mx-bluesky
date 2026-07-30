@@ -7,8 +7,9 @@ from dodal.devices.detector import DetectorParams
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import \
-    HWReadDuringMapper
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+)
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import (
     create_beam_and_attenuator_parameters,
     vds_type_based_on_bit_depth,
@@ -75,9 +76,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
     See: https://blueskyproject.io/bluesky/callbacks.html#ways-to-invoke-callbacks
     """
 
-    def __init__(self,
-                 param_type: type[T],
-                 hw_read_mapper: HWReadDuringMapper) -> None:
+    def __init__(self, param_type: type[T], hw_read_mapper: HWReadDuringMapper) -> None:
         """
         Construct a new instance of the callbacks.
 

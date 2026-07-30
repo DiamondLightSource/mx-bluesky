@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeAlias, Callable
+from typing import TypeAlias
 
 from event_model import Event
 

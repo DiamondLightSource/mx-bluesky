@@ -17,7 +17,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
     populate_data_collection_group,
     populate_remaining_data_collection_info,
 )
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import HWReadDuringMapper
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+)
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     common_add_processing_time_to_comment,
     common_populate_axis_info,

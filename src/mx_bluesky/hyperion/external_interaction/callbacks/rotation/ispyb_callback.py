@@ -15,7 +15,9 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloInfoGenerator,
 )
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import HWReadDuringMapper
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+)
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     DataCollectionPositionInfo,

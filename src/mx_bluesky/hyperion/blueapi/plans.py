@@ -6,8 +6,8 @@ imported directly by other components as it is intended only as the entry-point 
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
-
 from dodal.common import inject
+
 from mx_bluesky.common.utils.log import setup_hyperion_blueapi_logging
 from mx_bluesky.hyperion.blueapi.in_process import (
     clean_up_udc,
@@ -20,7 +20,9 @@ from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
     pin_tip_centre_then_xray_centre_to_internal,
 )
-from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import construct_hyperion_specific_features
+from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
+    construct_hyperion_specific_features,
+)
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
@@ -42,7 +44,8 @@ __all__ = [
 ]
 
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite, create_detector_specific_composite,
+    HyperionGridDetectThenXRayCentreComposite,
+    create_detector_specific_composite,
 )
 
 
@@ -77,5 +80,8 @@ def pin_tip_centre_then_xray_centre(
     )
 
     yield from _pin_tip_centre_then_xray_centre(
-        beamline_specific, internal_composite, internal_params, TopNByMaxCountSelection(n=1)
+        beamline_specific,
+        internal_composite,
+        internal_params,
+        TopNByMaxCountSelection(n=1),
     )

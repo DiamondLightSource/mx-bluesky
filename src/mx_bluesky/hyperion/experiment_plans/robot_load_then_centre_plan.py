@@ -161,8 +161,6 @@ def robot_load_then_xray_centre(
 ) -> MsgGenerator:
     """Perform pin-tip detection followed by a flyscan to determine centres of interest.
     Performs a robot load if necessary."""
-    eiger: EigerDetector = composite.eiger
-
     # TODO: get these from one source of truth #254
     assert parameters.sample_puck is not None
     assert parameters.sample_pin is not None
