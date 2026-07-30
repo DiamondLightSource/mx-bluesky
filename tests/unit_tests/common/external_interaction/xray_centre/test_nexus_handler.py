@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from event_model import Event
 from numpy.typing import DTypeLike
 
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
@@ -84,11 +85,13 @@ def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
 def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dataset_size(
     mock_nexus_writer: MagicMock, bit_depth: int, vds_type: DTypeLike, test_event_data
 ):
-    mock_hw_read_mapper = lambda _: HWReadDuringPayload(
-        bit_depth=bit_depth,
-        ispyb_detector_id=78,
-        roi_mode=True,
-    )
+    def mock_hw_read_mapper(_: Event) -> HWReadDuringPayload:
+        return HWReadDuringPayload(
+            bit_depth=bit_depth,
+            ispyb_detector_id=78,
+            roi_mode=True,
+        )
+
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
     nexus_handler = GridscanNexusFileCallback(
         param_type=DiffractionExperimentWithSample,
