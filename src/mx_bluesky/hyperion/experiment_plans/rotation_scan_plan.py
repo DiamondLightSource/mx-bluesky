@@ -8,8 +8,8 @@ from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i03 import Beamstop
-from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -29,6 +29,9 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+)
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     setup_sample_environment,
@@ -77,7 +80,7 @@ class RotationScanComposite(OavSnapshotComposite):
     backlight: Backlight
     beamsize: BeamsizeBase
     beamstop: Beamstop
-    dcm: DCM
+    dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
     eiger: EigerDetector
     flux: Flux
@@ -91,6 +94,12 @@ class RotationScanComposite(OavSnapshotComposite):
     oav: OAV
     xbpm_feedback: XBPMFeedback
     thawer: Thawer
+
+    # TODO resolve this according to settings when rotation supports fastcs eiger
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/1809
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def rotation_scan_plan(
@@ -150,8 +159,11 @@ def rotation_scan_plan(
         yield from bps.wait(CONST.WAIT.ROTATION_READY_FOR_DC)
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
+        # TODO for now hard-coded until rest of rotation plan is properly beamline-generic
+        # https://github.com/DiamondLightSource/mx-bluesky/issues/1809
+        beamline_specific = create_eiger_beamline_specific(composite.eiger)
         # get some information for the ispyb deposition and trigger the callback
-        yield from read_hardware_for_zocalo(composite.eiger)
+        yield from read_hardware_for_zocalo(beamline_specific)
 
         yield from standard_read_hardware_pre_collection(
             composite.undulator,
@@ -304,10 +316,14 @@ def rotation_scan_internal(
         yield from bps.unstage(eiger, wait=True)
 
     LOGGER.info("setting up and staging eiger...")
+    # TODO for now hard-code to classic eiger until rotation is properly genericised
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/1809
+    beamline_specific = create_eiger_beamline_specific(composite.eiger)
+
     yield from start_preparing_data_collection_then_do_plan(
-        composite.beamstop,
-        eiger,
-        composite.detector_motion,
+        beamline_specific,
+        parameters.detector_params,
+        composite,
         parameters.detector_distance_mm,
         _multi_rotation_scan(),
         group=CONST.WAIT.ROTATION_READY_FOR_DC,

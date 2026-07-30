@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal
 from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 
@@ -90,7 +91,7 @@ def fake_devices(
         mock_response.read.return_value = b""
         mock_image_class.open.return_value.__aenter__.return_value = b""
 
-        composite = OavGridDetectionComposite(
+        composite = SimpleNamespace(
             backlight=backlight,
             oav=oav,
             gonio=smargon,
@@ -217,7 +218,9 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
         ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, _ = fake_devices
-    cb = GridDetectAndScanISPyBCallback(param_type=DiffractionExperimentWithSample)
+    cb = GridDetectAndScanISPyBCallback(
+        param_type=DiffractionExperimentWithSample, hw_read_during_mapper=MagicMock()
+    )
     cb.data_collection_group_info = dummy_rotation_data_collection_group_info
     run_engine.subscribe(cb)
 

@@ -1,82 +1,34 @@
 from __future__ import annotations
 
 import bluesky.plan_stubs as bps
-import pydantic
-import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.beamlines import i03
-from dodal.beamlines.i03 import eiger
-from dodal.devices.aperturescatterguard import (
-    ApertureScatterguard,
-)
-from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.beamlines.i03.dcm import DCM
-from dodal.devices.eiger import EigerDetector
-from dodal.devices.flux import Flux
-from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
-from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.undulator import UndulatorInKeV
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    BeamlineSpecificDetectorFeatures,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
 )
 
 
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class FakeComposite:
-    aperture_scatterguard: ApertureScatterguard
-    attenuator: BinaryFilterAttenuator
-    dcm: DCM
-    flux: Flux
-    s4_slit_gaps: S4SlitGaps
-    undulator: UndulatorInKeV
-    synchrotron: Synchrotron
-    robot: BartRobot
-    smargon: Smargon
-    eiger: EigerDetector
-
-
-@pytest.fixture
-async def fake_composite(
-    attenuator,
-    aperture_scatterguard,
-    dcm,
-    synchrotron,
-    robot,
-    smargon,
-) -> FakeComposite:
-    fake_composite = FakeComposite(
-        aperture_scatterguard=aperture_scatterguard,
-        attenuator=attenuator,
-        dcm=dcm,
-        flux=i03.flux.build(connect_immediately=True, mock=True),
-        s4_slit_gaps=i03.s4_slit_gaps.build(connect_immediately=True, mock=True),
-        undulator=i03.undulator.build(connect_immediately=True, mock=True),
-        synchrotron=synchrotron,
-        robot=robot,
-        smargon=smargon,
-        eiger=eiger.build(mock=True),
-    )
-    return fake_composite
-
-
 def test_read_hardware_for_zocalo_in_run_engine(
-    fake_composite: FakeComposite, run_engine: RunEngine
+    beamline_specific_detector: BeamlineSpecificDetectorFeatures, run_engine: RunEngine
 ):
     def open_run_and_read_hardware():
         yield from bps.open_run()
-        yield from read_hardware_for_zocalo(fake_composite.eiger)
+        yield from read_hardware_for_zocalo(beamline_specific_detector)
 
     run_engine(open_run_and_read_hardware())
 
 
 def test_read_hardware_correct_messages(
-    fake_composite: FakeComposite, sim_run_engine: RunEngineSimulator
+    beamline_specific_detector: BeamlineSpecificDetectorFeatures,
+    sim_run_engine: RunEngineSimulator,
 ):
-    msgs = sim_run_engine.simulate_plan(read_hardware_for_zocalo(fake_composite.eiger))
+    msgs = sim_run_engine.simulate_plan(
+        read_hardware_for_zocalo(beamline_specific_detector)
+    )
     msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "create"
     )

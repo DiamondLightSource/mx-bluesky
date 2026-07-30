@@ -482,6 +482,7 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
     default_state.assert_called_once()
 
 
+@patch("dodal.beamlines.i03.SKIP_FASTCS_EIGER", False)
 @patch.dict(os.environ, {"BEAMLINE": "i03"})
 def test_initialise_udc_reloads_all_devices(dont_patch_clear_devices):
     context = setup_context(True)

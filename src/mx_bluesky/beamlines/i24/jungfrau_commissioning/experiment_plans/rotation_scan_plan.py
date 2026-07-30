@@ -32,12 +32,12 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.plan_stubs.plan_utils impor
 from mx_bluesky.beamlines.i24.parameters.constants import (
     PlanNameConstants,
 )
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    read_hardware_plan,
+)
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
     setup_zebra_for_rotation,
     tidy_up_zebra_after_rotation_scan,
-)
-from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
-    read_hardware_plan,
 )
 from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,

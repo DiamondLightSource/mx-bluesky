@@ -140,7 +140,7 @@ def test_i02_1_flyscan_xray_centre_in_re(
     expected_fgs_params.upper_left_x = 1
     expected_fgs_params.upper_left_y = 2
     specific_features = construct_i02_1_specific_features(
-        fgs_composite, expected_fgs_params, grid_scan_params
+        fgs_composite, expected_fgs_params
     )
     grid_scan_params.omega_starts_deg = [10]
     mock_create_features.return_value = specific_features
@@ -148,7 +148,11 @@ def test_i02_1_flyscan_xray_centre_in_re(
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
 
     mock_common_scan.assert_called_once_with(
-        fgs_composite, expected_fgs_params, ANY, grid_scan_params, specific_features
+        fgs_composite,
+        expected_fgs_params,
+        ANY,
+        grid_scan_params,
+        specific_features,
     )
 
 
@@ -180,7 +184,7 @@ def test_ispyb_activated_correct_params(
 
     mock_store_ispyb.return_value = mock_ispyb
     expected_features = construct_i02_1_specific_features(
-        fgs_composite, fgs_params_two_d, grid_scan_params
+        fgs_composite, fgs_params_two_d
     )
     run_engine.md["data"] = {}
 

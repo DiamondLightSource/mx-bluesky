@@ -101,7 +101,7 @@ from mx_bluesky.common.utils.log import (
     do_default_logging_setup,
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
-from mx_bluesky.hyperion.parameters.device_composites import (
+from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
 from tests.test_data.oav import (
@@ -913,6 +913,7 @@ async def hyperion_flyscan_xrc_composite(
         dcm=dcm,
         # We don't use the eiger fixture here because .unstage() is used in some tests
         eiger=i03.eiger.build(mock=True),
+        fastcs_eiger=i03.fastcs_eiger.build(mock=True),
         zebra_fast_grid_scan=fast_grid_scan,
         flux=i03.flux.build(connect_immediately=True, mock=True),
         s4_slit_gaps=s4_slit_gaps,
@@ -924,7 +925,6 @@ async def hyperion_flyscan_xrc_composite(
         zocalo=zocalo,
         panda=panda,
         panda_fast_grid_scan=panda_fast_grid_scan,
-        robot=i03.robot.build(connect_immediately=True, mock=True),
         sample_shutter=i03.sample_shutter.build(connect_immediately=True, mock=True),
         beamsize=beamsize,
         oav=oav,
@@ -959,8 +959,6 @@ async def hyperion_flyscan_xrc_composite(
     )  # type: ignore
     fake_composite.zocalo.timeout_s = 3
     set_mock_value(fake_composite.gonio.x.max_velocity, 10)
-
-    set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
     return fake_composite
 

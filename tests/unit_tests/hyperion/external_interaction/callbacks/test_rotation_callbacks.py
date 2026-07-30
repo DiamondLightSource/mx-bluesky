@@ -162,7 +162,7 @@ def test_ispyb_reuses_dcgid_on_same_sample_id(
     fake_create_rotation_devices,
     oav_parameters_for_rotation,
 ):
-    ispyb_cb = RotationISPyBCallback()
+    ispyb_cb = RotationISPyBCallback(hw_read_during_mapper=MagicMock())
     ispyb_cb.active = True
     ispyb_ids = IspybIds(data_collection_group_id=23, data_collection_ids=(45,))
     rotation_ispyb = MagicMock(spec=StoreInIspyb)
@@ -232,7 +232,7 @@ def test_ispyb_handler_stores_sampleid_for_full_collection_not_screening(
     store_id: bool,
     params: RotationScan,
 ):
-    cb = RotationISPyBCallback()
+    cb = RotationISPyBCallback(hw_read_during_mapper=MagicMock())
     cb.active = True
 
     doc: RunStart = {

@@ -19,6 +19,9 @@ from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
 from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
 
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    eiger_hw_read_during_mapper,
+)
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )
@@ -39,6 +42,9 @@ from mx_bluesky.common.utils.exceptions import (
     CrystalNotFoundError,
     WarningError,
 )
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
 )
@@ -57,9 +63,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
     BeamDrawingCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
@@ -149,6 +152,7 @@ def load_centre_collect_composite(
         dcm=composite_for_rotation_scan.dcm,
         detector_motion=composite_for_rotation_scan.detector_motion,
         eiger=grid_detect_then_xray_centre_composite.eiger,
+        fastcs_eiger=None,  # type: ignore
         flux=composite_for_rotation_scan.flux,
         robot=composite_for_rotation_scan.robot,
         gonio=composite_for_rotation_scan.gonio,
@@ -310,8 +314,13 @@ def test_execute_load_centre_collect_full(
     tmp_path,
     robot_load_cb: RobotLoadISPyBCallback,
 ):
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
@@ -490,8 +499,13 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
         yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
 
     run_engine(move_to_initial_omega())
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
@@ -580,7 +594,10 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
     run_engine.subscribe(ispyb_gridscan_cb)
@@ -612,7 +629,10 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
     run_engine.subscribe(ispyb_gridscan_cb)
@@ -662,7 +682,10 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
     run_engine.subscribe(ispyb_gridscan_cb)
@@ -692,7 +715,10 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
     fetch_blsample: Callable[..., Any],
 ):
     robot_load_cb = RobotLoadISPyBCallback()
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(robot_load_cb)
     run_engine.subscribe(ispyb_gridscan_cb)
@@ -748,8 +774,13 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
     load_centre_collect_composite.zocalo.my_zocalo_result = _with_sample_ids(
         zocalo_result, [SimConstants.ST_SAMPLE_ID]
     )
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
     )
@@ -780,8 +811,13 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
 ):
     load_centre_collect_params.multi_rotation_scan.snapshot_directory = tmp_path
 
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
     set_mock_value(
         load_centre_collect_composite.undulator_dcm.undulator_ref().current_gap, 1.11
@@ -860,8 +896,13 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     fetch_datacollection_attribute: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
 
     run_engine.subscribe(ispyb_gridscan_cb)
@@ -911,8 +952,13 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     fetch_datacollection_ids_for_group_id: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     run_engine.subscribe(ispyb_gridscan_cb)
     run_engine.subscribe(snapshot_cb)
@@ -975,8 +1021,13 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     robot_load_cb: RobotLoadISPyBCallback,
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     run_engine.subscribe(ispyb_gridscan_cb)
     run_engine.subscribe(snapshot_cb)
@@ -1030,8 +1081,13 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
     fetch_blsample: Callable[..., Any],
 ):
     load_centre_collect_composite.zocalo.my_zocalo_result = zocalo_result
-    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(param_type=RobotLoadThenCentre)
-    ispyb_rotation_cb = RotationISPyBCallback()
+    ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
+        param_type=RobotLoadThenCentre,
+        hw_read_during_mapper=eiger_hw_read_during_mapper,
+    )
+    ispyb_rotation_cb = RotationISPyBCallback(
+        hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     snapshot_cb = BeamDrawingCallback(emit=ispyb_rotation_cb)
     sample_handling_cb = SampleHandlingCallback()
     run_engine.subscribe(ispyb_gridscan_cb)
@@ -1178,9 +1234,12 @@ class TestGenerateSnapshot:
         )
 
         ispyb_gridscan_cb = GridDetectAndScanISPyBCallback(
-            param_type=RobotLoadThenCentre
+            param_type=RobotLoadThenCentre,
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         )
-        ispyb_rotation_cb = RotationISPyBCallback()
+        ispyb_rotation_cb = RotationISPyBCallback(
+            hw_read_during_mapper=eiger_hw_read_during_mapper
+        )
         snapshot_callback = BeamDrawingCallback(emit=ispyb_rotation_cb)
         run_engine.subscribe(ispyb_gridscan_cb)
         run_engine.subscribe(snapshot_callback)

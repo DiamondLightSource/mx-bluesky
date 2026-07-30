@@ -8,7 +8,10 @@ import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.common.beamlines.beamline_utils import clear_path_provider
+from dodal.common.beamlines.beamline_utils import (
+    PATH_PROVIDER_PANDA,
+    clear_path_provider,
+)
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
@@ -263,16 +266,12 @@ def test_set_panda_directory(
     )
 
 
-# For reasons which are unclear the commented out patch line below is insufficient to test this function as
-# faulty code which does not check the result of bps.wait_for() will still pass, thus we call
-# clear_path_provider() to test it
-# @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.get_path_provider", side_effect=NameError("PATH_PROVIDER is not set"))
 @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.datetime", spec=datetime)
 def test_set_panda_directory_reports_failure_if_no_path_provider(
     mock_datetime, run_engine: RunEngine, tmp_path: Path, monkeypatch
 ):
-    clear_path_provider()
-    with pytest.raises(NameError):
+    clear_path_provider(PATH_PROVIDER_PANDA)
+    with pytest.raises(KeyError):
         run_engine(set_panda_directory(tmp_path))
 
 

@@ -5,9 +5,6 @@ from typing import Annotated
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
 from dodal.devices.detector.detector import DetectorParams, TriggerMode
 from dodal.devices.eiger import FREE_RUN_MAX_IMAGES
-from dodal.devices.fast_grid_scan import (
-    ZebraGridScanParamsThreeD,
-)
 from dodal.utils import get_beamline_name, get_run_number
 from pydantic import BaseModel, Field, model_validator
 from scanspec.core import AxesPoints
@@ -208,24 +205,3 @@ def create_detector_params_for_grid_scan(
 
 PositiveInt = Annotated[int, Field(gt=0)]
 PositiveFloat = Annotated[float, Field(gt=0)]
-
-
-def fast_gridscan_params(
-    expt_params: DiffractionExperiment, grid_scan_params: GridScanParams
-) -> ZebraGridScanParamsThreeD:
-    return ZebraGridScanParamsThreeD(
-        x_steps=grid_scan_params.x_steps,
-        y_steps=grid_scan_params.y_steps[0],
-        z_steps=grid_scan_params.y_steps[1],
-        x_step_size_mm=grid_scan_params.x_step_size_um / 1000,
-        y_step_size_mm=grid_scan_params.y_step_sizes_um[0] / 1000,
-        z_step_size_mm=grid_scan_params.y_step_sizes_um[1] / 1000,
-        x_start_mm=grid_scan_params.x_start_um / 1000,
-        y1_start_mm=grid_scan_params.y_starts_um[0] / 1000,
-        z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
-        y2_start_mm=grid_scan_params.y_starts_um[1] / 1000,
-        z2_start_mm=grid_scan_params.z_starts_um[1] / 1000,
-        set_stub_offsets=False,
-        dwell_time_ms=expt_params.exposure_time_s * 1000,
-        transmission_fraction=expt_params.transmission_frac,
-    )

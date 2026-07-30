@@ -1,7 +1,4 @@
-from typing import Protocol, runtime_checkable
-
 import bluesky.plan_stubs as bps
-from bluesky.utils import MsgGenerator
 from dodal.devices.zebra.zebra import (
     ArmDemand,
     EncEnum,
@@ -25,50 +22,6 @@ from mx_bluesky.common.utils.log import LOGGER
 - When the zebra shutter is set to auto mode, the IOC sets the Zebra's SOFT_IN1 signal high.
 - When the zebra shutter is set to manual mode, the IOC sets the Zebra's SOFT_IN1 signal low.
 """
-
-
-@runtime_checkable
-class GridscanSetupDevices(Protocol):
-    zebra: Zebra
-    sample_shutter: MXZebraShutter
-
-
-def setup_zebra_for_gridscan(
-    composite: GridscanSetupDevices,  # XRC gridscan's generic trigger setup expects a composite rather than individual devices
-    group="setup_zebra_for_gridscan",
-    wait=True,
-    ttl_input_for_detector_to_use: None | int = None,
-) -> MsgGenerator:
-    """
-    Configure the zebra for an MX XRC gridscan by allowing the zebra to trigger the fast shutter and detector via signals
-    sent from the motion controller.
-
-    Args:
-        composite: Composite device containing a zebra and zebra shutter
-        group: Bluesky group to use when waiting on completion
-        wait: If true, block until completion
-        ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
-        specify which TTL input is being used for the desired detector
-
-    This plan assumes that the motion controller, as part of its gridscan PLC, will send triggers as required to the zebra's
-    IN4_TTL and IN3_TTL to control the fast_shutter and detector respectively
-
-    """
-    zebra = composite.zebra
-    ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
-    # Set shutter to automatic and to trigger via motion controller GPIO signal (IN4_TTL)
-    yield from configure_zebra_and_shutter_for_auto_shutter(
-        zebra, composite.sample_shutter, zebra.mapping.sources.IN4_TTL, group=group
-    )
-
-    yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
-        zebra.mapping.sources.IN3_TTL,
-        group=group,
-    )
-
-    if wait:
-        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
 def set_shutter_auto_input(zebra: Zebra, input: int, group="set_shutter_trigger"):
@@ -112,43 +65,6 @@ def configure_zebra_and_shutter_for_auto_shutter(
 
     # Set the second input of AND_GATE_FOR_AUTO_SHUTTER to the requested zebra input source
     yield from set_shutter_auto_input(zebra, input, group=group)
-
-
-def tidy_up_zebra_after_gridscan(
-    zebra: Zebra,
-    zebra_shutter: MXZebraShutter,
-    group="tidy_up_zebra_after_gridscan",
-    wait=True,
-    ttl_input_for_detector_to_use: int | None = None,
-) -> MsgGenerator:
-    """
-    Set the zebra back to a state which is expected by GDA.
-
-    Args:
-        zebra: Zebra device.
-        zebra_shutter: Zebra shutter device.
-        group: Bluesky group to use when waiting on completion.
-        wait: If true, block until completion.
-        ttl_input_for_detector_to_use: If the zebra isn't using the TTL_DETECTOR zebra input, manually
-        specify which TTL input is being used for the desired detector.
-    """
-
-    LOGGER.info("Tidying up Zebra")
-
-    ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
-
-    yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
-        zebra.mapping.sources.PC_PULSE,
-        group=group,
-    )
-    yield from bps.abs_set(
-        zebra_shutter.control_mode, ZebraShutterControl.MANUAL, group=group
-    )
-    yield from set_shutter_auto_input(zebra, zebra.mapping.sources.PC_GATE, group=group)
-
-    if wait:
-        yield from bps.wait(group, timeout=ZEBRA_STATUS_TIMEOUT)
 
 
 def setup_zebra_for_rotation(

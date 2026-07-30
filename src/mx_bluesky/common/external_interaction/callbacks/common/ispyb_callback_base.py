@@ -11,6 +11,9 @@ from dodal.devices.detector.det_resolution import resolution
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+)
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     DataCollectionInfo,
     DataCollectionPositionInfo,
@@ -59,12 +62,14 @@ class BaseISPyBCallback(PlanReactiveCallback):
         self,
         *,
         emit: Callable[..., Any] | None = None,
+        hw_read_during_mapper: HWReadDuringMapper,
     ) -> None:
         """Subclasses should run super().__init__() with parameters, then set
         self.ispyb to the type of ispyb relevant to the experiment and define the type
         for self.ispyb_ids."""
         ISPYB_ZOCALO_CALLBACK_LOGGER.debug("Initialising ISPyB callback")
         super().__init__(log=ISPYB_ZOCALO_CALLBACK_LOGGER, emit=emit)
+        self._hw_read_during_mapper = hw_read_during_mapper
         self._oav_snapshot_event_idx: int = 0
         self.params: DiffractionExperimentWithSample | None = None
         self.detector_params: DetectorParams | None = None
@@ -204,12 +209,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
                     "ISPyB callbacks couldn't get beamsize"
                 )
 
+        payload = self._hw_read_during_mapper(doc)
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
             flux=_data["flux-flux_reading"],
-            detector_mode="ROI" if _data["eiger_cam_roi_mode"] else "FULL",
-            ispyb_detector_id=_data["eiger-ispyb_detector_id"],
+            detector_mode="ROI" if payload.roi_mode else "FULL",
+            ispyb_detector_id=payload.ispyb_detector_id,
         )
         if transmission := _data["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions

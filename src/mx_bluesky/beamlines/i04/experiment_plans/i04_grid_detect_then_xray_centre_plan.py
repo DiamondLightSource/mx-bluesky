@@ -18,7 +18,6 @@ from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
-    set_fast_grid_scan_params,
 )
 from dodal.devices.flux import Flux
 from dodal.devices.mx_phase1.beamstop import Beamstop
@@ -41,18 +40,25 @@ from pydantic import BaseModel
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
-from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+    eiger_hw_read_during_mapper,
+    eiger_zocalo_hw_read_mapper,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+    construct_beamline_specific_fast_gridscan_features,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
+    set_zebra_fgs_3d_params,
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
 )
 from mx_bluesky.common.experiment_plans.change_aperture_then_move_plan import (
     get_results_and_move_to_xtal,
 )
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
-    BeamlineSpecificFGSFeatures,
-    construct_beamline_specific_fast_gridscan_features,
-)
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
+    GridDetectAndGridScanExtendedDevices,
     grid_detect_then_xray_centre,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
@@ -86,14 +92,9 @@ from mx_bluesky.common.parameters.constants import (
     PlanGroupCheckpointConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanEssentialDevices,
-)
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
-    GridScanParams,
     create_detector_params_for_grid_scan,
-    fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
     set_transmission_and_trigger_xbpm_feedback_before_collection_decorator,
@@ -117,9 +118,9 @@ class I04AutoXrcParams(BaseModel):
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I04GridDetectThenXRayCentreComposite(GridDetectAndGridScanEssentialDevices):
-    """All devices which are required for the grid detect and XRC plan"""
-
+class I04GridDetectThenXRayCentreComposite(
+    GridDetectAndGridScanExtendedDevices[EigerDetector]
+):
     attenuator: BinaryFilterAttenuator
     beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
@@ -131,6 +132,20 @@ class I04GridDetectThenXRayCentreComposite(GridDetectAndGridScanEssentialDevices
     zebra: Zebra
     robot: BartRobot
     sample_shutter: MXZebraShutter
+    eiger: EigerDetector
+    backlight: Backlight
+    oav: OAV
+    gonio: Smargon
+    pin_tip_detection: PinTipDetection
+    zocalo: ZocaloResults
+    synchrotron: Synchrotron
+    aperture_scatterguard: ApertureScatterguard
+    beamstop: Beamstop
+    detector_motion: DetectorMotion
+
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def _change_beamsize(
@@ -250,12 +265,15 @@ def i04_default_grid_detect_and_xray_centre(
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
+            beamline_specific = construct_i04_specific_features(
+                composite, internal_params
+            )
             grid_scan_params = yield from grid_detect_then_xray_centre(
                 composite=composite,
                 parameters=internal_params,
                 grid_detection_params=GridDetectionParams(),
                 detector_params=create_detector_params_for_grid_scan(internal_params),
-                construct_beamline_specific=construct_i04_specific_features,
+                beamline_specific=beamline_specific,
                 oav_config=oav_config,
             )
 
@@ -306,7 +324,10 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=DiffractionExperimentWithSample),
+        GridscanNexusFileCallback(
+            param_type=DiffractionExperimentWithSample,
+            hw_read_mapper=eiger_hw_read_during_mapper,
+        ),
         GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
             emit=ZocaloCallback(
@@ -315,7 +336,9 @@ def create_gridscan_callbacks() -> tuple[
                 lambda: generate_start_info_from_omega_map(
                     [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
                 ),
+                hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 
@@ -323,7 +346,6 @@ def create_gridscan_callbacks() -> tuple[
 def construct_i04_specific_features(
     xrc_composite: I04GridDetectThenXRayCentreComposite,
     xrc_parameters: DiffractionExperimentWithSample,
-    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     """
     Get all the information needed to do the i04 XRC flyscan.
@@ -341,32 +363,20 @@ def construct_i04_specific_features(
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.eiger.bit_depth,
         xrc_composite.beamsize,
-        xrc_composite.eiger.cam.roi_mode,
-        xrc_composite.eiger.ispyb_detector_id,
     ]
 
-    tidy_plan = partial(
-        tidy_up_zebra_after_gridscan,
-        xrc_composite.zebra,
-        xrc_composite.sample_shutter,
-        group="flyscan_zebra_tidy",
-        wait=True,
-    )
-    zebra_fgs_params = fast_gridscan_params(xrc_parameters, grid_scan_params)
-    set_flyscan_params_plan = partial(
-        set_fast_grid_scan_params,
-        xrc_composite.zebra_fast_grid_scan,
-        zebra_fgs_params,
-    )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
+    beamline_specific_detector_features = create_eiger_beamline_specific(
+        xrc_composite.detector
+    )
     return construct_beamline_specific_fast_gridscan_features(
+        beamline_specific_detector_features,
+        setup_zebra_for_gridscan,
+        tidy_up_zebra_after_gridscan,
         partial(
-            setup_zebra_for_gridscan,
+            set_zebra_fgs_3d_params, xrc_composite.zebra_fast_grid_scan, xrc_parameters
         ),
-        tidy_plan,
-        set_flyscan_params_plan,
         fgs_motors,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076

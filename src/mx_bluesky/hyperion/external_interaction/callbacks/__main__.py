@@ -20,6 +20,10 @@ from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    eiger_hw_read_during_mapper,
+    eiger_zocalo_hw_read_mapper,
+)
 from mx_bluesky.common.external_interaction.alerting import set_alerting_service
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
@@ -83,7 +87,9 @@ def create_gridscan_callbacks() -> tuple[
     GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
 ]:
     return (
-        GridscanNexusFileCallback(param_type=RobotLoadThenCentre),
+        GridscanNexusFileCallback(
+            param_type=RobotLoadThenCentre, hw_read_mapper=eiger_hw_read_during_mapper
+        ),
         GridDetectAndScanISPyBCallback(
             param_type=RobotLoadThenCentre,
             emit=ZocaloCallback(
@@ -92,7 +98,9 @@ def create_gridscan_callbacks() -> tuple[
                 lambda: generate_start_info_from_omega_map(
                     [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
                 ),
+                eiger_zocalo_hw_read_mapper,
             ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 
@@ -107,7 +115,9 @@ def create_rotation_callbacks() -> tuple[
                 CONST.PLAN.ROTATION_MULTI,
                 CONST.ZOCALO_ENV,
                 generate_start_info_from_ordered_runs,
-            )
+                eiger_zocalo_hw_read_mapper,
+            ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 

@@ -57,11 +57,11 @@ from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
 )
 
 from ....conftest import (
@@ -302,8 +302,8 @@ def grid_detect_then_xray_centre_composite(
         aperture_scatterguard=aperture_scatterguard,
         zebra=zebra,
         eiger=eiger,
+        fastcs_eiger=i03.fastcs_eiger.build(mock=True),
         panda=panda,
-        robot=robot,
         oav=oav_for_system_test,
         dcm=dcm,
         flux=flux,

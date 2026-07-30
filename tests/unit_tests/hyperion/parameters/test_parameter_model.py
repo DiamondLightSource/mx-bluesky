@@ -3,6 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from daq_config_server.models.feature_settings.hyperion_feature_settings import (
+    HyperionFeatureSettings,
+)
 from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import ValidationError
 
@@ -17,10 +20,12 @@ from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
-from mx_bluesky.hyperion.parameters.gridscan import (
+from mx_bluesky.hyperion.device_setup_plans.gridscan import (
     OddYStepsError,
+    _panda_fast_gridscan_params,
+)
+from mx_bluesky.hyperion.parameters.gridscan import (
     create_detector_params_for_grid_scan_with_hyperion_feature_settings,
-    panda_fast_gridscan_params,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 
@@ -96,8 +101,10 @@ def test_cant_do_panda_fgs_with_odd_y_steps(
     minimal_gridscan_params: GridScanParams,
 ):
     with pytest.raises(OddYStepsError):
-        _ = panda_fast_gridscan_params(
-            minimal_diffraction_expt_with_sample, minimal_gridscan_params
+        _ = _panda_fast_gridscan_params(
+            minimal_diffraction_expt_with_sample,
+            minimal_gridscan_params,
+            HyperionFeatureSettings(),
         )
 
 
