@@ -270,10 +270,7 @@ def test_set_panda_directory(
 def test_set_panda_directory_reports_failure_if_no_path_provider(
     mock_datetime, run_engine: RunEngine, tmp_path: Path, monkeypatch
 ):
-    try:
-        clear_path_provider(PATH_PROVIDER_PANDA)
-    except:
-        pass
+    clear_path_provider(PATH_PROVIDER_PANDA)
     with pytest.raises(KeyError):
         run_engine(set_panda_directory(tmp_path))
 
