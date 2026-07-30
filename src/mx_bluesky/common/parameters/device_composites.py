@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generic, Protocol, TypeVar, runtime_checkable
+from typing import Generic
 
 import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -11,29 +11,14 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.wrapped_axis import WrappedAxis
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.epics.motor import Motor
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    DiffractionEssentialDevices,
+    TDetector,
+)
 
 # MX gridscans only uses the gonio to set omega to 0. Other motors are only accessed in the motion program
-@runtime_checkable
-class GonioWithOmega(Protocol):
-    omega: Motor
-    wrapped_omega: WrappedAxis
-
-
-TGonioWithOmega = TypeVar("TGonioWithOmega", bound=GonioWithOmega)
-TDetector = TypeVar("TDetector")
-
-
-@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class DiffractionEssentialDevices(Generic[TGonioWithOmega, TDetector]):
-    """The bare minimum of devices needed to do the innermost diffraction experiment plan"""
-
-    detector: TDetector
-    synchrotron: Synchrotron
-    gonio: TGonioWithOmega
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -54,6 +39,9 @@ class DiffractionExtendedDevices(
     """An extended set of devices for running a diffraction experiment plan which
     manages some additional diffraction parameters and retrieves results."""
 
+    detector: TDetector
+    synchrotron: Synchrotron
+    gonio: Smargon
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop
     detector_motion: DetectorMotion

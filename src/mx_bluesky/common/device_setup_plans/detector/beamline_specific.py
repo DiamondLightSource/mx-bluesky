@@ -2,12 +2,33 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Sequence
-from typing import Generic, TypeVar
+from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 from bluesky.utils import MsgGenerator
 from dodal.devices.detector import DetectorParams
+from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.wrapped_axis import WrappedAxis
+from ophyd_async.epics.motor import Motor
 
-from mx_bluesky.common.parameters.device_composites import DiffractionEssentialDevices
+
+@runtime_checkable
+class GonioWithOmega(Protocol):
+    omega: Motor
+    wrapped_omega: WrappedAxis
+
+
+TGonioWithOmega = TypeVar("TGonioWithOmega", bound=GonioWithOmega)
+TDetector = TypeVar("TDetector")
+
+
+@runtime_checkable
+class DiffractionEssentialDevices(Protocol[TGonioWithOmega, TDetector]):
+    """The bare minimum of devices needed to do the innermost diffraction experiment plan"""
+
+    detector: TDetector
+    synchrotron: Synchrotron
+    gonio: TGonioWithOmega
+
 
 TDiffractionEssentialDevices = TypeVar(
     "TDiffractionEssentialDevices", bound=DiffractionEssentialDevices

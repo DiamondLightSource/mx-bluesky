@@ -28,6 +28,9 @@ from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_ca
     GridscanISPyBCallback,
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    DiffractionEssentialDevices,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
     eiger_hw_read_during_mapper,
@@ -60,9 +63,6 @@ from mx_bluesky.common.parameters.components import (
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    DiffractionEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
@@ -112,6 +112,9 @@ class I021FlyScanXRayCentreComposite:
 class InternalGridScanComposite(
     DiffractionEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
 ):
+    detector: EigerDetector
+    synchrotron: Synchrotron
+    gonio: XYZWrappedOmegaStage
     attenuator: ReadOnlyAttenuator
     dcm: DoubleCrystalMonochromatorBase
     flux: Flux

@@ -4,6 +4,7 @@ from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.detector import DetectorParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -26,7 +27,6 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     ispyb_activation_wrapper,
 )
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
-from mx_bluesky.common.parameters.device_composites import TDetector
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
