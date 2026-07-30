@@ -8,7 +8,10 @@ import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.common.beamlines.beamline_utils import clear_path_provider, PATH_PROVIDER_PANDA
+from dodal.common.beamlines.beamline_utils import (
+    PATH_PROVIDER_PANDA,
+    clear_path_provider,
+)
 from dodal.common.types import UpdatingPathProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from dodal.devices.smargon import Smargon
