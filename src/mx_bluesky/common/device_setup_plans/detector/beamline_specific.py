@@ -18,14 +18,17 @@ class GonioWithOmega(Protocol):
 
 
 TGonioWithOmega = TypeVar("TGonioWithOmega", bound=GonioWithOmega)
-TDetector = TypeVar("TDetector")
+
+TDetector = TypeVar("TDetector", covariant=True)
 
 
 @runtime_checkable
 class DiffractionEssentialDevices(Protocol[TGonioWithOmega, TDetector]):
     """The bare minimum of devices needed to do the innermost diffraction experiment plan"""
 
-    detector: TDetector
+    @property
+    def detector(self) -> TDetector: ...
+
     synchrotron: Synchrotron
     gonio: TGonioWithOmega
 
