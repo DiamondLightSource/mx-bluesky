@@ -14,6 +14,7 @@ from ophyd_async.core import (
     set_mock_attr,
     set_mock_value,
 )
+from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
@@ -26,7 +27,7 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     construct_hyperion_specific_features,
@@ -205,6 +206,7 @@ def robot_load_composite(
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
+        fastcs_eiger=MagicMock(spec=FastCSEiger),
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
@@ -313,11 +315,11 @@ def grid_detection_callback_with_detected_grid():
 
 @pytest.fixture
 def beamline_specific_with_hyperion_flyscan_xrc_composite(
-    hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_scan_params_3d: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_internal_xrc_composite,
+        hyperion_flyscan_xrc_composite,
         minimal_diffraction_expt_with_sample,
     )

@@ -11,7 +11,6 @@ from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
 from dodal.devices.smargon import Smargon
-from dodal.devices.synchrotron import Synchrotron
 
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
@@ -31,7 +30,6 @@ class DiffractionExtendedDevices(
     """An extended set of devices for running a diffraction experiment plan which
     manages some additional diffraction parameters and retrieves results."""
 
-    synchrotron: Synchrotron
     gonio: Smargon
     aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop

@@ -27,7 +27,7 @@ from mx_bluesky.common.device_setup_plans.gridscan.zebra import (
 from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.device_setup_plans.gridscan import (
     panda_tidy,
@@ -40,10 +40,10 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 
 
 def construct_hyperion_specific_features(
-    xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
+    xrc_composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     xrc_parameters: TSetupParameters,
 ) -> BeamlineSpecificFGSFeatures[
-    HyperionInternalGridDetectThenXRayCentreComposite[TDetector], TSetupParameters
+    HyperionGridDetectThenXRayCentreComposite[TDetector], TSetupParameters
 ]:
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
@@ -66,7 +66,7 @@ def construct_hyperion_specific_features(
 
     setup_trigger_plan: Callable[
         [
-            HyperionInternalGridDetectThenXRayCentreComposite[TDetector],
+            HyperionGridDetectThenXRayCentreComposite[TDetector],
             DiffractionExperiment,
             GridScanParams,
         ],
@@ -74,7 +74,7 @@ def construct_hyperion_specific_features(
     ]
 
     tidy_plan: Callable[
-        [HyperionInternalGridDetectThenXRayCentreComposite[TDetector]], MsgGenerator
+        [HyperionGridDetectThenXRayCentreComposite[TDetector]], MsgGenerator
     ]
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = partial(

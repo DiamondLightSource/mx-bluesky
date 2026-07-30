@@ -25,7 +25,7 @@ from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
@@ -152,7 +152,7 @@ def _panda_fast_gridscan_params(
 class OddYStepsError(Exception): ...
 
 
-def panda_tidy(xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite):
+def panda_tidy(xrc_composite: HyperionGridDetectThenXRayCentreComposite):
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(xrc_composite.panda, group)

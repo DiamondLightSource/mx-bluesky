@@ -32,7 +32,7 @@ from mx_bluesky.common.parameters.constants import (
 )
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionInternalGridDetectThenXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.device_setup_plans.gridscan import (
     SmargonSpeedError,
@@ -66,12 +66,12 @@ def _custom_msg(command_name: str):
 
 @pytest.fixture
 def fgs_composite_with_panda_pcap(
-    hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
-) -> HyperionInternalGridDetectThenXRayCentreComposite:
+    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+) -> HyperionGridDetectThenXRayCentreComposite:
     capture_table = DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64])
-    set_mock_value(hyperion_internal_xrc_composite.panda.data.datasets, capture_table)
+    set_mock_value(hyperion_flyscan_xrc_composite.panda.data.datasets, capture_table)
 
-    return hyperion_internal_xrc_composite
+    return hyperion_flyscan_xrc_composite
 
 
 @patch(
@@ -99,7 +99,7 @@ class TestFlyscanXrayCentrePlan:
         move_x_y_z: MagicMock,
         move_aperture: MagicMock,
         run_gridscan: MagicMock,
-        hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
+        hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
         run_engine_with_subs: ReWithSubs,
@@ -112,10 +112,10 @@ class TestFlyscanXrayCentrePlan:
             TestData.test_result_medium,
             TestData.test_result_small,
         ]:
-            mock_zocalo_trigger(hyperion_internal_xrc_composite.zocalo, result)
+            mock_zocalo_trigger(hyperion_flyscan_xrc_composite.zocalo, result)
             run_engine(
                 common_flyscan_xray_centre(
-                    hyperion_internal_xrc_composite,
+                    hyperion_flyscan_xrc_composite,
                     minimal_diffraction_expt_with_sample,
                     create_detector_params_for_grid_scan_with_hyperion_feature_settings(
                         minimal_diffraction_expt_with_sample
@@ -125,7 +125,7 @@ class TestFlyscanXrayCentrePlan:
                 )
             )
 
-        aperture_scatterguard = hyperion_internal_xrc_composite.aperture_scatterguard
+        aperture_scatterguard = hyperion_flyscan_xrc_composite.aperture_scatterguard
         large = aperture_scatterguard._loaded_positions[ApertureValue.LARGE]
         medium = aperture_scatterguard._loaded_positions[ApertureValue.MEDIUM]
         ap_call_large = call(large, ApertureValue.LARGE)
@@ -134,7 +134,7 @@ class TestFlyscanXrayCentrePlan:
         move_aperture.assert_has_calls([ap_call_large, ap_call_large, ap_call_medium])
 
         mv_to_centre = call(
-            hyperion_internal_xrc_composite.gonio,
+            hyperion_flyscan_xrc_composite.gonio,
             0.05,
             pytest.approx(0.15),
             0.25,
@@ -159,11 +159,11 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine: RunEngineSimulator,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
+        hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         zocalo: ZocaloResults,
     ):
-        hyperion_internal_xrc_composite.detector.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
+        hyperion_flyscan_xrc_composite.detector.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
         sim_run_engine.add_read_handler_for(
             zocalo.centre_of_mass, [np.array([6.0, 6.0, 6.0])]
         )
@@ -177,7 +177,7 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine.add_read_handler_for(zocalo.sample_id, [_NO_SAMPLE_ID])
         msgs = sim_run_engine.simulate_plan(
             common_flyscan_xray_centre(
-                hyperion_internal_xrc_composite,
+                hyperion_flyscan_xrc_composite,
                 minimal_diffraction_expt_with_sample,
                 create_detector_params_for_grid_scan_with_hyperion_feature_settings(
                     minimal_diffraction_expt_with_sample
@@ -192,7 +192,7 @@ class TestFlyscanXrayCentrePlan:
             lambda msg: (
                 msg.command == "set"
                 and msg.obj
-                is hyperion_internal_xrc_composite.detector.odin.fan.dev_shm_enable
+                is hyperion_flyscan_xrc_composite.detector.odin.fan.dev_shm_enable
                 and msg.args[0] == 0
             ),
         )
@@ -212,7 +212,7 @@ class TestFlyscanXrayCentrePlan:
         use_panda: None,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        hyperion_internal_xrc_composite: HyperionInternalGridDetectThenXRayCentreComposite,
+        hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         run_engine: RunEngine,
     ):
@@ -228,7 +228,7 @@ class TestFlyscanXrayCentrePlan:
         with pytest.raises(SmargonSpeedError):
             run_engine(
                 common_flyscan_xray_centre(
-                    hyperion_internal_xrc_composite,
+                    hyperion_flyscan_xrc_composite,
                     minimal_diffraction_expt_with_sample,
                     detector_params,
                     grid_scan_params_3d,
@@ -260,7 +260,7 @@ class TestFlyscanXrayCentrePlan:
         use_panda: None,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        fgs_composite_with_panda_pcap: HyperionInternalGridDetectThenXRayCentreComposite,
+        fgs_composite_with_panda_pcap: HyperionGridDetectThenXRayCentreComposite,
         sim_run_engine: RunEngineSimulator,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
