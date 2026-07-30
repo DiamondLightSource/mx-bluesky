@@ -260,7 +260,6 @@ def test_finish_i24(
     fake_caget,
     fake_cagetstring,
     fake_sleep,
-    fake_userlog,
     zebra,
     pmac,
     shutter,
