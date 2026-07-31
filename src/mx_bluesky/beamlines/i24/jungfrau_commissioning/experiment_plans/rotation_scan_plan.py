@@ -17,7 +17,7 @@ from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
 )
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     JsonMetadataWriter,
@@ -65,7 +65,10 @@ class ExternalRotationScanParams(BaseModel):
     transmission_fractions: list[float]
     exposure_time_s: float
     omega_start_deg: float = 0
-    rotation_increment_per_image_deg: float = 0.1
+    rotation_increment_per_image_deg: float = Field(default=0.1, gt=0)
+    # The number of images collected is scan_width_deg / rotation_increment_per_image_deg,
+    # so the two of these together are what set the length of the collection.
+    scan_width_deg: float = Field(default=360, gt=0)
     filename: str = "rotations"
     detector_distance_mm: float = DEFAULT_DETECTOR_DISTANCE_MM
     sample_id: int
@@ -93,6 +96,11 @@ def _get_internal_rotation_params(
         exposure_time_s=entry_params.exposure_time_s,
         storage_directory=USE_NUMTRACKER,
         detector_distance_mm=entry_params.detector_distance_mm,
+        # Both of these have defaults on SingleRotationScan, so leaving them out does not
+        # fail: it quietly collects 0 to 360 degrees at 0.1 deg per image instead.
+        omega_start_deg=entry_params.omega_start_deg,
+        rotation_increment_deg=entry_params.rotation_increment_per_image_deg,
+        scan_width_deg=entry_params.scan_width_deg,
     )
 
 

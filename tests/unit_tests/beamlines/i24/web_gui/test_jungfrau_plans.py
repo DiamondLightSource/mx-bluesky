@@ -66,8 +66,19 @@ def test_run_jf_rotation(
     ) as patch_inner_plan:
         run_engine(
             gui_run_jf_rotation_scan(
-                "new_rotation", 0.01, 0.0, 0.1, 300, 1, [0.3], composite
+                "new_rotation", 0.01, 0.0, 0.1, 90, 300, 1, [0.3], composite
             )
         )
 
         patch_inner_plan.assert_called_once()
+        # Keyword by keyword, because the GUI sends these positionally and a pair
+        # transposed here would collect the wrong thing without failing.
+        params = patch_inner_plan.call_args.args[1]
+        assert params.filename == "new_rotation"
+        assert params.exposure_time_s == 0.01
+        assert params.omega_start_deg == 0.0
+        assert params.rotation_increment_per_image_deg == 0.1
+        assert params.scan_width_deg == 90
+        assert params.detector_distance_mm == 300
+        assert params.sample_id == 1
+        assert params.transmission_fractions == [0.3]

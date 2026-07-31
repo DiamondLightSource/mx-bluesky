@@ -17,6 +17,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
     HutchClosedError,
     RotationScanComposite,
     _cleanup_plan,
+    _get_internal_rotation_params,
     rotation_scan_plan,
     set_up_beamline_for_rotation,
     single_rotation_plan,
@@ -44,6 +45,44 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
     params["transmission_fractions"] = transmissions
     params["num_images"] = 1
     return ExternalRotationScanParams(**params)
+
+
+def test_requested_sweep_reaches_the_internal_rotation_params():
+    """Every field defining the sweep is defaulted on SingleRotationScan, so one that is
+    not forwarded does not raise: it silently collects 0 to 360 deg at 0.1 deg instead."""
+    external = ExternalRotationScanParams(
+        transmission_fractions=[0.1],
+        exposure_time_s=0.01,
+        omega_start_deg=45,
+        rotation_increment_per_image_deg=0.2,
+        scan_width_deg=90,
+        sample_id=123456,
+    )
+
+    internal = _get_internal_rotation_params(external, 0.1)
+
+    assert internal.omega_start_deg == 45
+    assert internal.rotation_increment_deg == 0.2
+    assert internal.scan_width_deg == 90
+    # The count the detector is armed for is derived from the two of them.
+    assert internal.num_images == 450
+
+
+@pytest.mark.parametrize(
+    "rotation_increment_per_image_deg, scan_width_deg",
+    [(0, 360), (0.1, 0), (-0.1, 360), (0.1, -90)],
+)
+def test_a_sweep_of_no_images_is_rejected(
+    rotation_increment_per_image_deg: float, scan_width_deg: float
+):
+    with pytest.raises(ValueError):
+        ExternalRotationScanParams(
+            transmission_fractions=[0.1],
+            exposure_time_s=0.01,
+            sample_id=123456,
+            rotation_increment_per_image_deg=rotation_increment_per_image_deg,
+            scan_width_deg=scan_width_deg,
+        )
 
 
 @patch(
