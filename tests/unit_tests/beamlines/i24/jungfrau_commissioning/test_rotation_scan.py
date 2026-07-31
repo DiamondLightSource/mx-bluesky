@@ -74,7 +74,7 @@ async def test_rotation_scan_plan_in_re(
     required_hardware_read_signals = [
         rotation_composite.dcm.energy_in_keV,
         rotation_composite.dcm.wavelength_in_a,
-        rotation_composite.det_stage.z,
+        rotation_composite.detector_motion.z,
         rotation_composite.jungfrau.writer.file_path,
     ]
 
@@ -93,7 +93,7 @@ async def test_rotation_scan_plan_in_re(
     mock_calc_motion_profile.assert_called_once_with(
         params,
         1,
-        await rotation_composite.gonio.omega.max_velocity.get_value(),
+        await rotation_composite.vgonio.omega.max_velocity.get_value(),
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()
@@ -119,7 +119,7 @@ def test_single_rotation_plan_in_simulator(
     tmp_path,
 ):
     params = get_good_single_rotation_params(tmp_path)
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
     msgs = sim_run_engine.simulate_plan(
         single_rotation_plan(rotation_composite, params)
     )
@@ -144,7 +144,7 @@ def test_single_rotation_plan_in_simulator(
     # Set omega axis then wait for JF to complete
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set" and msg.obj == rotation_composite.gonio.omega,
+        lambda msg: msg.command == "set" and msg.obj == rotation_composite.vgonio.omega,
     )
     assert_message_and_return_remaining(
         msgs,
@@ -176,7 +176,7 @@ def test_rotation_plan_multiple_transmissions(
 ):
     desired_transmission_fracs = [0.2, 0.4, 0.6]
     params = get_good_multi_rotation_params(desired_transmission_fracs, tmp_path)
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
     run_engine(rotation_scan_plan(rotation_composite, params))
     called_transmission_fracs = [
         mock_single_rotation.call_args_list[i].args[1].transmission_frac
@@ -191,15 +191,15 @@ async def test_set_up_beamline_for_rotation_success(
 ):
     trans_frac = 0.1
     det_z = 200
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
     run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 
     assert await asyncio.gather(
         rotation_composite.aperture.position.get_value(),
         rotation_composite.beamstop.pos_select.get_value(),
-        rotation_composite.det_stage.y.user_readback.get_value(),
+        rotation_composite.detector_motion.y.user_readback.get_value(),
         rotation_composite.backlight.backlight_position.pos_level.get_value(),
-        rotation_composite.det_stage.z.user_readback.get_value(),
+        rotation_composite.detector_motion.z.user_readback.get_value(),
         rotation_composite.attenuator.actual_transmission.get_value(),
     ) == [
         AperturePositions.IN,
@@ -217,7 +217,7 @@ def test_set_up_beamline_for_rotation_error_on_closed_hutch(
 ):
     trans_frac = 0.1
     det_z = 200
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.CLOSED)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.CLOSED)
     with pytest.raises(HutchClosedError):
         run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 

@@ -117,9 +117,7 @@ def set_up_beamline_for_rotation(
     move aperture in, move beamstop out and move det stages in. Wait for this parallel
     move to finish."""
 
-    hutch_shutter_state: ShutterState = yield from bps.rd(
-        composite.hutch_shutter.status
-    )
+    hutch_shutter_state: ShutterState = yield from bps.rd(composite.shutter.status)
     LOGGER.info(f"Hutch shutter: {hutch_shutter_state}")
     if hutch_shutter_state != ShutterState.OPEN:
         LOGGER.error(f"Hutch shutter is not open! State is {hutch_shutter_state}")
@@ -135,11 +133,11 @@ def set_up_beamline_for_rotation(
         AperturePositions.IN,
         composite.beamstop.pos_select,
         BeamstopPositions.DATA_COLLECTION,
-        composite.det_stage.y,
+        composite.detector_motion.y,
         JF_DET_STAGE_Y_POSITION_MM,
         composite.backlight.backlight_position,
         BacklightPositions.OUT,
-        composite.det_stage.z,
+        composite.detector_motion.z,
         det_z_mm,
         composite.attenuator,
         transmission_frac,
@@ -169,7 +167,7 @@ def single_rotation_plan(
 
         # This value isn't actually used, see https://github.com/DiamondLightSource/mx-bluesky/issues/1224
         _motor_time_to_speed = 1
-        _max_velocity_deg_s = yield from bps.rd(composite.gonio.omega.max_velocity)
+        _max_velocity_deg_s = yield from bps.rd(composite.vgonio.omega.max_velocity)
 
         motion_values = calculate_motion_profile(
             params, _motor_time_to_speed, _max_velocity_deg_s
@@ -197,7 +195,7 @@ def single_rotation_plan(
                 params.num_images, params.detector_params.exposure_time_s
             )
 
-            axis = composite.gonio.omega
+            axis = composite.vgonio.omega
 
             # can move to start as fast as possible
             yield from bps.abs_set(
@@ -239,7 +237,7 @@ def single_rotation_plan(
                 [
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
-                    composite.det_stage.z,
+                    composite.detector_motion.z,
                     composite.jungfrau.writer.file_path,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,

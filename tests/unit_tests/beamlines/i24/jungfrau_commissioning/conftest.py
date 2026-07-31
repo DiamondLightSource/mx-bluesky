@@ -12,7 +12,6 @@ from dodal.devices.hutch_shutter import InterlockedHutchShutter
 from dodal.devices.interlocks import PSSInterlock
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from ophyd_async.core import init_devices
@@ -30,33 +29,30 @@ def rotation_composite(
 ) -> RotationScanComposite:
     with init_devices(mock=True):
         aperture = Aperture("")
-        gonio = VerticalGoniometer("")
+        vgonio = VerticalGoniometer("")
         synchrotron = Synchrotron("")
         sample_shutter = MXZebraShutter("")
-        xbpm_feedback = XBPMFeedback("")
-        hutch_shutter = InterlockedHutchShutter("", PSSInterlock(""))
+        shutter = InterlockedHutchShutter("", PSSInterlock(""))
         beamstop = Beamstop("")
-        det_stage = YZStage(
-            "",
-            name="detector_motion",  # Name of device in i24 dodal module
-        )
+        detector_motion = YZStage("")
         backlight = DualBacklight("")
         dcm = DCM("", "")
 
+    # By keyword: the field names must match the i24 dodal device names, since that is
+    # how blueapi resolves them, so a rename here is a real change rather than a shuffle.
     composite = RotationScanComposite(
-        aperture,
-        enum_attenuator,
-        jungfrau,
-        gonio,
-        synchrotron,
-        sample_shutter,
-        zebra,
-        xbpm_feedback,
-        hutch_shutter,
-        beamstop,
-        det_stage,
-        backlight,
-        dcm,
+        aperture=aperture,
+        attenuator=enum_attenuator,
+        jungfrau=jungfrau,
+        vgonio=vgonio,
+        synchrotron=synchrotron,
+        sample_shutter=sample_shutter,
+        zebra=zebra,
+        shutter=shutter,
+        beamstop=beamstop,
+        detector_motion=detector_motion,
+        backlight=backlight,
+        dcm=dcm,
     )
 
     return composite

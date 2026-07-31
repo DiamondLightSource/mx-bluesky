@@ -15,7 +15,6 @@ from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
 from dodal.devices.hutch_shutter import InterlockedHutchShutter
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 
@@ -45,23 +44,21 @@ def test_run_jf_rotation(
     synchrotron: Synchrotron,
     shutter: InterlockedHutchShutter,
     sample_shutter: MXZebraShutter,
-    xbpm_feedback: XBPMFeedback,
     run_engine: RunEngine,
 ):
     composite = RotationScanComposite(
-        aperture,
-        enum_attenuator,
-        jungfrau,
-        vertical_gonio,
-        synchrotron,
-        sample_shutter,
-        zebra,
-        xbpm_feedback,
-        shutter,
-        beamstop,
-        detector_stage,
-        backlight,
-        dcm,
+        aperture=aperture,
+        attenuator=enum_attenuator,
+        jungfrau=jungfrau,
+        vgonio=vertical_gonio,
+        synchrotron=synchrotron,
+        sample_shutter=sample_shutter,
+        zebra=zebra,
+        shutter=shutter,
+        beamstop=beamstop,
+        detector_motion=detector_stage,
+        backlight=backlight,
+        dcm=dcm,
     )
     with patch(
         "mx_bluesky.beamlines.i24.web_gui_plans.jungfrau_plans.rotation_scan_plan",
