@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from itertools import accumulate
+from math import isclose
 from typing import Annotated, Any, Self
 
 from annotated_types import Len
@@ -30,6 +31,19 @@ from mx_bluesky.common.parameters.constants import (
     DetectorParamConstants,
     RotationParamConstants,
 )
+
+
+def images_in_sweep(scan_width_deg: float, rotation_increment_deg: float) -> int:
+    """How many images a sweep of this width contains at this increment.
+
+    Truncating the raw quotient loses an image whenever the division lands a hair under a
+    whole number, which floating point does often enough to matter: 2.15 / 0.05 is
+    42.99999999999999, so a 2.15 deg sweep at 0.05 deg would collect 42 images. A sweep
+    that genuinely does not divide exactly, such as 10 deg at 0.3 deg, still rounds down.
+    """
+    quotient = scan_width_deg / rotation_increment_deg
+    nearest = round(quotient)
+    return nearest if isclose(quotient, nearest, rel_tol=1e-9) else int(quotient)
 
 
 class RotationScanPerSweep(OptionalGonioAngleStarts, WithSample):
@@ -129,7 +143,7 @@ class SingleRotationScan(
 
     @property
     def num_images(self) -> int:
-        return int(self.scan_width_deg / self.rotation_increment_deg)
+        return images_in_sweep(self.scan_width_deg, self.rotation_increment_deg)
 
 
 class RotationScan(RotationExperiment, SplitScan):
@@ -153,7 +167,9 @@ class RotationScan(RotationExperiment, SplitScan):
         start_img = 0.0
         for scan in self.rotation_scans:
             scan.nexus_vds_start_img = int(start_img)
-            start_img += scan.scan_width_deg / self.rotation_increment_deg
+            start_img += images_in_sweep(
+                scan.scan_width_deg, self.rotation_increment_deg
+            )
         return self
 
     @model_validator(mode="after")
@@ -174,7 +190,7 @@ class RotationScan(RotationExperiment, SplitScan):
 
     def _num_images_per_scan(self):
         return [
-            int(scan.scan_width_deg / self.rotation_increment_deg)
+            images_in_sweep(scan.scan_width_deg, self.rotation_increment_deg)
             for scan in self.rotation_scans
         ]
 
