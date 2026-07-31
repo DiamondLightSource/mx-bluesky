@@ -1,4 +1,5 @@
 import pytest
+from dodal.beamlines import i24
 from dodal.beamlines.i24 import VerticalGoniometer
 from dodal.devices.attenuator.attenuator import EnumFilterAttenuator
 from dodal.devices.beamlines.i24.aperture import Aperture
@@ -19,6 +20,17 @@ from ophyd_async.core import init_devices
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
 )
+
+
+@pytest.fixture
+def zebra() -> Zebra:
+    """Override the shared fixture, which builds i03's zebra.
+
+    These are i24 plans, and the two beamlines wire their zebra outputs differently:
+    i24 maps TTL_JUNGFRAU where i03 maps TTL_DETECTOR. Testing against i03's mapping
+    hides exactly the mismatch that UnmappedZebraError exists to catch.
+    """
+    return i24.zebra.build(connect_immediately=True, mock=True)
 
 
 @pytest.fixture
