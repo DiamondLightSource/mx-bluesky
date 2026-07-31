@@ -218,6 +218,9 @@ def single_rotation_plan(
                 direction=motion_values.direction,
                 shutter_opening_deg=motion_values.shutter_opening_deg,
                 shutter_opening_s=motion_values.shutter_time_s,
+                # i24 names its zebra outputs per detector, so TTL_DETECTOR - which the
+                # shared plan defaults to, and which i03/i04/i23 do map - is unset here.
+                ttl_input_for_detector_to_use=composite.zebra.mapping.outputs.TTL_JUNGFRAU,
             )
 
             yield from bps.wait(PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC)

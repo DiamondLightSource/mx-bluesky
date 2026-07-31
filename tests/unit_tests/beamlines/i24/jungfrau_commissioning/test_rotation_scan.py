@@ -166,6 +166,41 @@ def test_single_rotation_plan_in_simulator(
 
 
 @patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau",
+    new=MagicMock(),
+)
+def test_single_rotation_plan_triggers_the_jungfrau_zebra_output(
+    sim_run_engine: RunEngineSimulator,
+    rotation_composite: RotationScanComposite,
+    tmp_path,
+):
+    """i24 wires the jungfrau to a zebra output it calls TTL_JUNGFRAU, not the
+    TTL_DETECTOR the shared rotation setup defaults to. Reading the unmapped
+    TTL_DETECTOR raises UnmappedZebraError, so pin the output actually driven."""
+    zebra = rotation_composite.zebra
+    jungfrau_output = zebra.output.out_pvs[zebra.mapping.outputs.TTL_JUNGFRAU]
+
+    params = get_good_single_rotation_params(tmp_path)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
+    msgs = sim_run_engine.simulate_plan(
+        single_rotation_plan(rotation_composite, params)
+    )
+
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is jungfrau_output
+            and msg.args == (zebra.mapping.sources.PC_PULSE,)
+        ),
+    )
+
+
+@patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.single_rotation_plan"
 )
 def test_rotation_plan_multiple_transmissions(
