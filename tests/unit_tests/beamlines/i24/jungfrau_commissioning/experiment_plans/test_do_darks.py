@@ -84,21 +84,21 @@ async def test_full_do_pedestal_darks(
     await jungfrau.detector.pedestal_mode_state.set(PedestalMode.OFF)
     monitor_tracker = CheckMonitor(
         [
-            "detector-acquisition_type",
-            "detector-detector-pedestal_mode_state",
-            "detector-detector-gain_mode",
+            "jungfrau-acquisition_type",
+            "jungfrau-detector-pedestal_mode_state",
+            "jungfrau-detector-gain_mode",
         ]
     )
     run_engine.subscribe(monitor_tracker)
     run_engine(test_plan())
 
-    assert monitor_tracker.signals_and_values["detector-acquisition_type"] == [
+    assert monitor_tracker.signals_and_values["jungfrau-acquisition_type"] == [
         AcquisitionType.STANDARD,
         AcquisitionType.PEDESTAL,
         AcquisitionType.STANDARD,
     ]
     assert monitor_tracker.signals_and_values[
-        "detector-detector-pedestal_mode_state"
+        "jungfrau-detector-pedestal_mode_state"
     ] == [
         PedestalMode.OFF,
         PedestalMode.ON,
@@ -107,7 +107,7 @@ async def test_full_do_pedestal_darks(
 
     # When using the real detector, the switching of gain mode is a bit more complicated,
     # see the docstring for the do_pedestal_darks plan.
-    assert monitor_tracker.signals_and_values["detector-detector-gain_mode"] == [
+    assert monitor_tracker.signals_and_values["jungfrau-detector-gain_mode"] == [
         GainMode.FIX_G2,
         GainMode.DYNAMIC,
     ]

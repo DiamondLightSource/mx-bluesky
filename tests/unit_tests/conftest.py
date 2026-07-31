@@ -571,11 +571,13 @@ def jungfrau(tmp_path: Path, run_engine: RunEngine) -> CommissioningJungfrauDete
     with init_devices(mock=True):
         base_provider = _BasePathProvider(tmp_path)
         path_provider = AutoMaxIncrementingPathProvider(base_provider)
-        detector = CommissioningJungfrauDetector("", "", path_provider, "CAM:")
-    set_mock_value(detector.writer.writer_ready, 1)
+        # init_devices names the device after this variable, and the reading keys in
+        # documents follow the device name, so it must match the i24 dodal factory.
+        jungfrau = CommissioningJungfrauDetector("", "", path_provider, "CAM:")
+    set_mock_value(jungfrau.writer.writer_ready, 1)
     run_engine.subscribe(base_provider.run_start, "start")
 
-    return detector
+    return jungfrau
 
 
 @pytest.fixture
