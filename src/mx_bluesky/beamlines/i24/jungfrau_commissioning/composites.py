@@ -13,7 +13,6 @@ from dodal.devices.beamlines.i24.vgonio import VerticalGoniometer
 from dodal.devices.hutch_shutter import InterlockedHutchShutter
 from dodal.devices.motors import YZStage
 from dodal.devices.synchrotron import Synchrotron
-from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 
@@ -25,13 +24,13 @@ class RotationScanComposite:
     aperture: Aperture
     attenuator: EnumFilterAttenuator
     jungfrau: CommissioningJungfrauDetector
-    gonio: VerticalGoniometer
+    vgonio: VerticalGoniometer
     synchrotron: Synchrotron
     sample_shutter: MXZebraShutter
     zebra: Zebra
-    xbpm_feedback: XBPMFeedback
-    hutch_shutter: InterlockedHutchShutter
+    # xbpm_feedback: XBPMFeedback # Not referenced
+    shutter: InterlockedHutchShutter
     beamstop: Beamstop
-    det_stage: YZStage
+    detector_motion: YZStage
     backlight: DualBacklight
     dcm: DCM
