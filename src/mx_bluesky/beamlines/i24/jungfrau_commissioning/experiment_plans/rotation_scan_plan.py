@@ -92,6 +92,7 @@ def _get_internal_rotation_params(
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,
         storage_directory=USE_NUMTRACKER,
+        detector_distance_mm=entry_params.detector_distance_mm,
     )
 
 
