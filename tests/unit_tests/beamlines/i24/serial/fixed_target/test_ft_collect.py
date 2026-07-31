@@ -165,7 +165,11 @@ def test_load_motion_program_data(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.datetime"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.write_userlog"
+)
 def test_start_i24_with_eiger(
+    fake_userlog,
     fake_datetime,
     fake_sleep,
     fake_sup,
@@ -234,10 +238,9 @@ def test_start_i24_with_eiger(
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
 
+    fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_0001", 1.0, 0.6)
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.write_userlog"
-)
+
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
@@ -257,7 +260,6 @@ def test_finish_i24(
     fake_caget,
     fake_cagetstring,
     fake_sleep,
-    fake_userlog,
     zebra,
     pmac,
     shutter,
@@ -284,8 +286,6 @@ def test_finish_i24(
 
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls([call("Close")])
-
-    fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
 
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
