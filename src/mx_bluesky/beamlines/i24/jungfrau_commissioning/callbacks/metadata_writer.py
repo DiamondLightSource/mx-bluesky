@@ -73,6 +73,12 @@ class JsonMetadataWriter(CallbackBase):
             and doc.get("run_start") == self.run_start_uid
             and self.final_path
         ):
+            # The detector IOC creates this directory, and does so from a different NFS
+            # client, after we have already looked the path up here to prepare the
+            # writer. This client therefore holds a cached negative lookup for it and
+            # open() fails with ENOENT for as long as that is trusted. mkdir cannot be
+            # answered out of that cache, so it clears the entry before we write.
+            self.final_path.mkdir(parents=True, exist_ok=True)
             with open(self.final_path / READING_DUMP_FILENAME, "w") as f:
                 f.write(
                     json.dumps(
