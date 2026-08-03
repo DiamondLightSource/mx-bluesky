@@ -692,7 +692,7 @@ wheels = [
 
 [[package]]
 name = "daq-config-server"
-version = "1.3.7"
+version = "1.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -707,9 +707,9 @@ dependencies = [
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "xmltodict", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/93/c913c56425bf937c3c6b8733ac88bdb6b03a49dd10f068215473b511f12f/daq_config_server-1.3.7.tar.gz", hash = "sha256:6dc0c0613c88198eb16cd86c84c731de97090499ebcf39ccfe9be67dad84caae", size = 233043, upload-time = "2026-06-25T10:00:58.084Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/a2/2fc42d3231be454be244c1dd19a1e36204fe68957b275fc37775efffc9ba/daq_config_server-1.5.1.tar.gz", hash = "sha256:e7dbcd335a1ec06faa777bc0f03039c90aa067b3b71df599cb59ae7cf5fac368", size = 236115, upload-time = "2026-07-28T14:03:52.265Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/0b/0472e9ab51f04a5fd00d477edf8567bdf320a6f245bd6414b3f208f49684/daq_config_server-1.3.7-py3-none-any.whl", hash = "sha256:ecf11b770d059248d70b3418b75701842dce398d4945e26a8a16ac5049a845c5", size = 35113, upload-time = "2026-06-25T10:00:57.083Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/6a/7a8d2a4d7c35f1e384e58c559b44fa41d90878b67e1c9689831fe2a1d125/daq_config_server-1.5.1-py3-none-any.whl", hash = "sha256:3076083c3a9a007f635562654d834c8528997316e1764b4cbd46cb324e3904be", size = 35620, upload-time = "2026-07-28T14:03:51.285Z" },
 ]
 
 [[package]]
@@ -810,8 +810,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.5.3"
-source = { registry = "https://pypi.org/simple" }
+version = "2.5.4.dev7+g36e3b03da"
+source = { git = "https://github.com/DiamondLightSource/dodal?rev=main#36e3b03da324c3a567d0720e86fc86a6f67eb87d" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -833,10 +833,6 @@ dependencies = [
     { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "scanspec", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "zocalo", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/3c/36b192e29e1f26298f6fd1ec0f7d9c74fa12e45355fa0f404fdcc505f6ce/dls_dodal-2.5.3.tar.gz", hash = "sha256:32c6af01222c80a7c558b376f417e2c6d3bfd4ba03d6f8fb0114a7630e987afb", size = 1720734, upload-time = "2026-07-21T10:45:44.026Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/3d/fc1ad68dabdcb669ed3b273966d2a423ff8675db7386600e85643a6ad610/dls_dodal-2.5.3-py3-none-any.whl", hash = "sha256:dd1de29502be760ad679c6c7d991fb785cb3d38317334d22f79caf225398c95a", size = 437446, upload-time = "2026-07-21T10:45:42.565Z" },
 ]
 
 [[package]]
@@ -2123,9 +2119,9 @@ requires-dist = [
     { name = "bluesky-stomp", specifier = ">=0.2.0" },
     { name = "cachetools" },
     { name = "caproto" },
-    { name = "daq-config-server", specifier = ">=1.3.7" },
+    { name = "daq-config-server", specifier = ">=1.5.1" },
     { name = "deepdiff" },
-    { name = "dls-dodal", specifier = ">=2.5.3" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal?rev=main" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
@@ -2137,7 +2133,7 @@ requires-dist = [
     { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "ophyd", specifier = ">=1.10.5" },
-    { name = "ophyd-async", specifier = "==0.20.1" },
+    { name = "ophyd-async", specifier = ">=0.20.1" },
     { name = "pydantic" },
     { name = "pydantic-extra-types", specifier = ">=2.10.1" },
     { name = "pyepics" },
@@ -2689,7 +2685,7 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.20.1"
+version = "0.21.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bluesky", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2703,9 +2699,9 @@ dependencies = [
     { name = "stamina", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "velocity-profile", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/e1/8faa491911abd3426273daf2249769ca54786ca2a70f928afa89dd75e226/ophyd_async-0.20.1.tar.gz", hash = "sha256:a98f502d8868e35ab593aef2819730f3263445a256b7729bf43aa791feae575e", size = 660613, upload-time = "2026-07-22T11:25:59.086Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/4a/823545c9f0bd1b8a9695c658caece4a9f0e52d6a0138bd7e02825f7c9cba/ophyd_async-0.21.0.tar.gz", hash = "sha256:082a1494276d69b6e893049c268d13b25a28c7d1528f983d6d1a79faa9b34fdc", size = 668561, upload-time = "2026-08-03T12:17:32.841Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0a/a3/fead51df9547035d674b98c6c583064decd09a282ef2bb94122b254fac2d/ophyd_async-0.20.1-py3-none-any.whl", hash = "sha256:95f83ba007d33a86b4eb15b423deddc65dcd3f7b228b424523087c3b10eeb718", size = 255614, upload-time = "2026-07-22T11:25:57.768Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/26/8b1bc3feaea1dcfbcea03c48224b418dd04a2b4849c0ed6f0f83e2661899/ophyd_async-0.21.0-py3-none-any.whl", hash = "sha256:a018bc483d904bfcb1146ec714758e026b5386c7d3b626408ea61250713cfd6b", size = 258829, upload-time = "2026-08-03T12:17:31.302Z" },
 ]
 
 [package.optional-dependencies]
@@ -3672,16 +3668,16 @@ wheels = [
 
 [[package]]
 name = "scanspec"
-version = "0.10.0"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "pydantic", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/7c/9d9de144ca0e0be895caf824f30e2c8d809c032b248fb3a6c92a4df30660/scanspec-0.10.0.tar.gz", hash = "sha256:8d0d93c4b5a3c74d983a38c6f6001d3cc574429a7a26604a31a61b82c373f0a9", size = 266550, upload-time = "2026-02-02T12:59:56.678Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/c3/7b3621a0eec53b7e348457de68a33a93314c5626523ab1481395811aa09e/scanspec-1.0.0.tar.gz", hash = "sha256:31d297861978e56bb6cfcaa15527bad5ba3dc158b3fc52142ecb5611a22e1b5a", size = 285029, upload-time = "2026-04-28T12:12:54.378Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/6d/8500f4bece0aa7cd2af374739f2944c9fa52f0fc5e1d9e65a366f37f494a/scanspec-0.10.0-py3-none-any.whl", hash = "sha256:0979cdcf9790573478f863c36844e1446e87996f945b1bd9c1dcbd7fb663ad92", size = 37728, upload-time = "2026-02-02T12:59:55.843Z" },
+    { url = "https://files.pythonhosted.org/packages/68/b9/f44b139096467996b4d85589d9880fd55f0c80a204d298a1b73d0adc2654/scanspec-1.0.0-py3-none-any.whl", hash = "sha256:4ad6dccd6ac19dbd8af888c80c5db53c70d6b8aee9d26c0ca174cebd3c396730", size = 37825, upload-time = "2026-04-28T12:12:53.084Z" },
 ]
 
 [[package]]
