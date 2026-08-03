@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from bluesky import plan_stubs as bps
 from bluesky.run_engine import RunEngine
-from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
@@ -20,7 +20,7 @@ from tests.conftest import ConfigFilesForTests
 @pytest.fixture
 def mock_parameters(test_config_files: ConfigFilesForTests):
     return OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
 
 

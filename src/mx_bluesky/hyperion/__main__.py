@@ -5,7 +5,7 @@ from sys import argv
 
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from dodal.common.beamlines.beamline_utils import set_config_client
 
 from mx_bluesky.common.external_interaction import alerting
@@ -50,7 +50,7 @@ def initialise_globals(args: HyperionArgs):
 
 def initialise_config_server():
     config_client_url = os.getenv("CONFIG_SERVER_URL", DEFAULT_CONFIG_SERVER_ENDPOINT)
-    client = ConfigClient(config_client_url)
+    client = ConfigClient.from_url(config_client_url)
     set_config_client(client)
 
 

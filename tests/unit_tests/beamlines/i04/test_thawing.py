@@ -6,8 +6,9 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
-from daq_config_server import ConfigClient
+from daq_config_server.testing import PathToMockDataDict
 from dodal.beamlines import i04
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
@@ -39,8 +40,10 @@ class MyError(Exception):
 
 
 @pytest.fixture
-async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
-    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
+async def oav_full_screen(
+    mock_daq_config: PathToMockDataDict, test_config_files: ConfigFilesForTests
+) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], get_config_client())
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV(
             "", config=oav_config, name="oav_full_screen", mjpeg_prefix="XTAL"
@@ -52,8 +55,10 @@ async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
 
 
 @pytest.fixture
-async def oav_roi(test_config_files: ConfigFilesForTests) -> OAV:
-    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
+async def oav_roi(
+    mock_daq_config: PathToMockDataDict, test_config_files: ConfigFilesForTests
+) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], get_config_client())
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="oav")
     set_mock_value(oav.zoom_controller.level, "5.0x")
