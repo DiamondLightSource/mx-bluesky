@@ -54,7 +54,7 @@ def test_given_shutter_open_fails_then_eiger_disarmed_and_correct_exception_retu
     beamstop_phase1, mock_eiger, null_plan, run_engine
 ):
     detector_motion = MagicMock()
-    set_mock_attr(detector_motion.z, "set", MagicMock(side_effect=MyTestError()))
+    set_mock_attr(detector_motion.z, "set", MagicMock(side_effect=MyTestError))
 
     with pytest.raises(MyTestError):
         run_engine(
