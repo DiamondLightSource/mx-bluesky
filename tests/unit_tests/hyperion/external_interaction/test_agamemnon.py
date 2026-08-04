@@ -6,11 +6,9 @@ from typing import cast
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
-from daq_config_server import ConfigClient
 from daq_config_server.models.feature_settings.hyperion_feature_settings import (
     HyperionFeatureSettings,
 )
-from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.devices.zebra.zebra import RotationDirection
 from requests import ConnectionError, HTTPError, Response, Timeout
 
@@ -31,11 +29,6 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     create_parameters_from_agamemnon,
 )
 from mx_bluesky.hyperion.plan_runner import PlanError
-
-
-@pytest.fixture(autouse=True)
-def mock_config_client():
-    set_config_client(ConfigClient("http://localhost"))
 
 
 def set_up_agamemnon_params(

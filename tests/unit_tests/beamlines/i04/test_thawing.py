@@ -6,8 +6,9 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import MsgGenerator
-from daq_config_server import ConfigClient
+from daq_config_server.testing import PathToMockDataDict
 from dodal.beamlines import i04
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i04.murko_results import MurkoResultsDevice
 from dodal.devices.oav.oav_detector import OAV, OAVBeamCentrePV, OAVConfig
 from dodal.devices.oav.oav_to_redis_forwarder import OAVToRedisForwarder, Source
@@ -18,6 +19,7 @@ from ophyd_async.core import (
     completed_status,
     get_mock_put,
     init_devices,
+    set_mock_attr,
     set_mock_value,
 )
 
@@ -38,8 +40,10 @@ class MyError(Exception):
 
 
 @pytest.fixture
-async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
-    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
+async def oav_full_screen(
+    mock_daq_config: PathToMockDataDict, test_config_files: ConfigFilesForTests
+) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], get_config_client())
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV(
             "", config=oav_config, name="oav_full_screen", mjpeg_prefix="XTAL"
@@ -51,8 +55,10 @@ async def oav_full_screen(test_config_files: ConfigFilesForTests) -> OAV:
 
 
 @pytest.fixture
-async def oav_roi(test_config_files: ConfigFilesForTests) -> OAV:
-    oav_config = OAVConfig(test_config_files["zoom_params_file"], ConfigClient(""))
+async def oav_roi(
+    mock_daq_config: PathToMockDataDict, test_config_files: ConfigFilesForTests
+) -> OAV:
+    oav_config = OAVConfig(test_config_files["zoom_params_file"], get_config_client())
     async with init_devices(mock=True, connect=True):
         oav = OAVBeamCentrePV("", config=oav_config, name="oav")
     set_mock_value(oav.zoom_controller.level, "5.0x")
@@ -81,9 +87,9 @@ def thawer() -> Thawer:
 @patch("dodal.devices.beamlines.i04.murko_results.StrictRedis")
 async def murko_results(mock_strict_redis: MagicMock) -> MurkoResultsDevice:
     murko_results = MurkoResultsDevice(name="murko_results")
-    murko_results.trigger = MagicMock(side_effect=completed_status)
-    murko_results.stage = MagicMock(side_effect=completed_status)
-    murko_results.unstage = MagicMock(side_effect=completed_status)
+    set_mock_attr(murko_results, "trigger", MagicMock(side_effect=completed_status))
+    set_mock_attr(murko_results, "stage", MagicMock(side_effect=completed_status))
+    set_mock_attr(murko_results, "unstage", MagicMock(side_effect=completed_status))
     return murko_results
 
 
@@ -100,8 +106,8 @@ async def oav_forwarder(oav_full_screen: OAV, oav_roi: OAV) -> OAVToRedisForward
         )
     set_mock_value(oav_forwarder.uuid, "test")
 
-    oav_forwarder.kickoff = MagicMock(side_effect=completed_status)
-    oav_forwarder.complete = MagicMock(side_effect=completed_status)
+    set_mock_attr(oav_forwarder, "kickoff", MagicMock(side_effect=completed_status))
+    set_mock_attr(oav_forwarder, "complete", MagicMock(side_effect=completed_status))
     return oav_forwarder
 
 
@@ -113,9 +119,9 @@ def robot() -> BartRobot:
 def _do_thaw_and_confirm_cleanup(
     move_mock: MagicMock, smargon: Smargon, thawer: Thawer, do_thaw_func
 ):
-    smargon.omega.set = move_mock
+    set_mock_attr(smargon.omega, "set", move_mock)
     set_mock_value(smargon.omega.velocity, initial_velocity := 10)
-    smargon.omega.set = move_mock
+    set_mock_attr(smargon.omega, "set", move_mock)
     do_thaw_func()
     last_thawer_call = get_mock_put(thawer._control).call_args_list[-1]
     assert last_thawer_call == call(OnOff.OFF)
@@ -486,7 +492,7 @@ def test_thaw_and_murko_centre_will_centre_based_on_murko_results_after_both_rot
         return completed_status()
 
     mock_trigger = MagicMock()
-    murko_results.trigger = mock_trigger
+    set_mock_attr(murko_results, "trigger", mock_trigger)
 
     def side_effect():
         return fake_trigger(mock_trigger.call_count)

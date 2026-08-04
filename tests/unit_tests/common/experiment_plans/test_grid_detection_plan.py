@@ -8,8 +8,8 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
-from daq_config_server import ConfigClient
 from dodal.beamlines import i03
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAVConfigBeamCentre
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -61,7 +61,7 @@ def fake_devices(
     params = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"],
         test_config_files["display_config"],
-        ConfigClient(""),
+        get_config_client(),
     )
     oav = i03.oav.build(connect_immediately=True, mock=True, params=params)
     set_mock_value(oav.zoom_controller.level, "5.0x")
@@ -116,7 +116,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     tmp_path: Path,
 ):
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, image_save = fake_devices
 
@@ -148,7 +148,7 @@ async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     )
 
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
 
     with pytest.raises(WarningError) as excinfo:
@@ -165,7 +165,7 @@ async def test_given_when_grid_detect_then_start_position_as_expected(
     tmp_path: Path,
 ):
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
     box_size_um = 0.2
     composite, _ = fake_devices
@@ -211,7 +211,7 @@ async def test_when_grid_detection_plan_run_then_ispyb_callback_gets_correct_val
     dummy_rotation_data_collection_group_info,
 ):
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, _ = fake_devices
     cb = GridDetectAndScanISPyBCallback(param_type=GenericGrid)
@@ -277,7 +277,7 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
     tmp_path: Path,
 ):
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, _ = fake_devices
     box_size_um = 20
@@ -315,7 +315,7 @@ def test_when_grid_detection_plan_run_with_different_omega_order_then_grid_detec
     tmp_path: Path,
 ):
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
     composite, _ = fake_devices
 
@@ -397,7 +397,7 @@ async def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_gr
 ):
     composite, _ = fake_devices
     params = OAVParameters(
-        ConfigClient(""), "loopCentring", test_config_files["oav_config_json"]
+        get_config_client(), "loopCentring", test_config_files["oav_config_json"]
     )
     box_size_um = 20
     microns_per_pixel_y = await composite.oav.microns_per_pixel_y.get_value()

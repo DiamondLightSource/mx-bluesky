@@ -8,7 +8,7 @@ from bluesky.run_engine import RunEngine
 from dodal.devices.beamlines.i24.commissioning_jungfrau import (
     CommissioningJungfrauDetector,
 )
-from ophyd_async.core import completed_status
+from ophyd_async.core import completed_status, set_mock_attr
 from ophyd_async.fastcs.jungfrau import (
     AcquisitionType,
     GainMode,
@@ -105,12 +105,14 @@ class FakeError(Exception): ...
 async def test_jungfrau_unstage_on_error(
     jungfrau: CommissioningJungfrauDetector, run_engine: RunEngine
 ):
-    jungfrau.stage = MagicMock(side_effect=FakeError)
-    jungfrau.unstage = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(jungfrau, "stage", MagicMock(side_effect=FakeError))
+    set_mock_attr(
+        jungfrau, "unstage", MagicMock(side_effect=lambda: completed_status())
+    )
 
     def test_plan():
         yield from do_pedestal_darks(0.001, 2, 2, jungfrau=jungfrau)
 
     with pytest.raises(FakeError):
         run_engine(test_plan())
-    assert jungfrau.unstage.call_count == 1
+    assert jungfrau.unstage.call_count == 1  # type: ignore
