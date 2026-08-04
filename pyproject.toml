@@ -52,13 +52,12 @@ dependencies = [
     # These dependencies may be issued as pre-release versions and should have a pin constraint
     # as by default pip-install will not upgrade to a pre-release.
     #
-    "daq-config-server >= 1.3.7",
+    "daq-config-server >= 1.5.1",
     "blueapi >= 1.12.0",
     "ophyd >= 1.10.5",
-    # Pin ophyd-async until we support 0.2.0 https://github.com/DiamondLightSource/mx-bluesky/issues/1795
-    "ophyd-async == 0.20.1",
+    "ophyd-async >= 0.20.1",
     "bluesky >= 1.14.6",
-    "dls-dodal >= 2.5.3",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal@main",
 ]
 
 

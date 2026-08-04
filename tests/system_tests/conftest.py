@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import ClientResponse
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_config_client
 from dodal.devices.aperturescatterguard import (

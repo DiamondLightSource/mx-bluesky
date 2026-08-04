@@ -13,8 +13,10 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
+from daq_config_server.testing import MockServerResponse, PathToMockDataDict
 from dodal.beamlines import i03
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
@@ -109,8 +111,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from tests.conftest import TEST_BEAMLINE_PARAMETERS, raw_params_from_file
 from tests.test_data.oav import TEST_DISPLAY_CONFIG, TEST_OAV_ZOOM_LEVELS
-
-pytest_plugins = ["dodal.testing.fixtures.config_server"]
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -230,6 +230,22 @@ def create_gridscan_callbacks() -> tuple[
             ),
         ),
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_daq_config() -> Generator[PathToMockDataDict, None, None]:
+    mutable_dict = {}
+    mock_config_server = ConfigClient(MockServerResponse(mutable_dict))
+    with (
+        patch(
+            "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT", mock_config_server
+        ),
+        patch(
+            "daq_config_server.client.ConfigClient.from_url",
+            return_value=mock_config_server,
+        ),
+    ):
+        yield mutable_dict
 
 
 @pytest.fixture(autouse=True)
@@ -661,18 +677,20 @@ def patch_config_paths(monkeypatch):
 
 
 @pytest.fixture
-def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
-    return OAVParameters(
-        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
-    )
+def oav_parameters_for_rotation(
+    mock_daq_config: PathToMockDataDict, test_config_files
+) -> OAVParameters:
+    oav_config_path = test_config_files["oav_config_json"]
+    # mock_daq_config[oav_config_path] = json.loads(oav_config_path)
+    return OAVParameters(get_config_client(), oav_config_json=oav_config_path)
 
 
 @pytest.fixture
-def oav(test_config_files):
+def oav(mock_daq_config: PathToMockDataDict, test_config_files):
     parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"],
         test_config_files["display_config"],
-        ConfigClient(""),
+        get_config_client(),
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
