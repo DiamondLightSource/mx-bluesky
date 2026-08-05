@@ -810,8 +810,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.5.4.dev10+gbf8648312"
-source = { git = "https://github.com/DiamondLightSource/dodal?rev=mx-bluesky_1555_change_s4_slits_to_common_slits#bf8648312012b2155f3fc96eb560d9e8230e0129" }
+version = "2.5.4.dev10+gf19cb4af3"
+source = { git = "https://github.com/DiamondLightSource/dodal?rev=main#f19cb4af338e7abbf18ce26fe97d4f29bbfa40e1" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2121,7 +2121,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.5.1" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal?rev=mx-bluesky_1555_change_s4_slits_to_common_slits" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal?rev=main" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
