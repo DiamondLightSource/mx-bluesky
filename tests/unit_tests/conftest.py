@@ -43,7 +43,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -187,8 +187,8 @@ async def fail_test_on_unclosed_tasks(request: FixtureRequest):
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-    "s4_slit_gaps-xgap": 0,
-    "s4_slit_gaps-ygap": 0,
+    "s4_slit_gaps-x_gap": 0,
+    "s4_slit_gaps-y_gap": 0,
     "gonio-x": 10.0,
     "gonio-y": 20.0,
     "gonio-z": 30.0,
@@ -238,7 +238,9 @@ def mock_daq_config() -> Generator[PathToMockDataDict, None, None]:
     mock_config_server = ConfigClient(MockServerResponse(mutable_dict))
     with (
         patch(
-            "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT", mock_config_server
+            "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
+            mock_config_server,
+            create=True,
         ),
         patch(
             "daq_config_server.client.ConfigClient.from_url",
@@ -495,7 +497,7 @@ async def grid_detect_xrc_devices(
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
     fast_grid_scan: ZebraFastGridScanThreeD,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     flux: Flux,
     zebra,
     zebra_shutter,
@@ -720,7 +722,7 @@ def fake_create_rotation_devices(
     undulator: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     dcm: DCM,
     robot: BartRobot,
     oav: OAV,

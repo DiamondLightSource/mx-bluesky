@@ -1447,8 +1447,8 @@ class _TestEventData(OavGridSnapshotTestEvents):
             "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
             "time": 1666604299.828203,
             "data": {
-                "s4_slit_gaps-xgap": 0.1234,
-                "s4_slit_gaps-ygap": 0.2345,
+                "s4_slit_gaps-x_gap": 0.1234,
+                "s4_slit_gaps-y_gap": 0.2345,
                 "synchrotron-synchrotron_mode": SynchrotronMode.USER,
                 "undulator-current_gap": 1.234,
                 "gonio-x": 0.158435435,
