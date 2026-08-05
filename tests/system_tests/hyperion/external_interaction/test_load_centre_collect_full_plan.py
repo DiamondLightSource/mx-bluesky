@@ -289,8 +289,8 @@ def composite_with_no_diffraction(
     async def mock_zocalo_complete():
         await zocalo._put_results([], {"dcid": 0, "dcgid": 0})
 
-    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
-        yield load_centre_collect_composite
+    set_mock_attr(zocalo, "trigger", MagicMock(side_effect=mock_zocalo_complete))
+    yield load_centre_collect_composite
 
 
 @pytest.mark.parametrize(

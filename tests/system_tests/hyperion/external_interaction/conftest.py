@@ -253,8 +253,8 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
         patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
     ):
         workflows.recipe.wrap_subscribe.side_effect = mock_worfklow_subscribe
-        with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
-            yield zocalo
+        set_mock_attr(zocalo, "trigger", MagicMock(side_effect=mock_zocalo_complete))
+        yield zocalo
 
 
 @pytest.fixture
@@ -344,14 +344,20 @@ def grid_detect_then_xray_centre_composite(
         patch.object(eiger, "wait_on_arming_if_started"),
         # xsize, ysize will always be wrong since computed as 0 before we get here
         # patch up load_microns_per_pixel connect to receive non-zero values
-        patch.object(
-            ophyd_pin_tip_detection, "trigger", side_effect=mock_pin_tip_detect
-        ),
-        patch.object(fast_grid_scan, "kickoff", side_effect=lambda: completed_status()),
-        patch.object(
-            fast_grid_scan, "complete", side_effect=lambda: completed_status()
-        ),
     ):
+        set_mock_attr(
+            ophyd_pin_tip_detection,
+            "trigger",
+            MagicMock(side_effect=mock_pin_tip_detect),
+        )
+        set_mock_attr(
+            fast_grid_scan, "kickoff", MagicMock(side_effect=lambda: completed_status())
+        )
+        set_mock_attr(
+            fast_grid_scan,
+            "complete",
+            MagicMock(side_effect=lambda: completed_status()),
+        )
         yield composite
 
 
@@ -420,8 +426,10 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
             numpy.array([]),
         )
 
-    with patch.object(ophyd_pin_tip_detection, "trigger", side_effect=no_pin_tip_found):
-        yield ophyd_pin_tip_detection
+    set_mock_attr(
+        ophyd_pin_tip_detection, "trigger", MagicMock(side_effect=no_pin_tip_found)
+    )
+    yield ophyd_pin_tip_detection
 
 
 @pytest.fixture
