@@ -426,8 +426,10 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
             numpy.array([]),
         )
 
-    with patch.object(ophyd_pin_tip_detection, "trigger", side_effect=no_pin_tip_found):
-        yield ophyd_pin_tip_detection
+    set_mock_attr(
+        ophyd_pin_tip_detection, "trigger", MagicMock(side_effect=no_pin_tip_found)
+    )
+    yield ophyd_pin_tip_detection
 
 
 @pytest.fixture
