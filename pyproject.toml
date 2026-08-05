@@ -57,7 +57,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.20.1",
     "bluesky >= 1.14.6",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal@mx-bluesky_1555_change_s4_slits_to_common_slits",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal@main",
 ]
 
 
