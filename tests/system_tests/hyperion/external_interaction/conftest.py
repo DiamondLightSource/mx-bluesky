@@ -22,7 +22,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -457,7 +457,7 @@ def composite_for_rotation_scan(
     undulator_for_system_test: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     dcm: DCM,
     robot: BartRobot,
     oav_for_system_test: OAV,
@@ -508,8 +508,8 @@ def composite_for_rotation_scan(
         fake_create_rotation_devices.synchrotron.top_up_start_countdown,
         -1,
     )
-    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback, 0.123)
-    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.x_gap.user_readback, 0.123)
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.y_gap.user_readback, 0.234)
 
     yield fake_create_rotation_devices
 

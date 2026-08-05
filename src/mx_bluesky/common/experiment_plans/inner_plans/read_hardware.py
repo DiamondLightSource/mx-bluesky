@@ -10,7 +10,7 @@ from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
@@ -45,7 +45,7 @@ def read_hardware_for_zocalo(detector: EigerDetector):
 def standard_read_hardware_pre_collection(
     undulator: UndulatorInKeV,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     dcm: DoubleCrystalMonochromator,
     smargon: Smargon,
 ):
