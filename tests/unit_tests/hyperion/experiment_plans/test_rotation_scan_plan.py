@@ -1442,17 +1442,18 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
             )
             omega_end = omega_end[:]
             assert len(omega) == scan.num_images
+            omega_delta_deg = (
+                (scan.num_images - 1)  # length of the fence not the number of posts
+                * multi_params.rotation_increment_deg
+                * scan.rotation_direction.multiplier
+            )
             expected_omega_starts = np.linspace(
                 scan.omega_start_deg,
-                scan.omega_start_deg
-                + (
-                    (scan.num_images - 1)
-                    * multi_params.rotation_increment_deg
-                    * scan.rotation_direction.multiplier
-                ),
+                scan.omega_start_deg + omega_delta_deg,
                 scan.num_images,
             )
             assert np.allclose(omega, expected_omega_starts)
+            # ends are just the starts offset by a constant
             expected_omega_ends = (
                 expected_omega_starts
                 + multi_params.rotation_increment_deg
