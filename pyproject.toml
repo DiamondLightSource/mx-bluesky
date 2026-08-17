@@ -57,7 +57,7 @@ dependencies = [
     "ophyd >= 1.10.5",
     "ophyd-async >= 0.20.1",
     "bluesky >= 1.14.6",
-    "dls-dodal == 2.5.4",
+    "dls-dodal == 2.6.0",
 ]
 
 
