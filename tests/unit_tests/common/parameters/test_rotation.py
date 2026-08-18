@@ -1,6 +1,10 @@
+from pathlib import Path
+
 import pytest
 
-from mx_bluesky.common.parameters.rotation import images_in_sweep
+from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.constants import USE_NUMTRACKER
+from mx_bluesky.common.parameters.rotation import SingleRotationScan, images_in_sweep
 
 
 @pytest.mark.parametrize(
@@ -47,3 +51,26 @@ def test_a_sweep_that_does_not_divide_exactly_rounds_down(
 ):
     # A partial image at the end is not collected, so the tolerance must not round up.
     assert images_in_sweep(scan_width_deg, rotation_increment_deg) == expected
+
+
+def test_detector_params_under_numtracker_raises_rather_than_making_a_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # DetectorParams needs a directory that exists, so detector_params makes one - but
+    # storage_directory is a placeholder rather than a path until numtracker fills it
+    # in, and making that left a directory called "from numtracker" in the cwd.
+    monkeypatch.chdir(tmp_path)
+    params = SingleRotationScan(
+        sample_id=1,
+        visit=USE_NUMTRACKER,
+        parameter_model_version=get_param_version(),
+        file_name="rotations",
+        exposure_time_s=0.01,
+        storage_directory=USE_NUMTRACKER,
+        detector_distance_mm=200,
+    )
+
+    with pytest.raises(ValueError, match="until numtracker"):
+        _ = params.detector_params
+
+    assert list(tmp_path.iterdir()) == []

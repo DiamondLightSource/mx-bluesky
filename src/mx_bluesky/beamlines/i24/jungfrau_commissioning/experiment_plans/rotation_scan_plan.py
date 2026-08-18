@@ -200,8 +200,11 @@ def single_rotation_plan(
             motion_values: RotationMotionProfile,
             composite: RotationScanComposite,
         ):
+            # Not params.detector_params.exposure_time_s: that is the same number by way
+            # of building Eiger-shaped DetectorParams, which needs a storage directory
+            # this plan does not have until numtracker supplies one.
             _jf_trigger_info = create_jungfrau_external_triggering_info(
-                params.num_images, params.detector_params.exposure_time_s
+                params.num_images, params.exposure_time_s
             )
 
             axis = composite.vgonio.omega

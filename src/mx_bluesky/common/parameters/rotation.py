@@ -28,6 +28,7 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
 )
 from mx_bluesky.common.parameters.constants import (
+    USE_NUMTRACKER,
     DetectorParamConstants,
     RotationParamConstants,
 )
@@ -86,6 +87,16 @@ class RotationExperiment(DiffractionExperiment):
         if self.run_number:
             optional_args["run_number"] = self.run_number
         assert self.detector_distance_mm is not None
+        if self.storage_directory == USE_NUMTRACKER:
+            # DetectorParams demands a directory that exists, so this used to make one -
+            # but under numtracker storage_directory is the placeholder string rather
+            # than a path, and making that left a directory literally called
+            # "from numtracker" in the working directory.
+            raise ValueError(
+                "detector_params is unavailable until numtracker has supplied a storage "
+                "directory; see https://github.com/DiamondLightSource/mx-bluesky/issues/1527"
+            )
+        # TODO don't write to storage here https://github.com/DiamondLightSource/mx-bluesky/issues/1780
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,
