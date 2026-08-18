@@ -1,9 +1,6 @@
 import datetime
 import json
-import math
-import os
 import subprocess
-from functools import lru_cache
 
 import bluesky.plan_stubs as bps
 import requests
@@ -12,6 +9,11 @@ from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 
+from mx_bluesky.beamlines.i24.dcserver import (  # noqa: F401  re-exported for callers and tests
+    get_auth_header,
+    get_dcserver_url,
+    resolution_at_detector_edge,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -25,24 +27,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger
 # Collection start/end script to kick off analysis
 COLLECTION_START_SCRIPT = "/dls_sw/i24/scripts/RunAtStartOfCollect-i24-ssx.sh"
 COLLECTION_END_SCRIPT = "/dls_sw/i24/scripts/RunAtEndOfCollect-i24-ssx.sh"
-
-DEFAULT_ISPYB_SERVER = "https://ssx-dcserver.diamond.ac.uk"
-
-CREDENTIALS_LOCATION = "/scratch/ssx_dcserver.key"
-
-
-@lru_cache(maxsize=1)
-def get_auth_header() -> dict:
-    """Read the credentials file and build the Authorisation header"""
-    if not os.path.isfile(CREDENTIALS_LOCATION):
-        SSX_LOGGER.warning(
-            "Could not read %s; attempting to proceed without credentials",
-            CREDENTIALS_LOCATION,
-        )
-        return {}
-    with open(CREDENTIALS_LOCATION) as f:
-        token = f.read().strip()
-    return {"Authorization": "Bearer " + token}
 
 
 def read_beam_info_from_hardware(
@@ -115,7 +99,7 @@ class DCID:
             case _:
                 raise ValueError("Unknown detector:", expt_params.detector_name)
 
-        self.server = server or DEFAULT_ISPYB_SERVER
+        self.server = server or get_dcserver_url()
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
@@ -362,10 +346,9 @@ def get_resolution(detector: Detector, distance: float, wavelength: float) -> fl
     Args:
         detector (Detector): Detector instance, Eiger().
         distance (float): Distance to detector, in mm.
-        wavelength (float): Beam wavelength, in Å.
+        wavelength (float): Beam wavelength, in Å.
 
     Returns:
-        Maximum resolution, in Å.
+        Maximum resolution, in Å.
     """
-    width = detector.image_size_mm[0]
-    return round(wavelength / (2 * math.sin(math.atan(width / (2 * distance)) / 2)), 2)
+    return resolution_at_detector_edge(detector.image_size_mm[0], distance, wavelength)

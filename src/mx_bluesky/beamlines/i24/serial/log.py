@@ -11,6 +11,7 @@ from bluesky.utils import MsgGenerator
 from dodal.log import DEFAULT_GRAYLOG_PORT, ophyd_async_logger
 from dodal.log import LOGGER as DODAL_LOGGER
 
+from mx_bluesky.beamlines.i24.dcserver import DCSERVER_LOGGER
 from mx_bluesky.common.utils.log import do_default_logging_setup
 
 VISIT_PATH = Path("/dls_sw/i24/etc/ssx_current_visit.txt")
@@ -82,6 +83,20 @@ def _integrate_bluesky_logs(parent_logger: logging.Logger):
         log.setLevel(logging.DEBUG)
 
 
+def _mirror_handlers_to_dcserver_logger():
+    """Log the dcserver client to wherever the serial logs go.
+
+    It is shared with the jungfrau plans, so it logs to a logger of its own rather than
+    to SSX_LOGGER; SSX_LOGGER does not propagate, so the serial handlers have to be put
+    on it directly. Replaced rather than added to, so that a second collection does not
+    leave it holding the first one's file handler.
+    """
+    for handler in list(DCSERVER_LOGGER.handlers):
+        DCSERVER_LOGGER.removeHandler(handler)
+    for handler in SSX_LOGGER.handlers:
+        DCSERVER_LOGGER.addHandler(handler)
+
+
 def config(
     logfile: str | None = None,
     write_mode: str = "a",
@@ -109,6 +124,7 @@ def config(
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(file_formatter)
         SSX_LOGGER.addHandler(fh)
+    _mirror_handlers_to_dcserver_logger()
     do_default_logging_setup(
         "mx-bluesky.log",
         DEFAULT_GRAYLOG_PORT,
@@ -151,6 +167,8 @@ def clean_up_log_config_at_end() -> MsgGenerator:
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/609
     for handler in SSX_LOGGER.handlers:
         SSX_LOGGER.removeHandler(handler)
+    for handler in list(DCSERVER_LOGGER.handlers):
+        DCSERVER_LOGGER.removeHandler(handler)
     for handler in DODAL_LOGGER.handlers:
         DODAL_LOGGER.removeHandler(handler)
     yield from bps.null()
