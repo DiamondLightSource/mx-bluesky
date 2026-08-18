@@ -464,10 +464,10 @@ def test_pumpprobe_calc(fake_caget: MagicMock, fake_caput: MagicMock, run_engine
     assert fake_caput.call_count == 9
     fake_caput.assert_has_calls(
         [
-            call(ANY, 0.86),
-            call(ANY, 1.72),
-            call(ANY, 2.58),
-            call(ANY, 4.3),
-            call(ANY, 8.6),
+            call(ANY, 1.1),
+            call(ANY, 2.2),
+            call(ANY, 3.3),
+            call(ANY, 5.5),
+            call(ANY, 11.0),
         ]
     )
