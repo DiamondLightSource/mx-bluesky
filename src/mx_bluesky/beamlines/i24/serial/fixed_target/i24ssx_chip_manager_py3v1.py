@@ -879,7 +879,7 @@ def pumpprobe_calc() -> MsgGenerator:
     SSX_LOGGER.info("Calculate and show exposure and dwell time for each option.")
     exptime = float(caget(pv.me14e_exptime))
     pumpexptime = float(caget(pv.ioc13_gp103))
-    movetime = 0.014
+    movetime = 0.020  # 0.014
     SSX_LOGGER.info(f"X-ray exposure time {exptime}")
     SSX_LOGGER.info(f"Laser dwell time {pumpexptime}")
     repeat1 = 2 * 20 * (movetime + (pumpexptime + exptime) / 2)
