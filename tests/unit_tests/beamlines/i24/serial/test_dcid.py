@@ -201,6 +201,13 @@ def test_ssx_event_chain_has_no_apo_group_without_checker_pattern(
     assert [event["name"] for event in _events(dummy_params_without_pp, 3)] == ["dose"]
 
 
+def test_ssx_event_chain_has_no_apo_group_without_pump_probe(dummy_params_without_pp):
+    # The motion program only honours the checker pattern when pumping
+    params = dummy_params_without_pp.model_copy(update={"checker_pattern": True})
+
+    assert [event["name"] for event in _events(params, 3)] == ["dose"]
+
+
 def test_ssx_event_chain_extruder_never_gets_an_apo_group(dummy_params_ex):
     # ExtruderParameters has no checker_pattern field at all
     assert [event["name"] for event in _events(dummy_params_ex, 3)] == ["dose"]
