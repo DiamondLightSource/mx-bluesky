@@ -83,7 +83,7 @@ def generate_ssx_event_chain(
     parameters: ExtruderParameters | FixedTargetParameters,
     shots_per_position: int,
     pump_probe: bool,
-) -> dict | None:
+) -> dict:
     events = [
         {
             "name": "dose" if shots_per_position > 1 else "probe",
@@ -95,8 +95,9 @@ def generate_ssx_event_chain(
         }
     ]
     if pump_probe:
+        is_checker = False
         match parameters:
-            case FixedTargetParameters():
+            case FixedTargetParameters(checker_pattern=is_checker):
                 # pump then probe - pump_delay corresponds to time *before* first image
                 pump_delay = (
                     -parameters.laser_delay_s
@@ -114,10 +115,8 @@ def generate_ssx_event_chain(
                 "eventType": "LaserExcitation",
             },
         )
-
-    # If checkerboard, then we have separate exposures to cover that
-    match parameters:
-        case FixedTargetParameters(checker_pattern=True):
+        if is_checker:
+            # If checkerboard, then we have separate exposures to cover that
             events.append(
                 {
                     "name": "apo",
