@@ -16,7 +16,7 @@ from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
@@ -51,7 +51,7 @@ class FakeComposite:
     attenuator: BinaryFilterAttenuator
     dcm: DCM
     flux: Flux
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: MinimalSlits
     undulator: UndulatorInKeV
     synchrotron: Synchrotron
     robot: BartRobot

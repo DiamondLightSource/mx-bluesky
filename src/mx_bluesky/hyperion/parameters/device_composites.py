@@ -15,7 +15,7 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.devices.flux import Flux
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
@@ -40,7 +40,7 @@ class HyperionFlyScanXRayCentreComposite(FlyScanEssentialDevices[Smargon]):
     dcm: DoubleCrystalMonochromatorWithDSpacing
     eiger: EigerDetector
     flux: Flux
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: MinimalSlits
     undulator: UndulatorInKeV
     synchrotron: Synchrotron
     zebra: Zebra

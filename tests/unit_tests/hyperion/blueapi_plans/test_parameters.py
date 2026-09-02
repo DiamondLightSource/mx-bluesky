@@ -34,6 +34,19 @@ def test_map_external_to_internal_parameters(tmp_path):
     )
     actual_internal = load_centre_collect_to_internal(external_params)
     assert expected_internal == actual_internal
+    assert not actual_internal.multi_rotation_scan.use_grid_snapshots
+
+
+@pytest.mark.parametrize("expected_roi_mode", [True, False])
+def test_map_external_to_internal_roi_mode(tmp_path, expected_roi_mode):
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/external_load_centre_collect_params.json",
+        tmp_path,
+    )
+    raw_params["robot_load_then_centre"]["use_roi_mode"] = expected_roi_mode
+    external_params = LoadCentreCollectParams(**raw_params)
+    actual_internal = load_centre_collect_to_internal(external_params)
+    assert actual_internal.robot_load_then_centre.use_roi_mode == expected_roi_mode
 
 
 def test_map_external_to_internal_multisample_pin(tmp_path):
@@ -46,6 +59,8 @@ def test_map_external_to_internal_multisample_pin(tmp_path):
 
     assert actual_internal.robot_load_then_centre.grid_width_um == 520
     assert actual_internal.robot_load_then_centre.tip_offset_um == 260
+    assert actual_internal.multi_rotation_scan.use_grid_snapshots
+    assert actual_internal.multi_rotation_scan.snapshot_omegas_deg is None
 
 
 def test_pin_type_to_tip_offset_and_grid_width_raises_value_error_on_unrecognised_type():

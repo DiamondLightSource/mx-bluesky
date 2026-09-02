@@ -23,7 +23,7 @@ from dodal.devices.motors import XYZStage
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot, SampleLocation
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.thawer import Thawer
@@ -80,7 +80,7 @@ class RobotLoadThenCentreComposite:
     pin_tip_detection: PinTipDetection
     gonio: Smargon
     synchrotron: Synchrotron
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: MinimalSlits
     undulator: UndulatorInKeV
     zebra: Zebra
     zocalo: ZocaloResults

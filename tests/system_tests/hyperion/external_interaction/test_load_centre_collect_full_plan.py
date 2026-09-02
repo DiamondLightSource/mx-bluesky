@@ -11,13 +11,18 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky.run_engine import RunEngine
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.synchrotron import SynchrotronMode
 from ispyb.sqlalchemy import BLSample
-from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
+from ophyd_async.core import (
+    AsyncStatus,
+    completed_status,
+    set_mock_attr,
+    set_mock_value,
+)
 
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
@@ -284,8 +289,8 @@ def composite_with_no_diffraction(
     async def mock_zocalo_complete():
         await zocalo._put_results([], {"dcid": 0, "dcgid": 0})
 
-    with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
-        yield load_centre_collect_composite
+    set_mock_attr(zocalo, "trigger", MagicMock(side_effect=mock_zocalo_complete))
+    yield load_centre_collect_composite
 
 
 @pytest.mark.parametrize(
@@ -557,8 +562,10 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
     run_engine.subscribe(robot_load_cb)
     run_engine.subscribe(sample_handling_cb)
 
-    load_centre_collect_composite.robot.set = MagicMock(
-        side_effect=TimeoutError("Simulated timeout")
+    set_mock_attr(
+        load_centre_collect_composite.robot,
+        "set",
+        MagicMock(side_effect=TimeoutError("Simulated timeout")),
     )
     with pytest.raises(TimeoutError, match="Simulated timeout"):
         run_engine(

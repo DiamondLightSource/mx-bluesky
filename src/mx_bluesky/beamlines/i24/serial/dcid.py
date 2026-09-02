@@ -234,7 +234,7 @@ class DCID:
                 raise
 
             resp = requests.post(
-                f"{self.server}/dc",
+                f"{self.server}/dc?autosample=true",
                 json=data,
                 timeout=self.timeout,
                 headers=get_auth_header(),

@@ -13,8 +13,10 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
+from daq_config_server.testing import MockServerResponse, PathToMockDataDict
 from dodal.beamlines import i03
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.aperturescatterguard import (
     ApertureScatterguard,
     ApertureValue,
@@ -41,7 +43,7 @@ from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVConfigBeamCentre, OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -62,6 +64,7 @@ from ophyd_async.core import (
     PathProvider,
     completed_status,
     init_devices,
+    set_mock_attr,
     set_mock_value,
 )
 from ophyd_async.fastcs.panda import HDFPanda
@@ -108,8 +111,6 @@ from mx_bluesky.hyperion.parameters.device_composites import (
 )
 from tests.conftest import TEST_BEAMLINE_PARAMETERS, raw_params_from_file
 from tests.test_data.oav import TEST_DISPLAY_CONFIG, TEST_OAV_ZOOM_LEVELS
-
-pytest_plugins = ["dodal.testing.fixtures.config_server"]
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -186,8 +187,8 @@ async def fail_test_on_unclosed_tasks(request: FixtureRequest):
 BASIC_PRE_SETUP_DOC = {
     "undulator-current_gap": 0,
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
-    "s4_slit_gaps-xgap": 0,
-    "s4_slit_gaps-ygap": 0,
+    "s4_slit_gaps-x_gap": 0,
+    "s4_slit_gaps-y_gap": 0,
     "gonio-x": 10.0,
     "gonio-y": 20.0,
     "gonio-z": 30.0,
@@ -229,6 +230,24 @@ def create_gridscan_callbacks() -> tuple[
             ),
         ),
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_daq_config() -> Generator[PathToMockDataDict, None, None]:
+    mutable_dict = {}
+    mock_config_server = ConfigClient(MockServerResponse(mutable_dict))
+    with (
+        patch(
+            "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
+            mock_config_server,
+            create=True,
+        ),
+        patch(
+            "daq_config_server.client.ConfigClient.from_url",
+            return_value=mock_config_server,
+        ),
+    ):
+        yield mutable_dict
 
 
 @pytest.fixture(autouse=True)
@@ -304,7 +323,9 @@ def mock_zocalo_trigger(zocalo: ZocaloResults, result):
     async def mock_complete(results):
         await zocalo._put_results(results, {"dcid": 0, "dcgid": 0})
 
-    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, result))
+    set_mock_attr(
+        zocalo, "trigger", MagicMock(side_effect=partial(mock_complete, result))
+    )
 
 
 def modified_store_grid_scan_mock(*args, dcids=(0, 0), dcgid=0, **kwargs):
@@ -395,7 +416,11 @@ async def fake_fgs_composite(
         synchrotron=synchrotron,
     )
 
-    fake_composite.eiger.stage = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        fake_composite.eiger,  # type: ignore
+        "stage",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
     # unstage should be mocked on a per-test basis because several rely on unstage
     fake_composite.eiger.set_detector_parameters(
         test_three_d_grid_params.detector_params
@@ -417,7 +442,9 @@ async def fake_fgs_composite(
     async def mock_complete(result):
         await zocalo._put_results([result], {"dcid": 0, "dcgid": 0})
 
-    zocalo.trigger = MagicMock(side_effect=partial(mock_complete, test_result))  # type: ignore
+    set_mock_attr(
+        zocalo, "trigger", MagicMock(side_effect=partial(mock_complete, test_result))
+    )  # type: ignore
     zocalo.timeout_s = 3
     set_mock_value(fake_composite.gonio.x.max_velocity, 10)
 
@@ -470,7 +497,7 @@ async def grid_detect_xrc_devices(
     zocalo: ZocaloResults,
     synchrotron: Synchrotron,
     fast_grid_scan: ZebraFastGridScanThreeD,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     flux: Flux,
     zebra,
     zebra_shutter,
@@ -652,18 +679,20 @@ def patch_config_paths(monkeypatch):
 
 
 @pytest.fixture
-def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
-    return OAVParameters(
-        ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
-    )
+def oav_parameters_for_rotation(
+    mock_daq_config: PathToMockDataDict, test_config_files
+) -> OAVParameters:
+    oav_config_path = test_config_files["oav_config_json"]
+    # mock_daq_config[oav_config_path] = json.loads(oav_config_path)
+    return OAVParameters(get_config_client(), oav_config_json=oav_config_path)
 
 
 @pytest.fixture
-def oav(test_config_files):
+def oav(mock_daq_config: PathToMockDataDict, test_config_files):
     parameters = OAVConfigBeamCentre(
         test_config_files["zoom_params_file"],
         test_config_files["display_config"],
-        ConfigClient(""),
+        get_config_client(),
     )
     oav = i03.oav.build(mock=True, connect_immediately=True, params=parameters)
 
@@ -671,8 +700,12 @@ def oav(test_config_files):
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
-    oav.snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
-    oav.grid_snapshot.trigger = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        oav.snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
+    set_mock_attr(
+        oav.grid_snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
     yield oav
 
 
@@ -689,7 +722,7 @@ def fake_create_rotation_devices(
     undulator: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     dcm: DCM,
     robot: BartRobot,
     oav: OAV,
@@ -700,7 +733,7 @@ def fake_create_rotation_devices(
     sim_run_engine: RunEngineSimulator,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    undulator.set = MagicMock(side_effect=lambda _: completed_status())
+    set_mock_attr(undulator, "set", MagicMock(side_effect=lambda _: completed_status()))
     sim_run_engine.add_handler(
         "read",
         lambda msg: {

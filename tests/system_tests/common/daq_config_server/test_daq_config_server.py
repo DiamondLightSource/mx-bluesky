@@ -1,5 +1,5 @@
 import pytest
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from daq_config_server.models.feature_settings.hyperion_feature_settings import (
     HyperionFeatureSettings,
 )

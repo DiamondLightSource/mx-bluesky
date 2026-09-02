@@ -5,7 +5,7 @@ from sys import argv
 
 from blueapi.config import ApplicationConfig, ConfigLoader
 from blueapi.core import BlueskyContext
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from dodal.common.beamlines.beamline_utils import set_config_client
 
 from mx_bluesky.common.external_interaction import alerting
@@ -33,13 +33,16 @@ DEFAULT_CONFIG_SERVER_ENDPOINT = "https://i03-daq-config.diamond.ac.uk"
 
 
 def initialise_globals(args: HyperionArgs):
-    """Do all early main low-level application initialisation."""
+    """Do all early main low-level application initialization."""
     do_default_logging_setup(
         CONST.SUPERVISOR_LOG_FILE_NAME
         if args.mode == HyperionMode.SUPERVISOR
         else CONST.LOG_FILE_NAME,
         CONST.GRAYLOG_PORT,
         dev_mode=args.dev_mode,
+        process_name="hyperion-supervisor"
+        if args.mode == HyperionMode.SUPERVISOR
+        else "hyperion",
     )
     LOGGER.info(f"Hyperion launched with args:{argv}")
     alerting.set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
@@ -47,7 +50,7 @@ def initialise_globals(args: HyperionArgs):
 
 def initialise_config_server():
     config_client_url = os.getenv("CONFIG_SERVER_URL", DEFAULT_CONFIG_SERVER_ENDPOINT)
-    client = ConfigClient(config_client_url)
+    client = ConfigClient.from_url(config_client_url)
     set_config_client(client)
 
 

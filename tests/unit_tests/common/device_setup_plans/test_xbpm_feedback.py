@@ -11,7 +11,12 @@ from dodal.devices.xbpm_feedback import Pause, XBPMFeedback
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
-from ophyd_async.core import AsyncStatus, completed_status, set_mock_value
+from ophyd_async.core import (
+    AsyncStatus,
+    completed_status,
+    set_mock_attr,
+    set_mock_value,
+)
 
 from mx_bluesky.common.device_setup_plans.xbpm_feedback import (
     unpause_xbpm_feedback_and_set_transmission_to_1,
@@ -26,8 +31,10 @@ from tests.conftest import XBPMAndTransmissionWrapperComposite
 def composite(
     xbpm_and_transmission_wrapper_composite: XBPMAndTransmissionWrapperComposite,
 ) -> XBPMAndTransmissionWrapperComposite:
-    xbpm_and_transmission_wrapper_composite.undulator.set = MagicMock(
-        side_effect=lambda _: completed_status()
+    set_mock_attr(
+        xbpm_and_transmission_wrapper_composite.undulator,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
     )
 
     return xbpm_and_transmission_wrapper_composite
@@ -37,8 +44,10 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
     run_engine, composite: XBPMAndTransmissionWrapperComposite
 ):
     energy_in_kev = 11.3
-    composite.dcm.energy_in_keV.user_readback.read = MagicMock(
-        return_value={"value": {"value": energy_in_kev}}
+    set_mock_attr(
+        composite.dcm.energy_in_keV.user_readback,
+        "read",
+        MagicMock(return_value={"value": {"value": energy_in_kev}}),
     )
 
     @pause_xbpm_feedback_during_collection_at_desired_transmission_decorator(
@@ -59,7 +68,7 @@ async def test_xbpm_decorator_with_undulator_check_decorators(
     # Assert XBPM is stable
     composite.xbpm_feedback.trigger.assert_called_once()
     # Assert DCM energy is read after XBPM is stable
-    composite.dcm.energy_in_keV.user_readback.read.assert_called_once()
+    composite.dcm.energy_in_keV.user_readback.read.assert_called_once()  # type: ignore
     # Assert Undulator is finally set
     composite.undulator.set.assert_called_once()
     # Assert energy passed to the Undulator is the same as read from the DCM
@@ -102,8 +111,10 @@ async def test_given_xbpm_checks_fail_when_plan_run_with_decorator_then_plan_not
         mock()
         yield from bps.null()
 
-    composite.xbpm_feedback.trigger = MagicMock(
-        side_effect=lambda: completed_status(Exception())
+    set_mock_attr(
+        composite.xbpm_feedback,
+        "trigger",
+        MagicMock(side_effect=lambda: completed_status(Exception())),
     )
 
     with pytest.raises(FailedStatus):
@@ -146,7 +157,7 @@ def test_unpause_feedback_and_set_transmission_to_1_times_out_if_timeout_specifi
     async def wait_for_1_s():
         await asyncio.sleep(1)
 
-    xbpm_feedback.trigger = MagicMock(side_effect=wait_for_1_s)
+    set_mock_attr(xbpm_feedback, "trigger", MagicMock(side_effect=wait_for_1_s))
     with pytest.raises(TimeoutError):
         run_engine(
             unpause_xbpm_feedback_and_set_transmission_to_1(

@@ -7,9 +7,9 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
-from dodal.devices.beamlines.i04.beam_centre import CentreEllipseMethod
 from dodal.devices.beamlines.i04.max_pixel import MaxPixel
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
+from dodal.devices.oav.beam_centre.beam_centre import CentreEllipseMethod
 from dodal.devices.oav.oav_detector import OAV, ZoomControllerWithBeamCentres
 from dodal.devices.robot import BartRobot, PinMounted
 from dodal.devices.scintillator import InOut, Scintillator

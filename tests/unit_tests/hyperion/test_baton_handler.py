@@ -785,7 +785,6 @@ async def test_commissioning_signal_set_on_baton_acquire(
                     call.current_user("Hyperion"),
                     call.set_commissioning_signal(baton.commissioning),
                     call.create_parameters_from_agamemnon(),
-                    call.create_parameters_from_agamemnon(),
                 ]
             )
         finally:

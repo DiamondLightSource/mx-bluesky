@@ -23,7 +23,7 @@ from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
@@ -79,7 +79,7 @@ def i04_grid_detect_then_xrc_default_params(
     flux: Flux,
     oav: OAV,
     pin_tip_detection_with_found_pin: PinTipDetection,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     undulator: UndulatorInKeV,
     xbpm_feedback: XBPMFeedback,
     zebra: Zebra,

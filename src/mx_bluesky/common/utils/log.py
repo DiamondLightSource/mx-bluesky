@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing
 from logging.handlers import TimedRotatingFileHandler
 from os import environ
 from pathlib import Path
@@ -90,10 +91,19 @@ def do_default_logging_setup(
     graylog_port: int,
     dev_mode: bool = False,
     integrate_all_logs: bool = True,
+    process_name: str | None = None,
 ):
     """Configures dodal logger so that separate debug and info log files are created,
     info logs are sent to Graylog, info logs are streamed to sys.sterr, and logs from ophyd
-    and bluesky and ophyd-async are optionally included."""
+    and bluesky and ophyd-async are optionally included.
+    Args:
+        file_name: Name of the log file for file-based logging
+        graylog_port: Port number for graylog
+        dev_mode (bool): True if we should not log to production graylog
+        integrate_all_logs (bool): True (the default) to include ophyd-async, bluesky logs in the parent dodal logger
+        process_name (str): Set the process name for LogRecord objects for inclusion in graylog."""
+    if process_name:
+        multiprocessing.current_process().name = process_name
     logging_path, debug_logging_path = _get_logging_dirs(dev_mode)
     handlers = set_up_all_logging_handlers(
         DODAL_LOGGER,

@@ -103,7 +103,7 @@ def test_initialise_configures_logging(
     initialise_globals(args)
 
     mock_logging_setup.assert_called_once_with(
-        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=True, process_name="hyperion"
     )
 
 
@@ -131,7 +131,7 @@ def test_hyperion_in_udc_mode_starts_logging(
     main()
 
     mock_do_default_logging_setup.assert_called_once_with(
-        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False
+        CONST.LOG_FILE_NAME, CONST.GRAYLOG_PORT, dev_mode=False, process_name="hyperion"
     )
 
 
@@ -274,7 +274,7 @@ def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown
     main()
 
 
-@patch("mx_bluesky.hyperion.__main__.ConfigClient")
+@patch("mx_bluesky.hyperion.__main__.ConfigClient.from_url")
 @patch("mx_bluesky.hyperion.__main__.set_config_client")
 @patch(
     "sys.argv",
@@ -291,7 +291,7 @@ def test_sending_main_process_sigterm_in_udc_mode_performs_clean_prompt_shutdown
 )
 def test_supervisor_start_reads_config_client_url(
     mock_set_config_client: MagicMock,
-    mock_config_client_cls: MagicMock,
+    mock_from_url: MagicMock,
     mock_supervisor_mode: MagicMock,
     monkeypatch,
 ):
@@ -300,5 +300,5 @@ def test_supervisor_start_reads_config_client_url(
 
     main()
 
-    mock_config_client_cls.assert_called_once_with(test_url)
-    mock_set_config_client.assert_called_once_with(mock_config_client_cls.return_value)
+    mock_from_url.assert_called_once_with(test_url)
+    mock_set_config_client.assert_called_once_with(mock_from_url.return_value)

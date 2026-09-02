@@ -136,27 +136,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
         )
         synchrotron_mode = _data["synchrotron-synchrotron_mode"]
 
-        # TODO remove this abomination
-        # https://github.com/DiamondLightSource/mx-bluesky/issues/1555
-        if "s4_slit_gaps-xgap" in _data:
-            hwscan_data_collection_info = DataCollectionInfo(
-                undulator_gap1=_data["undulator-current_gap"],
-                synchrotron_mode=synchrotron_mode.value,
-                slitgap_horizontal=_data["s4_slit_gaps-xgap"],
-                slitgap_vertical=_data["s4_slit_gaps-ygap"],
-            )
-
-        elif "s4_slit_gaps-x_gap" in _data:
-            hwscan_data_collection_info = DataCollectionInfo(
-                undulator_gap1=_data["undulator-current_gap"],
-                synchrotron_mode=str(synchrotron_mode),
-                slitgap_horizontal=_data["s4_slit_gaps-x_gap"],
-                slitgap_vertical=_data["s4_slit_gaps-y_gap"],
-            )
-        else:
-            raise ValueError(
-                f"Couldn't read slits from {doc=} and so couldn't update ispyb data collection info."
-            )
+        hwscan_data_collection_info = DataCollectionInfo(
+            undulator_gap1=_data["undulator-current_gap"],
+            synchrotron_mode=str(synchrotron_mode),
+            slitgap_horizontal=_data["s4_slit_gaps-x_gap"],
+            slitgap_vertical=_data["s4_slit_gaps-y_gap"],
+        )
 
         hwscan_data_collection_info = _update_based_on_energy(
             doc, self.params.detector_params, hwscan_data_collection_info
