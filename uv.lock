@@ -692,7 +692,7 @@ wheels = [
 
 [[package]]
 name = "daq-config-server"
-version = "1.5.1"
+version = "1.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -707,9 +707,9 @@ dependencies = [
     { name = "uvicorn", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "xmltodict", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/a2/2fc42d3231be454be244c1dd19a1e36204fe68957b275fc37775efffc9ba/daq_config_server-1.5.1.tar.gz", hash = "sha256:e7dbcd335a1ec06faa777bc0f03039c90aa067b3b71df599cb59ae7cf5fac368", size = 236115, upload-time = "2026-07-28T14:03:52.265Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/50/5870d12cd0a1e93695c5dea7f5ad6714e1a8af6d48f9753678f5aa2a37b3/daq_config_server-1.5.2.tar.gz", hash = "sha256:ca8aada60107c0969f83112d3b6e1d07ab23d5e72d26a968e04bb36ec02f0507", size = 237348, upload-time = "2026-08-14T15:07:36.172Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/6a/7a8d2a4d7c35f1e384e58c559b44fa41d90878b67e1c9689831fe2a1d125/daq_config_server-1.5.1-py3-none-any.whl", hash = "sha256:3076083c3a9a007f635562654d834c8528997316e1764b4cbd46cb324e3904be", size = 35620, upload-time = "2026-07-28T14:03:51.285Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/5b/dc623b063822cae2494d6265ac1077406007495d42513ba2eae66e729b08/daq_config_server-1.5.2-py3-none-any.whl", hash = "sha256:7834f7479af40792a164355bd6acd15f32eeb6803b861eefb27dcb83355de786", size = 36376, upload-time = "2026-08-14T15:07:35.114Z" },
 ]
 
 [[package]]
@@ -810,8 +810,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "2.5.5.dev1+gb4b38f1e0"
-source = { git = "https://github.com/DiamondLightSource/dodal?rev=main#b4b38f1e0cf480faeb29d67695440c45a148f169" }
+version = "2.6.1.dev6+g7da7e4ee2"
+source = { git = "https://github.com/DiamondLightSource/dodal?rev=main#7da7e4ee21a1afb51b6ecf5fda5f09e059444573" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2685,7 +2685,7 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.21.0"
+version = "0.21.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bluesky", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2699,9 +2699,9 @@ dependencies = [
     { name = "stamina", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "velocity-profile", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/13/4a/823545c9f0bd1b8a9695c658caece4a9f0e52d6a0138bd7e02825f7c9cba/ophyd_async-0.21.0.tar.gz", hash = "sha256:082a1494276d69b6e893049c268d13b25a28c7d1528f983d6d1a79faa9b34fdc", size = 668561, upload-time = "2026-08-03T12:17:32.841Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/f0/91b6071faf34e87769e2522ddfabdd9fd592cd8fd12cabf4926408cab70b/ophyd_async-0.21.1.tar.gz", hash = "sha256:d0f2b9c72a444797484071b5f61b7ab0ae307d0779ca750daf2237c6ba5965ea", size = 668752, upload-time = "2026-08-04T08:53:00.232Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/26/8b1bc3feaea1dcfbcea03c48224b418dd04a2b4849c0ed6f0f83e2661899/ophyd_async-0.21.0-py3-none-any.whl", hash = "sha256:a018bc483d904bfcb1146ec714758e026b5386c7d3b626408ea61250713cfd6b", size = 258829, upload-time = "2026-08-03T12:17:31.302Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/fd/aad3337b0d14352589af31719112d25f0f27958547c81ed0dc01301a1b3a/ophyd_async-0.21.1-py3-none-any.whl", hash = "sha256:a94ad8d02a3b03d9cb023d1e988dfc2dbb1ea9a22d6cbea25bbcd9575a8fe1ee", size = 258851, upload-time = "2026-08-04T08:52:58.863Z" },
 ]
 
 [package.optional-dependencies]
