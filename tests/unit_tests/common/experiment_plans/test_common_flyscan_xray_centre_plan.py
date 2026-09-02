@@ -31,6 +31,9 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    grid_position_to_motor_position,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -126,14 +129,16 @@ class TestFlyscanXrayCentrePlan:
             "set",
             MagicMock(side_effect=FailedStatus(AssertionError("Test Exception"))),
         )
-        detector_params = create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample)
+        detector_params = create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample
+        )
         with pytest.raises(FailedStatus):
             run_engine(
                 ispyb_activation_wrapper(
                     common_flyscan_xray_centre(
                         fake_fgs_composite,
                         minimal_diffraction_expt_with_sample,
-                    detector_params,
+                        detector_params,
                         grid_scan_params_3d,
                         beamline_specific,
                     ),
@@ -163,10 +168,9 @@ class TestFlyscanXrayCentrePlan:
     ):
         from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
-        fgs_params = fast_gridscan_params(
-            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        motor_position = grid_position_to_motor_position(
+            grid_scan_params_3d, np.array([1, 2, 3])
         )
-        motor_position = fgs_params.grid_position_to_motor_position(np.array([1, 2, 3]))
         run_engine(move_x_y_z(fake_fgs_composite.gonio, *motor_position))
         bps_abs_set.assert_called_with(
             fake_fgs_composite.gonio,
