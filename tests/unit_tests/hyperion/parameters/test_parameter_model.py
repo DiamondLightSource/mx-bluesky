@@ -10,12 +10,14 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
     GridParamUpdate,
 )
 from mx_bluesky.common.parameters.constants import GridscanParamConstants
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.parameters.rotation import (
     SingleRotationScan,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     HyperionSpecifiedThreeDGridScan,
     OddYStepsError,
+    panda_fast_gridscan_params,
 )
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
@@ -82,9 +84,18 @@ def test_minimal_3d_gridscan_params(minimal_3d_gridscan_params):
 
 def test_cant_do_panda_fgs_with_odd_y_steps(minimal_3d_gridscan_params):
     test_params = HyperionSpecifiedThreeDGridScan(**minimal_3d_gridscan_params)
+    grid_scan_params = GridScanParams(
+        omega_starts_deg=test_params.omega_starts_deg,
+        x_steps=test_params.x_steps,
+        y_steps=test_params.y_steps,
+        x_step_size_um=test_params.x_step_size_um,
+        y_step_sizes_um=test_params.y_step_sizes_um,
+        x_start_um=test_params.x_start_um,
+        y_starts_um=test_params.y_starts_um,
+        z_starts_um=test_params.z_starts_um,
+    )
     with pytest.raises(OddYStepsError):
-        _ = test_params.panda_fast_gridscan_params
-    assert test_params.fast_gridscan_params
+        _ = panda_fast_gridscan_params(test_params, grid_scan_params)
 
 
 def test_serialise_deserialise(minimal_3d_gridscan_params):
