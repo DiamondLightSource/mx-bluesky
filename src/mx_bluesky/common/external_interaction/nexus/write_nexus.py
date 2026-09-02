@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+from dodal.devices.detector import DetectorParams
 from dodal.utils import get_beamline_name
 from nexgen.nxs_utils import Attenuator, Beam, Detector, Goniometer, Source
 from nexgen.nxs_write.nxmx_writer import NXmxFileWriter
@@ -27,8 +28,10 @@ class NexusWriter:
     def __init__(
         self,
         parameters: DiffractionExperiment,
+        detector_params: DetectorParams,
         data_shape: tuple[int, int, int],
         scan_points: AxesPoints,
+        full_num_of_images: int,
         *,
         run_number: int | None = None,
         omega_start_deg: float = 0,
@@ -37,7 +40,6 @@ class NexusWriter:
         vds_start_index: int = 0,
         # override default values when there is more than one collection per
         # detector arming event:
-        full_num_of_images: int | None = None,
         meta_data_run_number: int | None = None,
         axis_direction: AxisDirection = AxisDirection.NEGATIVE,
     ) -> None:
@@ -45,18 +47,16 @@ class NexusWriter:
         self.attenuator: Attenuator | None = None
         self.scan_points: dict = scan_points
         self.data_shape: tuple[int, int, int] = data_shape
-        self.run_number: int = (
-            run_number if run_number else parameters.detector_params.run_number
-        )
-        self.detector: Detector = create_detector_parameters(parameters.detector_params)
+        self.run_number: int = run_number if run_number else detector_params.run_number
+        self.detector: Detector = create_detector_parameters(detector_params)
         self.source: Source = Source(get_beamline_name(""))
         self.directory: Path = Path(parameters.storage_directory)
         self.start_index: int = vds_start_index
-        self.full_num_of_images: int = full_num_of_images or parameters.num_images
+        self.full_num_of_images: int = full_num_of_images
         self.data_filename: str = (
             f"{parameters.file_name}_{meta_data_run_number}"
             if meta_data_run_number
-            else parameters.detector_params.full_filename
+            else detector_params.full_filename
         )
         self.nexus_file: Path = (
             self.directory / f"{parameters.file_name}_{self.run_number}.nxs"

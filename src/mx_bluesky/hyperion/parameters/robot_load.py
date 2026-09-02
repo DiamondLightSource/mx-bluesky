@@ -6,7 +6,6 @@ from mx_bluesky.common.parameters.components import (
     WithVisit,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    GenericGridWithHyperionDetectorParams,
     PinTipCentreThenXrayCentre,
 )
 
@@ -17,7 +16,7 @@ class RobotLoadAndEnergyChange(
     pass
 
 
-class RobotLoadThenCentre(GenericGridWithHyperionDetectorParams):
+class RobotLoadThenCentre(PinTipCentreThenXrayCentre):
     @property
     def robot_load_params(self) -> RobotLoadAndEnergyChange:
         my_params = self.model_dump()
@@ -25,5 +24,4 @@ class RobotLoadThenCentre(GenericGridWithHyperionDetectorParams):
 
     @property
     def pin_centre_then_xray_centre_params(self) -> PinTipCentreThenXrayCentre:
-        my_params = self.model_dump()
-        return PinTipCentreThenXrayCentre(**my_params)
+        return self

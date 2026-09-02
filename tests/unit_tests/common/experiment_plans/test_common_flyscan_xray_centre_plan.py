@@ -10,9 +10,6 @@ from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
-from dodal.devices.detector.det_dim_constants import (
-    EIGER_TYPE_EIGER2_X_16M,
-)
 from dodal.devices.fast_grid_scan import (
     ZebraFastGridScanThreeD,
     set_fast_grid_scan_params,
@@ -34,6 +31,9 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_plan,
 )
+from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
+    grid_position_to_motor_position,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
 )
@@ -47,10 +47,11 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     IspybIds,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
-    SpecifiedThreeDGridScan,
+    create_detector_params_for_grid_scan,
     fast_gridscan_params,
 )
 from mx_bluesky.common.utils.exceptions import (
@@ -97,20 +98,6 @@ def run_engine_with_subs_snapshots_already_taken(run_engine_with_subs, test_even
     return run_engine, subscriptions
 
 
-@pytest.fixture
-def grid_scan_params(test_three_d_grid_params) -> GridScanParams:
-    return GridScanParams(
-        omega_starts_deg=test_three_d_grid_params.omega_starts_deg,
-        x_start_um=test_three_d_grid_params.x_start_um,
-        y_starts_um=test_three_d_grid_params.y_starts_um,
-        z_starts_um=test_three_d_grid_params.z_starts_um,
-        x_steps=test_three_d_grid_params.x_steps,
-        y_steps=test_three_d_grid_params.y_steps,
-        x_step_size_um=test_three_d_grid_params.x_step_size_um,
-        y_step_sizes_um=test_three_d_grid_params.y_step_sizes_um,
-    )
-
-
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback.StoreInIspyb",
     modified_store_grid_scan_mock,
@@ -118,31 +105,22 @@ def grid_scan_params(test_three_d_grid_params) -> GridScanParams:
 class TestFlyscanXrayCentrePlan:
     td: TestData = TestData()
 
-    def test_eiger2_x_16_detector_specified(
-        self,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-    ):
-        assert (
-            test_three_d_grid_params.detector_params.detector_size_constants.det_type_string
-            == EIGER_TYPE_EIGER2_X_16M
-        )
-
     def test_when_run_gridscan_called_then_generator_returned(
         self,
     ):
-        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock(), MagicMock())
+        plan = run_gridscan(MagicMock(), MagicMock(), MagicMock())
         assert isinstance(plan, types.GeneratorType)
 
     def test_when_run_gridscan_called_ispyb_deposition_made_and_records_errors(
         self,
         run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         ispyb_callback = GridDetectAndScanISPyBCallback(
-            param_type=SpecifiedThreeDGridScan
+            param_type=DiffractionExperimentWithSample
         )
         run_engine.subscribe(ispyb_callback)
 
@@ -151,18 +129,23 @@ class TestFlyscanXrayCentrePlan:
             "set",
             MagicMock(side_effect=FailedStatus(AssertionError("Test Exception"))),
         )
+        detector_params = create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample
+        )
         with pytest.raises(FailedStatus):
             run_engine(
                 ispyb_activation_wrapper(
                     common_flyscan_xray_centre(
                         fake_fgs_composite,
-                        test_three_d_grid_params,
-                        grid_scan_params,
-                            beamline_specific,
-                        ),
-                        test_three_d_grid_params,
+                        minimal_diffraction_expt_with_sample,
+                        detector_params,
+                        grid_scan_params_3d,
+                        beamline_specific,
                     ),
-                )
+                    minimal_diffraction_expt_with_sample,
+                    detector_params,
+                ),
+            )
 
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
@@ -178,15 +161,16 @@ class TestFlyscanXrayCentrePlan:
     def test_results_passed_to_move_motors(
         self,
         bps_abs_set: MagicMock,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         fake_fgs_composite: FlyScanEssentialDevices,
         run_engine: RunEngine,
     ):
         from mx_bluesky.common.device_setup_plans.manipulate_sample import move_x_y_z
 
-        fgs_params = fast_gridscan_params(test_three_d_grid_params, grid_scan_params)
-        motor_position = fgs_params.grid_position_to_motor_position(np.array([1, 2, 3]))
+        motor_position = grid_position_to_motor_position(
+            grid_scan_params_3d, np.array([1, 2, 3])
+        )
         run_engine(move_x_y_z(fake_fgs_composite.gonio, *motor_position))
         bps_abs_set.assert_called_with(
             fake_fgs_composite.gonio,
@@ -206,17 +190,22 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         run_engine_with_subs: ReWithSubs,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         run_engine, _ = run_engine_with_subs
 
+        detector_params = create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample
+        )
+
         def wrapped_gridscan_and_move():
             yield from common_flyscan_xray_centre(
                 fake_fgs_composite,
-                test_three_d_grid_params,
-                grid_scan_params,
+                minimal_diffraction_expt_with_sample,
+                detector_params,
+                grid_scan_params_3d,
                 beamline_specific,
             )
 
@@ -232,7 +221,7 @@ class TestFlyscanXrayCentrePlan:
         self,
         check_topup_and_wait,
         run_engine: RunEngine,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
+        grid_scan_params_3d: GridScanParams,
         fake_fgs_composite: FlyScanEssentialDevices,
     ):
         set_mock_attr(
@@ -252,8 +241,8 @@ class TestFlyscanXrayCentrePlan:
                 fgs,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
-                test_three_d_grid_params.scan_points,
-                test_three_d_grid_params.omega_starts_deg,
+                grid_scan_params_3d.scan_points,
+                grid_scan_params_3d.omega_starts_deg,
             )
 
         with pytest.raises(FailedStatus):
@@ -271,10 +260,12 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
     ):
-        fgs_params = fast_gridscan_params(test_three_d_grid_params, grid_scan_params)
+        fgs_params = fast_gridscan_params(
+            minimal_diffraction_expt_with_sample, grid_scan_params_3d
+        )
         beamline_specific.set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             beamline_specific.fgs_motors,
@@ -287,8 +278,7 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 run_gridscan(
                     fake_fgs_composite,
-                    test_three_d_grid_params,
-                    grid_scan_params,
+                    grid_scan_params_3d,
                     beamline_specific,
                 )
             )
@@ -302,8 +292,7 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        grid_scan_params_3d: GridScanParams,
     ):
         exception = FailedStatus()
         exception.__cause__ = Exception()
@@ -314,8 +303,7 @@ class TestFlyscanXrayCentrePlan:
             run_engine(
                 run_gridscan(
                     fake_fgs_composite,
-                    test_three_d_grid_params,
-                    grid_scan_params,
+                    grid_scan_params_3d,
                     beamline_specific,
                 )
             )
@@ -358,18 +346,16 @@ class TestFlyscanXrayCentrePlan:
         mock_kickoff,
         mock_abs_set,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         run_engine_with_subs_snapshots_already_taken: tuple[
             RunEngine,
             tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback],
         ],
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
-        test_three_d_grid_params.x_steps = 9
-        test_three_d_grid_params.y_steps = [10, 12]
-        grid_scan_params.x_steps = 9
-        grid_scan_params.y_steps = [10, 12]
+        grid_scan_params_3d.x_steps = 9
+        grid_scan_params_3d.y_steps = [10, 12]
         run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs_snapshots_already_taken
         # Put both mocks in a parent to easily capture order
         mock_parent = MagicMock()
@@ -393,15 +379,20 @@ class TestFlyscanXrayCentrePlan:
             autospec=True,
         ):
             [run_engine.subscribe(cb) for cb in (nexus_cb, ispyb_cb)]
+            detector_params = create_detector_params_for_grid_scan(
+                minimal_diffraction_expt_with_sample
+            )
             run_engine(
                 ispyb_activation_wrapper(
                     common_flyscan_xray_centre(
                         fake_fgs_composite,
-                        test_three_d_grid_params,
-                        grid_scan_params,
+                        minimal_diffraction_expt_with_sample,
+                        detector_params,
+                        grid_scan_params_3d,
                         beamline_specific,
                     ),
-                    test_three_d_grid_params,
+                    minimal_diffraction_expt_with_sample,
+                    detector_params,
                 )
             )
 
@@ -432,8 +423,7 @@ class TestFlyscanXrayCentrePlan:
         mock_complete,
         mock_wait,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        grid_scan_params_3d: GridScanParams,
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -445,8 +435,7 @@ class TestFlyscanXrayCentrePlan:
         run_engine(
             run_gridscan(
                 fake_fgs_composite,
-                test_three_d_grid_params,
-                grid_scan_params,
+                grid_scan_params_3d,
                 beamline_specific,
             )
         )
@@ -476,8 +465,7 @@ class TestFlyscanXrayCentrePlan:
         mock_wait,
         mock_kickoff,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        grid_scan_params_3d: GridScanParams,
         run_engine: RunEngine,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -507,8 +495,7 @@ class TestFlyscanXrayCentrePlan:
                 bpp.run_wrapper(
                     run_gridscan(
                         fake_fgs_composite,
-                        test_three_d_grid_params,
-                        grid_scan_params,
+                        grid_scan_params_3d,
                         beamline_specific,
                     )
                 )
@@ -597,8 +584,7 @@ class TestFlyscanXrayCentrePlan:
     def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
         fake_fgs_composite: FlyScanEssentialDevices,
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        grid_scan_params_3d: GridScanParams,
         sim_run_engine: RunEngineSimulator,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -620,8 +606,7 @@ class TestFlyscanXrayCentrePlan:
         msgs = sim_run_engine.simulate_plan(
             run_gridscan(
                 fake_fgs_composite,
-                test_three_d_grid_params,
-                grid_scan_params,
+                grid_scan_params_3d,
                 beamline_specific,
             )
         )
@@ -656,25 +641,33 @@ class TestFlyscanXrayCentrePlan:
             RunEngine,
             tuple[GridscanNexusFileCallback, GridDetectAndScanISPyBCallback],
         ],
-        test_three_d_grid_params: SpecifiedThreeDGridScan,
-        grid_scan_params: GridScanParams,
+        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+        grid_scan_params_3d: GridScanParams,
         fake_fgs_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
         run_engine, (nexus_cb, ispyb_cb) = run_engine_with_subs
+        detector_params = create_detector_params_for_grid_scan(
+            minimal_diffraction_expt_with_sample
+        )
 
         def _wrapped_gridscan_and_move():
-            run_generic_ispyb_handler_setup(ispyb_cb, test_three_d_grid_params)
+            run_generic_ispyb_handler_setup(
+                ispyb_cb, minimal_diffraction_expt_with_sample, detector_params
+            )
             yield from common_flyscan_xray_centre(
                 fake_fgs_composite,
-                test_three_d_grid_params,
-                grid_scan_params,
+                minimal_diffraction_expt_with_sample,
+                detector_params,
+                grid_scan_params_3d,
                 beamline_specific,
             )
 
         run_engine(
             ispyb_activation_wrapper(
-                _wrapped_gridscan_and_move(), test_three_d_grid_params
+                _wrapped_gridscan_and_move(),
+                minimal_diffraction_expt_with_sample,
+                detector_params,
             )
         )
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore

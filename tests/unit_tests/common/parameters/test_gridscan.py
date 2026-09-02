@@ -1,15 +1,19 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
+from dodal.devices.detector.det_dim_constants import EIGER_TYPE_EIGER2_X_16M
+from dodal.devices.eiger import FREE_RUN_MAX_IMAGES
 from pydantic import ValidationError
 
-from mx_bluesky.common.parameters.components import get_param_version
-from mx_bluesky.common.parameters.gridscan import (
-    SpecifiedGrids,
-    SpecifiedThreeDGridScan,
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperiment,
 )
-
-
-class GridParamsTest(SpecifiedGrids):
-    def fast_gridscan_params(): ...  # type: ignore
+from mx_bluesky.common.parameters.constants import DetectorParamConstants
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    GridScanParams3D,
+    create_detector_params_for_grid_scan,
+)
 
 
 @pytest.mark.parametrize(
@@ -31,7 +35,7 @@ class GridParamsTest(SpecifiedGrids):
         ([1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], False),
     ],
 )
-def test_specified_grids_validation_error(
+def test_grid_scan_params_validation(
     y_starts_um: list[float],
     z_starts_um: list[float],
     omega_starts_deg: list[int],
@@ -40,18 +44,13 @@ def test_specified_grids_validation_error(
     should_raise: bool,
 ):
     def make_params():
-        GridParamsTest(
+        GridScanParams(
             x_start_um=0,
             y_starts_um=y_starts_um,
             z_starts_um=z_starts_um,
             omega_starts_deg=omega_starts_deg,
             y_step_sizes_um=y_step_sizes_um,
             y_steps=y_steps,
-            sample_id=0,
-            visit="/tmp",
-            parameter_model_version=get_param_version(),
-            file_name="/tmp",
-            storage_directory="/tmp",
             x_steps=5,
         )
 
@@ -64,47 +63,121 @@ def test_specified_grids_validation_error(
         make_params()
 
 
-class SpecifiedThreeDTest(SpecifiedThreeDGridScan):
-    # Skip parent validation for easier testing
-    def _check_lengths_are_same(self):  # type: ignore
-        return self
-
-
 @pytest.mark.parametrize(
-    "y_starts_um, z_starts_um, omega_starts_deg, y_step_sizes_um, y_steps, should_raise",
+    "y_starts_um, z_starts_um, omega_starts_deg, y_step_sizes_um, y_steps, match",
     [
-        ([1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], True),
-        ([1, 1], [1, 1], [1, 1], [1, 1, 1], [1, 1], True),
-        ([1, 1], [1, 1], [1, 1, 1], [1, 1], [1, 1], True),
-        ([1, 1], [1, 1], [1, 1], [1, 1], [1, 1], False),
+        (
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1],
+            "must be length 2 for 3D scans",
+        ),
+        (
+            [1, 1],
+            [1, 1],
+            [1, 1],
+            [1, 1, 1],
+            [1, 1],
+            "Fields must all have the same length:",
+        ),
+        (
+            [1, 1],
+            [1, 1],
+            [1, 1, 1],
+            [1, 1],
+            [1, 1],
+            "Fields must all have the same length:",
+        ),
+        ([1, 1], [1, 1], [1, 1], [1, 1], [1, 1], None),
     ],
 )
-def test_three_d_grid_scan_validation(
+def test_grid_scan_params_3d_validation(
     y_starts_um: list[float],
     z_starts_um: list[float],
     omega_starts_deg: list[int],
     y_step_sizes_um: list[float],
     y_steps: list[int],
-    should_raise: bool,
+    match: str | None,
 ):
     def make_params():
-        SpecifiedThreeDTest(
+        GridScanParams3D(
             x_start_um=0,
             y_starts_um=y_starts_um,
             z_starts_um=z_starts_um,
             omega_starts_deg=omega_starts_deg,
             y_step_sizes_um=y_step_sizes_um,
             y_steps=y_steps,
-            sample_id=0,
-            visit="/tmp",
-            parameter_model_version=get_param_version(),
-            file_name="/tmp",
-            storage_directory="/tmp",
             x_steps=5,
         )
 
-    if should_raise:
-        with pytest.raises(ValidationError, match="must be length 2 for 3D scans"):
+    if match:
+        with pytest.raises(ValidationError, match=match):
             make_params()
     else:
         make_params()
+
+
+def test_create_detector_params_for_grid_scan_populates_from_diffraction_expt(
+    minimal_diffraction_expt_with_sample: DiffractionExperiment,
+):
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
+    assert (
+        detector_params.detector_size_constants.det_type_string
+        == EIGER_TYPE_EIGER2_X_16M
+    )
+    assert detector_params.expected_energy_ev == 100
+    assert detector_params.exposure_time_s == 0.1
+    assert (
+        detector_params.directory
+        == minimal_diffraction_expt_with_sample.storage_directory
+    )
+    assert detector_params.prefix == "file_name"
+    assert detector_params.detector_distance == 100.0
+    assert detector_params.omega_start == 0
+    assert detector_params.omega_increment == 0
+    assert detector_params.num_images_per_trigger == 1
+    assert detector_params.num_triggers == FREE_RUN_MAX_IMAGES
+    assert not detector_params.use_roi_mode
+    assert (
+        detector_params.det_dist_to_beam_converter_path
+        == DetectorParamConstants.BEAM_XY_LUT_PATH
+    )
+    assert (
+        detector_params.trigger_mode
+        == minimal_diffraction_expt_with_sample.trigger_mode
+    )
+    assert detector_params.run_number == 1
+
+
+@patch("mx_bluesky.common.parameters.gridscan.get_run_number")
+def test_create_detector_params_for_grid_scan_computes_run_number_if_unspecified(
+    mock_get_run_number: MagicMock,
+    minimal_diffraction_expt_with_sample: DiffractionExperiment,
+):
+    mock_get_run_number.return_value = 24680
+    minimal_diffraction_expt_with_sample.run_number = None
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
+    mock_get_run_number.assert_called_once_with(
+        minimal_diffraction_expt_with_sample.storage_directory,
+        minimal_diffraction_expt_with_sample.file_name,
+    )
+    assert detector_params.run_number == 24680
+
+
+@patch("mx_bluesky.common.parameters.gridscan.get_run_number")
+def test_create_detector_params_for_grid_scan_uses_run_number_if_specified(
+    mock_get_run_number: MagicMock,
+    minimal_diffraction_expt_with_sample: DiffractionExperiment,
+):
+    minimal_diffraction_expt_with_sample.run_number = 13579
+    detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
+    mock_get_run_number.assert_not_called()
+    assert detector_params.run_number == 13579

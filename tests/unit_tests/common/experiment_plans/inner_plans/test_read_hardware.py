@@ -3,7 +3,6 @@ from __future__ import annotations
 import bluesky.plan_stubs as bps
 import pydantic
 import pytest
-from bluesky import preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import i03
@@ -23,26 +22,7 @@ from dodal.devices.undulator import UndulatorInKeV
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     read_hardware_for_zocalo,
-    read_hardware_plan,
 )
-from mx_bluesky.common.parameters.constants import DocDescriptorNames, PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
-
-
-@pytest.fixture
-def ispyb_plan(test_three_d_grid_params: SpecifiedThreeDGridScan):
-    @bpp.set_run_key_decorator(PlanNameConstants.GRIDSCAN_OUTER)
-    @bpp.run_decorator(  # attach experiment metadata to the start document
-        md={
-            "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
-            "mx_bluesky_parameters": test_three_d_grid_params.model_dump_json(),
-        }
-    )
-    def standalone_read_hardware_for_ispyb(*args):
-        yield from read_hardware_plan([*args], DocDescriptorNames.HARDWARE_READ_PRE)
-        yield from read_hardware_plan([*args], DocDescriptorNames.HARDWARE_READ_DURING)
-
-    return standalone_read_hardware_for_ispyb
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

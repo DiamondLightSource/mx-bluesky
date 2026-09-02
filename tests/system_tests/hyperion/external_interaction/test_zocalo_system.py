@@ -17,15 +17,19 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
     GridscanPlane,
     ispyb_activation_wrapper,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
+)
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 from tests.conftest import create_dummy_scan_spec
 
 """
@@ -61,7 +65,8 @@ def fake_fgs_plan(eiger: EigerDetector):
 
 @pytest.fixture
 def run_zocalo_with_dev_ispyb(
-    dummy_params: HyperionSpecifiedThreeDGridScan,
+    external_callback_expt_params: DiffractionExperimentWithSample,
+    external_callback_grid_scan_params: GridScanParams,
     dummy_ispyb,
     run_engine: RunEngine,
     zocalo_for_fake_zocalo: ZocaloResults,
@@ -71,9 +76,13 @@ def run_zocalo_with_dev_ispyb(
     fake_grid_snapshot_plan,
 ):
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
-        dummy_params.file_name = sample_name
+        external_callback_expt_params.file_name = sample_name
         _, ispyb_callback = create_gridscan_callbacks()
         run_engine.subscribe(ispyb_callback)
+
+        detector_params = create_detector_params_for_grid_scan(
+            external_callback_expt_params
+        )
 
         def trigger_zocalo_after_fast_grid_scan():
             yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
@@ -84,7 +93,9 @@ def run_zocalo_with_dev_ispyb(
                 md={
                     "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
                     "zocalo_environment": EnvironmentConstants.ZOCALO_ENV,
-                    "mx_bluesky_parameters": dummy_params.model_dump_json(),
+                    "mx_bluesky_parameters": external_callback_expt_params.model_dump_json(),
+                    "detector_params": detector_params,
+                    "grid_scan_parameters": external_callback_grid_scan_params,
                 }
             )
             def inner_plan():
@@ -94,7 +105,9 @@ def run_zocalo_with_dev_ispyb(
 
         run_engine(
             ispyb_activation_wrapper(
-                trigger_zocalo_after_fast_grid_scan(), dummy_params
+                trigger_zocalo_after_fast_grid_scan(),
+                external_callback_expt_params,
+                detector_params,
             )
         )
         centre = await zocalo_for_fake_zocalo.centre_of_mass.get_value()
