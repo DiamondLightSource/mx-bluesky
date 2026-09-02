@@ -94,5 +94,4 @@ class PinTipCentreThenXrayCentre(
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
-    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
     tip_offset_um: float = 0
