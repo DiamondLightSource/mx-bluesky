@@ -11,6 +11,7 @@ from ophyd_async.core import (
     callback_on_mock_put,
     completed_status,
     get_mock_put,
+    set_mock_attr,
     set_mock_value,
 )
 
@@ -165,7 +166,11 @@ def test_load_motion_program_data(
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.datetime"
 )
+@patch(
+    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.write_userlog"
+)
 def test_start_i24_with_eiger(
+    fake_userlog,
     fake_datetime,
     fake_sleep,
     fake_sup,
@@ -234,10 +239,9 @@ def test_start_i24_with_eiger(
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls(shutter_call_list)
 
+    fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_0001", 1.0, 0.6)
 
-@patch(
-    "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.write_userlog"
-)
+
 @patch(
     "mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.bps.sleep"
 )
@@ -257,7 +261,6 @@ def test_finish_i24(
     fake_caget,
     fake_cagetstring,
     fake_sleep,
-    fake_userlog,
     zebra,
     pmac,
     shutter,
@@ -285,8 +288,6 @@ def test_finish_i24(
     mock_shutter = get_mock_put(shutter.control)
     mock_shutter.assert_has_calls([call("Close")])
 
-    fake_userlog.assert_called_once_with(dummy_params_without_pp, "chip_01", 0.0, 0.6)
-
 
 @patch("mx_bluesky.beamlines.i24.serial.fixed_target.i24ssx_chip_collect_py3v1.DCID")
 @patch(
@@ -295,10 +296,14 @@ def test_finish_i24(
 def test_run_aborted_plan(
     mock_log: MagicMock, fake_dcid: MagicMock, pmac: PMAC, run_engine
 ):
-    pmac.abort_program.trigger = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        pmac.abort_program,  # type: ignore
+        "trigger",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
     run_engine(run_aborted_plan(pmac, fake_dcid, Exception("Test Exception")))
 
-    pmac.abort_program.trigger.assert_called_once()
+    pmac.abort_program.trigger.assert_called_once()  # type: ignore
     fake_dcid.collection_complete.assert_called_once_with(ANY, aborted=True)
     assert "Test Exception" in mock_log.warning.mock_calls[0].args[0]
 
@@ -345,8 +350,12 @@ async def test_tidy_up_after_collection_plan(
 
 
 async def test_kick_off_and_complete_collection(pmac, dummy_params_with_pp, run_engine):
-    pmac.run_program.kickoff = MagicMock(side_effect=lambda: completed_status())
-    pmac.run_program.complete = MagicMock(side_effect=lambda: completed_status())
+    set_mock_attr(
+        pmac.run_program, "kickoff", MagicMock(side_effect=lambda: completed_status())
+    )
+    set_mock_attr(
+        pmac.run_program, "complete", MagicMock(side_effect=lambda: completed_status())
+    )
 
     async def go_high_then_low():
         set_mock_value(pmac.scanstatus, 1)

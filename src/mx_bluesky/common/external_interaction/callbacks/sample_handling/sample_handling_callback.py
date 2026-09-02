@@ -1,4 +1,3 @@
-from dodal.utils import get_beamline_name
 from event_model import RunStart, RunStop
 
 from mx_bluesky.common.external_interaction.alerting import (
@@ -70,9 +69,7 @@ class SampleHandlingCallback(PlanReactiveCallback):
         sample_status = self._decode_sample_status(exception_type)
         expeye.update_sample_status(self._sample_id, sample_status)
         if sample_status == BLSampleStatus.ERROR_BEAMLINE:
-            beamline = get_beamline_name("")
-            get_alerting_service().raise_alert(
-                f"UDC encountered an error on {beamline}",
+            get_alerting_service().raise_error_alert(
                 f"Hyperion encountered the following beamline error: {reason}",
                 {
                     Metadata.SAMPLE_ID: str(self._sample_id),

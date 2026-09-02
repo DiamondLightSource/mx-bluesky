@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pydantic
 import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from daq_config_server import ConfigClient
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.areadetector.plugins.cam import ColorMode
 from dodal.devices.backlight import Backlight
@@ -75,7 +75,8 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
             oav_snapshot_composite,
             oav_snapshot_params,
             OAVParameters(
-                ConfigClient(""), oav_config_json=test_config_files["oav_config_json"]
+                get_config_client(),
+                oav_config_json=test_config_files["oav_config_json"],
             ),
         )
     )

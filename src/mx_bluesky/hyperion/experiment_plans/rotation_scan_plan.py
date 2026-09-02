@@ -16,7 +16,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.thawer import Thawer
@@ -86,7 +86,7 @@ class RotationScanComposite(OavSnapshotComposite):
     gonio: Smargon
     undulator: UndulatorInKeV
     synchrotron: Synchrotron
-    s4_slit_gaps: S4SlitGaps
+    s4_slit_gaps: MinimalSlits
     sample_shutter: MXZebraShutter
     zebra: Zebra
     oav: OAV

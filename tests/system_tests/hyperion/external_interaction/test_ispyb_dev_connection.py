@@ -411,10 +411,10 @@ def test_ispyb_deposition_in_gridscan(
     storage_directory: str,
 ):
     set_mock_value(
-        grid_detect_then_xray_centre_composite.s4_slit_gaps.xgap.user_readback, 0.1
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.x_gap.user_readback, 0.1
     )
     set_mock_value(
-        grid_detect_then_xray_centre_composite.s4_slit_gaps.ygap.user_readback, 0.1
+        grid_detect_then_xray_centre_composite.s4_slit_gaps.y_gap.user_readback, 0.1
     )
     ispyb_callback = GridDetectAndScanISPyBCallback(
         GenericGridWithHyperionDetectorParams

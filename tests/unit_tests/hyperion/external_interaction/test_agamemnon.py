@@ -3,15 +3,14 @@ from collections.abc import Generator
 from math import isclose
 from pathlib import PosixPath
 from typing import cast
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
-from daq_config_server import ConfigClient
 from daq_config_server.models.feature_settings.hyperion_feature_settings import (
     HyperionFeatureSettings,
 )
-from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.devices.zebra.zebra import RotationDirection
+from requests import ConnectionError, HTTPError, Response, Timeout
 
 from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.hyperion._plan_runner_params import Wait
@@ -30,11 +29,7 @@ from mx_bluesky.hyperion.external_interaction.agamemnon import (
     _instruction_and_data,
     create_parameters_from_agamemnon,
 )
-
-
-@pytest.fixture(autouse=True)
-def mock_config_client():
-    set_config_client(ConfigClient("http://localhost"))
+from mx_bluesky.hyperion.plan_runner import PlanError
 
 
 def set_up_agamemnon_params(
@@ -287,11 +282,11 @@ def test_create_parameters_from_agamemnon_contains_expected_robot_load_then_cent
         assert str(robot_load_params.parameter_model_version) == "6.0.0"
         assert (
             robot_load_params.storage_directory
-            == "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring"
+            == "/dls/i03/data/2025/mx34598-77/xraycentring/auto/CBLBA/CBLBA-x00242"
         )
         assert robot_load_params.file_name == "CBLBA-x00242"
         assert robot_load_params.snapshot_directory == PosixPath(
-            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/xraycentring/snapshots"
+            "/dls/i03/data/2025/mx34598-77/jpegs/auto/CBLBA/CBLBA-x00242"
         )
         assert robot_load_params.use_roi_mode == expected_roi_mode
 
@@ -331,7 +326,7 @@ def test_create_parameters_from_agamemnon_contains_expected_rotation_data(
         )
         assert rotation_params.file_name == "CBLBA-x00242"
         assert rotation_params.snapshot_directory == PosixPath(
-            "/dls/i03/data/2025/mx34598-77/auto/CBLBA/CBLBA-x00242/snapshots"
+            "/dls/i03/data/2025/mx34598-77/jpegs/auto/CBLBA/CBLBA-x00242"
         )
 
     individual_scans = list(
@@ -439,6 +434,125 @@ def test_create_parameters_from_agamemnon_creates_wait(agamemnon_response):
     assert len(params) == 1
     assert isinstance(params[0], Wait)
     assert params[0].duration_s == 12.34
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.time.sleep", MagicMock())
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_create_parameters_from_agamemnon_retries_on_timeout_error(
+    mock_requests: MagicMock,
+):
+    mock_requests.get.side_effect = Timeout()
+    with pytest.raises(PlanError, match="Unable to fetch instruction from agamemnon"):
+        create_parameters_from_agamemnon()
+    mock_requests.get.assert_has_calls(
+        [
+            call(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+        ]
+        * 3
+    )
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.time.sleep")
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests")
+def test_create_parameters_from_agamemnon_retries_on_connection_error(
+    mock_requests: MagicMock,
+    mock_sleep: MagicMock,
+):
+    mock_requests.get.side_effect = ConnectionError()
+    parent = MagicMock()
+    parent.attach_mock(mock_sleep, "sleep")
+    parent.attach_mock(mock_requests, "requests")
+    with pytest.raises(PlanError, match="Unable to fetch instruction from agamemnon"):
+        create_parameters_from_agamemnon()
+    parent.assert_has_calls(
+        [
+            call.requests.get(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+            call.sleep(2),
+            call.requests.get(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+            call.sleep(4),
+            call.requests.get(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+        ]
+    )
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.time.sleep")
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests.get")
+def test_create_parameters_from_agamemnon_retries_on_500_error(
+    mock_requests_get: MagicMock,
+    mock_sleep: MagicMock,
+    mock_alert_service: MagicMock,
+):
+    response = Mock(spec=Response)
+    response.status_code = 500
+    response.raise_for_status.side_effect = HTTPError("Test 500 error", response)
+    mock_requests_get.return_value = response
+    parent = MagicMock()
+    parent.attach_mock(mock_sleep, "sleep")
+    parent.requests.attach_mock(mock_requests_get, "get")
+    parent.attach_mock(response, "response")
+    with pytest.raises(PlanError, match="Unable to fetch instruction from agamemnon"):
+        create_parameters_from_agamemnon()
+    parent.assert_has_calls(
+        [
+            call.requests.get(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+            call.response.raise_for_status(),
+            call.sleep(2),
+            call.requests.get(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+            call.response.raise_for_status(),
+            call.sleep(4),
+            call.requests.get(
+                "http://agamemnon.diamond.ac.uk/getnextcollect/i03",
+                headers={"Accept": "application/json"},
+            ),
+            call.response.raise_for_status(),
+        ]
+    )
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "Unable to fetch instruction from agamemnon after 3 attempts, ending UDC.", {}
+    )
+
+
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.time.sleep")
+@patch("mx_bluesky.hyperion.external_interaction.agamemnon.requests.get")
+def test_create_parameters_from_agamemnon_fails_on_400_error_and_ends_udc(
+    mock_requests_get: MagicMock,
+    mock_sleep: MagicMock,
+    mock_alert_service: MagicMock,
+):
+    response = Mock(spec=Response)
+    response.status_code = 400
+    response.raise_for_status.side_effect = HTTPError("Test 400 error", response)
+    mock_requests_get.return_value = response
+    parent = MagicMock()
+    parent.attach_mock(mock_sleep, "sleep")
+    parent.requests.attach_mock(mock_requests_get, "get")
+    with pytest.raises(
+        PlanError, match="Agamemnon returned unexpected HTTP response status code 400"
+    ):
+        create_parameters_from_agamemnon()
+    mock_requests_get.assert_called_once()
+    mock_sleep.assert_not_called()
+    mock_alert_service.raise_error_alert.assert_called_once_with(
+        "Agamemnon returned unexpected HTTP response status code 400", {}
+    )
 
 
 @pytest.mark.parametrize(

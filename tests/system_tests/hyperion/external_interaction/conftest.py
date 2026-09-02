@@ -22,7 +22,7 @@ from dodal.devices.flux import Flux
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
@@ -42,6 +42,7 @@ from ophyd_async.core import (
     AsyncStatus,
     callback_on_mock_put,
     completed_status,
+    set_mock_attr,
     set_mock_value,
 )
 from sqlalchemy import create_engine
@@ -252,8 +253,8 @@ def zocalo_for_system_test() -> Generator[ZocaloResults, None, None]:
         patch("dodal.devices.zocalo.zocalo_results._get_zocalo_connection"),
     ):
         workflows.recipe.wrap_subscribe.side_effect = mock_worfklow_subscribe
-        with patch.object(zocalo, "trigger", side_effect=mock_zocalo_complete):
-            yield zocalo
+        set_mock_attr(zocalo, "trigger", MagicMock(side_effect=mock_zocalo_complete))
+        yield zocalo
 
 
 @pytest.fixture
@@ -343,14 +344,20 @@ def grid_detect_then_xray_centre_composite(
         patch.object(eiger, "wait_on_arming_if_started"),
         # xsize, ysize will always be wrong since computed as 0 before we get here
         # patch up load_microns_per_pixel connect to receive non-zero values
-        patch.object(
-            ophyd_pin_tip_detection, "trigger", side_effect=mock_pin_tip_detect
-        ),
-        patch.object(fast_grid_scan, "kickoff", side_effect=lambda: completed_status()),
-        patch.object(
-            fast_grid_scan, "complete", side_effect=lambda: completed_status()
-        ),
     ):
+        set_mock_attr(
+            ophyd_pin_tip_detection,
+            "trigger",
+            MagicMock(side_effect=mock_pin_tip_detect),
+        )
+        set_mock_attr(
+            fast_grid_scan, "kickoff", MagicMock(side_effect=lambda: completed_status())
+        )
+        set_mock_attr(
+            fast_grid_scan,
+            "complete",
+            MagicMock(side_effect=lambda: completed_status()),
+        )
         yield composite
 
 
@@ -376,20 +383,26 @@ def fgs_composite_for_fake_zocalo(
     set_mock_value(
         hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
     )
-    hyperion_flyscan_xrc_composite.eiger.unstage = MagicMock(
-        side_effect=lambda: completed_status()
-    )  # type: ignore
-    hyperion_flyscan_xrc_composite.gonio.stub_offsets.set = MagicMock(
-        side_effect=lambda _: completed_status()
-    )  # type: ignore
+    set_mock_attr(
+        hyperion_flyscan_xrc_composite.eiger,  # type: ignore
+        "unstage",
+        MagicMock(side_effect=lambda: completed_status()),
+    )
+    set_mock_attr(
+        hyperion_flyscan_xrc_composite.gonio.stub_offsets,
+        "set",
+        MagicMock(side_effect=lambda _: completed_status()),
+    )
     callback_on_mock_put(
         hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.run_cmd,
         lambda *args, **kwargs: set_mock_value(
             hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.status, 1
         ),
     )
-    hyperion_flyscan_xrc_composite.zebra_fast_grid_scan.complete = MagicMock(
-        side_effect=lambda: completed_status()
+    set_mock_attr(
+        hyperion_flyscan_xrc_composite.zebra_fast_grid_scan,
+        "complete",
+        MagicMock(side_effect=lambda: completed_status()),
     )
     hyperion_flyscan_xrc_composite.zocalo = zocalo_for_fake_zocalo
     return hyperion_flyscan_xrc_composite
@@ -413,8 +426,10 @@ def pin_tip_no_pin_found(ophyd_pin_tip_detection):
             numpy.array([]),
         )
 
-    with patch.object(ophyd_pin_tip_detection, "trigger", side_effect=no_pin_tip_found):
-        yield ophyd_pin_tip_detection
+    set_mock_attr(
+        ophyd_pin_tip_detection, "trigger", MagicMock(side_effect=no_pin_tip_found)
+    )
+    yield ophyd_pin_tip_detection
 
 
 @pytest.fixture
@@ -442,7 +457,7 @@ def composite_for_rotation_scan(
     undulator_for_system_test: UndulatorInKeV,
     aperture_scatterguard: ApertureScatterguard,
     synchrotron: Synchrotron,
-    s4_slit_gaps: S4SlitGaps,
+    s4_slit_gaps: MinimalSlits,
     dcm: DCM,
     robot: BartRobot,
     oav_for_system_test: OAV,
@@ -452,8 +467,10 @@ def composite_for_rotation_scan(
     beamsize: BeamsizeBase,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
-    oav_for_system_test.zoom_controller.level.describe = AsyncMock(
-        return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}
+    set_mock_attr(
+        oav_for_system_test.zoom_controller.level,
+        "describe",
+        AsyncMock(return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}),
     )
 
     fake_create_rotation_devices = RotationScanComposite(
@@ -491,8 +508,8 @@ def composite_for_rotation_scan(
         fake_create_rotation_devices.synchrotron.top_up_start_countdown,
         -1,
     )
-    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.xgap.user_readback, 0.123)
-    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.ygap.user_readback, 0.234)
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.x_gap.user_readback, 0.123)
+    set_mock_value(fake_create_rotation_devices.s4_slit_gaps.y_gap.user_readback, 0.234)
 
     yield fake_create_rotation_devices
 

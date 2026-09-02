@@ -23,7 +23,7 @@ from dodal.devices.mx_phase1.beamstop import Beamstop
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.robot import BartRobot
-from dodal.devices.s4_slit_gaps import S4SlitGaps
+from dodal.devices.slits import MinimalSlits
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
@@ -134,7 +134,7 @@ def i04_default_grid_detect_and_xray_centre(
     flux: Flux = inject("flux"),
     oav: OAV = inject("oav"),
     pin_tip_detection: PinTipDetection = inject("pin_tip_detection"),
-    s4_slit_gaps: S4SlitGaps = inject("s4_slit_gaps"),
+    s4_slit_gaps: MinimalSlits = inject("s4_slit_gaps"),
     undulator: UndulatorInKeV = inject("undulator"),
     xbpm_feedback: XBPMFeedback = inject("xbpm_feedback"),
     zebra: Zebra = inject("zebra"),

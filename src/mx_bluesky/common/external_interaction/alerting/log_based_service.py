@@ -6,6 +6,7 @@ from dodal.utils import get_beamline_name
 
 from mx_bluesky.common.external_interaction.alerting import Metadata
 from mx_bluesky.common.external_interaction.alerting._service import (
+    AlertService,
     ExtraMetadata,
     graylog_url,
     ispyb_url,
@@ -15,7 +16,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping impor
 )
 
 
-class LoggingAlertService:
+class LoggingAlertService(AlertService):
     """
     Implement an alert service that raises alerts by generating a specially formatted
     log message, that may be intercepted by a logging service such as graylog and

@@ -2,11 +2,9 @@
 This module contains the parameter models exported via the hyperion-blueapi REST interface.
 """
 
-from typing import Self
+from typing import Any, Literal, Self, TypeAlias
 
-from pydantic import BaseModel, model_validator, Field
-from typing import Any, Literal, TypeAlias
-
+from pydantic import BaseModel, Field, model_validator
 from pydantic.config import ConfigDict
 
 from mx_bluesky.common.parameters.components import (
@@ -41,6 +39,7 @@ PinTypeParam: TypeAlias = SingleSamplePinTypeParam | MultiSamplePinTypeParam
 
 class RobotLoadThenCentreParams(HyperionParam):
     storage_directory: str
+    snapshot_directory: str
     file_name: str
     transmission_frac: float
     exposure_time_s: float
@@ -64,6 +63,7 @@ class MultiRotationScanParams(HyperionParam):
     comment: str
     file_name: str
     storage_directory: str
+    snapshot_directory: str
     exposure_time_s: float
     rotation_increment_deg: float
     snapshot_omegas_deg: list[float]
@@ -110,12 +110,14 @@ def load_centre_collect_to_internal(
 ) -> LoadCentreCollect:
     params_as_dict = external_params.model_dump()
     params_as_dict["parameter_model_version"] = get_param_version()
-    tip_offset, grid_width = pin_type_to_tip_offset_and_grid_width(
-        external_params.robot_load_then_centre.pin_type
-    )
+    pin_type = external_params.robot_load_then_centre.pin_type
+    tip_offset, grid_width = pin_type_to_tip_offset_and_grid_width(pin_type)
     params_as_dict["robot_load_then_centre"]["grid_width_um"] = grid_width
     params_as_dict["robot_load_then_centre"]["tip_offset_um"] = tip_offset
     del params_as_dict["robot_load_then_centre"]["pin_type"]
+    if pin_type.name == "msp":
+        params_as_dict["multi_rotation_scan"]["use_grid_snapshots"] = True
+        params_as_dict["multi_rotation_scan"]["snapshot_omegas_deg"] = None
 
     return LoadCentreCollect(**params_as_dict)
 
