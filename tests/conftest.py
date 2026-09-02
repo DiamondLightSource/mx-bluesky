@@ -726,8 +726,12 @@ def oav(test_config_files):
     set_mock_value(oav.grid_snapshot.x_size, 1024)
     set_mock_value(oav.grid_snapshot.y_size, 768)
 
-    set_mock_attr(oav.snapshot, "trigger", MagicMock(side_effect=lambda: completed_status()))
-    set_mock_attr(oav.grid_snapshot, "trigger", MagicMock(side_effect=lambda: completed_status()))
+    set_mock_attr(
+        oav.snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
+    set_mock_attr(
+        oav.grid_snapshot, "trigger", MagicMock(side_effect=lambda: completed_status())
+    )
     yield oav
 
 
