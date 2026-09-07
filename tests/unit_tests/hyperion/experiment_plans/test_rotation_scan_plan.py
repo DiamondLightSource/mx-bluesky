@@ -15,7 +15,7 @@ from bluesky import FailedStatus, Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.maths import AngleWithPhase
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector.detector_motion import ShutterState
@@ -39,6 +39,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.external_interaction.nexus.nexus_utils import AxisDirection
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.constants import DocDescriptorNames
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
@@ -337,14 +338,59 @@ async def test_full_rotation_plan_smargon_settings(
 
 
 @pytest.mark.timeout(2)
+@patch(
+    "bluesky.preprocessors.__read_and_stash_a_motor",
+    MagicMock(fake_read),
+)
+@pytest.mark.parametrize(
+    "aperture_policy, expected_aperture",
+    [
+        [AperturePolicy.SMALL, ApertureValue.SMALL],
+        [AperturePolicy.MEDIUM, ApertureValue.MEDIUM],
+        [AperturePolicy.LARGE, ApertureValue.LARGE],
+        [AperturePolicy.AUTO, ApertureValue.LARGE],
+    ],
+)
 async def test_rotation_plan_moves_aperture_correctly(
-    run_full_rotation_plan: RotationScanComposite,
+    aperture_policy: AperturePolicy,
+    expected_aperture: ApertureValue,
+    sim_run_engine_for_rotation: RunEngineSimulator,
+    test_rotation_params: RotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
 ) -> None:
-    aperture_scatterguard: ApertureScatterguard = (
-        run_full_rotation_plan.aperture_scatterguard
+    test_rotation_params.selected_aperture = aperture_policy
+    msgs = sim_run_engine_for_rotation.simulate_plan(
+        rotation_scan_internal(
+            fake_create_rotation_devices,
+            test_rotation_params,
+            oav_parameters_for_rotation,
+        ),
     )
-    assert (
-        await aperture_scatterguard.selected_aperture.get_value() == ApertureValue.SMALL
+    aperture_scatterguard = fake_create_rotation_devices.aperture_scatterguard
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "prepare"
+            and msg.obj is aperture_scatterguard
+            and msg.args[0] == expected_aperture
+        ),
+    )
+    prepare_group = msgs[0].kwargs["group"]
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == prepare_group
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is aperture_scatterguard.selected_aperture
+            and msg.args[0] == expected_aperture
+        ),
+    )
+    set_group = msgs[0].kwargs["group"]
+    assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "wait" and msg.kwargs["group"] == set_group
     )
 
 
