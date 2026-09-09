@@ -14,6 +14,7 @@ from requests import ConnectionError, HTTPError, Response, Timeout
 
 from mx_bluesky.common.external_interaction.alerting import get_alerting_service
 from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
     WithVisit,
 )
 from mx_bluesky.common.parameters.constants import (
@@ -205,6 +206,12 @@ def _populate_parameters_from_agamemnon(
     xrc_storage_directory, xrc_file_name = path.split(agamemnon_params["xrc_prefix"])
     snapshot_directory = agamemnon_params["jpegs_dir"]
     use_roi_mode = get_hyperion_feature_settings().XRC_USE_ROI_MODE
+    aperture_policy = (
+        AperturePolicy.AUTO
+        if isinstance(pin_type, SingleSamplePinTypeParam)
+        else AperturePolicy.LARGE
+    )
+
     return [
         LoadCentreCollectParams.model_validate(
             {
@@ -236,6 +243,7 @@ def _populate_parameters_from_agamemnon(
                     "exposure_time_s": collection["exposure_time"],
                     "file_name": rotation_file_name,
                     "transmission_frac": collection["transmission"],
+                    "selected_aperture": aperture_policy,
                     "rotation_increment_deg": collection["omega_increment"],
                     "ispyb_experiment_type": collection["experiment_type"],
                     "snapshot_omegas_deg": [0.0, 90.0, 180.0, 270.0],

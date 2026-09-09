@@ -27,6 +27,7 @@
     "storage_directory": "{tmp_data}/123457/",
     "snapshot_directory": "{tmp_data}/snapshots/123457",
     "transmission_frac": 0.05,
+    "selected_aperture": "LARGE_APERTURE",
     "exposure_time_s": 0.004,
     "rotation_increment_deg": 0.1,
     "ispyb_experiment_type": "SAD",
