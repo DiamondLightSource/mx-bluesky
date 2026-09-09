@@ -25,13 +25,13 @@ from mx_bluesky.beamlines.i24.web_gui_plans.oav_plans import (
 )
 def test_move_block_on_arrow_click(direction, expected_value, pmac, run_engine):
     with patch(
-        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
-    ) as mock_abs_set:
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.rel_set",
+    ) as mock_rel_set:
         run_engine(move_block_on_arrow_click(Direction(direction), pmac))
         if direction in ["left", "right"]:
-            mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
+            mock_rel_set.assert_any_call(pmac.x, expected_value, wait=True)
         else:
-            mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+            mock_rel_set.assert_any_call(pmac.y, expected_value, wait=True)
 
 
 @pytest.mark.parametrize(
@@ -51,15 +51,15 @@ def test_move_window_on_arrow_click(
     direction, move_size, expected_value, pmac, run_engine
 ):
     with patch(
-        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
-    ) as mock_abs_set:
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.rel_set",
+    ) as mock_rel_set:
         run_engine(
             move_window_on_arrow_click(Direction(direction), MoveSize(move_size), pmac)
         )
         if direction in ["left", "right"]:
-            mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
+            mock_rel_set.assert_any_call(pmac.x, expected_value, wait=True)
         else:
-            mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+            mock_rel_set.assert_any_call(pmac.y, expected_value, wait=True)
 
 
 @pytest.mark.parametrize(
@@ -79,15 +79,15 @@ def test_move_nudge_on_arrow_click(
     direction, move_size, expected_value, pmac, run_engine
 ):
     with patch(
-        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
-    ) as mock_abs_set:
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.rel_set",
+    ) as mock_rel_set:
         run_engine(
             move_nudge_on_arrow_click(Direction(direction), MoveSize(move_size), pmac)
         )
         if direction in ["left", "right"]:
-            mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
+            mock_rel_set.assert_any_call(pmac.x, expected_value, wait=True)
         else:
-            mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+            mock_rel_set.assert_any_call(pmac.y, expected_value, wait=True)
 
 
 @pytest.mark.parametrize(
