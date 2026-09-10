@@ -51,7 +51,7 @@ async def test_configure_zebra_and_shutter_for_auto(
 async def test_zebra_cleanup(run_engine, zebra: Zebra, zebra_shutter: MXZebraShutter):
     run_engine(tidy_up_zebra_after_gridscan(zebra, zebra_shutter, wait=True))
     assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
+        await zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.PC_PULSE
     )
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.PC_GATE
@@ -68,7 +68,7 @@ async def test_zebra_set_up_for_gridscan(
     composite = Composite(zebra, zebra_shutter)
     run_engine(setup_zebra_for_gridscan(composite, wait=True))
     assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
+        await zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.IN3_TTL
     )
     assert await _get_shutter_input_2(zebra) == zebra.mapping.sources.IN4_TTL
@@ -113,6 +113,6 @@ async def test_zebra_set_up_for_rotation(
     assert await zebra.pc.gate_start.get_value() == start_angle
     assert await zebra.pc.pulse_start.get_value() == shutter_opening_s
     assert (
-        await zebra.output.out_pvs[ttl_input_for_detector_to_use].get_value()
+        await zebra.output.out_ttl_pvs[ttl_input_for_detector_to_use].get_value()
         == zebra.mapping.sources.PC_PULSE
     )
