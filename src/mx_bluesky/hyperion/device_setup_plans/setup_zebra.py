@@ -25,7 +25,7 @@ def setup_zebra_for_panda_flyscan(
 ):
     # Forwards eiger trigger signal from panda
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR],
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_DETECTOR],
         zebra.mapping.sources.IN1_TTL,
         group=group,
     )
@@ -36,13 +36,13 @@ def setup_zebra_for_panda_flyscan(
     )
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_XSPRESS3],
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_XSPRESS3],
         zebra.mapping.sources.DISCONNECT,
         group=group,
     )
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_PANDA],
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_PANDA],
         zebra.mapping.sources.IN3_TTL,
         group=group,
     )  # Tells panda that motion is beginning/changing direction
