@@ -809,8 +809,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "3.0.2.dev6+g950365bfd"
-source = { git = "https://github.com/DiamondLightSource/dodal?rev=add_lvds_to_zebra_mapping#950365bfd238561db7198c6db01c1f47155b2875" }
+version = "3.0.2.dev4+gcfc632db1"
+source = { git = "https://github.com/DiamondLightSource/dodal?rev=main#cfc632db1d4eb780acfbfa2e11600c1bdeeaded8" }
 dependencies = [
     { name = "aiofiles", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "aiohttp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2122,7 +2122,7 @@ requires-dist = [
     { name = "caproto" },
     { name = "daq-config-server", specifier = ">=1.5.1" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal?rev=add_lvds_to_zebra_mapping" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal?rev=main" },
     { name = "fastapi", extras = ["all"] },
     { name = "flask-restful" },
     { name = "jupyterlab" },
