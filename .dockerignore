@@ -5,8 +5,10 @@
 .ruff_cache
 **/__pycache__/
 
+# _version.py updated when image is built
+**/_version.py
+
 # virtualenv stuff - this gets built by the docker script
 .venv
 activate
-
 tmp

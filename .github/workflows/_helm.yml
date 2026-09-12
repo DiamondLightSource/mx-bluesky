@@ -27,9 +27,16 @@ jobs:
           TAG=${GITHUB_REF#refs/tags/}
           echo "version=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Package and push chart
+      - name: Package and push mx-bluesky-blueapi chart
         if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           helm dependencies update helm/mx-bluesky-blueapi
           helm package helm/mx-bluesky-blueapi --version ${{ steps.meta.outputs.version }} --app-version ${{ steps.meta.outputs.version }} -d /tmp/
           helm push /tmp/mx-bluesky-blueapi-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/diamondlightsource/charts
+
+      - name: Package and push hyperion chart
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+        run: |
+          helm dependencies update helm/hyperion
+          helm package helm/hyperion --version ${{ steps.meta.outputs.version }} --app-version ${{ steps.meta.outputs.version }} -d /tmp/
+          helm push /tmp/hyperion-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/diamondlightsource/charts
