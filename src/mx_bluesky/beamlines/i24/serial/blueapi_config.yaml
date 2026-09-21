@@ -4,6 +4,8 @@ env:
       module: dodal.beamlines.i24
     - kind: planFunctions
       module: mx_bluesky.beamlines.i24.serial
+    - kind: planFunctions
+      module: mx_bluesky.beamlines.i24
   events:
     broadcast_status_events: false
 api:
