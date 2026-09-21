@@ -158,11 +158,11 @@ class TestFlyscanXrayCentrePlan:
                         fake_fgs_composite,
                         test_three_d_grid_params,
                         grid_scan_params,
-                            beamline_specific,
-                        ),
-                        test_three_d_grid_params,
+                        beamline_specific,
                     ),
-                )
+                    test_three_d_grid_params,
+                ),
+            )
 
         ispyb_callback.ispyb.end_deposition.assert_called_once_with(  # type: ignore
             IspybIds(data_collection_group_id=0, data_collection_ids=(0, 0)),
