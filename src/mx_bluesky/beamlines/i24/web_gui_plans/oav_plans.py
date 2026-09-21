@@ -4,6 +4,7 @@ import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.beamlines.i24.pmac import PMAC
+from dodal.devices.oav.oav_detector import OAV
 
 
 class MoveSize(Enum):
@@ -37,8 +38,7 @@ def _move_direction(magnitude: float, direction: Direction, pmac):
         case Direction.RIGHT:
             x_move = magnitude
 
-    yield from bps.rel_set(pmac.x, x_move, wait=True)
-    yield from bps.rel_set(pmac.y, y_move, wait=True)
+    yield from bps.mvr(pmac.x, x_move, pmac.y, y_move)
 
 
 def move_block_on_arrow_click(
@@ -84,11 +84,11 @@ def focus_on_oav_view(
     if direction == FocusDirection.IN:
         magnitude = -magnitude
 
-    yield from bps.rel_set(pmac.z, magnitude, wait=True)
+    yield from bps.mvr(pmac.z, magnitude)
 
 
 def move_on_oav_view_click(
-    position: tuple[int, int], oav=inject("oav"), pmac: PMAC = inject("pmac")
+    position: tuple[int, int], oav: OAV = inject("oav"), pmac: PMAC = inject("pmac")
 ) -> MsgGenerator:
     x = position[0]
     y = position[1]
@@ -99,4 +99,4 @@ def move_on_oav_view_click(
     x_mm = (x * x_microns_per_pixel) / 1000
     y_mm = (y * y_microns_per_pixel) / 1000
 
-    yield from bps.mv(pmac.x, x_mm, pmac.y, y_mm, wait=True)
+    yield from bps.mvr(pmac.x, x_mm, pmac.y, y_mm)
