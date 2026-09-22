@@ -22,7 +22,7 @@ def test_visit_extracted_from_numtracker(
     # BlueAPI does this when submitting a task
     run_engine.md.update({"instrument_session": test_visit})
 
-    callback = BaseISPyBCallback()
+    callback = BaseISPyBCallback(hw_read_during_mapper=MagicMock())
     callback.activity_gated_stop = MagicMock()
     minimal_diffraction_expt_with_sample.visit = USE_NUMTRACKER
     callback.params = minimal_diffraction_expt_with_sample
@@ -45,7 +45,7 @@ def test_exception_when_instrument_session_doesnt_exist(
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
-    callback = BaseISPyBCallback()
+    callback = BaseISPyBCallback(hw_read_during_mapper=MagicMock())
     callback.activity_gated_stop = MagicMock()
     minimal_diffraction_expt_with_sample.visit = USE_NUMTRACKER
     callback.params = minimal_diffraction_expt_with_sample
@@ -81,7 +81,7 @@ def test_handle_ispyb_transmission_flux_read_if_no_beamsize_warning(
     mock_logger: MagicMock,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
-    callback = BaseISPyBCallback()
+    callback = BaseISPyBCallback(hw_read_during_mapper=MagicMock())
     callback.params = minimal_diffraction_expt_with_sample
     callback.detector_params = create_detector_params_for_grid_scan(
         minimal_diffraction_expt_with_sample
@@ -103,7 +103,7 @@ def test_handle_ispyb_transmission_flux_read_if_params_specify_beamsize(
     minimal_diffraction_expt_with_sample.beam_size_x = 0  # type: ignore
     minimal_diffraction_expt_with_sample.beam_size_y = 1  # type: ignore
 
-    callback = BaseISPyBCallback()
+    callback = BaseISPyBCallback(hw_read_during_mapper=MagicMock())
     callback.params = minimal_diffraction_expt_with_sample
     callback.detector_params = create_detector_params_for_grid_scan(
         minimal_diffraction_expt_with_sample

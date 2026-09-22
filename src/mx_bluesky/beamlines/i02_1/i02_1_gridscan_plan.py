@@ -7,18 +7,19 @@ from bluesky.utils import MsgGenerator
 from dodal.beamlines.i02_1 import ZebraFastGridScanTwoD
 from dodal.common import inject
 from dodal.devices.attenuator.attenuator import ReadOnlyAttenuator
-from dodal.devices.beamlines.i02_1.fast_grid_scan import ZebraGridScanParamsTwoD
 from dodal.devices.beamlines.i02_1.flux import Flux
 from dodal.devices.common_dcm import DoubleCrystalMonochromatorBase
-from dodal.devices.fast_grid_scan import (
-    set_fast_grid_scan_params as set_flyscan_params_plan,
-)
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.motors import XYZWrappedOmegaStage
 from dodal.devices.slits import Slits
+from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
 from pydantic import BaseModel
 
+from mx_bluesky.beamlines.i02_1.device_setup_plans.gridscan import (
+    set_zebra_fgs_2d_params,
+)
 from mx_bluesky.beamlines.i02_1.device_setup_plans.setup_zebra import (
     setup_zebra_for_gridscan,
     tidy_up_zebra_after_gridscan,
@@ -27,10 +28,20 @@ from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_ca
     GridscanISPyBCallback,
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
+    DiffractionEssentialDevices,
+)
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
+    eiger_hw_read_during_mapper,
+    eiger_zocalo_hw_read_mapper,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
-    common_flyscan_xray_centre,
     construct_beamline_specific_fast_gridscan_features,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+    common_flyscan_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
@@ -53,9 +64,6 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.device_composites import (
-    FlyScanEssentialDevices,
-)
 from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     PositiveFloat,
@@ -68,20 +76,26 @@ def create_gridscan_callbacks(
     grid_scan_params: GridScanParams,
 ) -> tuple[GridscanNexusFileCallback, GridscanISPyBCallback]:
     return (
-        GridscanNexusFileCallback(param_type=I02_1FgsParams),
+        GridscanNexusFileCallback(
+            param_type=I02_1FgsParams, hw_read_mapper=eiger_hw_read_during_mapper
+        ),
         GridscanISPyBCallback(
             param_type=I02_1FgsParams,
             emit=ZocaloCallback(
                 PlanNameConstants.DO_FGS,
                 EnvironmentConstants.ZOCALO_ENV,
                 lambda: generate_start_info_from_num_grids(grid_scan_params),
+                hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
+            hw_read_during_mapper=eiger_hw_read_during_mapper,
         ),
     )
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class I021FlyScanXRayCentreComposite(FlyScanEssentialDevices[XYZWrappedOmegaStage]):
+class I021FlyScanXRayCentreComposite(
+    DiffractionEssentialDevices[XYZWrappedOmegaStage, EigerDetector]
+):
     """All devices which are directly or indirectly required by this plan"""
 
     zebra: Zebra
@@ -91,12 +105,18 @@ class I021FlyScanXRayCentreComposite(FlyScanEssentialDevices[XYZWrappedOmegaStag
     flux: Flux
     undulator: BaseUndulator
     s4_slit_gaps: Slits
+    eiger: EigerDetector
+    synchrotron: Synchrotron
+    gonio: XYZWrappedOmegaStage
+
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def construct_i02_1_specific_features(
     fgs_composite: I021FlyScanXRayCentreComposite,
     params: DiffractionExperiment,
-    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     signals_to_read_pre_flyscan = [
         fgs_composite.synchrotron.synchrotron_mode,
@@ -110,20 +130,16 @@ def construct_i02_1_specific_features(
         fgs_composite.attenuator.actual_transmission,
         fgs_composite.flux.flux_reading,
         fgs_composite.dcm.energy_in_keV,
-        fgs_composite.eiger.bit_depth,
-        fgs_composite.eiger.cam.roi_mode,
-        fgs_composite.eiger.ispyb_detector_id,
     ]
 
-    fgs_params = fast_gridscan_params(params, grid_scan_params)
+    beamline_specific_detector_features = create_eiger_beamline_specific(
+        fgs_composite.detector
+    )
     return construct_beamline_specific_fast_gridscan_features(
-        partial(_zebra_triggering_setup),
+        beamline_specific_detector_features,
+        _zebra_triggering_setup,
         partial(_tidy_plan, fgs_composite, group="flyscan_zebra_tidy", wait=True),
-        partial(
-            set_flyscan_params_plan,
-            fgs_composite.zebra_fast_grid_scan,
-            fgs_params,
-        ),
+        partial(set_zebra_fgs_2d_params, fgs_composite.zebra_fast_grid_scan, params),
         fgs_composite.zebra_fast_grid_scan,
         signals_to_read_pre_flyscan,
         signals_to_read_during_collection,  # type: ignore # See : https://github.com/bluesky/bluesky/issues/1809
@@ -209,9 +225,7 @@ def i02_1_gridscan_plan(
 
     params, grid_scan_params = get_internal_params(parameters)
 
-    beamline_specific = construct_i02_1_specific_features(
-        composite, params, grid_scan_params
-    )
+    beamline_specific = construct_i02_1_specific_features(composite, params)
     callbacks = create_gridscan_callbacks(grid_scan_params)
     detector_params = create_detector_params_for_grid_scan(params)
 
@@ -227,20 +241,3 @@ def i02_1_gridscan_plan(
         )
 
     yield from decorated_flyscan_plan()
-
-
-def fast_gridscan_params(
-    params: DiffractionExperiment, grid_scan_params: GridScanParams
-) -> ZebraGridScanParamsTwoD:
-    return ZebraGridScanParamsTwoD(
-        x_steps=grid_scan_params.x_steps,
-        y_steps=grid_scan_params.y_steps[0],
-        x_step_size_mm=grid_scan_params.x_step_size_um / 1000,
-        y_step_size_mm=grid_scan_params.y_step_sizes_um[0] / 1000,
-        x_start_mm=grid_scan_params.x_start_um / 1000,
-        y1_start_mm=grid_scan_params.y_starts_um[0] / 1000,
-        z1_start_mm=grid_scan_params.z_starts_um[0] / 1000,
-        set_stub_offsets=False,
-        transmission_fraction=0.5,
-        dwell_time_ms=params.exposure_time_s * 1000,
-    )

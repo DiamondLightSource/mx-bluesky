@@ -33,7 +33,9 @@ def bluesky_context(run_engine: RunEngine, use_beamline_i03):
             }
         }
     )
-    yield BlueskyContext(run_engine=run_engine, configuration=config)
+
+    with patch("dodal.beamlines.i03.SKIP_FASTCS_EIGER", False):
+        yield BlueskyContext(run_engine=run_engine, configuration=config)
 
 
 def test_load_centre_collect(bluesky_context: BlueskyContext, tmp_path: Path):
@@ -75,7 +77,7 @@ def test_pin_tip_centre_then_xray_centre(
         {"visit": "cm12345-67", "storage_directory": str(tmp_path)},
         patch_package="mx_bluesky.hyperion.blueapi.plans",
     )
-    params: PinTipCentreThenXrayCentre = mock_plan.mock_calls[0].args[1]
+    params: PinTipCentreThenXrayCentre = mock_plan.mock_calls[0].args[2]
     assert params.visit == "cm12345-67"
     assert params.storage_directory == str(tmp_path)
     assert params.sample_id == 123456

@@ -4,6 +4,10 @@ from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.detector import DetectorParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
+)
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
@@ -26,20 +30,18 @@ from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstan
 from mx_bluesky.common.preprocessors.preprocessors import (
     pause_xbpm_feedback_during_collection_at_desired_transmission_decorator,
 )
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    construct_hyperion_specific_features,
-)
-from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
+from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
+from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 
 
 def pin_centre_then_gridscan_plan(
-    composite: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_specific_features: BeamlineSpecificFGSFeatures,
+    composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
@@ -86,7 +88,7 @@ def pin_centre_then_gridscan_plan(
                     parameters,
                     oav_params,
                     detector_params,
-                    construct_hyperion_specific_features,
+                    hyperion_specific_features,
                 )
             )
 

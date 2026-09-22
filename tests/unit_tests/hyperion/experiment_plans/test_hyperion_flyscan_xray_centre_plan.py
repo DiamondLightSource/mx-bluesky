@@ -14,8 +14,10 @@ from dodal.devices.zocalo.zocalo_results import _NO_SAMPLE_ID
 from ophyd_async.core import completed_status, set_mock_value
 from ophyd_async.fastcs.panda import DatasetTable, PandaHdf5DatasetType
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
+)
+from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
@@ -28,13 +30,12 @@ from mx_bluesky.common.parameters.components import DiffractionExperimentWithSam
 from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
 )
-from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
 from mx_bluesky.common.parameters.gridscan import GridScanParams
-from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
-    SmargonSpeedError,
-)
-from mx_bluesky.hyperion.parameters.device_composites import (
+from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.device_setup_plans.gridscan import (
+    SmargonSpeedError,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
     create_detector_params_for_grid_scan_with_hyperion_feature_settings,
@@ -66,7 +67,7 @@ def _custom_msg(command_name: str):
 @pytest.fixture
 def fgs_composite_with_panda_pcap(
     hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
-):
+) -> HyperionGridDetectThenXRayCentreComposite:
     capture_table = DatasetTable(name=["name"], dtype=[PandaHdf5DatasetType.FLOAT_64])
     set_mock_value(hyperion_flyscan_xrc_composite.panda.data.datasets, capture_table)
 
@@ -158,11 +159,11 @@ class TestFlyscanXrayCentrePlan:
         sim_run_engine: RunEngineSimulator,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
+        hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         zocalo: ZocaloResults,
     ):
-        hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
+        hyperion_flyscan_xrc_composite.detector.odin.fan.dev_shm_enable.sim_put(1)  # type: ignore
         sim_run_engine.add_read_handler_for(
             zocalo.centre_of_mass, [np.array([6.0, 6.0, 6.0])]
         )
@@ -191,7 +192,7 @@ class TestFlyscanXrayCentrePlan:
             lambda msg: (
                 msg.command == "set"
                 and msg.obj
-                is hyperion_flyscan_xrc_composite.eiger.odin.fan.dev_shm_enable
+                is hyperion_flyscan_xrc_composite.detector.odin.fan.dev_shm_enable
                 and msg.args[0] == 0
             ),
         )
@@ -211,7 +212,7 @@ class TestFlyscanXrayCentrePlan:
         use_panda: None,
         minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
         grid_scan_params_3d: GridScanParams,
-        hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
+        hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
         beamline_specific_with_hyperion_flyscan_xrc_composite: BeamlineSpecificFGSFeatures,
         run_engine: RunEngine,
     ):
@@ -240,7 +241,7 @@ class TestFlyscanXrayCentrePlan:
         new=MagicMock(side_effect=_custom_msg("arm_panda")),
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.disarm_panda_for_gridscan",
+        "mx_bluesky.hyperion.device_setup_plans.gridscan.disarm_panda_for_gridscan",
         new=MagicMock(side_effect=_custom_msg("disarm_panda")),
     )
     @patch(
@@ -248,7 +249,7 @@ class TestFlyscanXrayCentrePlan:
         new=MagicMock(side_effect=_custom_msg("do_gridscan")),
     )
     @patch(
-        "mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan.set_panda_directory",
+        "mx_bluesky.hyperion.device_setup_plans.gridscan.set_panda_directory",
         side_effect=_custom_msg("set_panda_directory"),
     )
     @patch("mx_bluesky.hyperion.device_setup_plans.setup_panda.load_panda_from_yaml")

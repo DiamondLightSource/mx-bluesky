@@ -16,11 +16,12 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.core import get_mock_put
 
-from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.gridscan.zebra import _fast_gridscan_3d_params
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
-    ConstructBeamlineSpecificFeatures,
+    GridDetectAndGridScanExtendedDevices,
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
@@ -30,19 +31,18 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.components import AperturePolicy, DiffractionExperimentWithSample
+from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
+    DiffractionExperimentWithSample,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
-)
-from mx_bluesky.common.parameters.device_composites import (
-    GridDetectAndGridScanEssentialDevices,
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
     create_detector_params_for_grid_scan,
-    fast_gridscan_params,
 )
 
 from ....conftest import (
@@ -60,13 +60,6 @@ def _fake_flyscan(*args):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
-@pytest.fixture()
-def construct_beamline_specific(
-    beamline_specific: BeamlineSpecificFGSFeatures,
-) -> ConstructBeamlineSpecificFeatures:
-    return lambda xrc_composite, xrc_parameters, grid_scan_params: beamline_specific
-
-
 @pytest.mark.timeout(2)
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.common_flyscan_xray_centre",
@@ -75,12 +68,12 @@ def construct_beamline_specific(
 async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     mock_flyscan: MagicMock,
     pin_tip_detection_with_found_pin: PinTipDetection,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
     test_config_files: ConfigFilesForTests,
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     composite = grid_detect_xrc_devices
     run_engine(
@@ -90,7 +83,7 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
                 test_config_files,
                 minimal_diffraction_expt_with_sample,
                 grid_detect_params,
-                construct_beamline_specific,
+                beamline_specific,
             ),
             minimal_diffraction_expt_with_sample,
             create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
@@ -143,12 +136,12 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
     mock_grid_detect: MagicMock,
     mock_flyscan: MagicMock,
     mock_grid_detect_callback: MagicMock,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     sim_run_engine: RunEngineSimulator,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
     test_config_files: dict,
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     mock_grid_detect_callback.return_value.get_grid_parameters.return_value = {
         "x_start_um": 0,
@@ -166,7 +159,7 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
             minimal_diffraction_expt_with_sample,
             grid_detect_params,
             create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
-            construct_beamline_specific=construct_beamline_specific,
+            beamline_specific=beamline_specific,
             oav_config=test_config_files["oav_config_json"],
         ),
     )
@@ -174,11 +167,11 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
 
 
 def _do_detect_grid_and_gridscan_then_wait_for_backlight(
-    composite: GridDetectAndGridScanEssentialDevices,
+    composite: GridDetectAndGridScanExtendedDevices,
     test_config_files: ConfigFilesForTests,
     expt_params: DiffractionExperimentWithSample,
     grid_detection_params: GridDetectionParams,
-    construct_beamline_specific_xrc_features,
+    beamline_specific_xrc_features: BeamlineSpecificFGSFeatures,
 ):
     yield from detect_grid_and_do_gridscan(
         composite,
@@ -188,7 +181,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
             get_config_client(), "xrayCentring", test_config_files["oav_config_json"]
         ),
         detector_params=create_detector_params_for_grid_scan(expt_params),
-        construct_beamline_specific=construct_beamline_specific_xrc_features,
+        beamline_specific=beamline_specific_xrc_features,
     )
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
 
@@ -200,13 +193,13 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
 )
 def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_flyscan: MagicMock,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
     test_config_files: dict,
     pin_tip_detection_with_found_pin: PinTipDetection,
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     oav_params = OAVParameters(
         get_config_client(), "xrayCentring", test_config_files["oav_config_json"]
@@ -223,7 +216,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
                 grid_detection_params=grid_detect_params,
                 oav_params=oav_params,
                 detector_params=detector_params,
-                construct_beamline_specific=construct_beamline_specific,
+                beamline_specific=beamline_specific,
             ),
             minimal_diffraction_expt_with_sample,
             detector_params,
@@ -234,7 +227,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     actual_detector_params = mock_flyscan.call_args[0][2]
     grid_scan_params: GridScanParams = mock_flyscan.call_args[0][3]
     assert actual_detector_params.num_triggers == FREE_RUN_MAX_IMAGES
-    fgs_params = fast_gridscan_params(params, grid_scan_params)
+    fgs_params = _fast_gridscan_3d_params(params, grid_scan_params, False)
     assert fgs_params.x_axis.full_steps == 15
     assert fgs_params.y_axis.end == pytest.approx(-0.06329, 0.001)
 
@@ -253,12 +246,12 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
     mock_flyscan,
     mock_grid_detection_plan,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     sim_run_engine: RunEngineSimulator,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
     test_config_files: dict[str, str],
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     mock_grid_detection_plan.return_value = iter([Msg("save_oav_grids")])
     sim_run_engine.add_handler_for_callback_subscribes()
@@ -295,7 +288,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
             detector_params=create_detector_params_for_grid_scan(
                 minimal_diffraction_expt_with_sample
             ),
-            construct_beamline_specific=construct_beamline_specific,
+            beamline_specific=beamline_specific,
         )
     )
 
@@ -360,12 +353,12 @@ def grid_detect_then_xrc_simulator(
 
 @pytest.fixture
 def msgs_from_simulated_grid_detect_then_xray_centre(
-        grid_detect_then_xrc_simulator: RunEngineSimulator,
-        grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
-        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
-        grid_detect_params: GridDetectionParams,
-        test_config_files: dict[str, str],
-        construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    grid_detect_then_xrc_simulator: RunEngineSimulator,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_detect_params: GridDetectionParams,
+    test_config_files: dict[str, str],
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     return grid_detect_then_xrc_simulator.simulate_plan(
         grid_detect_then_xray_centre(
@@ -375,7 +368,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
             detector_params=create_detector_params_for_grid_scan(
                 minimal_diffraction_expt_with_sample
             ),
-            construct_beamline_specific=construct_beamline_specific,
+            beamline_specific=beamline_specific,
             oav_config=test_config_files["oav_config_json"],
         )
     )
@@ -437,11 +430,11 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
     aperture_policy: AperturePolicy,
     expected_aperture: ApertureValue,
     grid_detect_then_xrc_simulator: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     grid_detect_params: GridDetectionParams,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     test_config_files: dict[str, str],
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     minimal_diffraction_expt_with_sample.selected_aperture = aperture_policy
     msgs = grid_detect_then_xrc_simulator.simulate_plan(
@@ -452,7 +445,7 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
             detector_params=create_detector_params_for_grid_scan(
                 minimal_diffraction_expt_with_sample
             ),
-            construct_beamline_specific=construct_beamline_specific,
+            beamline_specific=beamline_specific,
             oav_config=test_config_files["oav_config_json"],
         )
     )
@@ -478,13 +471,15 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
 def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
     current_aperture: ApertureValue,
     grid_detect_then_xrc_simulator: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     grid_detect_params: GridDetectionParams,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     test_config_files: dict[str, str],
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
 ):
-    minimal_diffraction_expt_with_sample.selected_aperture = AperturePolicy.CURRENT_POSITION
+    minimal_diffraction_expt_with_sample.selected_aperture = (
+        AperturePolicy.CURRENT_POSITION
+    )
     grid_detect_then_xrc_simulator.add_read_handler_for_multiple(
         grid_detect_xrc_devices.aperture_scatterguard,
         **{"aperture_scatterguard-selected_aperture": current_aperture},
@@ -497,7 +492,7 @@ def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
             detector_params=create_detector_params_for_grid_scan(
                 minimal_diffraction_expt_with_sample
             ),
-            construct_beamline_specific=construct_beamline_specific,
+            beamline_specific=beamline_specific,
             oav_config=test_config_files["oav_config_json"],
         )
     )
@@ -526,10 +521,10 @@ def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
 def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
     mock_grid_detect_then_xray_centre: MagicMock,
     sim_run_engine: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
-    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    beamline_specific: BeamlineSpecificFGSFeatures,
     test_config_files: dict,
 ):
     def mock_grid_detect_then_xrc_plan(*args, **kwargs):
@@ -553,7 +548,7 @@ def test_grid_detect_then_xray_centre_plan_moves_beamstop_into_place(
             minimal_diffraction_expt_with_sample,
             grid_detect_params,
             create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
-            construct_beamline_specific,
+            beamline_specific,
             test_config_files["oav_config_json"],
         )
     )

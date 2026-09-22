@@ -3,6 +3,9 @@ from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_ca
     _make_comment,
 )
 from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    eiger_hw_read_during_mapper,
+)
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
@@ -62,7 +65,9 @@ def test_get_scan_infos_gives_expected_output(
     fgs_params_two_d: I02_1FgsParams,
     grid_scan_params: GridScanParams,
 ):
-    callback = GridscanISPyBCallback(param_type=I02_1FgsParams)
+    callback = GridscanISPyBCallback(
+        param_type=I02_1FgsParams, hw_read_during_mapper=eiger_hw_read_during_mapper
+    )
     callback.params = fgs_params_two_d
     callback.detector_params = create_detector_params_for_grid_scan(fgs_params_two_d)
     callback.grid_scan_params = grid_scan_params
