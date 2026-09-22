@@ -118,7 +118,9 @@ def grid_detect_then_xray_centre(
         group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
 
-    assert grid_scan_params
+    assert (
+        grid_scan_params
+    )  # placate type-checker - grid_scan_params is always assigned
     return grid_scan_params
 
 

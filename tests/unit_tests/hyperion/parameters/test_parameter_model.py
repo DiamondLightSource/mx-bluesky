@@ -8,8 +8,8 @@ from pydantic import ValidationError
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
-from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
     DiffractionExperimentWithSample,
     IspybExperimentType,
 )
@@ -57,18 +57,6 @@ def minimal_diffraction_expt_params() -> DiffractionExperimentWithSample:
     )
 
 
-@pytest.fixture()
-def minimal_gridscan_params() -> GridScanParams:
-    return GridScanParams(
-        omega_starts_deg=[0, 90],
-        x_start_um=0.123,
-        y_starts_um=[0.777, 2],
-        z_starts_um=[0.05, 2],
-        x_steps=5,
-        y_steps=[7, 9],
-    )
-
-
 def get_empty_grid_parameters() -> GridParamUpdate:
     return {
         "x_start_um": 1,
@@ -81,16 +69,6 @@ def get_empty_grid_parameters() -> GridParamUpdate:
     }
 
 
-def test_minimal_3d_gridscan_params(minimal_gridscan_params: GridScanParams):
-    assert all(
-        {"sam_x", "sam_y", "sam_z"} == set(scan_point.keys())
-        for scan_point in minimal_gridscan_params.scan_points
-    )
-
-    assert minimal_gridscan_params.num_images == (5 * 7 + 5 * 9)
-    assert minimal_gridscan_params.scan_indices == [0, 35]
-
-
 def test_cant_do_panda_fgs_with_odd_y_steps(
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     minimal_gridscan_params: GridScanParams,
@@ -99,12 +77,6 @@ def test_cant_do_panda_fgs_with_odd_y_steps(
         _ = panda_fast_gridscan_params(
             minimal_diffraction_expt_with_sample, minimal_gridscan_params
         )
-
-
-def test_serialise_deserialise(minimal_gridscan_params: GridScanParams):
-    serialised = json.loads(minimal_gridscan_params.model_dump_json())
-    deserialised = GridScanParams(**serialised)
-    assert deserialised == minimal_gridscan_params
 
 
 def test_serialize_deserialize_diff_expt_with_sample(

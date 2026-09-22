@@ -1,3 +1,5 @@
+import json
+from math import isclose
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -181,3 +183,107 @@ def test_create_detector_params_for_grid_scan_uses_run_number_if_specified(
     )
     mock_get_run_number.assert_not_called()
     assert detector_params.run_number == 13579
+
+
+# fmt: off
+expected_scan_points = [
+    # Grid 1, 5x7
+    {
+        "sam_x": [
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+        ],
+        "sam_y": [
+            0.777, 0.777, 0.777, 0.777, 0.777,
+            20.777, 20.777, 20.777, 20.777, 20.777,
+            40.777, 40.777, 40.777, 40.777, 40.777,
+            60.777, 60.777, 60.777, 60.777, 60.777,
+            80.777, 80.777, 80.777, 80.777, 80.777,
+            100.777, 100.777, 100.777, 100.777, 100.777,
+            120.777, 120.777, 120.777, 120.777, 120.777,
+        ],
+        "sam_z": [
+            0.05, 0.05, 0.05, 0.05, 0.05,
+            0.05, 0.05, 0.05, 0.05, 0.05,
+            0.05, 0.05, 0.05, 0.05, 0.05,
+            0.05, 0.05, 0.05, 0.05, 0.05,
+            0.05, 0.05, 0.05, 0.05, 0.05,
+            0.05, 0.05, 0.05, 0.05, 0.05,
+            0.05, 0.05, 0.05, 0.05, 0.05,
+        ],
+    },
+    # Grid 2, 5x9
+    {
+        "sam_x": [
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+            80.123, 60.123, 40.123, 20.123, 0.123,
+            0.123, 20.123, 40.123, 60.123, 80.123,
+        ],
+        "sam_y": [
+            2, 2, 2, 2, 2,
+            22, 22, 22, 22, 22,
+            42, 42, 42, 42, 42,
+            62, 62, 62, 62, 62,
+            82, 82, 82, 82, 82,
+            102, 102, 102, 102, 102,
+            122, 122, 122, 122, 122,
+            142, 142, 142, 142, 142,
+            162, 162, 162, 162, 162,
+        ],
+        "sam_z": [
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2,
+        ],
+    },
+]
+# fmt: on
+
+
+def test_minimal_3d_gridscan_params(minimal_gridscan_params: GridScanParams):
+    scan_points = minimal_gridscan_params.scan_points
+    assert all(
+        {"sam_x", "sam_y", "sam_z"} == set(scan_point.keys())
+        for scan_point in scan_points
+    )
+    assertions_and_messages = [
+        (
+            isclose(actual_pt, expected_pt, abs_tol=1e-6),
+            f"{actual_pt:.3f} == {expected_pt}",
+        )
+        for actual_grid, expected_grid in zip(
+            scan_points, expected_scan_points, strict=True
+        )
+        for axis in expected_grid.keys()
+        for actual_pt, expected_pt in zip(
+            actual_grid[axis], expected_grid[axis], strict=True
+        )
+    ]
+    assert all(b for b, _ in assertions_and_messages), (
+        "actual != expected: " + ", ".join(msg for _, msg in assertions_and_messages)
+    )
+    assert minimal_gridscan_params.num_images == (5 * 7 + 5 * 9)
+    assert minimal_gridscan_params.scan_indices == [0, 35]
+
+
+def test_serialise_deserialise(minimal_gridscan_params: GridScanParams):
+    serialised = json.loads(minimal_gridscan_params.model_dump_json())
+    deserialised = GridScanParams(**serialised)
+    assert deserialised == minimal_gridscan_params

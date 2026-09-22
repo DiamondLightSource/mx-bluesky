@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import accumulate
 from typing import Annotated
 
 from dodal.devices.detector.det_dim_constants import EIGER2_X_4M_SIZE, EIGER2_X_16M_SIZE
@@ -10,7 +11,7 @@ from dodal.devices.fast_grid_scan import (
 )
 from dodal.utils import get_beamline_name, get_run_number
 from pydantic import BaseModel, Field, model_validator
-from scanspec.core import AxesPoints
+from scanspec.core import AxesPoints, Slice
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Product, Static
 
@@ -41,8 +42,8 @@ class GridDetectionParams(BaseModel):
         grid_width_um: The suggested width of the grid to be detected.
     """
 
-    box_size_um: float = Field(default=GridscanParamConstants.BOX_WIDTH_UM)
-    grid_width_um: float = Field(default=GridscanParamConstants.PIN_WIDTH_UM)
+    box_size_um: float = Field(gt=0, default=GridscanParamConstants.BOX_WIDTH_UM)
+    grid_width_um: float = Field(gt=0, default=GridscanParamConstants.PIN_WIDTH_UM)
 
 
 class GridScanParams(BaseModel):
@@ -91,9 +92,7 @@ class GridScanParams(BaseModel):
             "z_starts_um": self.z_starts_um,
         }
 
-        name_and_length = {name: len(value) for name, value in fields.items()}
-        lengths = name_and_length.values()
-        if len(set(lengths)) != 1:
+        if len({len(value) for value in fields.values()}) != 1:
             details = "\n".join(
                 f"  {name}: length={len(value)}, value={value}"
                 for name, value in fields.items()
@@ -122,36 +121,30 @@ class GridScanParams(BaseModel):
         return _grid_specs
 
     @property
+    def _grids(self) -> list[Slice[str]]:
+        """
+        Obtain the grids in the gridscan
+        Returns:
+            A list of Slices, each slice is a grid
+        """
+        return [
+            ScanPath(grid_spec.calculate()).consume() for grid_spec in self.grid_specs
+        ]
+
+    @property
     def scan_points(self) -> list[AxesPoints[str]]:
         """A list of all the points in the scan_spec for each grid."""
-        _scan_points = []
-        for grid in range(self.num_grids):
-            _scan_points.append(
-                ScanPath(self.grid_specs[grid].calculate()).consume().midpoints
-            )
-        return _scan_points
+        return [gf.midpoints for gf in self._grids]
 
     @property
     def scan_indices(self) -> list[int]:
         """The first index of each gridscan, useful for writing nexus files/VDS"""
-        _scan_indices = [0]
-        for idx in range(self.num_grids - 1):
-            _scan_indices.append(
-                len(
-                    ScanPath(self.grid_specs[idx].calculate())
-                    .consume()
-                    .midpoints["sam_x"]
-                )
-            )
-        return _scan_indices
+        return [*accumulate([0] + [len(g) for g in self._grids[:-1]])]
 
     @property
     def num_images(self) -> int:
         """Total num images in entire scan"""
-        _num_images = 0
-        for grid in range(len(self.scan_points)):
-            _num_images += len(self.scan_points[grid]["sam_x"])
-        return _num_images
+        return sum(len(g) for g in self._grids)
 
 
 class GridScanParams3D(GridScanParams):
