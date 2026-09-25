@@ -108,6 +108,7 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
+    GridScanParams,
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
@@ -764,4 +765,16 @@ def grid_detect_params(tmp_path: Path) -> GridDetectionParams:
             "tests/test_data/parameter_json_files/internal/grid_detect_params.json",
             tmp_path,
         )
+    )
+
+
+@pytest.fixture()
+def minimal_gridscan_params() -> GridScanParams:
+    return GridScanParams(
+        omega_starts_deg=[0, 90],
+        x_start_um=0.123,
+        y_starts_um=[0.777, 2],
+        z_starts_um=[0.05, 2],
+        x_steps=5,
+        y_steps=[7, 9],
     )
