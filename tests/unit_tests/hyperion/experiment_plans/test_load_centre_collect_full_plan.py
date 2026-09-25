@@ -21,8 +21,8 @@ from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra.zebra import RotationDirection
 from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 from pydantic import ValidationError
-from mx_bluesky.common.parameters.components import AperturePolicy
 
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     RotationScanPerSweep,

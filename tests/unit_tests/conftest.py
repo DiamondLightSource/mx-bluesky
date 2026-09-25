@@ -172,16 +172,6 @@ def _error_and_kill_pending_tasks(
     return unfinished_tasks
 
 
-@pytest.fixture(autouse=True)
-def always_patch_config_client():
-    with patch(
-        "dodal.common.beamlines.beamline_utils.CONFIG_CLIENT",
-        create=True,
-        new=ConfigClient("http://localhost:8555"),
-    ):
-        yield
-
-
 @pytest.fixture()
 def use_beamline_i03(monkeypatch, patch_beamline_env_variable):
     monkeypatch.setenv("BEAMLINE", "i03")

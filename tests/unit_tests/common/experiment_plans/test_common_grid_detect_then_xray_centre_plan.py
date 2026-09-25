@@ -30,7 +30,10 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_wrapper,
 )
-from mx_bluesky.common.parameters.components import AperturePolicy, DiffractionExperimentWithSample
+from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
+    DiffractionExperimentWithSample,
+)
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     PlanGroupCheckpointConstants,
@@ -360,12 +363,12 @@ def grid_detect_then_xrc_simulator(
 
 @pytest.fixture
 def msgs_from_simulated_grid_detect_then_xray_centre(
-        grid_detect_then_xrc_simulator: RunEngineSimulator,
-        grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
-        minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
-        grid_detect_params: GridDetectionParams,
-        test_config_files: dict[str, str],
-        construct_beamline_specific: ConstructBeamlineSpecificFeatures,
+    grid_detect_then_xrc_simulator: RunEngineSimulator,
+    grid_detect_xrc_devices: GridDetectAndGridScanEssentialDevices,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
+    grid_detect_params: GridDetectionParams,
+    test_config_files: dict[str, str],
+    construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
     return grid_detect_then_xrc_simulator.simulate_plan(
         grid_detect_then_xray_centre(
@@ -484,7 +487,9 @@ def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
     test_config_files: dict[str, str],
     construct_beamline_specific: ConstructBeamlineSpecificFeatures,
 ):
-    minimal_diffraction_expt_with_sample.selected_aperture = AperturePolicy.CURRENT_POSITION
+    minimal_diffraction_expt_with_sample.selected_aperture = (
+        AperturePolicy.CURRENT_POSITION
+    )
     grid_detect_then_xrc_simulator.add_read_handler_for_multiple(
         grid_detect_xrc_devices.aperture_scatterguard,
         **{"aperture_scatterguard-selected_aperture": current_aperture},

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.detector import DetectorParams
 from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,

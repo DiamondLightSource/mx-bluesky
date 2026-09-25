@@ -8,8 +8,8 @@ from pydantic import ValidationError
 from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_callback import (
     GridParamUpdate,
 )
-from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.components import (
+    AperturePolicy,
     DiffractionExperimentWithSample,
     IspybExperimentType,
 )

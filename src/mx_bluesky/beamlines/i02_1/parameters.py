@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from dodal.devices.aperturescatterguard import ApertureValue
 from pydantic import Field
 
 from mx_bluesky.common.parameters.components import (
@@ -27,4 +26,3 @@ class I02_1FgsParams(DiffractionExperimentWithSample):  # noqa: N801
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.GRIDSCAN_3D
     )
-    selected_aperture: ApertureValue | None = Field(default=ApertureValue.SMALL)
