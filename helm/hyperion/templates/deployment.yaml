@@ -6,131 +6,168 @@ spec:
   selector:
     matchLabels:
       app: hyperion
+  strategy:
+    type: Recreate
   replicas: 1
   template:
     metadata:
       labels:
         app: hyperion
     spec:
+      terminationGracePeriodSeconds: {{ .Values.application.terminationGracePeriodSeconds }}
       securityContext:
-        # gda2
-        runAsUser: {{  .Values.application.runAsUser }}
-        runAsGroup: {{ .Values.application.runAsGroup }}
-        supplementalGroups: {{ .Values.application.supplementalGroups }}
+        runAsGroup: {{ .Values.supervisor.runAsGroup }}
+        runAsUser: {{ .Values.supervisor.runAsUser }}
       volumes:
-        - name: dls-sw-bl
-          hostPath:
-            path: "/dls_sw/{{ .Values.application.beamline }}"
-            type: Directory
-        - name: dls-sw-dasc
-          hostPath:
-            path: "/dls_sw/dasc"
-            type: Directory
-        # Bind some source folders for easier debugging        
-        - name: src
-          hostPath:
-            path: "{{ .Values.application.projectDir }}/src"
-            type: Directory
-        - name: tests
-          hostPath:
-            path: "{{ .Values.application.projectDir }}/tests"
-            type: Directory
-        - name: utility-scripts
-          hostPath:
-            path: "{{ .Values.application.projectDir }}/utility_scripts"
-            type: Directory
-        - name: dodal
-          hostPath:
-            path: "{{ .Values.dodal.projectDir | clean }}"
-            type: Directory
-        - name: logs
-          hostPath:
-            type: Directory
-            path: "{{ .Values.application.logDir }}"
-        - name: debuglogs
-          hostPath:
-            type: Directory
-            path: "{{ .Values.application.debugLogDir }}"
-        - name: data
-          hostPath:
-            type: Directory
-            path: "{{ .Values.application.dataDir }}"
+        - name: scratch
+          persistentVolumeClaim:
+            claimName: hyperion-supervisor-scratch-{{ .Values.application.imageVersion }}
+        - name: supervisor-config
+          configMap:
+            name: hyperion-supervisor-config
+        - name: callbacks-config
+          configMap:
+            name: hyperion-callbacks-config
+        {{- toYaml .Values.volumes.logging | nindent 8 }}
+        {{- toYaml .Values.volumes.data | nindent 8 }}
+        - name: expeye-secrets
+          secret:
+            secretName: ispyb-hyperion-cfg
         - name: zocalo-config
           configMap:
-            name: "{{ .Release.Name }}-zocalo-config"
-        - name: zocalo-secrets
-          projected:
-            defaultMode: 0444
-            sources:
-            {{- if .Values.zocalo.secrets }}
-            {{- range .Values.zocalo.secrets }}
-            - secret:
-                name: {{ .secretName }}
-            {{- end -}} {{/* range */}}
-            {{- end -}} {{/* if */}}
-        - name: ispyb-secrets
-          secret:
-            type: secret
-            secretName: ispyb-hyperion-cfg
-      containers:
-      - name: hyperion
-        image: {{ .Values.application.imageRepository}}/mx-bluesky:{{ .Values.application.appVersion }}    
-        resources:
-          limits:
-            cpu: "1"
-            memory: "1Gi"
-        ports:
-          - name: hyperion-api
-            containerPort: {{ .Values.application.containerPort }}
-            protocol: TCP
-        env:
-          - name: LOG_DIR
-            value: /var/log/bluesky
-          - name: DEBUG_LOG_DIR
-            value: /var/log/bluesky-debug
-          - name: BEAMLINE
-            value: "{{ .Values.application.beamline }}"
-          {{- if not .Values.application.dev }}
-          - name: ZOCALO_GO_USER
-            value: "gda2"
-          - name: ZOCALO_GO_HOSTNAME
-            value: "{{ .Values.application.beamline }}-control"
-          - name: ZOCALO_CONFIG
-            value: "/zocalo/config/configuration.yaml"
-          - name: ISPYB_CONFIG_PATH
-            value: "/ispyb/secrets/ispyb.cfg"
-          {{- end }}
-        readinessProbe:
-          exec:
-            command: [ "/app/hyperion/utility_scripts/docker/healthcheck.sh" ]
-          periodSeconds: 5
-        volumeMounts:
-          - mountPath: "/dls_sw/{{ .Values.application.beamline }}"
-            name: dls-sw-bl
-            readOnly: true
-            mountPropagation: HostToContainer
-          - mountPath: "/dls_sw/dasc"
-            name: dls-sw-dasc
-            readOnly: true
-            mountPropagation: HostToContainer
-          - mountPath: "/app/hyperion/src"
-            name: src
-          - mountPath: "/app/hyperion/tests"
-            name: tests
-          - mountPath: "/app/hyperion/utility_scripts"
-            name: utility-scripts
-          - mountPath: "/app/dodal"
-            name: dodal
-          - mountPath: "/var/log/bluesky"
-            name: logs
-          - mountPath: "/var/log/bluesky-debug"
-            name: debuglogs
-          - mountPath: "/dls/{{ .Values.application.beamline }}/data"
-            name: data
-          - mountPath: "/zocalo/config"
             name: zocalo-config
-          - mountPath: "/zocalo/secrets"
-            name: zocalo-secrets
-          - mountPath: "/ispyb/secrets"
-            name: ispyb-secrets
-      hostNetwork: true
+            defaultMode: 420
+        - name: zocalo-secrets
+          secret:
+            secretName: rmq-creds
+      initContainers:
+        - name: hyperion-init
+          image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
+          command: ['/app/scripts/initialise_scratch.sh']
+          volumeMounts:
+            - name: scratch
+              mountPath: "/scratch"
+          env:
+            - name: HOME
+              value: /tmp
+            - name: DODAL_BRANCH
+              value: {{ .Values.initContainer.dodalBranch }}
+      containers:
+        - name: hyperion-supervisor
+          image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
+          command: ['/bin/bash', '-c']
+          args:
+            - |
+              . /app/mx-bluesky/.venv/bin/activate
+              hyperion --mode supervisor \
+                --client-config /etc/hyperion/client_config.yaml \
+                --supervisor-config /etc/hyperion/supervisor_config.yaml
+              {{- if .Values.application.dev }} \
+                --dev
+              sleep 600
+              {{- end }}
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          ports:
+            - name: rest-api
+              containerPort: {{ .Values.supervisor.containerPort }}
+              protocol: TCP
+          env:
+            - name: LOG_DIR
+              value: /var/log/bluesky
+            - name: DEBUG_LOG_DIR
+              value: /var/log/bluesky/debug
+            - name: BEAMLINE
+              value: "{{ .Values.application.beamline }}"
+            - name: CONFIG_SERVER_URL
+              value: "{{ .Values.configServer.url }}"
+            - name: PYTHONPATH
+              value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
+            {{- range $key, $value := .Values.supervisor.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: "/status"
+              port: {{ .Values.supervisor.containerPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          volumeMounts:
+            - mountPath: "/scratch"
+              name: scratch
+              readOnly: true
+            - mountPath: "/etc/hyperion"
+              name: supervisor-config
+              readOnly: true
+            - mountPath: "/var/log/bluesky"
+              name: logdir
+        - name: hyperion-callbacks
+          image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
+          command: ['/bin/bash', '-c']
+          args:
+            - |
+              . /app/mx-bluesky/.venv/bin/activate
+              hyperion-callbacks \
+                --watchdog-port {{ .Values.supervisor.containerPort }} \
+                --stomp-config /etc/hyperion/blueapi_callbacks.yml
+              {{- if .Values.application.dev }} \
+                --dev
+              sleep 600
+              {{- end }}
+          securityContext:
+            fsGroup: {{ .Values.callbacks.runAsGroup }}
+            runAsGroup: {{ .Values.callbacks.runAsGroup }}
+            runAsUser: {{ .Values.callbacks.runAsUser }}
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          env:
+            - name: LOG_DIR
+              value: /var/log/bluesky
+            - name: DEBUG_LOG_DIR
+              value: /var/log/bluesky/debug
+            - name: BEAMLINE
+              value: "{{ .Values.application.beamline }}"
+            - name: CONFIG_SERVER_URL
+              value: "{{ .Values.configServer.url }}"
+            - name: PYTHONPATH
+              value: "/scratch/mx-bluesky/src:/scratch/dodal/src"
+            - name: ISPYB_CONFIG_PATH
+              value: "/etc/secrets/expeye/ispyb.cfg"
+          volumeMounts:
+            - mountPath: "/scratch"
+              name: scratch
+              readOnly: true
+            - mountPath: "/etc/hyperion"
+              name: callbacks-config
+              readOnly: true
+            - mountPath: "/etc/zocalo"
+              name: zocalo-config
+              readOnly: true
+            - mountPath: "/var/log/bluesky"
+              name: logdir
+            - mountPath: "/dls/{{ .Values.application.beamline }}/data"
+              name: data
+            - mountPath: "/etc/secrets/zocalo"
+              name: zocalo-secrets
+            - mountPath: "/etc/secrets/expeye"
+              name: expeye-secrets
+        - name: hyperion-scratch
+          # container provided in order for vscode to attach to a writable scratch
+          image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
+          restartPolicy: Always
+          volumeMounts:
+            - mountPath: "/scratch"
+              name: scratch
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          command: ['/bin/bash', '-c']
+          args:
+            - |
+              while true; do sleep 60; done

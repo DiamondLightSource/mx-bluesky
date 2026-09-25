@@ -1,7 +1,7 @@
 #!/bin/bash
 # Installs helm package to kubernetes
 LOGIN=true
-
+LINT=false
 for option in "$@"; do
     case $option in
         -b=*|--beamline=*)
@@ -12,28 +12,24 @@ for option in "$@"; do
             DEV=true
             shift
             ;;
-        --checkout-to-prod)
-            CHECKOUT=true
-            shift
-            ;;
         --repository=*)
             REPOSITORY="${option#*=}"
             shift
             ;;
-        --appVersion=*)
-            APP_VERSION="${option#*=}"
+        --imageVersion=*)
+            IMAGE_VERSION="${option#*=}"
             shift
             ;;
         --no-login)
             LOGIN=false
             shift
             ;;
-        --dry-run)
-            DRY_RUN=true
+        --lint)
+            LINT=true
             shift
             ;;
-        --bind-dir=*)
-            BIND_DIR="${option#*=}"
+        --dry-run)
+            DRY_RUN=true
             shift
             ;;
         --help|--info|--h)
@@ -53,16 +49,15 @@ Arguments:
 Options:
 
   --help                  This help
-  --appVersion=version    Version of the image to fetch from the repository otherwise it is deduced
+  --imageVersion=version    Version of the image to fetch from the repository otherwise it is deduced
                           from the setuptools_scm. Must be in the format x.y.z
   -b, --beamline=BEAMLINE Overrides the BEAMLINE environment variable with the given beamline
-  --checkout-to-prod      Checkout source folders to the production folder using deploy_mx_bluesky.py
   --dev                   Install to a development kubernetes cluster (assumes project checked out under /home)
                           (default cluster is argus in user namespace)
   --dry-run               Do everything but don't do the final deploy to k8s 
   --no-login              Do not attempt to log in to kubernetes instead use the current namespace and cluster
   --repository=REPOSITORY Override the repository to fetch the image from
-  --bind-dir=DIR          Override the directory to bind to, default calculated from app version
+  --lint                  Lint the helm chart
 EOM
             exit 0
             ;;
@@ -103,44 +98,6 @@ PROJECTDIR=$(readlink -e $(dirname $0)/../..)
 TOP_HELMCHART_DIR=${PROJECTDIR}/helm
 HELMCHART_DIR=${TOP_HELMCHART_DIR}/${APP_NAME}
 
-if [[ -n $DEV ]]; then
-  if [[ -n $CHECKOUT ]]; then
-    echo "Cannot specify both --dev and --checkout-to-prod"
-    exit 1
-  fi
-  CHECKED_OUT_VERSION=$(git describe --tag)
-else
-  if [[ -z ${VIRTUAL_ENV#${PROJECTDIR}} ]]; then
-    echo "Virtual env not activated, activating"
-    . $PROJECTDIR/.venv/bin/activate
-  fi
-
-  # First extract the version and location that will be deployed
-  DEPLOY_MX_BLUESKY="python $PROJECTDIR/utility_scripts/deploy/deploy_mx_bluesky.py"
-  MX_BLUESKY_BASE=$($DEPLOY_MX_BLUESKY --print-release-dir $BEAMLINE)
-
-  if [[ -n $CHECKOUT ]]; then
-    if [[ -n $BIND_DIR ]]; then
-      echo "Cannot specify --bind-dir and --checkout-to-prod"
-      exit 1
-    fi
-    echo "Running deploy_mx_bluesky.py to deploy to production folder..."
-    $DEPLOY_MX_BLUESKY --kubernetes $BEAMLINE
-    if [[ $? != 0 ]]; then
-      echo "Deployment failed, aborting."
-      exit 1
-    fi
-  fi
-
-  NEW_PROJECTDIR=$MX_BLUESKY_BASE/mx-bluesky
-  echo "Changing directory to $NEW_PROJECTDIR..."
-  cd $NEW_PROJECTDIR
-  PROJECTDIR=$NEW_PROJECTDIR
-  MX_BLUESKY_BASENAME=$(basename $MX_BLUESKY_BASE)
-  CHECKED_OUT_VERSION=${MX_BLUESKY_BASENAME#mx-bluesky_}
-fi
-
-
 if [[ $LOGIN = true ]]; then
   if [[ -n $DEV ]]; then
     CLUSTER=argus
@@ -151,66 +108,31 @@ if [[ $LOGIN = true ]]; then
   fi
 fi
 
-ensure_version_py() {
-  # We require the _version.py to be created, this needs a minimal virtual environment
-  if [[ ! -d $PROJECTDIR/.venv ]]; then
-    echo "Creating _version.py"
-    echo "Virtual environment not found - creating"
-    module load python/3.11 && module load uv
-    uv venv $PROJECTDIR/.venv
-    source $PROJECTDIR/.venv/bin/activate
-  fi
-  uv pip install setuptools_scm
-}
-
-app_version() {
-  . $PROJECTDIR/.venv/bin/activate
-  python -m setuptools_scm --force-write-version-files | sed -e 's/[^a-zA-Z0-9._-]/_/g'
-}
-
 if [[ -n $REPOSITORY ]]; then
   HELM_OPTIONS+="--set application.imageRepository=$REPOSITORY "
 fi
 
-ensure_version_py
-if [[ -z $APP_VERSION ]]; then
-  APP_VERSION=$(app_version)
-fi
-
-echo "Checked out version that will be bind-mounted in $PROJECTDIR is $CHECKED_OUT_VERSION"
 echo "Container image version that will be pulled is $APP_VERSION"
 
-if [[ $APP_VERSION != $CHECKED_OUT_VERSION ]]; then
-  echo "*****************************************************************"
-  echo "WARNING: Checked out version and container image versions differ!"
-  echo "*****************************************************************"
-fi
-
+#application.runAsUser=$EUID,\
+#application.runAsGroup=$GID,\
+#application.supplementalGroups=[$SUPPLEMENTAL_GIDS],\
+#application.externalHostname=test-$APP_NAME.diamond.ac.uk "
 if [[ -n $DEV ]]; then
   GID=`id -g`
   SUPPLEMENTAL_GIDS=37904
   HELM_OPTIONS+="--set \
 application.dev=true,\
-application.runAsUser=$EUID,\
-application.runAsGroup=$GID,\
-application.supplementalGroups=[$SUPPLEMENTAL_GIDS],\
 application.logDir=$PROJECTDIR/tmp,\
 application.dataDir=$PROJECTDIR/tmp/data,\
-application.externalHostname=test-$APP_NAME.diamond.ac.uk "
-  mkdir -p $PROJECTDIR/tmp/data
-  DEPLOYMENT_DIR=$PROJECTDIR
-else
-  DEPLOYMENT_DIR=/dls_sw/$BEAMLINE/software/bluesky/mx-bluesky_${APP_VERSION}/mx-bluesky
-fi
-if [[ -n $BIND_DIR ]]; then
-  DEPLOYMENT_DIR=$BIND_DIR
+stomp.url=tcp://rabbitmq-test:61613 "
 fi
 
-HELM_OPTIONS+="--set application.appVersion=v$APP_VERSION,\
-application.projectDir=$DEPLOYMENT_DIR,\
-dodal.projectDir=$DEPLOYMENT_DIR/../dodal "
+HELM_OPTIONS+="--set application.imageVersion=$IMAGE_VERSION "
 
 module load helm
+
+APP_VERSION=$IMAGE_VERSION
 
 helm package $HELMCHART_DIR --app-version $APP_VERSION
 # Helm package generates a file suffixed with the chart version
@@ -218,6 +140,12 @@ if [[ $LOGIN = true ]]; then
   module load $CLUSTER
   kubectl config set-context --current --namespace=$NAMESPACE
 fi
-if [[ -z $DRY_RUN ]]; then
+if [[ $DRY_RUN = true ]]; then
+  HELM_OPTIONS+="--dry-run=server --debug "
+fi
+if [[ $LINT = true ]]; then
+  helm template $RELEASE $HELMCHART_DIR $HELM_OPTIONS
+  helm lint $HELMCHART_DIR --strict --values $HELMCHART_DIR/values.yaml $HELM_OPTIONS
+else
   helm upgrade --install $HELM_OPTIONS $RELEASE $APP_NAME-0.0.1.tgz
 fi
