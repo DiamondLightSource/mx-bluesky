@@ -96,20 +96,22 @@ def pin_centre_then_gridscan_plan(
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def _grid_detect_and_gridscan_plan():
-            yield from detect_grid_and_do_gridscan(
-                composite,
-                grid_detect_params,
-                oav_params,
-                HyperionSpecifiedThreeDGridScan,
-                construct_hyperion_specific_features,
+            return (
+                yield from detect_grid_and_do_gridscan(
+                    composite,
+                    grid_detect_params,
+                    oav_params,
+                    HyperionSpecifiedThreeDGridScan,
+                    construct_hyperion_specific_features,
+                )
             )
 
-        yield from _grid_detect_and_gridscan_plan()
+        grid_scan_params = yield from _grid_detect_and_gridscan_plan()
         assert isinstance(
             grid_detect_params.specified_grid_params, SpecifiedThreeDGridScan
         ), "Specified grid params couldn't be found after grid detection"
         yield from fetch_xrc_results_from_zocalo(
-            composite.zocalo, grid_detect_params.specified_grid_params
+            composite.zocalo, grid_scan_params, parameters.sample_id
         )
 
     yield from ispyb_activation_wrapper(_pin_centre_then_gridscan_and_xrc(), parameters)

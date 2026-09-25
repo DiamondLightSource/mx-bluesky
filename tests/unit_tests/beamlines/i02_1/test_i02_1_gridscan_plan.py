@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -194,7 +194,7 @@ def test_i02_1_flyscan_xray_centre_in_re(
     run_engine(i02_1_gridscan_plan(entry_params, fgs_composite))
 
     mock_common_scan.assert_called_once_with(
-        fgs_composite, expected_fgs_params, specific_features
+        fgs_composite, expected_fgs_params, ANY, specific_features
     )
 
 
