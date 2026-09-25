@@ -25,13 +25,13 @@ from mx_bluesky.beamlines.i24.web_gui_plans.oav_plans import (
 )
 def test_move_block_on_arrow_click(direction, expected_value, pmac, run_engine):
     with patch(
-        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
-    ) as mock_abs_set:
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.mvr",
+    ) as mock_mvr:
         run_engine(move_block_on_arrow_click(Direction(direction), pmac))
         if direction in ["left", "right"]:
-            mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
+            mock_mvr.assert_any_call(pmac.x, expected_value, pmac.y, 0.0)
         else:
-            mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+            mock_mvr.assert_any_call(pmac.x, 0.0, pmac.y, expected_value)
 
 
 @pytest.mark.parametrize(
@@ -51,15 +51,15 @@ def test_move_window_on_arrow_click(
     direction, move_size, expected_value, pmac, run_engine
 ):
     with patch(
-        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
-    ) as mock_abs_set:
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.mvr",
+    ) as mock_mvr:
         run_engine(
             move_window_on_arrow_click(Direction(direction), MoveSize(move_size), pmac)
         )
         if direction in ["left", "right"]:
-            mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
+            mock_mvr.assert_any_call(pmac.x, expected_value, pmac.y, 0.0)
         else:
-            mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+            mock_mvr.assert_any_call(pmac.x, 0.0, pmac.y, expected_value)
 
 
 @pytest.mark.parametrize(
@@ -79,15 +79,15 @@ def test_move_nudge_on_arrow_click(
     direction, move_size, expected_value, pmac, run_engine
 ):
     with patch(
-        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.abs_set",
-    ) as mock_abs_set:
+        "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.mvr",
+    ) as mock_mvr:
         run_engine(
             move_nudge_on_arrow_click(Direction(direction), MoveSize(move_size), pmac)
         )
         if direction in ["left", "right"]:
-            mock_abs_set.assert_any_call(pmac.x, expected_value, wait=True)
+            mock_mvr.assert_any_call(pmac.x, expected_value, pmac.y, 0.0)
         else:
-            mock_abs_set.assert_any_call(pmac.y, expected_value, wait=True)
+            mock_mvr.assert_any_call(pmac.x, 0.0, pmac.y, expected_value)
 
 
 @pytest.mark.parametrize(
@@ -135,12 +135,12 @@ def test_move_on_oav_view_click(
 
     with (
         patch(
-            "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.mv",
-        ) as mock_bps_mv,
+            "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.mvr",
+        ) as mock_mvr,
         patch(
             "mx_bluesky.beamlines.i24.web_gui_plans.oav_plans.bps.rd",
             side_effect=fake_rd,
         ),
     ):
         run_engine(move_on_oav_view_click(coordinates, oav, pmac))
-        mock_bps_mv.assert_any_call(pmac.x, expected_x, pmac.y, expected_y, wait=True)
+        mock_mvr.assert_any_call(pmac.x, expected_x, pmac.y, expected_y)
