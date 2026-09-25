@@ -1,8 +1,8 @@
-from mx_bluesky.beamlines.i02_1.composites import I02_1FgsParams
 from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
     _make_comment,
 )
+from mx_bluesky.beamlines.i02_1.parameters import I02_1FgsParams
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
@@ -14,14 +14,20 @@ from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
 from mx_bluesky.common.external_interaction.ispyb.ispyb_store import IspybIds
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    create_detector_params_for_grid_scan,
+)
 
 
-def _get_expected_scan_info(params: I02_1FgsParams, dcid: int):
+def _get_expected_scan_info(
+    params: I02_1FgsParams, grid_scan_params: GridScanParams, dcid: int
+):
     dc_grid_info = DataCollectionGridInfo(
-        params.x_step_size_um / 1000,
-        params.y_step_sizes_um[0] / 1000,
-        params.x_steps,
-        params.y_steps[0],
+        grid_scan_params.x_step_size_um / 1000,
+        grid_scan_params.y_step_sizes_um[0] / 1000,
+        grid_scan_params.x_steps,
+        grid_scan_params.y_steps[0],
         params.microns_per_pixel_x,
         params.microns_per_pixel_y,
         params.upper_left_x,
@@ -36,7 +42,7 @@ def _get_expected_scan_info(params: I02_1FgsParams, dcid: int):
         xtal_snapshot1=xtal,
         xtal_snapshot2=xtal,
         xtal_snapshot3=xtal,
-        n_images=params.x_steps * params.y_steps[0],
+        n_images=grid_scan_params.x_steps * grid_scan_params.y_steps[0],
         axis_end=0,
         axis_range=0,
         axis_start=0,
@@ -54,9 +60,12 @@ def _get_expected_scan_info(params: I02_1FgsParams, dcid: int):
 
 def test_get_scan_infos_gives_expected_output(
     fgs_params_two_d: I02_1FgsParams,
+    grid_scan_params: GridScanParams,
 ):
     callback = GridscanISPyBCallback(param_type=I02_1FgsParams)
     callback.params = fgs_params_two_d
+    callback.detector_params = create_detector_params_for_grid_scan(fgs_params_two_d)
+    callback.grid_scan_params = grid_scan_params
     doc = {}
     doc["data"] = {
         "gonio-omega": 0,
@@ -68,9 +77,9 @@ def test_get_scan_infos_gives_expected_output(
         "0",
         "SAD",
         None,
-        comments=_make_comment(fgs_params_two_d.x_steps, fgs_params_two_d.y_steps[0]),
+        comments=_make_comment(grid_scan_params.x_steps, grid_scan_params.y_steps[0]),
     )
     scan_info = callback._get_scan_infos(doc)
     assert scan_info[0].data_collection_grid_info
 
-    assert scan_info == _get_expected_scan_info(fgs_params_two_d, 0)
+    assert scan_info == _get_expected_scan_info(fgs_params_two_d, grid_scan_params, 0)

@@ -17,6 +17,7 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     construct_beamline_specific_fast_gridscan_features,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
@@ -31,10 +32,9 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.parameters.gridscan import (
-    HyperionSpecifiedThreeDGridScan,
     fast_gridscan_params,
     panda_fast_gridscan_params,
 )
@@ -45,8 +45,8 @@ class SmargonSpeedError(Exception):
 
 
 def construct_hyperion_specific_features(
-    xrc_composite: HyperionFlyScanXRayCentreComposite,
-    xrc_parameters: HyperionSpecifiedThreeDGridScan,
+    xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    xrc_parameters: DiffractionExperiment,
     grid_scan_params: GridScanParams,
 ):
     """
@@ -112,7 +112,7 @@ def construct_hyperion_specific_features(
     )
 
 
-def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
+def _panda_tidy(xrc_composite: HyperionGridDetectThenXRayCentreComposite):
     group = "panda_flyscan_tidy"
     LOGGER.info("Disabling panda blocks")
     yield from disarm_panda_for_gridscan(xrc_composite.panda, group)
@@ -124,8 +124,8 @@ def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
 
 
 def _panda_triggering_setup(
-    xrc_composite: HyperionFlyScanXRayCentreComposite,
-    parameters: HyperionSpecifiedThreeDGridScan,
+    xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    parameters: DiffractionExperiment,
     grid_scan_parameters: GridScanParams,
 ) -> MsgGenerator:
     LOGGER.info("Setting up Panda for flyscan")

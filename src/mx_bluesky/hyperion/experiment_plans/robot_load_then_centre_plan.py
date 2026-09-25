@@ -14,6 +14,7 @@ from dodal.devices.beamlines.i03 import Beamstop
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import PandAFastGridScan, ZebraFastGridScanThreeD
@@ -58,6 +59,9 @@ from mx_bluesky.hyperion.experiment_plans.set_energy_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.parameters.gridscan import (
+    create_detector_params_for_grid_scan_with_hyperion_feature_settings,
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
@@ -111,11 +115,13 @@ def create_devices(context: BlueskyContext) -> RobotLoadThenCentreComposite:
 def _flyscan_plan_from_robot_load_params(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
+    detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_gridscan_plan(
         cast(HyperionGridDetectThenXRayCentreComposite, composite),
         params.pin_centre_then_xray_centre_params,
+        detector_params,
         oav_config_file,
     )
 
@@ -123,6 +129,7 @@ def _flyscan_plan_from_robot_load_params(
 def _robot_load_then_flyscan_plan(
     composite: RobotLoadThenCentreComposite,
     params: RobotLoadThenCentre,
+    detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
@@ -130,7 +137,9 @@ def _robot_load_then_flyscan_plan(
         params.robot_load_params,
     )
 
-    yield from _flyscan_plan_from_robot_load_params(composite, params, oav_config_file)
+    yield from _flyscan_plan_from_robot_load_params(
+        composite, params, detector_params, oav_config_file
+    )
 
 
 def robot_load_then_xray_centre(
@@ -158,9 +167,21 @@ def robot_load_then_xray_centre(
         current_chi, parameters.chi_start_deg, abs_tol=0.001
     )
 
+    # TODO this is no longer used in production since r_l_t_x_c is now only
+    # ever called via agamemnon, so energy is always specified
+    # https://github.com/DiamondLightSource/mx-bluesky/issues/1792
+    detector_params = (
+        create_detector_params_for_grid_scan_with_hyperion_feature_settings(parameters)
+    )
+    detector_params = yield from fill_in_energy_if_not_supplied(
+        composite.dcm, detector_params
+    )
+
     if doing_sample_load:
         LOGGER.info("Pin not loaded, loading and centring")
-        plan = _robot_load_then_flyscan_plan(composite, parameters, oav_config_file)
+        plan = _robot_load_then_flyscan_plan(
+            composite, parameters, detector_params, oav_config_file
+        )
     else:
         # Robot load normally sets the energy so we should do this explicitly if no load is
         # being done
@@ -172,17 +193,14 @@ def robot_load_then_xray_centre(
 
         if doing_chi_change:
             plan = _flyscan_plan_from_robot_load_params(
-                composite, parameters, oav_config_file
+                composite, parameters, detector_params, oav_config_file
             )
             LOGGER.info("Pin already loaded but chi changed so centring")
         else:
             LOGGER.info("Pin already loaded and chi not changed so doing nothing")
             return
 
-    detector_params = yield from fill_in_energy_if_not_supplied(
-        composite.dcm, parameters.detector_params
-    )
-
+    # Set the detector params so that we can pre-arm the detector
     eiger.set_detector_parameters(detector_params)
 
     yield from start_preparing_data_collection_then_do_plan(

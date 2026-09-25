@@ -5,12 +5,12 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.beamlines.i03 import BeamstopPositions
+from dodal.devices.detector import DetectorParams
 from dodal.devices.robot import SampleLocation
 
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
     robot_load_then_xray_centre,
@@ -38,21 +38,6 @@ def robot_load_then_centre_params(tmp_path):
 
 
 @pytest.fixture
-def robot_load_then_centre_params_with_patched_create_params(
-    robot_load_then_centre_params: RobotLoadThenCentre,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-):
-    with patch(
-        "mx_bluesky.hyperion.experiment_plans.pin_centre_then_gridscan_plan.create_parameters_for_grid_detection"
-    ) as mock_create_params:
-        robot_load_then_centre_params.set_specified_grid_params(
-            test_three_d_grid_params
-        )
-        mock_create_params.return_value = robot_load_then_centre_params
-        yield
-
-
-@pytest.fixture
 def robot_load_then_centre_params_no_energy(robot_load_then_centre_params):
     robot_load_then_centre_params.demand_energy_ev = None
     return robot_load_then_centre_params
@@ -71,7 +56,7 @@ def sample_is_not_loaded(sim_run_engine, sample_is_loaded):
     mock_current_sample(sim_run_engine, SampleLocation(1, 1))
 
 
-def mock_pin_centre_then_gridscan_plan(_, __, ___):
+def mock_pin_centre_then_gridscan_plan(*args, **kwargs):
     yield from _fire_xray_centre_result_event([FLYSCAN_RESULT_MED, FLYSCAN_RESULT_LOW])
 
 
@@ -94,6 +79,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     )
     composite_passed = mock_centring_plan.call_args[0][0]
     params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
+    detector_params_passed: DetectorParams = mock_centring_plan.call_args[0][2]
 
     for name, value in vars(composite_passed).items():
         assert value == getattr(robot_load_composite, name)
@@ -102,7 +88,8 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
         assert getattr(composite_passed, name), f"{name} not in composite"
 
     assert isinstance(params_passed, PinTipCentreThenXrayCentre)
-    assert params_passed.detector_params.expected_energy_ev == 11100
+    assert params_passed.file_name == robot_load_then_centre_params.file_name
+    assert detector_params_passed.expected_energy_ev == 11100
 
 
 @patch(
@@ -127,8 +114,8 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     )
     det_params = robot_load_composite.eiger.set_detector_parameters.call_args[0][0]
     assert det_params.expected_energy_ev == 11100
-    params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
-    assert params_passed.detector_params.expected_energy_ev == 11100
+    detector_params_passed: DetectorParams = mock_centring_plan.call_args[0][2]
+    assert detector_params_passed.expected_energy_ev == 11100
 
 
 @patch(
@@ -244,8 +231,7 @@ def test_when_plan_run_then_detector_positioned(
         lambda msg: (
             msg.command == "set"
             and msg.obj is robot_load_composite.detector_motion.z
-            and msg.args[0]
-            == robot_load_then_centre_params.detector_params.detector_distance
+            and msg.args[0] == robot_load_then_centre_params.detector_distance_mm
         ),
     )
     assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
@@ -529,8 +515,6 @@ def test_box_size_passed_through_to_gridscan(
     robot_load_then_centre_params: RobotLoadThenCentre,
     grid_detection_callback_with_detected_grid: MagicMock,
     run_engine: RunEngine,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
-    robot_load_then_centre_params_with_patched_create_params,
 ):
     run_engine(
         robot_load_then_xray_centre(
@@ -539,7 +523,10 @@ def test_box_size_passed_through_to_gridscan(
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
-    assert detect_grid_call.args[1].box_size_um == test_three_d_grid_params.box_size_um
+    assert (
+        detect_grid_call.args[1].box_size_um
+        == robot_load_then_centre_params.pin_centre_then_xray_centre_params.box_size_um
+    )
 
 
 async def test_multiple_devices(dcm, undulator, undulator_dcm):
