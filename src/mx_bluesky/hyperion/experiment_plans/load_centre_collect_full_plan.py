@@ -11,6 +11,7 @@ from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.baton import Baton
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.parameters.components import AperturePolicy, WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
@@ -48,6 +49,7 @@ def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
 
 def load_centre_collect_full(
     composite: LoadCentreCollectComposite,
+    beamsize_device_plans: BeamSizePlans,
     parameters: LoadCentreCollect,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
@@ -92,7 +94,10 @@ def load_centre_collect_full(
         try:
             yield from subs_wrapper(
                 robot_load_then_xray_centre(
-                    composite, parameters.robot_load_then_centre, oav_config_file
+                    composite,
+                    beamsize_device_plans,
+                    parameters.robot_load_then_centre,
+                    oav_config_file,
                 ),
                 flyscan_event_handler,
             )

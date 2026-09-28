@@ -12,8 +12,12 @@ from ophyd_async.core import set_mock_value
 from requests import get
 
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
+from mx_bluesky.hyperion.blueapi.in_process import RobotUnloadComposite
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
+)
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
 )
 from tests.conftest import SimConstants
 
@@ -43,7 +47,12 @@ def test_execute_unload_sample_full(
     run_engine.subscribe(callback)
     run_engine(
         robot_unload(
-            robot, smargon, aperture_scatterguard, lower_gonio, SimConstants.ST_VISIT
+            robot,
+            smargon,
+            RobotUnloadComposite(aperture_scatterguard=aperture_scatterguard),
+            Phase1ApertureScatterguardPlans(),
+            lower_gonio,
+            SimConstants.ST_VISIT,
         )
     )
     get_robot_data_url = f"{callback.expeye._base_url}/robot-actions/{action_id}"

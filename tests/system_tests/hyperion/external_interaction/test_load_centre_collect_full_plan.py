@@ -70,6 +70,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 from ....conftest import (
     TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX,
@@ -338,6 +341,7 @@ def test_execute_load_centre_collect_full(
         yield from bps.mv(load_centre_collect_composite.gonio.omega, initial_omega)
         yield from load_centre_collect_full(
             load_centre_collect_composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_params,
             oav_parameters_for_rotation,
         )
@@ -521,6 +525,7 @@ def test_execute_load_centre_collect_full_triggers_zocalo_with_correct_grids(
     run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_params,
             oav_parameters_for_rotation,
         )
@@ -580,6 +585,7 @@ def test_load_centre_collect_updates_bl_sample_status_robot_load_fail(
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
             )
@@ -616,6 +622,7 @@ def test_load_centre_collect_updates_bl_sample_status_pin_tip_detection_fail(
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
             )
@@ -669,6 +676,7 @@ def test_load_centre_collect_updates_bl_sample_status_grid_detection_fail_tip_no
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
             )
@@ -702,6 +710,7 @@ def test_load_centre_collect_updates_bl_sample_status_gridscan_no_diffraction(
         run_engine(
             load_centre_collect_full(
                 composite_with_no_diffraction,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
             )
@@ -741,6 +750,7 @@ def test_load_centre_collect_updates_bl_sample_status_rotation_failure(
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
             )
@@ -798,6 +808,7 @@ def test_load_centre_collect_gridscan_result_at_edge_of_grid(
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters_for_rotation,
             )
@@ -834,6 +845,7 @@ def test_execute_load_centre_collect_capture_rotation_snapshots(
     run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_params,
             oav_parameters_for_rotation,
         )
@@ -919,6 +931,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
     run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_msp_params,
             oav_parameters_for_rotation,
         )
@@ -989,6 +1002,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_in_ispyb
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_msp_params,
                 oav_parameters_for_rotation,
             )
@@ -1043,6 +1057,7 @@ def test_load_centre_collect_multisample_pin_reports_correct_sample_ids_robot_lo
     run_engine(
         load_centre_collect_full(
             load_centre_collect_composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_msp_params,
             oav_parameters_for_rotation,
         )
@@ -1120,6 +1135,7 @@ def test_load_centre_collect_multisample_pin_updates_sample_status_for_parent_sa
             run_engine(
                 load_centre_collect_full(
                     load_centre_collect_composite,
+                    Phase1ApertureScatterguardPlans(),
                     load_centre_collect_msp_params,
                     oav_parameters_for_rotation,
                 )
@@ -1253,6 +1269,7 @@ class TestGenerateSnapshot:
         run_engine(
             load_centre_collect_full(
                 load_centre_collect_composite,
+                Phase1ApertureScatterguardPlans(),
                 load_centre_collect_params,
                 oav_parameters,
             )

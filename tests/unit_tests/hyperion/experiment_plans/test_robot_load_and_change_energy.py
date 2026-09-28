@@ -21,6 +21,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_call
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 from ....conftest import raw_params_from_file
 
@@ -60,7 +63,9 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
-            robot_load_and_energy_change_composite, robot_load_and_energy_change_params
+            robot_load_and_energy_change_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_and_energy_change_params,
         )
     )
     assert_message_and_return_remaining(
@@ -95,7 +100,9 @@ def run_simulating_smargon_wait(
     ):
         return sim_run_engine.simulate_plan(
             robot_load_and_change_energy_plan(
-                robot_load_composite, robot_load_then_centre_params
+                robot_load_composite,
+                Phase1ApertureScatterguardPlans(),
+                robot_load_then_centre_params,
             )
         )
 
@@ -130,7 +137,9 @@ def test_given_ispyb_callback_attached_when_robot_load_then_centre_plan_called_t
 
     run_engine(
         robot_load_and_change_energy_plan(
-            robot_load_and_energy_change_composite, robot_load_and_energy_change_params
+            robot_load_and_energy_change_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_and_energy_change_params,
         )
     )
 
@@ -192,6 +201,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
             robot_load_and_energy_change_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_and_energy_change_params_no_energy,
         )
     )
@@ -239,6 +249,7 @@ def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
             robot_load_and_energy_change_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_and_energy_change_params_no_energy,
         )
     )
@@ -286,6 +297,7 @@ def test_when_plan_run_then_thawing_turned_on(
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
             robot_load_and_energy_change_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_and_energy_change_params_no_energy,
         )
     )
@@ -322,6 +334,7 @@ def test_when_plan_run_then_backlight_moved_in_before_snapshots_taken(
     messages = sim_run_engine.simulate_plan(
         robot_load_and_change_energy_plan(
             robot_load_and_energy_change_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_and_energy_change_params_no_energy,
         )
     )
