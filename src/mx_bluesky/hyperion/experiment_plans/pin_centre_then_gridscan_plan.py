@@ -8,6 +8,7 @@ from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDet
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
@@ -44,6 +45,7 @@ def pin_centre_then_gridscan_plan(
     composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     detector_params: DetectorParams,
+    beamsize_device_plans: BeamSizePlans,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     """Plan that performs a pin tip centre followed by a gridscan to determine the centre of interest."""
@@ -57,7 +59,7 @@ def pin_centre_then_gridscan_plan(
     @zocalo_stage_decorator(composite.zocalo)
     def _pin_centre_then_gridscan_and_xrc():
         yield from setup_beamline_for_oav(
-            composite.gonio, composite.backlight, composite.aperture_scatterguard
+            composite.gonio, composite.backlight, composite, beamsize_device_plans
         )
 
         yield from move_phi_chi(
@@ -89,6 +91,7 @@ def pin_centre_then_gridscan_plan(
                     oav_params,
                     detector_params,
                     hyperion_specific_features,
+                    beamsize_device_plans,
                 )
             )
 

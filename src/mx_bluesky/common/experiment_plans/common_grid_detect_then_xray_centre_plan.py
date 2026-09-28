@@ -17,6 +17,7 @@ from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDet
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     move_aperture_if_required,
 )
@@ -79,6 +80,7 @@ def grid_detect_then_xray_centre(
     beamline_specific: BeamlineSpecificFGSFeatures[
         TGridDetectAndGridScanExtendedDevices, TParameters
     ],
+    beamsize_device_plans: BeamSizePlans,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator[GridScanParams]:
     """
@@ -94,6 +96,7 @@ def grid_detect_then_xray_centre(
         detector_params (DetectorParams): Detector parameters.
         beamline_specific: Provides experiment plans for the beamline specific customisation points.
         oav_config (str): Optional path to the OAV configuration
+        beamsize_device_plans: Provides device-specific beam size plans.
     Returns:
         GridScanParams: The detected grid parameters.
     """
@@ -112,6 +115,7 @@ def grid_detect_then_xray_centre(
             oav_params,
             detector_params,
             beamline_specific,
+            beamsize_device_plans,
         )
 
     assert parameters.trigger_mode != TriggerMode.SET_FRAMES, (
@@ -140,6 +144,7 @@ def detect_grid_and_do_gridscan(
     beamline_specific: BeamlineSpecificFGSFeatures[
         TGridDetectAndGridScanExtendedDevices, TParameters
     ],
+    beamsize_device_plans: BeamSizePlans,
 ) -> MsgGenerator[GridScanParams]:
     """
     Main experiment plan for grid detection and gridscan.
@@ -151,6 +156,7 @@ def detect_grid_and_do_gridscan(
         oav_params (OAVParameters): Parameters for the OAV
         detector_params (DetectorParams): Detector parameters.
         beamline_specific: Provides experiment plans for the beamline specific customisation points.
+        beamsize_device_plans: Provides device-specific setup plans for beam size
     Returns:
         GridScanParams: The detected grid parameters.
     """
@@ -170,7 +176,8 @@ def detect_grid_and_do_gridscan(
     yield from setup_beamline_for_oav(
         composite.gonio,
         composite.backlight,
-        composite.aperture_scatterguard,
+        composite,
+        beamsize_device_plans,
         wait=True,
     )
 

@@ -75,6 +75,7 @@ def _flyscan_plan_from_robot_load_params(
     composite: HyperionGridDetectThenXRayCentreComposite,
     params: RobotLoadThenCentre,
     detector_params: DetectorParams,
+    beamsize_device_plans: BeamSizePlans,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_gridscan_plan(
@@ -82,6 +83,7 @@ def _flyscan_plan_from_robot_load_params(
         composite,
         params.pin_centre_then_xray_centre_params,
         detector_params,
+        beamsize_device_plans,
         oav_config_file,
     )
 
@@ -106,6 +108,7 @@ def _robot_load_then_flyscan_plan(
         grid_detect_composite,
         params,
         detector_params,
+        beamsize_device_plans,
         oav_config_file,
     )
 
@@ -176,6 +179,7 @@ def robot_load_then_xray_centre(
                 grid_detect_and_gridscan_composite,
                 parameters,
                 detector_params,
+                beamsize_device_plans,
                 oav_config_file,
             )
             LOGGER.info("Pin already loaded but chi changed so centring")

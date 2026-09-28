@@ -70,6 +70,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
     RotationISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 from ....conftest import (
     SimConstants,
@@ -506,6 +509,7 @@ def test_ispyb_deposition_in_gridscan(
                 grid_detect_then_xray_centre_parameters
             ),
             hyperion_beamline_specific_features_classic_eiger,
+            Phase1ApertureScatterguardPlans(),
         )
     )
 
@@ -630,7 +634,9 @@ def rotation_scan(
     parameters: RotationScan,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
-    yield from rotation_scan_internal(composite, parameters, oav_params)
+    yield from rotation_scan_internal(
+        composite, parameters, Phase1ApertureScatterguardPlans(), oav_params
+    )
 
 
 @pytest.mark.system_test

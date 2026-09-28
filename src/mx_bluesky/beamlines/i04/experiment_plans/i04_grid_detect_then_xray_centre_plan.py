@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+from types import SimpleNamespace
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -106,6 +107,9 @@ from mx_bluesky.common.utils.utils import (
     fix_transmission_and_exposure_time_for_current_wavelength,
 )
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 
@@ -275,6 +279,7 @@ def i04_default_grid_detect_and_xray_centre(
                 grid_detection_params=GridDetectionParams(),
                 detector_params=create_detector_params_for_grid_scan(internal_params),
                 beamline_specific=beamline_specific,
+                beamsize_device_plans=Phase1ApertureScatterguardPlans(),
                 oav_config=oav_config,
             )
 
@@ -309,8 +314,13 @@ def get_ready_for_oav_and_close_shutter(
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
     group = "get_ready_for_oav_and_close_shutter"
     LOGGER.info("Non-udc tidy: Setting up beamline for OAV")
+    beamsize_devices = SimpleNamespace(aperture_scatterguard=aperture_scatterguard)
     yield from setup_beamline_for_oav(
-        smargon, backlight, aperture_scatterguard, group=group
+        smargon,
+        backlight,
+        beamsize_devices,
+        Phase1ApertureScatterguardPlans(),  # type: ignore
+        group=group,
     )
     LOGGER.info("Non-udc tidy: Closing detector shutter")
     yield from bps.abs_set(

@@ -32,6 +32,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 from .....conftest import raw_params_from_file
 
@@ -51,7 +54,9 @@ def rotation_scan(
         }
     )
     def _wrapped_rotation_scan():
-        yield from rotation_scan_internal(composite, parameters, oav_params)
+        yield from rotation_scan_internal(
+            composite, parameters, Phase1ApertureScatterguardPlans(), oav_params
+        )
 
     yield from _wrapped_rotation_scan()
 

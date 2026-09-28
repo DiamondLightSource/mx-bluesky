@@ -14,3 +14,14 @@ class BeamSizePlans(Protocol[TBeamSizeComposite]):
             devices: composite containing any necessary beamsize devices
             group: Name of bluesky group which will be waited on prior to robot load"""
         ...
+
+    def make_safe_for_oav(
+        self, devices: TBeamSizeComposite, group: str
+    ) -> MsgGenerator:
+        """Execute any actions required to move beam size devices out of the way for the
+        on-axis view when it is used
+        Args:
+            devices: composite containing any necessary beamsize devices
+            group: Name of bluesky group which will be waited on prior to robot load
+        """
+        ...

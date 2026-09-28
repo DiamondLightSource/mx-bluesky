@@ -1,14 +1,15 @@
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.setup_oav import setup_general_oav_params
 from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import (
@@ -26,19 +27,21 @@ class OavSnapshotComposite(Protocol):
     aperture_scatterguard: ApertureScatterguard
 
 
+T = TypeVar("T")
+
+
 def setup_beamline_for_oav(
     smargon: Smargon,
     backlight: Backlight,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: T,
+    beamsize_device_plans: BeamSizePlans[T],
     group=PlanGroupCheckpointConstants.READY_FOR_OAV,
     wait=False,
 ):
     max_vel = yield from bps.rd(smargon.omega.max_velocity)
     yield from bps.abs_set(smargon.omega.velocity, max_vel, group=group)
     yield from bps.abs_set(backlight, InOut.IN, group=group)
-    yield from bps.abs_set(
-        aperture_scatterguard.selected_aperture, ApertureValue.OUT_OF_BEAM, group=group
-    )
+    yield from beamsize_device_plans.make_safe_for_oav(beamsize_devices, group=group)
     if wait:
         yield from bps.wait(group)
 
