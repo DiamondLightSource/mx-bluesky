@@ -18,6 +18,7 @@ from dodal.log import LOGGER
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
@@ -89,12 +90,14 @@ def _robot_load_then_flyscan_plan(
     beamline_specific: BeamlineSpecificFGSFeatures,
     composite: RobotLoadThenCentreComposite,
     grid_detect_composite: HyperionGridDetectThenXRayCentreComposite,
+    beamsize_device_plans: BeamSizePlans,
     params: RobotLoadThenCentre,
     detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
         cast(RobotLoadAndEnergyChangeComposite, composite),
+        beamsize_device_plans,
         params.robot_load_params,
     )
 
@@ -109,6 +112,7 @@ def _robot_load_then_flyscan_plan(
 
 def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
+    beamsize_device_plans: BeamSizePlans,
     parameters: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
@@ -152,6 +156,7 @@ def robot_load_then_xray_centre(
             beamline_specific,
             composite,
             grid_detect_and_gridscan_composite,
+            beamsize_device_plans,
             parameters,
             detector_params,
             oav_config_file,

@@ -1,3 +1,5 @@
+from typing import TypeVar
+
 import bluesky.plan_stubs as bps
 import pydantic
 from bluesky.utils import MsgGenerator
@@ -26,6 +28,7 @@ from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.common.experiment_plans.beamstop_check import (
     BeamstopCheckDevices,
@@ -37,6 +40,10 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
 
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
@@ -113,6 +120,8 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     yield from _unload_sample_if_present(
         devices.robot,
         devices.gonio,
+        devices,
+        Phase1ApertureScatterguardPlans(),
         devices.aperture_scatterguard,
         devices.lower_gonio,
     )
@@ -180,9 +189,14 @@ def _verify_correct_cryostream_selected(
         )
 
 
+T = TypeVar("T", bound=ApertureScatterguardComposite)
+
+
 def _unload_sample_if_present(
     robot: BartRobot,
     smargon: Smargon,
+    beamsize_devices: T,
+    beamsize_plans: BeamSizePlans[T],
     aperture_scatterguard: ApertureScatterguard,
     lower_gonio: XYZStage,
 ):
@@ -191,5 +205,5 @@ def _unload_sample_if_present(
     if pin_mounted != PinMounted.NO_PIN_MOUNTED:
         LOGGER.info("Pin detected, unloading sample...")
         yield from robot_unload(
-            robot, smargon, aperture_scatterguard, lower_gonio, None
+            robot, smargon, beamsize_devices, beamsize_plans, lower_gonio, None
         )

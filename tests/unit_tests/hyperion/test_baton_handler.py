@@ -1009,7 +1009,7 @@ def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     parent.assert_has_calls(
         [
             call.load_centre_collect(ANY, ANY),
-            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call.robot_unload(ANY, ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
@@ -1040,7 +1040,7 @@ def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
 
     mock_robot_unload.assert_has_calls(
         [
-            call(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call(ANY, ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
@@ -1080,7 +1080,7 @@ def test_robot_unload_still_performed_when_sample_exception(
     parent.assert_has_calls(
         [
             call.load_centre_collect(ANY, ANY),
-            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call.robot_unload(ANY, ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 

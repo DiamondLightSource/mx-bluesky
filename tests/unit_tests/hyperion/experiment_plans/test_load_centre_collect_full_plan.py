@@ -48,6 +48,9 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 from ....conftest import pin_tip_edge_data, raw_params_from_file
 from .conftest import (
@@ -407,7 +410,10 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     msgs = sim_run_engine.simulate_plan(
         load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
+            composite,
+            Phase1ApertureScatterguardPlans(),
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
         )
     )
 
@@ -420,7 +426,7 @@ def test_collect_full_plan_happy_path_invokes_all_steps_and_centres_on_best_flys
     )
 
     robot_load_energy_change_composite = mock_full_robot_load_plan.mock_calls[0].args[0]
-    robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[1]
+    robot_load_energy_change_params = mock_full_robot_load_plan.mock_calls[0].args[2]
     assert isinstance(robot_load_energy_change_composite, RobotLoadThenCentreComposite)
     assert isinstance(robot_load_energy_change_params, RobotLoadAndEnergyChange)
     mock_pin_centre_then_gridscan_plan.assert_called_once()
@@ -469,7 +475,10 @@ def test_load_centre_collect_full_skips_collect_if_pin_tip_not_found(
     with pytest.raises(WarningError, match="Pin tip centring failed"):
         sim_run_engine.simulate_plan(
             load_centre_collect_full(
-                composite, load_centre_collect_params, oav_parameters_for_rotation
+                composite,
+                Phase1ApertureScatterguardPlans(),
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
             )
         )
 
@@ -495,7 +504,10 @@ def test_load_centre_collect_full_plan_skips_collect_if_no_diffraction(
     with pytest.raises(CrystalNotFoundError):
         sim_run_engine.simulate_plan(
             load_centre_collect_full(
-                composite, load_centre_collect_params, oav_parameters_for_rotation
+                composite,
+                Phase1ApertureScatterguardPlans(),
+                load_centre_collect_params,
+                oav_parameters_for_rotation,
             )
         )
 
@@ -523,7 +535,10 @@ def test_load_centre_collect_full_plan_collects_at_current_pos_if_no_diffraction
     )
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
+            composite,
+            Phase1ApertureScatterguardPlans(),
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
         )
     )
 
@@ -564,7 +579,10 @@ def test_load_centre_collect_moves_beamstop_into_place(
     mock_model_validate.return_value = fake_model
     msgs = sim_run_engine.simulate_plan(
         load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
+            composite,
+            Phase1ApertureScatterguardPlans(),
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -647,6 +665,7 @@ def test_load_centre_collect_full_plan_multiple_centres(
     msgs = sim_run_engine.simulate_plan(
         load_centre_collect_full(
             composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_with_top_n_params,
             oav_parameters_for_rotation,
         )
@@ -743,6 +762,7 @@ def test_load_centre_collect_full_sorts_collections_by_distance_from_pin_tip(
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
             composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_with_top_n_params,
             oav_parameters_for_rotation,
         )
@@ -889,6 +909,7 @@ def test_load_centre_collect_full_plan_alternates_rotation_with_multiple_centres
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
             composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_with_top_n_params,
             oav_parameters_for_rotation,
         )
@@ -941,6 +962,7 @@ def test_load_centre_collect_full_plan_assigns_sample_ids_to_rotations_according
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
             composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_with_top_n_for_each_sample,
             oav_parameters_for_rotation,
         )
@@ -994,6 +1016,7 @@ def test_load_centre_collect_full_plan_omits_collection_if_no_sample_id_is_assig
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
             composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_with_top_n_for_each_sample,
             oav_parameters_for_rotation,
         )
@@ -1077,7 +1100,10 @@ def test_box_size_passed_through_to_gridscan(
 ):
     run_engine(
         load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
+            composite,
+            Phase1ApertureScatterguardPlans(),
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
         )
     )
     detect_grid_call = mock_detect_grid.mock_calls[0]
@@ -1109,7 +1135,10 @@ def test_load_centre_collect_full_collects_at_current_location_if_no_xray_centri
 
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
+            composite,
+            Phase1ApertureScatterguardPlans(),
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
         )
     )
 
@@ -1136,7 +1165,10 @@ def test_load_centre_collect_full_activates_beam_drawing_callback(
 ):
     msgs = sim_run_engine.simulate_plan(
         load_centre_collect_full(
-            composite, load_centre_collect_params, oav_parameters_for_rotation
+            composite,
+            Phase1ApertureScatterguardPlans(),
+            load_centre_collect_params,
+            oav_parameters_for_rotation,
         )
     )
     msgs = assert_message_and_return_remaining(
@@ -1200,6 +1232,7 @@ def test_load_centre_collect_applies_aperture_for_single_result_based_on_xtal_si
     sim_run_engine.simulate_plan(
         load_centre_collect_full(
             composite,
+            Phase1ApertureScatterguardPlans(),
             load_centre_collect_with_top_n_params,
             oav_parameters_for_rotation,
         )

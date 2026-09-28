@@ -9,6 +9,8 @@ from this file constitutes the hyperion-blueapi interface to the hyperion superv
 process.
 """
 
+import dataclasses
+
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -48,6 +50,11 @@ __all__ = [
     "robot_unload",
 ]
 
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
+
 
 def load_centre_collect(
     parameters: LoadCentreCollectParams,
@@ -63,8 +70,15 @@ def load_centre_collect(
           move to that centre and do a collection with the specified parameters.
     """
     yield from _load_centre_collect_full(
-        composite, load_centre_collect_to_internal(parameters)
+        composite,
+        Phase1ApertureScatterguardPlans(),
+        load_centre_collect_to_internal(parameters),
     )
+
+
+@dataclasses.dataclass
+class RobotUnloadComposite(ApertureScatterguardComposite):
+    aperture_scatterguard: ApertureScatterguard
 
 
 def robot_unload(
@@ -78,7 +92,15 @@ def robot_unload(
     Unload the currently mounted pin into the location that it was loaded from.
     This is to be invoked as the final step upon successful completion of the UDC queue.
     """
-    yield from _robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    beamsize_devices = RobotUnloadComposite(aperture_scatterguard=aperture_scatterguard)
+    yield from _robot_unload(
+        robot,
+        smargon,
+        beamsize_devices,
+        Phase1ApertureScatterguardPlans(),
+        lower_gonio,
+        visit,
+    )
 
 
 def clean_up_udc(
