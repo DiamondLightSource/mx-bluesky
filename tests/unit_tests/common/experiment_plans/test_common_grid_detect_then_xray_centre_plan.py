@@ -16,6 +16,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.core import get_mock_put
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -43,6 +44,9 @@ from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
     create_detector_params_for_grid_scan,
+)
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
 )
 
 from ....conftest import (
@@ -84,6 +88,7 @@ async def test_detect_grid_and_do_gridscan_in_real_run_engine(
                 minimal_diffraction_expt_with_sample,
                 grid_detect_params,
                 beamline_specific,
+                Phase1ApertureScatterguardPlans(),
             ),
             minimal_diffraction_expt_with_sample,
             create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
@@ -160,6 +165,7 @@ def test_detect_grid_and_do_gridscan_sets_up_beamline_for_oav(
             grid_detect_params,
             create_detector_params_for_grid_scan(minimal_diffraction_expt_with_sample),
             beamline_specific=beamline_specific,
+            beamsize_device_plans=Phase1ApertureScatterguardPlans(),
             oav_config=test_config_files["oav_config_json"],
         ),
     )
@@ -172,6 +178,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
     expt_params: DiffractionExperimentWithSample,
     grid_detection_params: GridDetectionParams,
     beamline_specific_xrc_features: BeamlineSpecificFGSFeatures,
+    beamsize_device_plans: BeamSizePlans,
 ):
     yield from detect_grid_and_do_gridscan(
         composite,
@@ -182,6 +189,7 @@ def _do_detect_grid_and_gridscan_then_wait_for_backlight(
         ),
         detector_params=create_detector_params_for_grid_scan(expt_params),
         beamline_specific=beamline_specific_xrc_features,
+        beamsize_device_plans=beamsize_device_plans,
     )
     yield from bps.wait(PlanGroupCheckpointConstants.GRID_READY_FOR_DC)
 
@@ -217,6 +225,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
                 oav_params=oav_params,
                 detector_params=detector_params,
                 beamline_specific=beamline_specific,
+                beamsize_device_plans=Phase1ApertureScatterguardPlans(),
             ),
             minimal_diffraction_expt_with_sample,
             detector_params,
@@ -288,6 +297,7 @@ def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
             detector_params=create_detector_params_for_grid_scan(
                 minimal_diffraction_expt_with_sample
             ),
+            beamsize_device_plans=Phase1ApertureScatterguardPlans(),
             beamline_specific=beamline_specific,
         )
     )
@@ -369,6 +379,7 @@ def msgs_from_simulated_grid_detect_then_xray_centre(
                 minimal_diffraction_expt_with_sample
             ),
             beamline_specific=beamline_specific,
+            beamsize_device_plans=Phase1ApertureScatterguardPlans(),
             oav_config=test_config_files["oav_config_json"],
         )
     )
@@ -446,6 +457,7 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
                 minimal_diffraction_expt_with_sample
             ),
             beamline_specific=beamline_specific,
+            beamsize_device_plans=Phase1ApertureScatterguardPlans(),
             oav_config=test_config_files["oav_config_json"],
         )
     )
@@ -493,6 +505,7 @@ def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
                 minimal_diffraction_expt_with_sample
             ),
             beamline_specific=beamline_specific,
+            beamsize_device_plans=Phase1ApertureScatterguardPlans(),
             oav_config=test_config_files["oav_config_json"],
         )
     )

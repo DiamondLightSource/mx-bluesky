@@ -32,6 +32,7 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
 )
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
     prepare_aperture_for_rotation_if_required,
@@ -219,6 +220,7 @@ def _move_and_rotation(
     composite: RotationScanComposite,
     params: SingleRotationScan,
     oav_params: OAVParameters,
+    beamsize_device_plans: BeamSizePlans,
 ):
     motor_time_to_speed = yield from bps.rd(composite.gonio.omega.acceleration_time)
     max_vel = yield from bps.rd(composite.gonio.omega.max_velocity)
@@ -246,7 +248,8 @@ def _move_and_rotation(
             yield from setup_beamline_for_oav(
                 composite.gonio,
                 composite.backlight,
-                composite.aperture_scatterguard,
+                composite,
+                beamsize_device_plans,
                 wait=True,
             )
 
@@ -270,6 +273,7 @@ def _move_and_rotation(
 def rotation_scan_internal(
     composite: RotationScanComposite,
     parameters: RotationScan,
+    beamsize_device_plans: BeamSizePlans,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     if not oav_params:
@@ -308,7 +312,9 @@ def rotation_scan_internal(
             def rotation_scan_core(
                 params: SingleRotationScan,
             ):
-                yield from _move_and_rotation(composite, params, oav_params)
+                yield from _move_and_rotation(
+                    composite, params, oav_params, beamsize_device_plans
+                )
 
             yield from rotation_scan_core(single_scan)
 

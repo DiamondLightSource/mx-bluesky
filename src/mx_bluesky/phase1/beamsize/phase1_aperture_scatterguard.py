@@ -20,5 +20,14 @@ class Phase1ApertureScatterguardPlans(BeamSizePlans[ApertureScatterguardComposit
         yield from bps.abs_set(
             devices.aperture_scatterguard.selected_aperture,
             ApertureValue.OUT_OF_BEAM,
-            group="prepare_robot_load",
+            group=group,
+        )
+
+    def make_safe_for_oav(
+        self, devices: ApertureScatterguardComposite, group: str
+    ) -> MsgGenerator:
+        yield from bps.abs_set(
+            devices.aperture_scatterguard.selected_aperture,
+            ApertureValue.OUT_OF_BEAM,
+            group=group,
         )

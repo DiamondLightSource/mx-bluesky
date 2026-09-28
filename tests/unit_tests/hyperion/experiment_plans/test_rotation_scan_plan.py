@@ -70,6 +70,9 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 from ....conftest import (
     DocumentCapturer,
@@ -119,6 +122,7 @@ def run_full_rotation_plan(
             rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
+                Phase1ApertureScatterguardPlans(),
                 oav_parameters_for_rotation,
             ),
         )
@@ -287,7 +291,10 @@ def test_rotation_scan(
     composite = fake_create_rotation_devices
     run_engine(
         rotation_scan_internal(
-            composite, test_rotation_params, oav_parameters_for_rotation
+            composite,
+            test_rotation_params,
+            Phase1ApertureScatterguardPlans(),
+            oav_parameters_for_rotation,
         )
     )
     composite.eiger.do_arm.set.assert_called()  # type: ignore
@@ -375,6 +382,7 @@ async def test_rotation_plan_moves_aperture_correctly(
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         ),
     )
@@ -456,6 +464,7 @@ def test_cleanup_happens(
             rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
+                Phase1ApertureScatterguardPlans(),
                 oav_parameters_for_rotation,
             )
         )
@@ -503,6 +512,7 @@ def rotation_scan_simulated_messages(
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         )
     )
@@ -807,6 +817,7 @@ def _test_rotation_scan_skips_init_backlight_aperture_and_snapshots(
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         )
     )
@@ -859,6 +870,7 @@ def test_rotation_scan_turns_shutter_to_auto_with_pc_gate_then_back_to_manual(
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         )
     )
@@ -991,6 +1003,7 @@ def test_rotation_scan_correctly_triggers_ispyb_callback(
             rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
+                Phase1ApertureScatterguardPlans(),
                 oav_parameters_for_rotation,
             ),
         )
@@ -1035,6 +1048,7 @@ def test_rotation_scan_correctly_triggers_zocalo_callback(
             rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
+                Phase1ApertureScatterguardPlans(),
                 oav_parameters_for_rotation,
             ),
         )
@@ -1055,6 +1069,7 @@ def test_rotation_scan_moves_beamstop_into_place(
             rotation_scan_internal(
                 fake_create_rotation_devices,
                 test_rotation_params,
+                Phase1ApertureScatterguardPlans(),
                 oav_parameters_for_rotation,
             )
         )
@@ -1133,6 +1148,7 @@ def test_rotation_scan_plan_with_omega_flip_inverts_motor_movements_but_not_even
                 rotation_scan_internal(
                     fake_create_rotation_devices,
                     test_rotation_params,
+                    Phase1ApertureScatterguardPlans(),
                     oav_parameters_for_rotation,
                 ),
             )
@@ -1220,6 +1236,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_multi_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         )
     )
@@ -1289,7 +1306,11 @@ def _run_multi_rotation_plan(
     for cb in callbacks:
         run_engine.subscribe(cb)
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        run_engine(rotation_scan_internal(devices, params, oav_params))
+        run_engine(
+            rotation_scan_internal(
+                devices, params, Phase1ApertureScatterguardPlans(), oav_params
+            )
+        )
 
 
 @patch(
@@ -1869,6 +1890,7 @@ def test_multi_rotation_scan_does_not_change_transmission_back_until_after_data_
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_multi_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         )
     )
@@ -1902,6 +1924,7 @@ def test_multi_rotation_scan_does_not_verify_undulator_gap_until_before_run(
         rotation_scan_internal(
             fake_create_rotation_devices,
             test_multi_rotation_params,
+            Phase1ApertureScatterguardPlans(),
             oav_parameters_for_rotation,
         )
     )

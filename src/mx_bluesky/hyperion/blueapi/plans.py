@@ -47,6 +47,9 @@ __all__ = [
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
+from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 
 
 def _init_plan_module():
@@ -82,4 +85,5 @@ def pin_tip_centre_then_xray_centre(
         composite,
         internal_params,
         TopNByMaxCountSelection(n=1),
+        Phase1ApertureScatterguardPlans(),
     )

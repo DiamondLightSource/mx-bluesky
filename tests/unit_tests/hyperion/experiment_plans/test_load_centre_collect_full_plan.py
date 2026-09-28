@@ -210,7 +210,9 @@ def mock_multi_rotation_scan():
         ),
         patch(
             "mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan.rotation_scan_internal",
-            side_effect=lambda _, __, ___: iter([Msg(command="multi_rotation_scan")]),
+            side_effect=lambda _, __, ___, ____: iter(
+                [Msg(command="multi_rotation_scan")]
+            ),
         ) as mock_rotation,
     ):
         yield mock_rotation

@@ -7,6 +7,7 @@ from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDet
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.blueapi.composites import (
@@ -29,6 +30,7 @@ def pin_tip_centre_then_xray_centre(
     composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     parameters: PinTipCentreThenXrayCentre,
     centre_selection: MultiXtalSelection,
+    beamsize_device_plans: BeamSizePlans,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
     """
@@ -66,7 +68,12 @@ def pin_tip_centre_then_xray_centre(
     )
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
         yield from pin_centre_then_gridscan_plan(
-            beamline_specific, composite, parameters, detector_params, oav_config_file
+            beamline_specific,
+            composite,
+            parameters,
+            detector_params,
+            beamsize_device_plans,
+            oav_config_file,
         )
 
         results = xrc_event_handler.xray_centre_results
