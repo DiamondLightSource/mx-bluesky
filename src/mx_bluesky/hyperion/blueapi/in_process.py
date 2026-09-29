@@ -50,7 +50,7 @@ __all__ = [
     "robot_unload",
 ]
 
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
     ApertureScatterguardComposite,
     Phase1ApertureScatterguardPlans,
 )

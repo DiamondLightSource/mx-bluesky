@@ -7,6 +7,9 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from event_model import RunStart
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.external_interaction.ispyb.data_model import (
     ScanDataInfo,
 )
@@ -32,9 +35,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 from .....conftest import raw_params_from_file
 

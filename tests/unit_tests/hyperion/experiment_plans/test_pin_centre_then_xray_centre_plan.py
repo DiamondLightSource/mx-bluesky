@@ -16,6 +16,9 @@ from ophyd_async.core import get_mock_put
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
@@ -38,9 +41,6 @@ from mx_bluesky.hyperion.experiment_plans.pin_centre_then_xray_centre import (
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
-)
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
 )
 from tests.unit_tests.beamlines.i24.serial.conftest import fake_generator
 

@@ -8,6 +8,9 @@ from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector import DetectorParams
 from dodal.devices.robot import SampleLocation
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
@@ -23,9 +26,6 @@ from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 from ....conftest import assert_none_matching, raw_params_from_file
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run

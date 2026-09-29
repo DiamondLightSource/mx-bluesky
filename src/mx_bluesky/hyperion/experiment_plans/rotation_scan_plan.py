@@ -1,3 +1,5 @@
+from typing import Any
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
@@ -32,10 +34,12 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
 )
-from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    BeamSizePlans,
+    TBeamSizeValue,
+)
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
-    prepare_aperture_for_rotation_if_required,
     setup_sample_environment,
 )
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
@@ -59,6 +63,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
+from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     SingleRotationScan,
@@ -108,6 +113,8 @@ def rotation_scan_plan(
     composite: RotationScanComposite,
     params: SingleRotationScan,
     motion_values: RotationMotionProfile,
+    beamsize_device_plans: BeamSizePlans[Any, TBeamSizeValue],
+    beamsize_value: TBeamSizeValue,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
     about a fixed axis - for now this axis is limited to omega.
@@ -149,8 +156,9 @@ def rotation_scan_plan(
         )
 
         yield from setup_sample_environment(
-            composite.aperture_scatterguard,
-            params.selected_aperture,
+            composite,
+            beamsize_device_plans,
+            beamsize_value,
             composite.backlight,
             composite.thawer,
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
@@ -241,6 +249,10 @@ def _move_and_rotation(
         group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
 
+    aperture_value = yield from beamsize_device_plans.beam_size_for_rotation(
+        composite, params.selected_aperture
+    )
+
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
@@ -253,10 +265,9 @@ def _move_and_rotation(
                 wait=True,
             )
 
-        if params.selected_aperture:
-            yield from prepare_aperture_for_rotation_if_required(
-                composite.aperture_scatterguard, params.selected_aperture
-            )
+        yield from beamsize_device_plans.prepare_beam_size(
+            composite, aperture_value, PlanGroupCheckpointConstants.PREPARE_APERTURE
+        )
         yield from oav_snapshot_plan(composite, params, oav_params)
 
     current_omega_offset_and_phase = yield from bps.rd(composite.gonio.wrapped_omega)
@@ -267,7 +278,9 @@ def _move_and_rotation(
         AngleWithPhase.from_iterable(current_omega_offset_and_phase),
     )
 
-    yield from rotation_scan_plan(composite, params, motion_values)
+    yield from rotation_scan_plan(
+        composite, params, motion_values, beamsize_device_plans, aperture_value
+    )
 
 
 def rotation_scan_internal(

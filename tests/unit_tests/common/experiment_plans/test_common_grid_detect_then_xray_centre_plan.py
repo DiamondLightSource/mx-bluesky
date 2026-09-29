@@ -16,6 +16,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from ophyd_async.core import get_mock_put
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
@@ -44,9 +47,6 @@ from mx_bluesky.common.parameters.gridscan import (
     GridDetectionParams,
     GridScanParams,
     create_detector_params_for_grid_scan,
-)
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
 )
 
 from ....conftest import (

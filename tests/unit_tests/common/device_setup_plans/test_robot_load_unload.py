@@ -17,16 +17,16 @@ from ophyd_async.core import (
     set_mock_value,
 )
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     prepare_for_robot_load,
     robot_unload,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
     RobotLoadISPyBCallback,
-)
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    ApertureScatterguardComposite,
-    Phase1ApertureScatterguardPlans,
 )
 
 TEST_PUCK = 1

@@ -27,6 +27,9 @@ from ophyd_async.core import (
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
 )
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
 )
@@ -70,9 +73,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.load_centre_collect import LoadCentreCollect
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 from ....conftest import (
     TEST_RESULT_IN_BOUNDS_TOP_LEFT_BOX,

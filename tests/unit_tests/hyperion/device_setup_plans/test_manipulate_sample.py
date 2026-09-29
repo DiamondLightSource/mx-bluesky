@@ -1,43 +1,51 @@
-import pytest
-from bluesky.run_engine import RunEngine
-from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
-from dodal.devices.smargon import CombinedMove, Smargon
-from ophyd_async.core import get_mock_put
+from unittest.mock import MagicMock, Mock
 
+from bluesky import Msg
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.backlight import Backlight
+from dodal.devices.smargon import CombinedMove, Smargon
+from dodal.devices.thawer import Thawer
+
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
-    move_aperture_if_required,
     move_phi_chi,
     move_x_y_z,
+    setup_sample_environment,
 )
+from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 
 
-@pytest.mark.parametrize(
-    "set_position",
-    [
-        (ApertureValue.SMALL),
-        (ApertureValue.MEDIUM),
-        (ApertureValue.OUT_OF_BEAM),
-        (ApertureValue.LARGE),
-    ],
-)
-async def test_move_aperture_goes_to_correct_position(
-    aperture_scatterguard: ApertureScatterguard,
-    run_engine: RunEngine,
-    set_position,
+def test_setup_sample_environment_waits_for_beamsize_prepare_then_performs(
+    backlight: Backlight,
+    thawer: Thawer,
+    sim_run_engine: RunEngineSimulator,
 ):
-    run_engine(move_aperture_if_required(aperture_scatterguard, set_position))
-    last_pos = get_mock_put(aperture_scatterguard.selected_aperture).call_args[0]
-    assert last_pos == (set_position,)
+    beamsize_devices = MagicMock()
+    beamsize_device_plans = Mock(spec=BeamSizePlans)
+    beamsize_device_plans.perform_beam_size.return_value = iter(
+        [Msg("perform_beam_size")]
+    )
+    msgs = sim_run_engine.simulate_plan(
+        setup_sample_environment(
+            beamsize_devices,
+            beamsize_device_plans,
+            ApertureValue.MEDIUM,
+            backlight,
+            thawer,
+        )
+    )
 
-
-async def test_move_aperture_does_nothing_when_none_selected(
-    aperture_scatterguard: ApertureScatterguard, run_engine: RunEngine
-):
-    get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
-    run_engine(move_aperture_if_required(aperture_scatterguard, None))
-    mock_put = get_mock_put(aperture_scatterguard.selected_aperture)
-    mock_put.assert_not_called()
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "wait"
+            and msg.kwargs["group"] == PlanGroupCheckpointConstants.PREPARE_APERTURE
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "perform_beam_size"
+    )
 
 
 def test_move_x_y_z_no_wait(

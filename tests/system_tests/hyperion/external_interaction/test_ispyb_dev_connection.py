@@ -21,6 +21,9 @@ from mx_bluesky.common.device_setup_plans.detector.eiger import (
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
 )
@@ -70,9 +73,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback 
     RotationISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 from ....conftest import (
     SimConstants,

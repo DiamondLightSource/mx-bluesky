@@ -44,11 +44,11 @@ __all__ = [
     "robot_unload",
 ]
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
-)
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
 )
 
 

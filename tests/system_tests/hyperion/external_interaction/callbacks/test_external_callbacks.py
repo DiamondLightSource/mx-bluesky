@@ -31,6 +31,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from zmq.utils.monitor import recv_monitor_message
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
@@ -54,9 +57,6 @@ from mx_bluesky.common.parameters.rotation import (
 )
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
-from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
     construct_hyperion_specific_features,
 )
@@ -68,8 +68,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import 
     BLUEAPI_EVENT_TOPIC,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
 )
 
 from .....conftest import fake_read
