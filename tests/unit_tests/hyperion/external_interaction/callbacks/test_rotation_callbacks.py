@@ -25,8 +25,8 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScanComposite,
     rotation_scan_internal,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_rotation_callbacks,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -96,7 +96,7 @@ def test_nexus_handler_gets_documents_in_plan(
     run_engine: RunEngine,
 ):
     nexus_writer.return_value.data_filename = "test_full_filename"
-    nexus_callback, _ = create_rotation_callbacks()
+    nexus_callback, _ = _create_rotation_callbacks()
     activate_callbacks((nexus_callback, _))
     nexus_callback.activity_gated_start = MagicMock(
         side_effect=nexus_callback.activity_gated_start
@@ -136,7 +136,7 @@ def test_nexus_handler_only_writes_once(
 def test_ispyb_handler_receives_two_stops_but_only_ends_deposition_on_inner_one(
     ispyb_store, zocalo, run_engine: RunEngine, do_rotation_scan
 ):
-    _, ispyb_callback = create_rotation_callbacks()
+    _, ispyb_callback = _create_rotation_callbacks()
     ispyb_callback.emit_cb = None
     ispyb_callback.activity_gated_start = MagicMock(
         autospec=True, side_effect=ispyb_callback.activity_gated_start

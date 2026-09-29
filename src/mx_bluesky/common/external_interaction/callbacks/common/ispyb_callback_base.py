@@ -174,9 +174,8 @@ class BaseISPyBCallback(PlanReactiveCallback):
         _data = doc["data"]
 
         assert self.params and self.detector_params
-        aperture = _data.get(
-            "aperture_scatterguard-selected_aperture", "Not implemented"
-        )
+        payload = self._hw_read_during_mapper(doc)
+
         beamsize_x_mm = _data.get("beamsize-x_um", None)
         if beamsize_x_mm:
             beamsize_x_mm = beamsize_x_mm / 1000
@@ -194,13 +193,12 @@ class BaseISPyBCallback(PlanReactiveCallback):
                     "ISPyB callbacks couldn't get beamsize"
                 )
 
-        payload = self._hw_read_during_mapper(doc)
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
             beamsize_at_sampley=beamsize_y_mm,
             flux=_data["flux-flux_reading"],
-            detector_mode="ROI" if payload.roi_mode else "FULL",
-            ispyb_detector_id=payload.ispyb_detector_id,
+            detector_mode="ROI" if payload.detector_payload.roi_mode else "FULL",
+            ispyb_detector_id=payload.detector_payload.ispyb_detector_id,
         )
         if transmission := _data["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
@@ -214,7 +212,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after flux read."
         )
-        self.append_to_comment(f"Aperture: {aperture}. ")
+        self.append_to_comment(f"Aperture: {payload.beamsize_payload.aperture}. ")
         return scan_data_infos
 
     @abstractmethod

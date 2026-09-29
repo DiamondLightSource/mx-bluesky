@@ -36,6 +36,7 @@ from dodal.devices.zocalo import ZocaloResults
 from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
+from event_model import Event
 from pydantic import BaseModel
 
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
@@ -43,6 +44,9 @@ from mx_bluesky.beamlines.i04.external_interaction.config_server import (
 )
 from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
     Phase1ApertureScatterguardPlans,
+)
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    map_hw_read_during_data,
 )
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
@@ -73,6 +77,9 @@ from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridDetectAndScanISPyBCallback,
@@ -337,7 +344,7 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(
             param_type=DiffractionExperimentWithSample,
-            hw_read_mapper=eiger_hw_read_during_mapper,
+            hw_read_mapper=_hw_read_mapper,
         ),
         GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
@@ -349,7 +356,7 @@ def create_gridscan_callbacks() -> tuple[
                 ),
                 hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
-            hw_read_during_mapper=eiger_hw_read_during_mapper,
+            hw_read_during_mapper=_hw_read_mapper,
         ),
     )
 
@@ -421,4 +428,11 @@ def _create_internal_params(
         exposure_time_s=exposure_time_s,
         parameter_model_version=get_param_version(),
         ispyb_experiment_type=IspybExperimentType.GRIDSCAN_3D,
+    )
+
+
+def _hw_read_mapper(doc: Event) -> HWReadDuringPayload:
+    return HWReadDuringPayload(
+        detector_payload=eiger_hw_read_during_mapper(doc),
+        beamsize_payload=map_hw_read_during_data(doc),
     )

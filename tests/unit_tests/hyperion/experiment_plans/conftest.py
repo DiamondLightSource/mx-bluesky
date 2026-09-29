@@ -38,8 +38,8 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_gridscan_callbacks,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _create_gridscan_callbacks,
 )
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
@@ -144,7 +144,7 @@ def mock_subscriptions():
             ),
         ),
     ):
-        nexus_callback, ispyb_callback = create_gridscan_callbacks()
+        nexus_callback, ispyb_callback = _create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
 
     return (nexus_callback, ispyb_callback)
