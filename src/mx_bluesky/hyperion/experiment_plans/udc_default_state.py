@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import bluesky.plan_stubs as bps
 import pydantic
@@ -7,7 +7,7 @@ from dodal.beamlines.i03 import BL
 from dodal.common.beamlines.beamline_parameters import (
     get_beamline_parameters,
 )
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureValue
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
     CryoStreamGantry,
@@ -28,6 +28,10 @@ from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.common.experiment_plans.beamstop_check import (
@@ -40,10 +44,6 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
     get_hyperion_feature_settings,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    ApertureScatterguardComposite,
-    Phase1ApertureScatterguardPlans,
-)
 
 _GROUP_PRE_BEAMSTOP_CHECK = "pre_beamstop_check"
 _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
@@ -122,7 +122,6 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
         devices.gonio,
         devices,
         Phase1ApertureScatterguardPlans(),
-        devices.aperture_scatterguard,
         devices.lower_gonio,
     )
 
@@ -196,8 +195,7 @@ def _unload_sample_if_present(
     robot: BartRobot,
     smargon: Smargon,
     beamsize_devices: T,
-    beamsize_plans: BeamSizePlans[T],
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_plans: BeamSizePlans[T, Any],
     lower_gonio: XYZStage,
 ):
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)

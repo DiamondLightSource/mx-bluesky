@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -58,7 +58,7 @@ T = TypeVar("T")
 
 
 def prepare_for_robot_load(
-    beamsize_devices: T, beamsize_plans: BeamSizePlans[T], smargon: Smargon
+    beamsize_devices: T, beamsize_plans: BeamSizePlans[T, Any], smargon: Smargon
 ):
     yield from beamsize_plans.make_safe_for_robot_load_plan(
         beamsize_devices, "prepare_robot_load"
@@ -76,7 +76,7 @@ def robot_unload(
     robot: BartRobot,
     smargon: Smargon,
     beamsize_devices: T,
-    beamsize_plans: BeamSizePlans[T],
+    beamsize_plans: BeamSizePlans[T, Any],
     lower_gonio: XYZStage,
     visit: str | None,
 ):

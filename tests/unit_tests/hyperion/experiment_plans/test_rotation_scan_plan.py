@@ -28,6 +28,9 @@ from dodal.devices.zebra.zebra import RotationDirection, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterControl
 from ophyd_async.core import get_mock_put, set_mock_attr, set_mock_value
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
 )
@@ -70,9 +73,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback 
     RotationNexusFileCallback,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 from ....conftest import (
     DocumentCapturer,
@@ -103,7 +103,13 @@ def do_rotation_main_plan_for_tests(
         fake_read,
     ):
         run_eng(
-            rotation_scan_plan(devices, expt_params, motion_values),
+            rotation_scan_plan(
+                devices,
+                expt_params,
+                motion_values,
+                Phase1ApertureScatterguardPlans(),
+                ApertureValue.MEDIUM,
+            ),
         )
 
 
@@ -455,7 +461,13 @@ def test_cleanup_happens(
     params = next(test_rotation_params.single_rotation_scans)
     with pytest.raises(MyTestError):
         run_engine(
-            rotation_scan_plan(fake_create_rotation_devices, params, motion_values)
+            rotation_scan_plan(
+                fake_create_rotation_devices,
+                params,
+                motion_values,
+                Phase1ApertureScatterguardPlans(),
+                ApertureValue.MEDIUM,
+            )
         )
     cleanup_plan.assert_not_called()
     # check that failure is handled in composite plan
@@ -483,7 +495,13 @@ def test_rotation_plan_reads_hardware(
     )
     params = next(test_rotation_params.single_rotation_scans)
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        rotation_scan_plan(fake_create_rotation_devices, params, motion_values)
+        rotation_scan_plan(
+            fake_create_rotation_devices,
+            params,
+            motion_values,
+            Phase1ApertureScatterguardPlans(),
+            ApertureValue.MEDIUM,
+        )
     )
 
     msgs = assert_message_and_return_remaining(

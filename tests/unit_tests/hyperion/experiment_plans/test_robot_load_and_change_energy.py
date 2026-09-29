@@ -12,6 +12,9 @@ from dodal.devices.thawer import OnOff
 from dodal.devices.webcam import Webcam
 from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
     robot_load_and_change_energy_plan,
@@ -21,9 +24,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_call
     RobotLoadISPyBCallback,
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadAndEnergyChange
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 from ....conftest import raw_params_from_file
 

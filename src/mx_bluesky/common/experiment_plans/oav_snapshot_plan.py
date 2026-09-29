@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -34,7 +34,7 @@ def setup_beamline_for_oav(
     smargon: Smargon,
     backlight: Backlight,
     beamsize_devices: T,
-    beamsize_device_plans: BeamSizePlans[T],
+    beamsize_device_plans: BeamSizePlans[T, Any],
     group=PlanGroupCheckpointConstants.READY_FOR_OAV,
     wait=False,
 ):

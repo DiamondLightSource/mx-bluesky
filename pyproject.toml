@@ -351,6 +351,9 @@ forbidden_modules = ["mx_bluesky.beamlines", "mx_bluesky.hyperion"]
 name = "Beamlines do not import from each other"
 type = "independence"
 modules = "mx_bluesky.beamlines.*"
+ignore_imports = [
+    "mx_bluesky.beamlines.i04.** -> mx_bluesky.beamlines.phase1.**"
+]
 
 [[tool.importlinter.contracts]]
 name = "Beamlines do not import from hyperion"

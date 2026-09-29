@@ -41,6 +41,9 @@ from pydantic import BaseModel
 from mx_bluesky.beamlines.i04.external_interaction.config_server import (
     get_i04_feature_settings,
 )
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
     eiger_hw_read_during_mapper,
@@ -107,9 +110,6 @@ from mx_bluesky.common.utils.utils import (
     fix_transmission_and_exposure_time_for_current_wavelength,
 )
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
-from mx_bluesky.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
-)
 
 DEFAULT_XRC_BEAMSIZE_MICRONS = 20
 
