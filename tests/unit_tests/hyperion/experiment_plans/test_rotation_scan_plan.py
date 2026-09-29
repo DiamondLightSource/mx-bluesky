@@ -38,6 +38,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
     ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    DetectorPayload,
     HWReadDuringMapper,
     HWReadDuringPayload,
 )
@@ -62,8 +63,8 @@ from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     rotation_scan_internal,
     rotation_scan_plan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_rotation_callbacks,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _create_rotation_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
@@ -148,7 +149,9 @@ def motion_values(test_rotation_params: RotationScan):
 @pytest.fixture
 def mock_hw_read_mapper() -> HWReadDuringMapper:
     return lambda _: HWReadDuringPayload(
-        bit_depth=8, ispyb_detector_id=78, roi_mode=False
+        detector_payload=DetectorPayload(
+            bit_depth=8, ispyb_detector_id=78, roi_mode=False
+        )
     )
 
 
@@ -1729,7 +1732,7 @@ def test_zocalo_callback_end_only_gets_called_after_eiger_unstage(
     eiger = fake_create_rotation_devices.eiger
     parent_mock = MagicMock()
     parent_mock.eiger_unstage = eiger.unstage
-    _, ispyb_callback = create_rotation_callbacks()
+    _, ispyb_callback = _create_rotation_callbacks()
     zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)
     zocalo_callback.zocalo_interactor = MagicMock()
@@ -1764,7 +1767,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    _, ispyb_callback = create_rotation_callbacks()
+    _, ispyb_callback = _create_rotation_callbacks()
     zocalo_callback = ispyb_callback.emit_cb
     assert isinstance(zocalo_callback, ZocaloCallback)
     zocalo_callback.zocalo_interactor = (zocalo_trigger := MagicMock())
@@ -1793,7 +1796,7 @@ def test_ispyb_triggered_before_zocalo(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    _, ispyb_callback = create_rotation_callbacks()
+    _, ispyb_callback = _create_rotation_callbacks()
     parent_mock = MagicMock()
 
     mock_ispyb_store = MagicMock(spec=StoreInIspyb)
@@ -1835,7 +1838,7 @@ def test_zocalo_start_and_end_called_once_for_each_collection(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    _, ispyb_callback = create_rotation_callbacks()
+    _, ispyb_callback = _create_rotation_callbacks()
 
     mock_ispyb_store = MagicMock(spec=StoreInIspyb)
     mock_ispyb_store.begin_deposition.return_value = IspybIds(
@@ -1874,7 +1877,7 @@ def test_given_different_sample_ids_for_each_collection_then_each_ispyb_entry_us
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    _, ispyb_callback = create_rotation_callbacks()
+    _, ispyb_callback = _create_rotation_callbacks()
 
     mock_ispyb_store = MagicMock(spec=StoreInIspyb)
     deposition = mock_ispyb_store.begin_deposition

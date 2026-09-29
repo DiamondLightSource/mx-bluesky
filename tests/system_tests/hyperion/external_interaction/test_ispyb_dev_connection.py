@@ -13,16 +13,20 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from event_model import Event
 from ophyd_async.core import set_mock_value
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    map_hw_read_during_data,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
 )
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
-)
-from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
-    Phase1ApertureScatterguardPlans,
 )
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     grid_detect_then_xray_centre,
@@ -30,6 +34,9 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridDetectAndScanISPyBCallback,
@@ -285,6 +292,13 @@ def scan_data_infos_for_update_3d(
     return [scan_xy_data_info_for_update, scan_xz_data_info_for_update]
 
 
+def _hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
+    return HWReadDuringPayload(
+        detector_payload=eiger_hw_read_during_mapper(doc),
+        beamsize_payload=map_hw_read_during_data(doc),
+    )
+
+
 @pytest.mark.system_test
 def test_ispyb_deposition_comment_correct_on_failure(
     dummy_ispyb: StoreInIspyb,
@@ -497,7 +511,7 @@ def test_ispyb_deposition_in_gridscan(
     set_mock_value(composite.s4_slit_gaps.y_gap.user_readback, 0.1)
     ispyb_callback = GridDetectAndScanISPyBCallback(
         DiffractionExperimentWithSample,
-        hw_read_during_mapper=eiger_hw_read_during_mapper,
+        hw_read_during_mapper=_hw_read_during_mapper,
     )
     run_engine.subscribe(ispyb_callback)
     run_engine(
@@ -650,7 +664,7 @@ def test_ispyb_deposition_in_rotation_plan(
     fetch_datacollection_position_attribute: Callable[..., Any],
     tmp_path,
 ):
-    ispyb_cb = RotationISPyBCallback(hw_read_during_mapper=eiger_hw_read_during_mapper)
+    ispyb_cb = RotationISPyBCallback(hw_read_during_mapper=_hw_read_during_mapper)
     run_engine.subscribe(ispyb_cb)
 
     run_engine(

@@ -11,6 +11,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callb
     PlanReactiveCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    DetectorPayload,
     HWReadDuringMapper,
     HWReadDuringPayload,
 )
@@ -33,9 +34,11 @@ class MockReactiveCallback(PlanReactiveCallback):
 @pytest.fixture
 def mock_hw_read_mapper() -> HWReadDuringMapper:
     return lambda _: HWReadDuringPayload(
-        bit_depth=8,
-        ispyb_detector_id=78,
-        roi_mode=True,
+        detector_payload=DetectorPayload(
+            bit_depth=8,
+            ispyb_detector_id=78,
+            roi_mode=True,
+        )
     )
 
 

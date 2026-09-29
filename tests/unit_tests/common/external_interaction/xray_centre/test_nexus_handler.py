@@ -6,6 +6,7 @@ from event_model import Event
 from numpy.typing import DTypeLike
 
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    DetectorPayload,
     HWReadDuringPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
@@ -87,9 +88,11 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_virtual_dat
 ):
     def mock_hw_read_mapper(_: Event) -> HWReadDuringPayload:
         return HWReadDuringPayload(
-            bit_depth=bit_depth,
-            ispyb_detector_id=78,
-            roi_mode=True,
+            detector_payload=DetectorPayload(
+                bit_depth=bit_depth,
+                ispyb_detector_id=78,
+                roi_mode=True,
+            )
         )
 
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]

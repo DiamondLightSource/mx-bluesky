@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Protocol, TypeAlias
 
 from bluesky import plan_stubs as bps
@@ -113,3 +114,8 @@ class Phase1ApertureScatterguardPlans(
                 return previous_aperture_position
             case _:
                 raise ValueError(f"Unsupported aperture policy {aperture_policy}")
+
+    def signals_to_read_during_collection(
+        self, devices: ApertureScatterguardComposite
+    ) -> Sequence:
+        return [devices.aperture_scatterguard]

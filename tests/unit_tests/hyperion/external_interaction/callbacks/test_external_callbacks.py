@@ -20,7 +20,6 @@ from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
     main,
     ping_watchdog_while_alive,
     run_watchdog,
-    setup_callbacks,
     setup_logging,
 )
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs
@@ -32,7 +31,9 @@ from mx_bluesky.hyperion.parameters.constants import HyperionConstants
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.parse_callback_args",
     return_value=CallbackArgs(True, HyperionConstants.SUPERVISOR_PORT),
 )
-@patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks")
+@patch(
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.load_beamline_module"
+)
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_logging")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.set_config_client")
 @patch(
@@ -46,7 +47,7 @@ def test_main_function(
     setup_alerting: MagicMock,
     set_config_client: MagicMock,
     setup_logging: MagicMock,
-    setup_callbacks: MagicMock,
+    mock_load_beamline_module: MagicMock,
     parse_callback_args: MagicMock,
     mock_run_watchdog: MagicMock,
     monkeypatch,
@@ -66,7 +67,8 @@ def test_main_function(
     mock_run_watchdog.wait(0.5)
     setup_logging.assert_called()
     set_config_client.assert_called()
-    setup_callbacks.assert_called()
+    mock_load_beamline_module.assert_called_once()
+    mock_load_beamline_module.return_value.setup_callbacks.assert_called_once()
     setup_alerting.assert_called_once()
     mock_run_watchdog.assert_called_once()
     assert isinstance(setup_alerting.mock_calls[0].args[0], LoggingAlertService)
@@ -79,13 +81,6 @@ def test_main_function(
 def test_no_config_server_url_raises_exception():
     with pytest.raises(ValueError, match="CONFIG_SERVER_URL must be specified"):
         main()
-
-
-def test_setup_callbacks():
-    current_number_of_callbacks = 8
-    cbs = setup_callbacks()
-    assert len(cbs) == current_number_of_callbacks
-    assert len(set(cbs)) == current_number_of_callbacks
 
 
 @pytest.mark.skip_log_setup
@@ -170,19 +165,21 @@ def test_launch_with_watchdog_port_arg_applies_port(mock_callback_runner: MagicM
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompDispatcher")
 @patch("mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompClient")
 @patch(
-    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks",
-    return_value=[Mock(spec=CallbackBase)],
+    "mx_bluesky.hyperion.external_interaction.callbacks.__main__.load_beamline_module"
 )
 @patch(
     "mx_bluesky.hyperion.external_interaction.callbacks.__main__.LIVENESS_POLL_SECONDS",
     0.1,
 )
 def test_launch_with_stomp_launches_stomp_backend(
-    mock_setup_callbacks: MagicMock,
+    mock_load_beamline_module: MagicMock,
     mock_client_cls: MagicMock,
     mock_dispatcher_cls: MagicMock,
     monkeypatch,
 ):
+    mock_load_beamline_module.return_value.setup_callbacks.return_value = [
+        Mock(spec=CallbackBase)
+    ]
     monkeypatch.setenv(CONFIG_SERVER_URL_ENV_VAR, "http://127.0.0.1:8555")
     stomp_client = mock_client_cls.for_broker.return_value
     dispatcher = mock_dispatcher_cls.return_value
@@ -199,7 +196,9 @@ def test_launch_with_stomp_launches_stomp_backend(
     mock_dispatcher_cls.assert_called_once_with(stomp_client)
     parent.assert_has_calls(
         [
-            call.dispatcher.subscribe(mock_setup_callbacks.return_value[0]),
+            call.dispatcher.subscribe(
+                mock_load_beamline_module.return_value.setup_callbacks.return_value[0]
+            ),
             call.dispatcher.__enter__(),
             call.stomp_client.is_connected(),
             call.stomp_client.is_connected(),

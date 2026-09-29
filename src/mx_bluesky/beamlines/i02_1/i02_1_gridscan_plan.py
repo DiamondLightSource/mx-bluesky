@@ -15,6 +15,7 @@ from dodal.devices.slits import Slits
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import BaseUndulator
 from dodal.devices.zebra.zebra import Zebra
+from event_model import Event
 from pydantic import BaseModel
 
 from mx_bluesky.beamlines.i02_1.device_setup_plans.gridscan import (
@@ -45,6 +46,9 @@ from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
 )
 from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
     ZocaloCallback,
+)
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
     GridscanNexusFileCallback,
@@ -77,7 +81,7 @@ def create_gridscan_callbacks(
 ) -> tuple[GridscanNexusFileCallback, GridscanISPyBCallback]:
     return (
         GridscanNexusFileCallback(
-            param_type=I02_1FgsParams, hw_read_mapper=eiger_hw_read_during_mapper
+            param_type=I02_1FgsParams, hw_read_mapper=_hw_read_mapper
         ),
         GridscanISPyBCallback(
             param_type=I02_1FgsParams,
@@ -87,9 +91,13 @@ def create_gridscan_callbacks(
                 lambda: generate_start_info_from_num_grids(grid_scan_params),
                 hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
-            hw_read_during_mapper=eiger_hw_read_during_mapper,
+            hw_read_during_mapper=_hw_read_mapper,
         ),
     )
+
+
+def _hw_read_mapper(doc: Event) -> HWReadDuringPayload:
+    return HWReadDuringPayload(detector_payload=eiger_hw_read_during_mapper(doc))
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

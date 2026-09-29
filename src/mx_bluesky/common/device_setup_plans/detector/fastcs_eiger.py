@@ -20,7 +20,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
     ZocaloHWReadPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
-    HWReadDuringPayload,
+    DetectorPayload,
 )
 
 
@@ -83,9 +83,9 @@ def fastcs_eiger_hw_read_during_signals(eiger: EigerDetector) -> Sequence[Readab
     return [eiger.detector.bit_depth_image]
 
 
-def fastcs_eiger_hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
+def fastcs_eiger_hw_read_during_mapper(doc: Event) -> DetectorPayload:
     # TODO implement properly for FastCS Eiger https://github.com/DiamondLightSource/mx-bluesky/issues/1076
-    return HWReadDuringPayload(
+    return DetectorPayload(
         bit_depth=doc["data"]["eiger-detector-bit_depth_image"],
         ispyb_detector_id=0,  # TODO implement me
         roi_mode=False,  # TODO implement me

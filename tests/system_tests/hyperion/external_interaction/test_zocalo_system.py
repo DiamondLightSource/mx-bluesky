@@ -32,8 +32,8 @@ from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_gridscan_callbacks,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from tests.conftest import create_dummy_scan_spec
@@ -85,7 +85,7 @@ def run_zocalo_with_dev_ispyb(
 
     async def inner(sample_name="", fallback=np.array([0, 0, 0])):
         external_callback_expt_params.file_name = sample_name
-        _, ispyb_callback = create_gridscan_callbacks()
+        _, ispyb_callback = _create_gridscan_callbacks()
         run_engine.subscribe(ispyb_callback)
 
         detector_params = create_detector_params_for_grid_scan(

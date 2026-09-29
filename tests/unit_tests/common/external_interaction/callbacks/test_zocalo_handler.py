@@ -12,8 +12,8 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
     StoreInIspyb,
 )
 from mx_bluesky.common.utils.exceptions import ISPyBDepositionNotMadeError
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_gridscan_callbacks,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _create_gridscan_callbacks,
 )
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     generate_start_info_from_ordered_runs,
@@ -107,7 +107,7 @@ class TestZocaloHandler:
         mock_ids = IspybIds(data_collection_ids=dc_ids, data_collection_group_id=dcg_id)
         ispyb_store.return_value.mock_add_spec(StoreInIspyb)
 
-        _, ispyb_cb = create_gridscan_callbacks()
+        _, ispyb_cb = _create_gridscan_callbacks()
         ispyb_cb.active = True
         assert isinstance(zocalo_handler := ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_handler._reset_state()
@@ -177,7 +177,7 @@ class TestZocaloHandler:
         mock_ids = IspybIds(data_collection_ids=dc_ids, data_collection_group_id=dcg_id)
         ispyb_store.return_value.mock_add_spec(StoreInIspyb)
 
-        _, ispyb_cb = create_gridscan_callbacks()
+        _, ispyb_cb = _create_gridscan_callbacks()
         ispyb_cb.active = True
         assert isinstance(zocalo_handler := ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_handler._reset_state()
