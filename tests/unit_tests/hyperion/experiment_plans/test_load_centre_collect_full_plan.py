@@ -35,6 +35,7 @@ from mx_bluesky.common.utils.exceptions import (
     WarningError,
 )
 from mx_bluesky.common.utils.xrc_result import XRayCentreResult
+from mx_bluesky.hyperion.blueapi.in_process import I03LoadCentreCollectComposite
 from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
 )
@@ -123,7 +124,9 @@ def composite(
         for field in dataclasses.fields(fake_create_rotation_devices)
     }
 
-    composite = LoadCentreCollectComposite(baton=baton, **(rlaec_args | rotation_args))
+    composite = I03LoadCentreCollectComposite(
+        baton=baton, **(rlaec_args | rotation_args)
+    )
     composite.pin_tip_detection = pin_tip_detection_with_found_pin
     set_mock_attr(
         composite.undulator_dcm,

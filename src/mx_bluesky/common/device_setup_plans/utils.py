@@ -6,7 +6,6 @@ from typing import Any, Protocol
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.mx_phase1.beamstop import Beamstop, BeamstopPositions
@@ -31,7 +30,6 @@ class DiffractionExtendedDevices(
     manages some additional diffraction parameters and retrieves results."""
 
     gonio: Smargon
-    aperture_scatterguard: ApertureScatterguard
     beamstop: Beamstop
     detector_motion: DetectorMotion
 

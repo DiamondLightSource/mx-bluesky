@@ -27,6 +27,7 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    I03HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
@@ -180,7 +181,7 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
 def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: I03HyperionGridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,

@@ -16,6 +16,7 @@ from dodal.devices.webcam import Webcam
 from dodal.log import LOGGER
 
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -25,6 +26,7 @@ from mx_bluesky.common.device_setup_plans.utils import (
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    TBeamSizeComposite,
 )
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
@@ -52,7 +54,9 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class RobotLoadThenCentreComposite(HyperionGridDetectThenXRayCentreComposite):
+class RobotLoadThenCentreComposite(
+    HyperionGridDetectThenXRayCentreComposite[TDetector, TBeamSizeComposite]
+):
     """
     Extends the grid detect and grid scan devices to include additional devices needed for
     robot load and changing energy.

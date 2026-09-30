@@ -58,6 +58,7 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
 )
+from mx_bluesky.hyperion.blueapi.in_process import I03LoadCentreCollectComposite
 from mx_bluesky.hyperion.blueapi.mixins import (
     TopNByMaxCountForEachSampleSelection,
 )
@@ -155,7 +156,7 @@ def load_centre_collect_composite(
     baton,
     beamsize: BeamsizeBase,
 ):
-    composite = LoadCentreCollectComposite(
+    composite = I03LoadCentreCollectComposite(
         aperture_scatterguard=composite_for_rotation_scan.aperture_scatterguard,
         attenuator=composite_for_rotation_scan.attenuator,
         backlight=composite_for_rotation_scan.backlight,

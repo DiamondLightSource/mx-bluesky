@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from typing import Any
+
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.detector import DetectorParams
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
-from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.manipulate_sample import move_phi_chi
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
@@ -33,6 +35,7 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 )
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    TBeamSizeComposite,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 from mx_bluesky.hyperion.parameters.gridscan import (
@@ -42,10 +45,10 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 
 def pin_centre_then_gridscan_plan(
     hyperion_specific_features: BeamlineSpecificFGSFeatures,
-    composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
+    composite: HyperionGridDetectThenXRayCentreComposite[TDetector, TBeamSizeComposite],
     parameters: PinTipCentreThenXrayCentre,
     detector_params: DetectorParams,
-    beamsize_device_plans: BeamSizePlans,
+    beamsize_device_plans: BeamSizePlans[TBeamSizeComposite, Any],
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     """Plan that performs a pin tip centre followed by a gridscan to determine the centre of interest."""
@@ -59,7 +62,10 @@ def pin_centre_then_gridscan_plan(
     @zocalo_stage_decorator(composite.zocalo)
     def _pin_centre_then_gridscan_and_xrc():
         yield from setup_beamline_for_oav(
-            composite.gonio, composite.backlight, composite, beamsize_device_plans
+            composite.gonio,
+            composite.backlight,
+            composite.beamsize_composite,
+            beamsize_device_plans,
         )
 
         yield from move_phi_chi(

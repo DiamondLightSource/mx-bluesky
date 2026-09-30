@@ -1,4 +1,5 @@
-from typing import Any
+from abc import abstractmethod
+from typing import Generic, TypeVar
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -6,11 +7,9 @@ import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.common.maths import AngleWithPhase
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i03 import Beamstop
-from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -77,15 +76,15 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
+TBeamSizeComposite = TypeVar("TBeamSizeComposite")
+
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class RotationScanComposite(OavSnapshotComposite):
+class RotationScanComposite(OavSnapshotComposite, Generic[TBeamSizeComposite]):
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
-    beamsize: BeamsizeBase
     beamstop: Beamstop
     dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
@@ -108,12 +107,16 @@ class RotationScanComposite(OavSnapshotComposite):
     def detector(self) -> EigerDetector:
         return self.eiger
 
+    @property
+    @abstractmethod
+    def beamsize_composite(self) -> TBeamSizeComposite: ...
+
 
 def rotation_scan_plan(
-    composite: RotationScanComposite,
+    composite: RotationScanComposite[TBeamSizeComposite],
     params: SingleRotationScan,
     motion_values: RotationMotionProfile,
-    beamsize_device_plans: BeamSizePlans[Any, TBeamSizeValue],
+    beamsize_device_plans: BeamSizePlans[TBeamSizeComposite, TBeamSizeValue],
     beamsize_value: TBeamSizeValue,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
@@ -129,7 +132,7 @@ def rotation_scan_plan(
     )
     def _rotation_scan_plan(
         motion_values: RotationMotionProfile,
-        composite: RotationScanComposite,
+        composite: RotationScanComposite[TBeamSizeComposite],
     ):
         axis = composite.gonio.omega
 
@@ -156,7 +159,7 @@ def rotation_scan_plan(
         )
 
         yield from setup_sample_environment(
-            composite,
+            composite.beamsize_composite,
             beamsize_device_plans,
             beamsize_value,
             composite.backlight,
@@ -203,7 +206,7 @@ def rotation_scan_plan(
 
         yield from standard_read_hardware_during_collection(
             beamsize_device_plans,
-            composite,
+            composite.beamsize_composite,
             composite.attenuator,
             composite.flux,
             composite.dcm,

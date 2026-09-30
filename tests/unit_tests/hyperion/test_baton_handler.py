@@ -43,6 +43,7 @@ from mx_bluesky.hyperion.baton_handler import (
     run_forever,
     run_udc_when_requested,
 )
+from mx_bluesky.hyperion.blueapi.in_process import I03LoadCentreCollectComposite
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -487,13 +488,13 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
 def test_initialise_udc_reloads_all_devices(dont_patch_clear_devices):
     context = setup_context(True)
     devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
-        context, LoadCentreCollectComposite
+        context, I03LoadCentreCollectComposite
     )
 
     _initialise_udc(context, True)
 
     devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
-        context, LoadCentreCollectComposite
+        context, I03LoadCentreCollectComposite
     )
 
     for f in fields(devices_after_reset):

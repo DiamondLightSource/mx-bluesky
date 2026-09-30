@@ -45,6 +45,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
     _create_gridscan_callbacks,
 )
 
+from ....conftest import RobotLoadThenCentreCompositeWithBeamSize
+
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
     centre_of_mass_mm=np.array([0.1, 0.2, 0.3]),
     bounding_box_mm=(np.array([0.09, 0.19, 0.29]), np.array([0.11, 0.21, 0.31])),
@@ -200,7 +202,7 @@ def robot_load_composite(
         MagicMock(side_effect=lambda _: completed_status()),
     )
     set_mock_value(smargon.omega.max_velocity, 131)
-    return RobotLoadThenCentreComposite(
+    return RobotLoadThenCentreCompositeWithBeamSize(
         xbpm_feedback=xbpm_feedback,
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,

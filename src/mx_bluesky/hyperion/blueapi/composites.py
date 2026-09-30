@@ -1,4 +1,5 @@
-from typing import Generic, cast
+from abc import abstractmethod
+from typing import Generic, TypeVar, cast
 
 import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -24,6 +25,9 @@ from dodal.devices.zocalo import ZocaloResults
 from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+)
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     GridDetectAndGridScanExtendedDevices,
@@ -33,14 +37,17 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 use_fast_cs_eiger: bool = False
 
 
+TBeamSizeComposite = TypeVar("TBeamSizeComposite")
+
+
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class HyperionGridDetectThenXRayCentreComposite(
-    GridDetectAndGridScanExtendedDevices[TDetector], Generic[TDetector]
+    GridDetectAndGridScanExtendedDevices[TDetector],
+    Generic[TDetector, TBeamSizeComposite],
 ):
     """All devices which are directly or indirectly required by Hyperion Grid Detect and XRC plan"""
 
     # Required to implement GridDetectAndGridScanExtendedDevices
-    aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     beamstop: Beamstop
     detector_motion: DetectorMotion
@@ -52,7 +59,6 @@ class HyperionGridDetectThenXRayCentreComposite(
 
     # Additional devices for sample environment, beam
     attenuator: BinaryFilterAttenuator
-    beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
     flux: Flux
     s4_slit_gaps: MinimalSlits
@@ -73,3 +79,21 @@ class HyperionGridDetectThenXRayCentreComposite(
     @property
     def detector(self) -> TDetector:
         return cast(TDetector, self.fastcs_eiger if use_fast_cs_eiger else self.eiger)
+
+    @property
+    @abstractmethod
+    def beamsize_composite(self) -> TBeamSizeComposite: ...
+
+
+@pydantic.dataclasses.dataclass()
+class I03HyperionGridDetectThenXRayCentreComposite(
+    HyperionGridDetectThenXRayCentreComposite[
+        EigerDetector, ApertureScatterguardComposite
+    ]
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
+
+    @property
+    def beamsize_composite(self) -> ApertureScatterguardComposite:
+        return self
