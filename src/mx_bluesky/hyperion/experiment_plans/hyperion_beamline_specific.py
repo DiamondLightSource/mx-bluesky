@@ -7,6 +7,7 @@ from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector as ClassicEigerDetector
 from ophyd_async.fastcs.eiger import EigerDetector as FastCSEigerDetector
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
@@ -42,6 +43,7 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 def construct_hyperion_specific_features(
     xrc_composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
     xrc_parameters: TSetupParameters,
+    beamsize_device_plans: BeamSizePlans,
 ) -> BeamlineSpecificFGSFeatures[
     HyperionGridDetectThenXRayCentreComposite[TDetector], TSetupParameters
 ]:
@@ -57,12 +59,13 @@ def construct_hyperion_specific_features(
     ]
 
     signals_to_read_during_collection = [
-        xrc_composite.aperture_scatterguard,
         xrc_composite.attenuator.actual_transmission,
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
-        xrc_composite.beamsize,
     ]
+    signals_to_read_pre_flyscan += (
+        beamsize_device_plans.signals_to_read_during_collection(xrc_composite)
+    )
 
     setup_trigger_plan: Callable[
         [

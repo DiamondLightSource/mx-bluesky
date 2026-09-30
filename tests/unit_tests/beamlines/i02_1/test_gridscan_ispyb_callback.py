@@ -1,3 +1,5 @@
+from functools import partial
+
 from mx_bluesky.beamlines.i02_1.external_interaction.callbacks.gridscan.ispyb_callback import (
     GridscanISPyBCallback,
     _make_comment,
@@ -65,7 +67,7 @@ def test_get_scan_infos_gives_expected_output(
 ):
     callback = GridscanISPyBCallback(
         param_type=I02_1FgsParams,
-        hw_read_during_mapper=_hw_read_mapper,
+        hw_read_during_mapper=partial(_hw_read_mapper, fgs_params_two_d),
     )
     callback.params = fgs_params_two_d
     callback.detector_params = create_detector_params_for_grid_scan(fgs_params_two_d)

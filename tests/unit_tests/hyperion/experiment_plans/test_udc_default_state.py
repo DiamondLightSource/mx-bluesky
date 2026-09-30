@@ -56,6 +56,7 @@ async def cryostream_gantry(sim_run_engine: RunEngineSimulator):
 
 @pytest.fixture
 async def default_devices(
+    beamsize,
     beamstop_check_devices,
     cryostream_gantry,
     robot,
@@ -75,6 +76,7 @@ async def default_devices(
 
     with patch("dodal.devices.hutch_shutter.TEST_MODE", True):
         devices = UDCDefaultDevices(
+            beamsize=beamsize,
             collimation_table=collimation_table,
             cryostream=cryostream,
             cryojet=cryojet,

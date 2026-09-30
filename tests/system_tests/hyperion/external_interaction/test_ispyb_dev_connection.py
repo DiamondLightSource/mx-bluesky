@@ -492,6 +492,7 @@ def hyperion_beamline_specific_features_classic_eiger(
     return construct_hyperion_specific_features(
         grid_detect_then_xray_centre_composite,
         grid_detect_then_xray_centre_parameters,
+        Phase1ApertureScatterguardPlans(),
     )
 
 

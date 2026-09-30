@@ -15,10 +15,10 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.webcam import Webcam
 from dodal.log import LOGGER
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
-from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.utils import (
     start_preparing_data_collection_then_do_plan,
 )
@@ -150,7 +150,9 @@ def robot_load_then_xray_centre(
     grid_detect_and_gridscan_composite = composite
 
     beamline_specific = construct_hyperion_specific_features(
-        grid_detect_and_gridscan_composite, parameters
+        grid_detect_and_gridscan_composite,
+        parameters,
+        beamsize_device_plans,
     )
 
     if doing_sample_load:

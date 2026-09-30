@@ -77,25 +77,6 @@ def _get_working_doc():
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base.ISPYB_ZOCALO_CALLBACK_LOGGER"
 )
-def test_handle_ispyb_transmission_flux_read_if_no_beamsize_warning(
-    mock_logger: MagicMock,
-    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
-):
-    callback = BaseISPyBCallback(hw_read_during_mapper=MagicMock())
-    callback.params = minimal_diffraction_expt_with_sample
-    callback.detector_params = create_detector_params_for_grid_scan(
-        minimal_diffraction_expt_with_sample
-    )
-    doc = _get_working_doc()
-    callback._handle_ispyb_transmission_flux_read(doc)  # type: ignore
-    mock_logger.warning.assert_has_calls(
-        [call("ISPyB callbacks couldn't get beamsize")]
-    )
-
-
-@patch(
-    "mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base.ISPYB_ZOCALO_CALLBACK_LOGGER"
-)
 def test_handle_ispyb_transmission_flux_read_if_params_specify_beamsize(
     mock_logger: MagicMock,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,

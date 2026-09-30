@@ -9,6 +9,9 @@ import bluesky.preprocessors as bpp
 import pytest
 from dodal.devices.zebra.zebra import RotationDirection
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
     standard_read_hardware_during_collection,
 )
@@ -186,12 +189,12 @@ def _fake_rotation_scan(
     )
     def plan():
         yield from standard_read_hardware_during_collection(
-            rotation_devices.aperture_scatterguard,
+            Phase1ApertureScatterguardPlans(),
+            rotation_devices,
             rotation_devices.attenuator,
             rotation_devices.flux,
             rotation_devices.dcm,
             rotation_devices.eiger,
-            rotation_devices.beamsize,
         )
 
     @bpp.subs_decorator(subscription)

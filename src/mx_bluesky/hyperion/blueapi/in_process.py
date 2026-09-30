@@ -15,6 +15,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
@@ -79,6 +80,7 @@ def load_centre_collect(
 @dataclasses.dataclass
 class RobotUnloadComposite(ApertureScatterguardComposite):
     aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
 
 
 def robot_unload(
@@ -87,12 +89,15 @@ def robot_unload(
     smargon: Smargon = inject("gonio"),
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     lower_gonio: XYZStage = inject("lower_gonio"),
+    beamsize: BeamsizeBase = inject("beamsize"),
 ) -> MsgGenerator:
     """
     Unload the currently mounted pin into the location that it was loaded from.
     This is to be invoked as the final step upon successful completion of the UDC queue.
     """
-    beamsize_devices = RobotUnloadComposite(aperture_scatterguard=aperture_scatterguard)
+    beamsize_devices = RobotUnloadComposite(
+        aperture_scatterguard=aperture_scatterguard, beamsize=beamsize
+    )
     yield from _robot_unload(
         robot,
         smargon,

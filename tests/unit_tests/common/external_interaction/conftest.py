@@ -7,6 +7,9 @@ import bluesky.preprocessors as bpp
 import pytest
 from ophyd_async.sim import SimMotor
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    map_hw_read_during_data,
+)
 from mx_bluesky.common.external_interaction.callbacks.common.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -33,12 +36,13 @@ class MockReactiveCallback(PlanReactiveCallback):
 
 @pytest.fixture
 def mock_hw_read_mapper() -> HWReadDuringMapper:
-    return lambda _: HWReadDuringPayload(
+    return lambda doc: HWReadDuringPayload(
         detector_payload=DetectorPayload(
             bit_depth=8,
             ispyb_detector_id=78,
             roi_mode=True,
-        )
+        ),
+        beamsize_payload=map_hw_read_during_data(doc),
     )
 
 
