@@ -5,9 +5,13 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.beamsize.beamsize import BeamsizeBase
+from event_model import Event
 from typing_extensions import runtime_checkable
 
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    BeamSizePayload,
+)
 from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -121,3 +125,13 @@ class Phase1ApertureScatterguardPlans(
         self, devices: ApertureScatterguardComposite
     ) -> Sequence:
         return [devices.aperture_scatterguard, devices.beamsize]
+
+
+def map_hw_read_during_data(doc: Event) -> BeamSizePayload:
+    data = doc["data"]
+    aperture = data.get("aperture_scatterguard-selected_aperture", "Not implemented")
+    beamsize_x_um = data.get("beamsize-x_um")
+    beamsize_y_um = data.get("beamsize-y_um")
+    return BeamSizePayload(
+        aperture=str(aperture), beamsize_x_um=beamsize_x_um, beamsize_y_um=beamsize_y_um
+    )
