@@ -190,7 +190,7 @@ def _fake_rotation_scan(
     def plan():
         yield from standard_read_hardware_during_collection(
             Phase1ApertureScatterguardPlans(),
-            rotation_devices,
+            rotation_devices.beamsize_composite,
             rotation_devices.attenuator,
             rotation_devices.flux,
             rotation_devices.dcm,

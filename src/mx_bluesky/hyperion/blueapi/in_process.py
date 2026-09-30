@@ -9,8 +9,12 @@ from this file constitutes the hyperion-blueapi interface to the hyperion superv
 process.
 """
 
+from __future__ import annotations
+
 import dataclasses
 
+import pydantic
+from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -24,6 +28,7 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     robot_unload as _robot_unload,
 )
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
     load_centre_collect_to_internal,
@@ -57,9 +62,21 @@ from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
 )
 
 
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class I03LoadCentreCollectComposite(
+    LoadCentreCollectComposite[ApertureScatterguardComposite]
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
+
+    @property
+    def beamsize_composite(self) -> ApertureScatterguardComposite:
+        return self
+
+
 def load_centre_collect(
     parameters: LoadCentreCollectParams,
-    composite: LoadCentreCollectComposite = inject(),
+    composite: I03LoadCentreCollectComposite = inject(),
 ) -> MsgGenerator:
     """
     Attempt a complete data collection experiment, consisting of the following:
@@ -134,3 +151,8 @@ def move_to_udc_default_state(
     Move beamline hardware to known positions prior to UDC start.
     """
     yield from _move_to_udc_default_state(composite)
+
+
+def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
+    """Create the necessary devices for the plan."""
+    return device_composite_from_context(context, I03LoadCentreCollectComposite)

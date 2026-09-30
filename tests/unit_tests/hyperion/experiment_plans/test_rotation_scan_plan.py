@@ -88,6 +88,7 @@ from ....expeye_helpers import (
     DCGS_RE,
     DCS_RE,
 )
+from ...conftest import RotationScanCompositeWithBeamSize
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -383,7 +384,7 @@ async def test_rotation_plan_moves_aperture_correctly(
     expected_aperture: ApertureValue,
     sim_run_engine_for_rotation: RunEngineSimulator,
     test_rotation_params: RotationScan,
-    fake_create_rotation_devices: RotationScanComposite,
+    fake_create_rotation_devices: RotationScanCompositeWithBeamSize,
     oav_parameters_for_rotation: OAVParameters,
 ) -> None:
     test_rotation_params.selected_aperture = aperture_policy

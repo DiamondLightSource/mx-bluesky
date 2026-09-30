@@ -48,6 +48,9 @@ from mx_bluesky.common.parameters.gridscan import (
     GridScanParams,
     create_detector_params_for_grid_scan,
 )
+from mx_bluesky.hyperion.blueapi.composites import (
+    I03HyperionGridDetectThenXRayCentreComposite,
+)
 
 from ....conftest import (
     ConfigFilesForTests,
@@ -72,7 +75,7 @@ def _fake_flyscan(*args):
 async def test_detect_grid_and_do_gridscan_in_real_run_engine(
     mock_flyscan: MagicMock,
     pin_tip_detection_with_found_pin: PinTipDetection,
-    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
+    grid_detect_xrc_devices: I03HyperionGridDetectThenXRayCentreComposite,
     run_engine: RunEngine,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     grid_detect_params: GridDetectionParams,
@@ -441,7 +444,7 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
     aperture_policy: AperturePolicy,
     expected_aperture: ApertureValue,
     grid_detect_then_xrc_simulator: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
+    grid_detect_xrc_devices: I03HyperionGridDetectThenXRayCentreComposite,
     grid_detect_params: GridDetectionParams,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     test_config_files: dict[str, str],
@@ -466,7 +469,7 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
         lambda msg: (
             msg.command == "set"
             and msg.obj
-            is grid_detect_xrc_devices.aperture_scatterguard.selected_aperture
+            is grid_detect_xrc_devices.beamsize_composite.aperture_scatterguard.selected_aperture
             and msg.args[0] == expected_aperture
         ),
     )
@@ -483,7 +486,7 @@ def test_detect_grid_and_do_gridscan_maps_aperture_policy(
 def test_detect_grid_and_do_gridscan_maps_current_position_aperture_policy(
     current_aperture: ApertureValue,
     grid_detect_then_xrc_simulator: RunEngineSimulator,
-    grid_detect_xrc_devices: GridDetectAndGridScanExtendedDevices,
+    grid_detect_xrc_devices: I03HyperionGridDetectThenXRayCentreComposite,
     grid_detect_params: GridDetectionParams,
     minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
     test_config_files: dict[str, str],

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import partial
+from typing import Any
 
 from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector as ClassicEigerDetector
@@ -29,6 +30,7 @@ from mx_bluesky.common.parameters.components import DiffractionExperiment
 from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    TBeamSizeComposite,
 )
 from mx_bluesky.hyperion.device_setup_plans.gridscan import (
     panda_tidy,
@@ -41,11 +43,14 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 
 
 def construct_hyperion_specific_features(
-    xrc_composite: HyperionGridDetectThenXRayCentreComposite[TDetector],
+    xrc_composite: HyperionGridDetectThenXRayCentreComposite[
+        TDetector, TBeamSizeComposite
+    ],
     xrc_parameters: TSetupParameters,
-    beamsize_device_plans: BeamSizePlans,
+    beamsize_device_plans: BeamSizePlans[TBeamSizeComposite, Any],
 ) -> BeamlineSpecificFGSFeatures[
-    HyperionGridDetectThenXRayCentreComposite[TDetector], TSetupParameters
+    HyperionGridDetectThenXRayCentreComposite[TDetector, TBeamSizeComposite],
+    TSetupParameters,
 ]:
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
@@ -64,12 +69,14 @@ def construct_hyperion_specific_features(
         xrc_composite.dcm.energy_in_keV,
     ]
     signals_to_read_pre_flyscan += (
-        beamsize_device_plans.signals_to_read_during_collection(xrc_composite)
+        beamsize_device_plans.signals_to_read_during_collection(
+            xrc_composite.beamsize_composite
+        )
     )
 
     setup_trigger_plan: Callable[
         [
-            HyperionGridDetectThenXRayCentreComposite[TDetector],
+            HyperionGridDetectThenXRayCentreComposite[TDetector, TBeamSizeComposite],
             DiffractionExperiment,
             GridScanParams,
         ],
@@ -77,7 +84,8 @@ def construct_hyperion_specific_features(
     ]
 
     tidy_plan: Callable[
-        [HyperionGridDetectThenXRayCentreComposite[TDetector]], MsgGenerator
+        [HyperionGridDetectThenXRayCentreComposite[TDetector, TBeamSizeComposite]],
+        MsgGenerator,
     ]
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = partial(

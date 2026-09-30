@@ -60,9 +60,7 @@ from mx_bluesky.common.parameters.rotation import (
 from mx_bluesky.common.utils.utils import convert_angstrom_to_ev
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
-)
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    RotationScanComposite,
+    I03HyperionGridDetectThenXRayCentreComposite,
 )
 
 from ....conftest import (
@@ -72,6 +70,7 @@ from ....conftest import (
     nexus_test_gridscan_params,
     pin_tip_edge_data,
 )
+from ...conftest import RotationScanCompositeWithBeamSize
 
 
 def get_current_datacollection_comment(session: Callable, dcid: int) -> str:
@@ -286,7 +285,7 @@ def grid_detect_then_xray_centre_composite(
     request,
     beamsize: BeamsizeBase,
 ):
-    composite = HyperionGridDetectThenXRayCentreComposite(
+    composite = I03HyperionGridDetectThenXRayCentreComposite(
         zebra_fast_grid_scan=fast_grid_scan,
         pin_tip_detection=ophyd_pin_tip_detection,
         backlight=backlight,
@@ -366,12 +365,13 @@ def grid_detect_then_xray_centre_composite(
 @pytest.fixture
 def fgs_composite_for_fake_zocalo(
     config_client,
-    hyperion_flyscan_xrc_composite: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_flyscan_xrc_composite: I03HyperionGridDetectThenXRayCentreComposite,
     zocalo_for_fake_zocalo: ZocaloResults,
     oav_for_system_test: OAV,
 ) -> HyperionGridDetectThenXRayCentreComposite:
     set_mock_value(
-        hyperion_flyscan_xrc_composite.aperture_scatterguard.aperture.z.user_setpoint, 2
+        hyperion_flyscan_xrc_composite.beamsize_composite.aperture_scatterguard.aperture.z.user_setpoint,
+        2,
     )
     set_mock_attr(
         hyperion_flyscan_xrc_composite.eiger,  # type: ignore
@@ -463,7 +463,7 @@ def composite_for_rotation_scan(
         AsyncMock(return_value={"level": {"choices": ["1.0x", "5.0x", "7.5x"]}}),
     )
 
-    fake_create_rotation_devices = RotationScanComposite(
+    fake_create_rotation_devices = RotationScanCompositeWithBeamSize(
         attenuator=attenuator,
         backlight=backlight,
         beamstop=beamstop_phase1,

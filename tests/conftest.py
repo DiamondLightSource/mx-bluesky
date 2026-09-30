@@ -39,6 +39,7 @@ from dodal.devices.beamlines.i03.beamsize import Beamsize
 from dodal.devices.beamlines.i03.dcm import DCM
 from dodal.devices.beamlines.i03.undulator_dcm import UndulatorDCM
 from dodal.devices.beamlines.i04.transfocator import Transfocator
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
@@ -78,6 +79,9 @@ from pydantic.dataclasses import dataclass
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+)
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     GridscanPlane,
 )
@@ -103,7 +107,13 @@ from mx_bluesky.common.utils.log import (
 )
 from mx_bluesky.hyperion.baton_handler import HYPERION_USER
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    I03HyperionGridDetectThenXRayCentreComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
+    RobotLoadThenCentreComposite,
+)
+from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
+    RotationScanComposite,
 )
 from tests.test_data.oav import (
     TEST_DISPLAY_CONFIG,
@@ -896,6 +906,30 @@ def minimal_diffraction_expt_with_sample(
     )
 
 
+@pydantic.dataclasses.dataclass()
+class RotationScanCompositeWithBeamSize(
+    RotationScanComposite[ApertureScatterguardComposite]
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
+
+    @property
+    def beamsize_composite(self) -> ApertureScatterguardComposite:
+        return self
+
+
+@pydantic.dataclasses.dataclass()
+class RobotLoadThenCentreCompositeWithBeamSize(
+    RobotLoadThenCentreComposite[Any, ApertureScatterguardComposite]
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
+
+    @property
+    def beamsize_composite(self) -> ApertureScatterguardComposite:
+        return self
+
+
 @pytest.fixture
 async def hyperion_flyscan_xrc_composite(
     smargon: Smargon,
@@ -916,8 +950,8 @@ async def hyperion_flyscan_xrc_composite(
     pin_tip_detection_with_found_pin,
     beamstop_phase1,
     detector_motion,
-) -> HyperionGridDetectThenXRayCentreComposite:
-    fake_composite = HyperionGridDetectThenXRayCentreComposite(
+) -> I03HyperionGridDetectThenXRayCentreComposite:
+    fake_composite = I03HyperionGridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
