@@ -48,6 +48,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
     ZocaloCallback,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    BeamSizePayload,
     HWReadDuringPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
@@ -77,12 +78,12 @@ from mx_bluesky.common.utils.log import LOGGER
 
 
 def create_gridscan_callbacks(
+    params: I02_1FgsParams,
     grid_scan_params: GridScanParams,
 ) -> tuple[GridscanNexusFileCallback, GridscanISPyBCallback]:
+    mapper = partial(_hw_read_mapper, params)
     return (
-        GridscanNexusFileCallback(
-            param_type=I02_1FgsParams, hw_read_mapper=_hw_read_mapper
-        ),
+        GridscanNexusFileCallback(param_type=I02_1FgsParams, hw_read_mapper=mapper),
         GridscanISPyBCallback(
             param_type=I02_1FgsParams,
             emit=ZocaloCallback(
@@ -91,13 +92,20 @@ def create_gridscan_callbacks(
                 lambda: generate_start_info_from_num_grids(grid_scan_params),
                 hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
-            hw_read_during_mapper=_hw_read_mapper,
+            hw_read_during_mapper=mapper,
         ),
     )
 
 
-def _hw_read_mapper(doc: Event) -> HWReadDuringPayload:
-    return HWReadDuringPayload(detector_payload=eiger_hw_read_during_mapper(doc))
+def _hw_read_mapper(params: I02_1FgsParams, doc: Event) -> HWReadDuringPayload:
+    beamsize_payload = BeamSizePayload(
+        beamsize_x_um=params.beam_size_x * 1000,
+        beamsize_y_um=params.beam_size_y * 1000,
+    )
+    return HWReadDuringPayload(
+        detector_payload=eiger_hw_read_during_mapper(doc),
+        beamsize_payload=beamsize_payload,
+    )
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -234,7 +242,7 @@ def i02_1_gridscan_plan(
     params, grid_scan_params = get_internal_params(parameters)
 
     beamline_specific = construct_i02_1_specific_features(composite, params)
-    callbacks = create_gridscan_callbacks(grid_scan_params)
+    callbacks = create_gridscan_callbacks(params, grid_scan_params)
     detector_params = create_detector_params_for_grid_scan(params)
 
     @bpp.subs_decorator(callbacks)

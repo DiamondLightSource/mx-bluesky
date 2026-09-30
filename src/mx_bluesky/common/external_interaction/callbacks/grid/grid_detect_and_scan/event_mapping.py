@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from functools import partial
 from typing import TypeAlias
 
 from event_model import Event
@@ -17,15 +16,15 @@ class DetectorPayload:
 
 @dataclass
 class BeamSizePayload:
-    aperture: str
+    aperture: str = "Not implemented"
+    beamsize_x_um: float | None = None
+    beamsize_y_um: float | None = None
 
 
 @dataclass
 class HWReadDuringPayload:
     detector_payload: DetectorPayload
-    beamsize_payload: BeamSizePayload = field(
-        default_factory=partial(BeamSizePayload, aperture="Not implemented")
-    )
+    beamsize_payload: BeamSizePayload = field(default_factory=BeamSizePayload)
 
 
 HWReadDuringMapper: TypeAlias = Callable[[Event], HWReadDuringPayload]

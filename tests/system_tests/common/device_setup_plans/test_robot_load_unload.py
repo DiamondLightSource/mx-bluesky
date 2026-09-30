@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -25,6 +26,7 @@ from tests.conftest import SimConstants
 @pytest.mark.system_test
 def test_execute_unload_sample_full(
     run_engine: RunEngine,
+    beamsize: BeamsizeBase,
     robot: BartRobot,
     smargon: Smargon,
     aperture_scatterguard: ApertureScatterguard,
@@ -49,7 +51,9 @@ def test_execute_unload_sample_full(
         robot_unload(
             robot,
             smargon,
-            RobotUnloadComposite(aperture_scatterguard=aperture_scatterguard),
+            RobotUnloadComposite(
+                aperture_scatterguard=aperture_scatterguard, beamsize=beamsize
+            ),
             Phase1ApertureScatterguardPlans(),
             lower_gonio,
             SimConstants.ST_VISIT,

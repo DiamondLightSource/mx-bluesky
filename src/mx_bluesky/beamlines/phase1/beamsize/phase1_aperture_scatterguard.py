@@ -4,6 +4,7 @@ from typing import Protocol, TypeAlias
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from typing_extensions import runtime_checkable
 
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
@@ -16,6 +17,7 @@ ApertureScatterguardValue: TypeAlias = ApertureValue | None
 @runtime_checkable
 class ApertureScatterguardComposite(Protocol):
     aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
 
 
 class Phase1ApertureScatterguardPlans(
@@ -118,4 +120,4 @@ class Phase1ApertureScatterguardPlans(
     def signals_to_read_during_collection(
         self, devices: ApertureScatterguardComposite
     ) -> Sequence:
-        return [devices.aperture_scatterguard]
+        return [devices.aperture_scatterguard, devices.beamsize]

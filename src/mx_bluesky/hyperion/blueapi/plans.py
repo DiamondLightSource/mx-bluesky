@@ -78,7 +78,10 @@ def pin_tip_centre_then_xray_centre(
     internal_params = pin_tip_centre_then_xray_centre_to_internal(
         visit, storage_directory, sample_id, sample_puck, sample_pin
     )
-    beamline_specific = construct_hyperion_specific_features(composite, internal_params)
+    beamsize_device_plans = Phase1ApertureScatterguardPlans()
+    beamline_specific = construct_hyperion_specific_features(
+        composite, internal_params, beamsize_device_plans
+    )
 
     yield from _pin_tip_centre_then_xray_centre(
         beamline_specific,

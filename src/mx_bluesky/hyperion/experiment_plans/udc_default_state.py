@@ -8,6 +8,7 @@ from dodal.common.beamlines.beamline_parameters import (
     get_beamline_parameters,
 )
 from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
     CryoStreamGantry,
@@ -51,6 +52,7 @@ _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices(BeamstopCheckDevices):
+    beamsize: BeamsizeBase
     collimation_table: CollimationTable
     cryojet: OxfordCryoJet
     cryostream: OxfordCryoStream

@@ -176,22 +176,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
         assert self.params and self.detector_params
         payload = self._hw_read_during_mapper(doc)
 
-        beamsize_x_mm = _data.get("beamsize-x_um", None)
-        if beamsize_x_mm:
-            beamsize_x_mm = beamsize_x_mm / 1000
-        beamsize_y_mm = _data.get("beamsize-y_um", None)
-        if beamsize_y_mm:
-            beamsize_y_mm = beamsize_y_mm / 1000
-        if not (beamsize_x_mm and beamsize_y_mm):
-            # VMXm don't have a beamsize device in dodal yet, they get beamsize sent in from GDA
-            try:
-                # XXX Deliberate abuse of the type system
-                beamsize_x_mm = self.params.beam_size_x  # type: ignore
-                beamsize_y_mm = self.params.beam_size_y  # type: ignore
-            except Exception:
-                ISPYB_ZOCALO_CALLBACK_LOGGER.warning(
-                    "ISPyB callbacks couldn't get beamsize"
-                )
+        beamsize = payload.beamsize_payload
+        beamsize_x_mm = (
+            beamsize.beamsize_x_um / 1000 if beamsize.beamsize_x_um else None
+        )
+        beamsize_y_mm = (
+            beamsize.beamsize_y_um / 1000 if beamsize.beamsize_y_um else None
+        )
 
         hwscan_data_collection_info = DataCollectionInfo(
             beamsize_at_samplex=beamsize_x_mm,
@@ -212,7 +203,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
         ISPYB_ZOCALO_CALLBACK_LOGGER.info(
             "Updating ispyb data collection after flux read."
         )
-        self.append_to_comment(f"Aperture: {payload.beamsize_payload.aperture}. ")
+        self.append_to_comment(f"Aperture: {beamsize.aperture}. ")
         return scan_data_infos
 
     @abstractmethod

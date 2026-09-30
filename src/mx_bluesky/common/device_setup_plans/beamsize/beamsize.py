@@ -83,4 +83,8 @@ class BeamSizePlans(Protocol[TBeamSizeComposite, TBeamSizeValue]):  # type: igno
 def map_hw_read_during_data(doc: Event) -> BeamSizePayload:
     data = doc["data"]
     aperture = data.get("aperture_scatterguard-selected_aperture", "Not implemented")
-    return BeamSizePayload(aperture=str(aperture))
+    beamsize_x_um = data.get("beamsize-x_um")
+    beamsize_y_um = data.get("beamsize-y_um")
+    return BeamSizePayload(
+        aperture=str(aperture), beamsize_x_um=beamsize_x_um, beamsize_y_um=beamsize_y_um
+    )

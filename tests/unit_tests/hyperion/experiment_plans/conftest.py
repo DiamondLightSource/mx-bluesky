@@ -16,6 +16,9 @@ from ophyd_async.core import (
 )
 from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -322,4 +325,5 @@ def beamline_specific_with_hyperion_flyscan_xrc_composite(
     return construct_hyperion_specific_features(
         hyperion_flyscan_xrc_composite,
         minimal_diffraction_expt_with_sample,
+        Phase1ApertureScatterguardPlans(),
     )

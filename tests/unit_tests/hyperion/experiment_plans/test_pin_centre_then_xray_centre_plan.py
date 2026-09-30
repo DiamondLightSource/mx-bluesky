@@ -13,11 +13,11 @@ from dodal.devices.smargon import CombinedMove
 from dodal.devices.xbpm_feedback import Pause
 from ophyd_async.core import get_mock_put
 
-from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
-    BeamlineSpecificFGSFeatures,
-)
 from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
     Phase1ApertureScatterguardPlans,
+)
+from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
+    BeamlineSpecificFGSFeatures,
 )
 from mx_bluesky.common.experiment_plans.inner_plans.do_fgs import ZOCALO_STAGE_GROUP
 from mx_bluesky.common.parameters.constants import OavConstants, PlanNameConstants
@@ -66,7 +66,9 @@ def beamline_specific_fgs(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_grid_detect_xrc_devices, test_pin_centre_then_xray_centre_params
+        hyperion_grid_detect_xrc_devices,
+        test_pin_centre_then_xray_centre_params,
+        Phase1ApertureScatterguardPlans(),
     )
 
 

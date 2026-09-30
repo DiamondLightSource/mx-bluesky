@@ -3,7 +3,6 @@ from typing import Any, Protocol, TypeVar
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -24,7 +23,6 @@ OAV_SNAPSHOT_GROUP = "oav_snapshot_group"
 class OavSnapshotComposite(Protocol):
     gonio: Smargon
     oav: OAV
-    aperture_scatterguard: ApertureScatterguard
 
 
 T = TypeVar("T")

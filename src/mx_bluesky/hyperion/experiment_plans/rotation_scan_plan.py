@@ -31,12 +31,12 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
-from mx_bluesky.common.device_setup_plans.detector.eiger import (
-    create_eiger_beamline_specific,
-)
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
     BeamSizePlans,
     TBeamSizeValue,
+)
+from mx_bluesky.common.device_setup_plans.detector.eiger import (
+    create_eiger_beamline_specific,
 )
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
@@ -202,12 +202,12 @@ def rotation_scan_plan(
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
         yield from standard_read_hardware_during_collection(
-            composite.aperture_scatterguard,
+            beamsize_device_plans,
+            composite,
             composite.attenuator,
             composite.flux,
             composite.dcm,
             composite.eiger,
-            composite.beamsize,
         )
 
     yield from _rotation_scan_plan(motion_values, composite)
