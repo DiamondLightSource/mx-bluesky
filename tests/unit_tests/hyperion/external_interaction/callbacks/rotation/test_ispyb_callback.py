@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
     map_hw_read_during_data,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (

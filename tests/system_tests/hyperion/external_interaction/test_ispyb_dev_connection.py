@@ -18,8 +18,6 @@ from ophyd_async.core import set_mock_value
 
 from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
     Phase1ApertureScatterguardPlans,
-)
-from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
     map_hw_read_during_data,
 )
 from mx_bluesky.common.device_setup_plans.detector.eiger import (

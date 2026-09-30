@@ -2,11 +2,7 @@ from collections.abc import Sequence
 from typing import Protocol, TypeVar
 
 from bluesky.utils import MsgGenerator
-from event_model import Event
 
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
-    BeamSizePayload,
-)
 from mx_bluesky.common.parameters.components import AperturePolicy
 
 TBeamSizeComposite = TypeVar("TBeamSizeComposite", contravariant=True)
@@ -78,13 +74,3 @@ class BeamSizePlans(Protocol[TBeamSizeComposite, TBeamSizeValue]):  # type: igno
     ) -> Sequence:
         """Obtain the list of signals to read during collection"""
         ...
-
-
-def map_hw_read_during_data(doc: Event) -> BeamSizePayload:
-    data = doc["data"]
-    aperture = data.get("aperture_scatterguard-selected_aperture", "Not implemented")
-    beamsize_x_um = data.get("beamsize-x_um")
-    beamsize_y_um = data.get("beamsize-y_um")
-    return BeamSizePayload(
-        aperture=str(aperture), beamsize_x_um=beamsize_x_um, beamsize_y_um=beamsize_y_um
-    )
