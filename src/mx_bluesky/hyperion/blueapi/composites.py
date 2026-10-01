@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Generic, TypeVar, cast
+from typing import Generic, TypeVar
 
 import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -22,7 +22,6 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
 from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
@@ -66,10 +65,6 @@ class HyperionGridDetectThenXRayCentreComposite(
     undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
 
-    # Available detectors
-    eiger: EigerDetector
-    fastcs_eiger: FastCSEiger
-
     # Available gridscan devices
     panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
@@ -77,8 +72,8 @@ class HyperionGridDetectThenXRayCentreComposite(
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
 
     @property
-    def detector(self) -> TDetector:
-        return cast(TDetector, self.fastcs_eiger if use_fast_cs_eiger else self.eiger)
+    @abstractmethod
+    def detector(self) -> TDetector: ...
 
     @property
     @abstractmethod
@@ -93,7 +88,12 @@ class I03HyperionGridDetectThenXRayCentreComposite(
 ):
     aperture_scatterguard: ApertureScatterguard
     beamsize: BeamsizeBase
+    eiger: EigerDetector
 
     @property
     def beamsize_composite(self) -> ApertureScatterguardComposite:
         return self
+
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger

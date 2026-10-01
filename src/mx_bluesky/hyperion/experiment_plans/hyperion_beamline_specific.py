@@ -68,7 +68,7 @@ def construct_hyperion_specific_features(
         xrc_composite.flux.flux_reading,
         xrc_composite.dcm.energy_in_keV,
     ]
-    signals_to_read_pre_flyscan += (
+    signals_to_read_during_collection += (
         beamsize_device_plans.signals_to_read_during_collection(
             xrc_composite.beamsize_composite
         )

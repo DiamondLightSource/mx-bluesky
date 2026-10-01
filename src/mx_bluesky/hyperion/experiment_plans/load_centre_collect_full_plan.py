@@ -8,6 +8,7 @@ from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wra
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.baton import Baton
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
 from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
@@ -36,11 +37,16 @@ from mx_bluesky.hyperion.utils.centre_selection import samples_and_hits_to_colle
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class LoadCentreCollectComposite(
-    RobotLoadThenCentreComposite, RotationScanComposite[TBeamSizeComposite]
+    RobotLoadThenCentreComposite[EigerDetector, TBeamSizeComposite],
+    RotationScanComposite[TBeamSizeComposite],
 ):
     """Composite that provides access to the required devices."""
 
     baton: Baton
+
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def load_centre_collect_full(

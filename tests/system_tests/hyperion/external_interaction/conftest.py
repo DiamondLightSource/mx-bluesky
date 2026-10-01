@@ -302,7 +302,6 @@ def grid_detect_then_xray_centre_composite(
         aperture_scatterguard=aperture_scatterguard,
         zebra=zebra,
         eiger=eiger,
-        fastcs_eiger=i03.fastcs_eiger.build(mock=True),
         panda=panda,
         oav=oav_for_system_test,
         dcm=dcm,

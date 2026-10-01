@@ -21,6 +21,7 @@ from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -68,6 +69,7 @@ class I03LoadCentreCollectComposite(
 ):
     aperture_scatterguard: ApertureScatterguard
     beamsize: BeamsizeBase
+    eiger: EigerDetector
 
     @property
     def beamsize_composite(self) -> ApertureScatterguardComposite:

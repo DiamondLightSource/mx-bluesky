@@ -24,12 +24,10 @@ from mx_bluesky.common.preprocessors.preprocessors import (
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError, WarningError
 from mx_bluesky.common.utils.log import LOGGER
+from mx_bluesky.hyperion.blueapi.in_process import I03LoadCentreCollectComposite
 from mx_bluesky.hyperion.blueapi.parameters import (
     HyperionParam,
     LoadCentreCollectParams,
-)
-from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
-    LoadCentreCollectComposite,
 )
 
 BEAMLINE_ERROR_SAMPLE_ID = 111111
@@ -43,7 +41,7 @@ def publish_event(plan_name: str):
 
 def load_centre_collect(
     parameters: LoadCentreCollectParams,
-    composite: LoadCentreCollectComposite = inject(),
+    composite: I03LoadCentreCollectComposite = inject(),
 ) -> MsgGenerator:
     LOGGER.info(f"load_centre_collect called with sample id {parameters.sample_id}")
     if parameters.sample_id == BEAMLINE_ERROR_SAMPLE_ID:
