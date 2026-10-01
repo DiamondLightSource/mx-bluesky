@@ -12,6 +12,7 @@ from ophyd_async.plan_stubs import ensure_connected
 
 from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.hyperion.baton_handler import _initialise_udc
+from mx_bluesky.hyperion.blueapi.in_process import I03LoadCentreCollectComposite
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
 )
@@ -107,14 +108,14 @@ def reinitialise_beamline(dev_mode: bool, i: int):
 
     context = setup_context(dev_mode)
     devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
-        context, LoadCentreCollectComposite
+        context, I03LoadCentreCollectComposite
     )
     for f in fields(devices_before_reset):
         device = getattr(devices_before_reset, f.name)
         weak_ids_to_devices[id(device)] = device
     _initialise_udc(context, dev_mode)
     devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
-        context, LoadCentreCollectComposite
+        context, I03LoadCentreCollectComposite
     )
     for f in fields(devices_after_reset):
         device = getattr(devices_after_reset, f.name)

@@ -292,7 +292,7 @@ def compare_actual_and_expected(
         else:
             actual_v = actual == v
         if not actual_v:
-            results += f"expected {k} {v} == {actual}\n"
+            results += f"ID: {id} - expected {k} {v} == {actual}\n"
     assert results == "\n", results
 
 

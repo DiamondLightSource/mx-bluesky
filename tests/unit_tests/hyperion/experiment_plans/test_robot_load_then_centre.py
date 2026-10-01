@@ -27,7 +27,11 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
-from ....conftest import assert_none_matching, raw_params_from_file
+from ....conftest import (
+    RobotLoadThenCentreCompositeWithBeamSize,
+    assert_none_matching,
+    raw_params_from_file,
+)
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
@@ -73,7 +77,7 @@ def mock_pin_centre_then_gridscan_plan(*args, **kwargs):
 )
 def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_expected_parameters(
     mock_pin_centre_then_gridscan_plan: MagicMock,
-    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_composite: RobotLoadThenCentreCompositeWithBeamSize,
     robot_load_then_centre_params: RobotLoadThenCentre,
     run_engine: RunEngine,
 ):
@@ -111,7 +115,7 @@ def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_ex
 )
 def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     mock_pin_centre_then_gridscan_plan: MagicMock,
-    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_composite: RobotLoadThenCentreCompositeWithBeamSize,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -142,7 +146,7 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     MagicMock(return_value=iter([])),
 )
 def test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set_on_eiger(
-    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_composite: RobotLoadThenCentreCompositeWithBeamSize,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):

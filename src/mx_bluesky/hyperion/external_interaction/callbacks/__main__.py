@@ -124,6 +124,7 @@ class HyperionCallbackRunner:
 
 def load_beamline_module() -> ModuleType:
     module_name = os.getenv("BEAMLINE", "").replace("-", "_")
+    log_info(f"Loading beamline module {module_name}")
     if module_name == "":
         raise ValueError("BEAMLINE not defined")
 

@@ -1,6 +1,9 @@
 from bluesky.callbacks import CallbackBase
 from event_model import Event
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    map_hw_read_during_data,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     eiger_hw_read_during_mapper,
     eiger_zocalo_hw_read_mapper,
@@ -102,4 +105,7 @@ def _create_rotation_callbacks() -> tuple[
 
 def _hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
     detector_payload = eiger_hw_read_during_mapper(doc)
-    return HWReadDuringPayload(detector_payload=detector_payload)
+    beamsize_payload = map_hw_read_during_data(doc)
+    return HWReadDuringPayload(
+        detector_payload=detector_payload, beamsize_payload=beamsize_payload
+    )
