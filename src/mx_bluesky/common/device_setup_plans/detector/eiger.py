@@ -21,7 +21,7 @@ from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback imp
     ZocaloHWReadPayload,
 )
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
-    HWReadDuringPayload,
+    DetectorPayload,
 )
 from mx_bluesky.common.utils.log import LOGGER
 
@@ -78,8 +78,8 @@ def eiger_hw_read_during_signals(eiger: EigerDetector) -> Sequence:
     ]
 
 
-def eiger_hw_read_during_mapper(doc: Event) -> HWReadDuringPayload:
-    return HWReadDuringPayload(
+def eiger_hw_read_during_mapper(doc: Event) -> DetectorPayload:
+    return DetectorPayload(
         bit_depth=doc["data"]["eiger_bit_depth"],
         ispyb_detector_id=doc["data"]["eiger-ispyb_detector_id"],
         roi_mode=bool(doc["data"]["eiger_cam_roi_mode"]),

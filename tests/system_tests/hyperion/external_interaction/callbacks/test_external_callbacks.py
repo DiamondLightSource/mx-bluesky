@@ -31,6 +31,9 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from zmq.utils.monitor import recv_monitor_message
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     common_flyscan_xray_centre,
 )
@@ -107,7 +110,9 @@ def rotation_scan(
         }
     )
     def _wrapped_rotation_scan():
-        yield from rotation_scan_internal(composite, parameters, oav_params)
+        yield from rotation_scan_internal(
+            composite, parameters, Phase1ApertureScatterguardPlans(), oav_params
+        )
 
     yield from _wrapped_rotation_scan()
 
@@ -267,8 +272,7 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     grid_scan_params = external_callback_grid_scan_params
     # Run the xray centring plan
     beamline_specific = construct_hyperion_specific_features(
-        composite,
-        external_callback_expt_params,
+        composite, external_callback_expt_params, Phase1ApertureScatterguardPlans()
     )
 
     detector_params = create_detector_params_for_grid_scan(

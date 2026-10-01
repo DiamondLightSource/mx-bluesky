@@ -1,3 +1,5 @@
+from typing import Any, TypeVar
+
 import bluesky.plan_stubs as bps
 import pydantic
 from bluesky.utils import MsgGenerator
@@ -5,7 +7,8 @@ from dodal.beamlines.i03 import BL
 from dodal.common.beamlines.beamline_parameters import (
     get_beamline_parameters,
 )
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureValue
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.collimation_table import CollimationTable
 from dodal.devices.cryostream import (
     CryoStreamGantry,
@@ -26,6 +29,11 @@ from dodal.devices.scintillator import Scintillator
 from dodal.devices.smargon import Smargon
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraShutterState
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.robot_load_unload import robot_unload
 from mx_bluesky.common.experiment_plans.beamstop_check import (
     BeamstopCheckDevices,
@@ -44,6 +52,7 @@ _GROUP_POST_BEAMSTOP_CHECK = "post_beamstop_check"
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class UDCDefaultDevices(BeamstopCheckDevices):
+    beamsize: BeamsizeBase
     collimation_table: CollimationTable
     cryojet: OxfordCryoJet
     cryostream: OxfordCryoStream
@@ -113,7 +122,8 @@ def move_to_udc_default_state(devices: UDCDefaultDevices):
     yield from _unload_sample_if_present(
         devices.robot,
         devices.gonio,
-        devices.aperture_scatterguard,
+        devices,
+        Phase1ApertureScatterguardPlans(),
         devices.lower_gonio,
     )
 
@@ -180,10 +190,14 @@ def _verify_correct_cryostream_selected(
         )
 
 
+T = TypeVar("T", bound=ApertureScatterguardComposite)
+
+
 def _unload_sample_if_present(
     robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: T,
+    beamsize_plans: BeamSizePlans[T, Any],
     lower_gonio: XYZStage,
 ):
     pin_mounted = yield from bps.rd(robot.gonio_pin_sensor)
@@ -191,5 +205,5 @@ def _unload_sample_if_present(
     if pin_mounted != PinMounted.NO_PIN_MOUNTED:
         LOGGER.info("Pin detected, unloading sample...")
         yield from robot_unload(
-            robot, smargon, aperture_scatterguard, lower_gonio, None
+            robot, smargon, beamsize_devices, beamsize_plans, lower_gonio, None
         )

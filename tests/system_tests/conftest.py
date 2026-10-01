@@ -44,10 +44,9 @@ from ophyd_async.core import (
 )
 from PIL import Image
 
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    RotationScanComposite,
-)
 from tests.conftest import set_up_dcm
+
+from ..conftest import RotationScanCompositeWithBeamSize
 
 # Map all the case-sensitive column names from their normalised versions
 DATA_COLLECTION_COLUMN_MAP = {
@@ -293,7 +292,7 @@ def compare_actual_and_expected(
         else:
             actual_v = actual == v
         if not actual_v:
-            results += f"expected {k} {v} == {actual}\n"
+            results += f"ID: {id} - expected {k} {v} == {actual}\n"
     assert results == "\n", results
 
 
@@ -377,7 +376,7 @@ def system_tests_rotation_devices(
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     set_mock_attr(undulator, "set", MagicMock(side_effect=lambda _: completed_status()))
-    return RotationScanComposite(
+    return RotationScanCompositeWithBeamSize(
         attenuator=attenuator,
         backlight=backlight,
         beamsize=beamsize,

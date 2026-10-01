@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dodal.devices.aperturescatterguard import ApertureScatterguard
+from typing import Any
+
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
-from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
@@ -11,6 +11,10 @@ from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import UndulatorInKeV
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    BeamSizePlans,
+    TBeamSizeComposite,
+)
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     BeamlineSpecificDetectorFeatures,
 )
@@ -54,23 +58,24 @@ def standard_read_hardware_pre_collection(
 
 
 def standard_read_hardware_during_collection(
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_plans: BeamSizePlans[TBeamSizeComposite, Any],
+    beamsize_devices: TBeamSizeComposite,
     attenuator: BinaryFilterAttenuator,
     flux: Flux,
     dcm: DoubleCrystalMonochromator,
     detector: EigerDetector,
-    beamsize: BeamsizeBase,
 ):
     signals_to_read_during_collection = [
-        aperture_scatterguard,
         attenuator.actual_transmission,
         flux.flux_reading,
         dcm.energy_in_keV,
         detector.bit_depth,
-        beamsize,
         detector.cam.roi_mode,
         detector.ispyb_detector_id,
     ]
+    signals_to_read_during_collection += (
+        beamsize_plans.signals_to_read_during_collection(beamsize_devices)
+    )
     yield from read_hardware_plan(
         signals_to_read_during_collection,  # type: ignore # until https://github.com/DiamondLightSource/mx-bluesky/issues/1076
         DocDescriptorNames.HARDWARE_READ_DURING,

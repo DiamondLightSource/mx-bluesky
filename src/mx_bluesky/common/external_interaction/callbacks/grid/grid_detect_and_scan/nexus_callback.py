@@ -130,7 +130,9 @@ class GridscanNexusFileCallback(PlanReactiveCallback, Generic[T]):
                     data["attenuator-actual_transmission"],
                 )
                 payload = self._hw_read_mapper(doc)
-                vds_data_type = vds_type_based_on_bit_depth(payload.bit_depth)
+                vds_data_type = vds_type_based_on_bit_depth(
+                    payload.detector_payload.bit_depth
+                )
                 nexus_writer.create_nexus_file(vds_data_type)
                 NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.data_filename}")
 

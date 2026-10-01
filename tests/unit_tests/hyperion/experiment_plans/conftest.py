@@ -14,8 +14,10 @@ from ophyd_async.core import (
     set_mock_attr,
     set_mock_value,
 )
-from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -35,12 +37,11 @@ from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
 from mx_bluesky.hyperion.experiment_plans.robot_load_and_change_energy import (
     RobotLoadAndEnergyChangeComposite,
 )
-from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
-    RobotLoadThenCentreComposite,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _create_gridscan_callbacks,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.__main__ import (
-    create_gridscan_callbacks,
-)
+
+from ....conftest import RobotLoadThenCentreCompositeWithBeamSize
 
 FLYSCAN_RESULT_HIGH = XRayCentreResult(
     centre_of_mass_mm=np.array([0.1, 0.2, 0.3]),
@@ -144,7 +145,7 @@ def mock_subscriptions():
             ),
         ),
     ):
-        nexus_callback, ispyb_callback = create_gridscan_callbacks()
+        nexus_callback, ispyb_callback = _create_gridscan_callbacks()
         ispyb_callback.ispyb = MagicMock(spec=StoreInIspyb)
 
     return (nexus_callback, ispyb_callback)
@@ -186,7 +187,7 @@ def robot_load_composite(
     panda,
     panda_fast_grid_scan,
     beamsize: BeamsizeBase,
-) -> RobotLoadThenCentreComposite:
+) -> RobotLoadThenCentreCompositeWithBeamSize:
     set_mock_value(dcm.energy_in_keV.user_readback, 11.105)
     set_mock_attr(
         smargon.stub_offsets, "set", MagicMock(side_effect=lambda _: completed_status())
@@ -197,7 +198,7 @@ def robot_load_composite(
         MagicMock(side_effect=lambda _: completed_status()),
     )
     set_mock_value(smargon.omega.max_velocity, 131)
-    return RobotLoadThenCentreComposite(
+    return RobotLoadThenCentreCompositeWithBeamSize(
         xbpm_feedback=xbpm_feedback,
         attenuator=attenuator,
         aperture_scatterguard=aperture_scatterguard,
@@ -206,7 +207,6 @@ def robot_load_composite(
         beamstop=beamstop_phase1,
         detector_motion=detector_motion,
         eiger=eiger,
-        fastcs_eiger=MagicMock(spec=FastCSEiger),
         zebra_fast_grid_scan=fast_grid_scan,
         flux=flux,
         oav=oav,
@@ -322,4 +322,5 @@ def beamline_specific_with_hyperion_flyscan_xrc_composite(
     return construct_hyperion_specific_features(
         hyperion_flyscan_xrc_composite,
         minimal_diffraction_expt_with_sample,
+        Phase1ApertureScatterguardPlans(),
     )

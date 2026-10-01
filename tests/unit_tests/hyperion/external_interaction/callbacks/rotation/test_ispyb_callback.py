@@ -3,7 +3,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    map_hw_read_during_data,
+)
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    DetectorPayload,
     HWReadDuringMapper,
     HWReadDuringPayload,
 )
@@ -60,8 +64,11 @@ EXPECTED_DATA_COLLECTION = {
 
 @pytest.fixture
 def mock_hw_read_mapper() -> HWReadDuringMapper:
-    return lambda _: HWReadDuringPayload(
-        bit_depth=8, ispyb_detector_id=78, roi_mode=False
+    return lambda doc: HWReadDuringPayload(
+        detector_payload=DetectorPayload(
+            bit_depth=8, ispyb_detector_id=78, roi_mode=False
+        ),
+        beamsize_payload=map_hw_read_during_data(doc),
     )
 
 

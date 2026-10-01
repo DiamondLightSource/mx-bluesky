@@ -13,6 +13,9 @@ from dodal.devices.smargon import CombinedMove
 from dodal.devices.xbpm_feedback import Pause
 from ophyd_async.core import get_mock_put
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -24,6 +27,7 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    I03HyperionGridDetectThenXRayCentreComposite,
 )
 from mx_bluesky.hyperion.blueapi.mixins import TopNByMaxCountSelection
 from mx_bluesky.hyperion.experiment_plans.hyperion_beamline_specific import (
@@ -63,7 +67,9 @@ def beamline_specific_fgs(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
 ) -> BeamlineSpecificFGSFeatures:
     return construct_hyperion_specific_features(
-        hyperion_grid_detect_xrc_devices, test_pin_centre_then_xray_centre_params
+        hyperion_grid_detect_xrc_devices,
+        test_pin_centre_then_xray_centre_params,
+        Phase1ApertureScatterguardPlans(),
     )
 
 
@@ -96,6 +102,7 @@ def test_when_pin_centre_xray_centre_called_then_plan_runs_correctly(
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            Phase1ApertureScatterguardPlans(),
             test_config_files["oav_config_json"],
         )
     )
@@ -138,6 +145,7 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            Phase1ApertureScatterguardPlans(),
             test_config_files["oav_config_json"],
         )
     )
@@ -173,7 +181,7 @@ def test_pin_centre_then_gridscan_plan_activates_ispyb_callback_before_pin_tip_c
 def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
     mock_detect_grid_and_do_gridscan,
     mock_pin_tip_centre_plan,
-    hyperion_grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    hyperion_grid_detect_xrc_devices: I03HyperionGridDetectThenXRayCentreComposite,
     sim_run_engine: RunEngineSimulator,
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     test_config_files,
@@ -192,6 +200,7 @@ def test_pin_centre_then_gridscan_plan_sets_up_backlight_and_aperture(
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            Phase1ApertureScatterguardPlans(),
             test_config_files["oav_config_json"],
         )
     )
@@ -257,6 +266,7 @@ def test_pin_centre_then_gridscan_plan_goes_to_the_starting_chi_and_phi(
             hyperion_grid_detect_xrc_devices,
             params,
             create_detector_params_for_grid_scan(params),
+            Phase1ApertureScatterguardPlans(),
             test_config_files["oav_config_json"],
         )
     )
@@ -311,6 +321,7 @@ def test_pin_tip_centre_then_xray_centre_sets_transmission_fraction_and_xbpm_is_
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            Phase1ApertureScatterguardPlans(),
             OavConstants.OAV_CONFIG_JSON,
         )
     )
@@ -372,6 +383,7 @@ def test_pin_centre_then_xrc_stages_and_unstages_zocalo_and_gets_results(
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            Phase1ApertureScatterguardPlans(),
             OavConstants.OAV_CONFIG_JSON,
         )
     )
@@ -431,6 +443,7 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
             create_detector_params_for_grid_scan(
                 test_pin_centre_then_xray_centre_params
             ),
+            Phase1ApertureScatterguardPlans(),
             test_config_files["oav_config_json"],
         )
     )
@@ -463,6 +476,7 @@ def test_pin_tip_centre_then_xray_centre_moves_to_xtal(
             hyperion_grid_detect_xrc_devices,
             test_pin_centre_then_xray_centre_params,
             TopNByMaxCountSelection(n=1),
+            Phase1ApertureScatterguardPlans(),
         )
     )
     gonio = hyperion_grid_detect_xrc_devices.gonio

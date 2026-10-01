@@ -4,8 +4,10 @@ import os
 from abc import abstractmethod
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from importlib import import_module
 from threading import Thread
 from time import sleep  # noqa
+from types import ModuleType
 from urllib import request
 from urllib.error import URLError
 
@@ -20,120 +22,27 @@ from dodal.common.beamlines.beamline_utils import set_config_client
 from dodal.log import LOGGER as DODAL_LOGGER
 from dodal.log import set_up_all_logging_handlers
 
-from mx_bluesky.common.device_setup_plans.detector.eiger import (
-    eiger_hw_read_during_mapper,
-    eiger_zocalo_hw_read_mapper,
-)
 from mx_bluesky.common.external_interaction.alerting import set_alerting_service
 from mx_bluesky.common.external_interaction.alerting.log_based_service import (
     LoggingAlertService,
 )
-from mx_bluesky.common.external_interaction.callbacks.common.log_uid_tag_callback import (
-    LogUidTaggingCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.common.zocalo_callback import (
-    ZocaloCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
-    GridDetectAndScanISPyBCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.nexus_callback import (
-    GridscanNexusFileCallback,
-)
-from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
-    generate_start_info_from_omega_map,
-)
-from mx_bluesky.common.external_interaction.callbacks.sample_handling.sample_handling_callback import (
-    SampleHandlingCallback,
-)
-from mx_bluesky.common.parameters.constants import GridscanParamConstants
 from mx_bluesky.common.utils.log import (
     ISPYB_ZOCALO_CALLBACK_LOGGER,
     NEXUS_LOGGER,
     _get_logging_dirs,
     tag_filter,
 )
-from mx_bluesky.hyperion.external_interaction.callbacks.alert_on_container_change import (
-    AlertOnContainerChange,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.robot_actions.ispyb_callback import (
-    RobotLoadISPyBCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
-    RotationISPyBCallback,
-    generate_start_info_from_ordered_runs,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.rotation.nexus_callback import (
-    RotationNexusFileCallback,
-)
-from mx_bluesky.hyperion.external_interaction.callbacks.snapshot_callback import (
-    BeamDrawingCallback,
-)
 from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import (
     StompDispatcher,
 )
 from mx_bluesky.hyperion.parameters.cli import CallbackArgs, parse_callback_args
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 PING_TIMEOUT_S = 1
 
 LIVENESS_POLL_SECONDS = 1
 ERROR_LOG_BUFFER_LINES = 5000
 HYPERION_PING_INTERVAL_S = 19
-
-
-def create_gridscan_callbacks() -> tuple[
-    GridscanNexusFileCallback, GridDetectAndScanISPyBCallback
-]:
-    return (
-        GridscanNexusFileCallback(
-            param_type=RobotLoadThenCentre, hw_read_mapper=eiger_hw_read_during_mapper
-        ),
-        GridDetectAndScanISPyBCallback(
-            param_type=RobotLoadThenCentre,
-            emit=ZocaloCallback(
-                CONST.PLAN.DO_FGS,
-                CONST.ZOCALO_ENV,
-                lambda: generate_start_info_from_omega_map(
-                    [GridscanParamConstants.OMEGA_1, GridscanParamConstants.OMEGA_2]
-                ),
-                eiger_zocalo_hw_read_mapper,
-            ),
-            hw_read_during_mapper=eiger_hw_read_during_mapper,
-        ),
-    )
-
-
-def create_rotation_callbacks() -> tuple[
-    RotationNexusFileCallback, RotationISPyBCallback
-]:
-    return (
-        RotationNexusFileCallback(),
-        RotationISPyBCallback(
-            emit=ZocaloCallback(
-                CONST.PLAN.ROTATION_MULTI,
-                CONST.ZOCALO_ENV,
-                generate_start_info_from_ordered_runs,
-                eiger_zocalo_hw_read_mapper,
-            ),
-            hw_read_during_mapper=eiger_hw_read_during_mapper,
-        ),
-    )
-
-
-def setup_callbacks() -> list[CallbackBase]:
-    rot_nexus_cb, rot_ispyb_cb = create_rotation_callbacks()
-    snapshot_cb = BeamDrawingCallback(emit=rot_ispyb_cb)
-    return [
-        *create_gridscan_callbacks(),
-        rot_nexus_cb,
-        snapshot_cb,
-        LogUidTaggingCallback(),
-        RobotLoadISPyBCallback(),
-        SampleHandlingCallback(),
-        AlertOnContainerChange(),
-    ]
 
 
 def setup_logging(dev_mode: bool):
@@ -189,7 +98,7 @@ class HyperionCallbackRunner:
         set_config_client(create_config_client())
         set_alerting_service(LoggingAlertService(CONST.GRAYLOG_STREAM_ID))
 
-        self.callbacks = setup_callbacks()
+        self.callbacks = load_beamline_module().setup_callbacks()
 
         self.watchdog_thread = Thread(
             target=run_watchdog,
@@ -211,6 +120,22 @@ class HyperionCallbackRunner:
         self.watchdog_thread.start()
         with self._dispatcher_cm:
             ping_watchdog_while_alive(self._dispatcher_cm, self.watchdog_thread)
+
+
+def load_beamline_module() -> ModuleType:
+    module_name = os.getenv("BEAMLINE", "").replace("-", "_")
+    log_info(f"Loading beamline module {module_name}")
+    if module_name == "":
+        raise ValueError("BEAMLINE not defined")
+
+    try:
+        return import_module(
+            f"mx_bluesky.hyperion.external_interaction.callbacks.beamline.{module_name}"
+        )
+    except ImportError as e:
+        raise ValueError(
+            "Failed to import callback beamline module, please check BEAMLINE env var."
+        ) from e
 
 
 def run_watchdog(watchdog_port: int):

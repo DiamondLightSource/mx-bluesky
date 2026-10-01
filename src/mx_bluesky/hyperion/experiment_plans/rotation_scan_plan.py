@@ -1,14 +1,15 @@
+from abc import abstractmethod
+from typing import Generic, TypeVar
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.common.maths import AngleWithPhase
-from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i03 import Beamstop
-from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.common_dcm import DoubleCrystalMonochromator
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
@@ -29,12 +30,15 @@ from dodal.plans.preprocessors.verify_undulator_gap import (
     verify_undulator_gap_before_run_decorator,
 )
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    BeamSizePlans,
+    TBeamSizeValue,
+)
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
 )
 from mx_bluesky.common.device_setup_plans.manipulate_sample import (
     cleanup_sample_environment,
-    prepare_aperture_for_rotation_if_required,
     setup_sample_environment,
 )
 from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
@@ -58,6 +62,7 @@ from mx_bluesky.common.experiment_plans.rotation.rotation_utils import (
     RotationMotionProfile,
     calculate_motion_profile,
 )
+from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
     SingleRotationScan,
@@ -71,15 +76,15 @@ from mx_bluesky.hyperion.device_setup_plans.setup_zebra import (
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
 
+TBeamSizeComposite = TypeVar("TBeamSizeComposite")
+
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class RotationScanComposite(OavSnapshotComposite):
+class RotationScanComposite(OavSnapshotComposite, Generic[TBeamSizeComposite]):
     """All devices which are directly or indirectly required by this plan"""
 
-    aperture_scatterguard: ApertureScatterguard
     attenuator: BinaryFilterAttenuator
     backlight: Backlight
-    beamsize: BeamsizeBase
     beamstop: Beamstop
     dcm: DoubleCrystalMonochromator
     detector_motion: DetectorMotion
@@ -102,11 +107,17 @@ class RotationScanComposite(OavSnapshotComposite):
     def detector(self) -> EigerDetector:
         return self.eiger
 
+    @property
+    @abstractmethod
+    def beamsize_composite(self) -> TBeamSizeComposite: ...
+
 
 def rotation_scan_plan(
-    composite: RotationScanComposite,
+    composite: RotationScanComposite[TBeamSizeComposite],
     params: SingleRotationScan,
     motion_values: RotationMotionProfile,
+    beamsize_device_plans: BeamSizePlans[TBeamSizeComposite, TBeamSizeValue],
+    beamsize_value: TBeamSizeValue,
 ):
     """A stub plan to collect diffraction images from a sample continuously rotating
     about a fixed axis - for now this axis is limited to omega.
@@ -121,7 +132,7 @@ def rotation_scan_plan(
     )
     def _rotation_scan_plan(
         motion_values: RotationMotionProfile,
-        composite: RotationScanComposite,
+        composite: RotationScanComposite[TBeamSizeComposite],
     ):
         axis = composite.gonio.omega
 
@@ -148,8 +159,9 @@ def rotation_scan_plan(
         )
 
         yield from setup_sample_environment(
-            composite.aperture_scatterguard,
-            params.selected_aperture,
+            composite.beamsize_composite,
+            beamsize_device_plans,
+            beamsize_value,
             composite.backlight,
             composite.thawer,
             group=CONST.WAIT.ROTATION_READY_FOR_DC,
@@ -193,12 +205,12 @@ def rotation_scan_plan(
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
         yield from standard_read_hardware_during_collection(
-            composite.aperture_scatterguard,
+            beamsize_device_plans,
+            composite.beamsize_composite,
             composite.attenuator,
             composite.flux,
             composite.dcm,
             composite.eiger,
-            composite.beamsize,
         )
 
     yield from _rotation_scan_plan(motion_values, composite)
@@ -219,6 +231,7 @@ def _move_and_rotation(
     composite: RotationScanComposite,
     params: SingleRotationScan,
     oav_params: OAVParameters,
+    beamsize_device_plans: BeamSizePlans,
 ):
     motor_time_to_speed = yield from bps.rd(composite.gonio.omega.acceleration_time)
     max_vel = yield from bps.rd(composite.gonio.omega.max_velocity)
@@ -239,6 +252,10 @@ def _move_and_rotation(
         group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
 
+    aperture_value = yield from beamsize_device_plans.beam_size_for_rotation(
+        composite, params.selected_aperture
+    )
+
     if params.take_snapshots:
         yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
 
@@ -246,14 +263,14 @@ def _move_and_rotation(
             yield from setup_beamline_for_oav(
                 composite.gonio,
                 composite.backlight,
-                composite.aperture_scatterguard,
+                composite,
+                beamsize_device_plans,
                 wait=True,
             )
 
-        if params.selected_aperture:
-            yield from prepare_aperture_for_rotation_if_required(
-                composite.aperture_scatterguard, params.selected_aperture
-            )
+        yield from beamsize_device_plans.prepare_beam_size(
+            composite, aperture_value, PlanGroupCheckpointConstants.PREPARE_APERTURE
+        )
         yield from oav_snapshot_plan(composite, params, oav_params)
 
     current_omega_offset_and_phase = yield from bps.rd(composite.gonio.wrapped_omega)
@@ -264,12 +281,15 @@ def _move_and_rotation(
         AngleWithPhase.from_iterable(current_omega_offset_and_phase),
     )
 
-    yield from rotation_scan_plan(composite, params, motion_values)
+    yield from rotation_scan_plan(
+        composite, params, motion_values, beamsize_device_plans, aperture_value
+    )
 
 
 def rotation_scan_internal(
     composite: RotationScanComposite,
     parameters: RotationScan,
+    beamsize_device_plans: BeamSizePlans,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
     if not oav_params:
@@ -308,7 +328,9 @@ def rotation_scan_internal(
             def rotation_scan_core(
                 params: SingleRotationScan,
             ):
-                yield from _move_and_rotation(composite, params, oav_params)
+                yield from _move_and_rotation(
+                    composite, params, oav_params, beamsize_device_plans
+                )
 
             yield from rotation_scan_core(single_scan)
 

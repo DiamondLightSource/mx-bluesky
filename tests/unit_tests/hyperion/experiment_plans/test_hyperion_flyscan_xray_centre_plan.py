@@ -125,7 +125,9 @@ class TestFlyscanXrayCentrePlan:
                 )
             )
 
-        aperture_scatterguard = hyperion_flyscan_xrc_composite.aperture_scatterguard
+        aperture_scatterguard = (
+            hyperion_flyscan_xrc_composite.beamsize_composite.aperture_scatterguard
+        )
         large = aperture_scatterguard._loaded_positions[ApertureValue.LARGE]
         medium = aperture_scatterguard._loaded_positions[ApertureValue.MEDIUM]
         ap_call_large = call(large, ApertureValue.LARGE)

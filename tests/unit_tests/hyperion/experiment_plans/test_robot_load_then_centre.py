@@ -8,6 +8,9 @@ from dodal.devices.beamlines.i03 import BeamstopPositions
 from dodal.devices.detector import DetectorParams
 from dodal.devices.robot import SampleLocation
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
@@ -24,7 +27,11 @@ from mx_bluesky.hyperion.parameters.gridscan import (
 )
 from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
-from ....conftest import assert_none_matching, raw_params_from_file
+from ....conftest import (
+    RobotLoadThenCentreCompositeWithBeamSize,
+    assert_none_matching,
+    raw_params_from_file,
+)
 from .conftest import FLYSCAN_RESULT_LOW, FLYSCAN_RESULT_MED, sim_fire_event_on_open_run
 
 
@@ -70,12 +77,16 @@ def mock_pin_centre_then_gridscan_plan(*args, **kwargs):
 )
 def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_expected_parameters(
     mock_pin_centre_then_gridscan_plan: MagicMock,
-    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_composite: RobotLoadThenCentreCompositeWithBeamSize,
     robot_load_then_centre_params: RobotLoadThenCentre,
     run_engine: RunEngine,
 ):
     run_engine(
-        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_then_centre_params,
+        )
     )
     composite_passed = mock_pin_centre_then_gridscan_plan.call_args[0][1]
     params_passed: PinTipCentreThenXrayCentre = (
@@ -104,7 +115,7 @@ def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_ex
 )
 def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     mock_pin_centre_then_gridscan_plan: MagicMock,
-    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_composite: RobotLoadThenCentreCompositeWithBeamSize,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -112,7 +123,11 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     sim_run_engine.simulate_plan(
-        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_then_centre_params,
+        )
     )
     det_params = robot_load_composite.eiger.set_detector_parameters.call_args[0][0]
     assert det_params.expected_energy_ev == 11100
@@ -131,7 +146,7 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     MagicMock(return_value=iter([])),
 )
 def test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set_on_eiger(
-    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_composite: RobotLoadThenCentreCompositeWithBeamSize,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -146,6 +161,7 @@ def test_given_no_energy_supplied_when_robot_load_then_centre_current_energy_set
     sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params_no_energy,
         )
     )
@@ -176,7 +192,11 @@ def run_simulating_smargon_wait(
     )
 
     return sim_run_engine.simulate_plan(
-        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_then_centre_params,
+        )
     )
 
 
@@ -200,7 +220,11 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_then_centre_params,
+        )
     )
     messages = assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set" and msg.obj.name == "eiger_do_arm"
@@ -228,7 +252,11 @@ def test_when_plan_run_then_detector_positioned(
     sim_run_engine.add_handler_for_callback_subscribes()
     sim_fire_event_on_open_run(sim_run_engine, CONST.PLAN.FLYSCAN_RESULTS)
     messages = sim_run_engine.simulate_plan(
-        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_then_centre_params,
+        )
     )
     messages = assert_message_and_return_remaining(
         messages,
@@ -271,6 +299,7 @@ def test_given_sample_already_loaded_and_chi_not_changed_when_robot_load_called_
     messages = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )
@@ -306,6 +335,7 @@ def test_given_sample_already_loaded_and_chi_is_changed_when_robot_load_called_t
     messages = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )
@@ -346,6 +376,7 @@ def test_given_sample_not_loaded_and_chi_not_changed_when_robot_load_called_then
     messages = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )
@@ -386,6 +417,7 @@ def test_given_sample_not_loaded_and_chi_changed_when_robot_load_called_then_eig
     messages = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )
@@ -426,6 +458,7 @@ def test_robot_load_then_centre_sets_energy_when_chi_change_and_no_robot_load(
     messages = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )
@@ -455,6 +488,7 @@ def test_robot_load_then_centre_sets_energy_when_no_robot_load_no_chi_change(
     messages = sim_run_engine.simulate_plan(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )
@@ -487,7 +521,11 @@ def test_robot_load_then_centre_moves_beamstop_into_place(
     )
 
     msgs = sim_run_engine.simulate_plan(
-        robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
+        robot_load_then_xray_centre(
+            robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
+            robot_load_then_centre_params,
+        )
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -523,6 +561,7 @@ def test_box_size_passed_through_to_gridscan(
     run_engine(
         robot_load_then_xray_centre(
             robot_load_composite,
+            Phase1ApertureScatterguardPlans(),
             robot_load_then_centre_params,
         )
     )

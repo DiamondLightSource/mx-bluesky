@@ -43,6 +43,7 @@ from mx_bluesky.hyperion.baton_handler import (
     run_forever,
     run_udc_when_requested,
 )
+from mx_bluesky.hyperion.blueapi.in_process import I03LoadCentreCollectComposite
 from mx_bluesky.hyperion.blueapi.parameters import LoadCentreCollectParams
 from mx_bluesky.hyperion.experiment_plans.load_centre_collect_full_plan import (
     LoadCentreCollectComposite,
@@ -487,13 +488,13 @@ async def test_when_multiple_agamemnon_instructions_then_default_state_only_run_
 def test_initialise_udc_reloads_all_devices(dont_patch_clear_devices):
     context = setup_context(True)
     devices_before_reset: LoadCentreCollectComposite = device_composite_from_context(
-        context, LoadCentreCollectComposite
+        context, I03LoadCentreCollectComposite
     )
 
     _initialise_udc(context, True)
 
     devices_after_reset: LoadCentreCollectComposite = device_composite_from_context(
-        context, LoadCentreCollectComposite
+        context, I03LoadCentreCollectComposite
     )
 
     for f in fields(devices_after_reset):
@@ -1009,7 +1010,7 @@ def test_robot_unload_performed_when_no_more_agamemnon_instructions(
     parent.assert_has_calls(
         [
             call.load_centre_collect(ANY, ANY),
-            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call.robot_unload(ANY, ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
@@ -1040,7 +1041,7 @@ def test_robot_unload_performed_when_baton_requested_away_from_hyperion(
 
     mock_robot_unload.assert_has_calls(
         [
-            call(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call(ANY, ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
@@ -1080,7 +1081,7 @@ def test_robot_unload_still_performed_when_sample_exception(
     parent.assert_has_calls(
         [
             call.load_centre_collect(ANY, ANY),
-            call.robot_unload(ANY, ANY, ANY, ANY, "cm31105-4"),
+            call.robot_unload(ANY, ANY, ANY, ANY, ANY, "cm31105-4"),
         ]
     )
 
