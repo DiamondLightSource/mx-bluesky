@@ -48,10 +48,10 @@ jobs:
           images: |
             ghcr.io/${{ github.repository }}
           labels: |
-            org.opencontainers.image.title=mx-bluesky
+            org.opencontainers.image.title=hyperion
             org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
           annotations: |
-            org.opencontainers.image.title=mx-bluesky
+            org.opencontainers.image.title=hyperion
             org.opencontainers.image.description=Hyperion service for MX Unattended Data Collection
           tags: |
             type=ref,event=tag

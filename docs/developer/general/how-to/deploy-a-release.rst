@@ -3,7 +3,7 @@ Deploy a New Release
 
 .. warning::
 
-   This guide is for pre-containerised deployments. To see how deployments work using BlueAPI with kubernetes, please see `the updated guide <setup-blueapi-for-mx.html>`_.
+   This guide is for pre-containerised deployments. To see how deployments work using BlueAPI with kubernetes, please see `the updated guide <setup-blueapi-for-mx.html>`_. For containerised Hyperion deployments, please refer to `Deploying Hyperion on Kubernetes <deploy-hyperion-kk8s.html>`_.
 
 **Remember to discuss any new deployments with the appropriate beamline scientist.**
 
