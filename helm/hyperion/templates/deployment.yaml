@@ -14,10 +14,6 @@ spec:
       labels:
         app: hyperion
     spec:
-      terminationGracePeriodSeconds: {{ .Values.application.terminationGracePeriodSeconds }}
-      securityContext:
-        runAsGroup: {{ .Values.supervisor.runAsGroup }}
-        runAsUser: {{ .Values.supervisor.runAsUser }}
       volumes:
         - name: scratch
           persistentVolumeClaim:
@@ -40,6 +36,14 @@ spec:
         - name: zocalo-secrets
           secret:
             secretName: rmq-creds
+        - name: etc
+          configMap:
+            name: hyperion-etc-config
+            defaultMode: 420
+        # Required for vscode to install remote debugging plugins in the debug container
+        - name: debug-home
+          emptyDir:
+            sizeLimit: 1Gi
       initContainers:
         - name: hyperion-init
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -47,11 +51,20 @@ spec:
           volumeMounts:
             - name: scratch
               mountPath: "/scratch"
+            - name: etc
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: etc
+              mountPath: /etc/group
+              subPath: group
           env:
             - name: HOME
               value: /tmp
             - name: DODAL_BRANCH
               value: {{ .Values.initContainer.dodalBranch }}
+          securityContext:
+            runAsGroup: {{ .Values.supervisor.runAsGroup }}
+            runAsUser: {{ .Values.supervisor.runAsUser }}
       containers:
         - name: hyperion-supervisor
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -62,6 +75,9 @@ spec:
               hyperion --mode supervisor \
                 --client-config /etc/hyperion/client_config.yaml \
                 --supervisor-config /etc/hyperion/supervisor_config.yaml
+              {{- if .Values.supervisor.enableDebugging }} \
+                --debug-port {{ .Values.supervisor.debugPort }}
+              {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
               sleep 600
@@ -74,6 +90,10 @@ spec:
             - name: rest-api
               containerPort: {{ .Values.supervisor.containerPort }}
               protocol: TCP
+            {{- if .Values.supervisor.enableDebugging }}
+            - name: debug
+              containerPort: {{ .Values.supervisor.debugPort }}
+            {{- end }}
           env:
             - name: LOG_DIR
               value: /var/log/bluesky
@@ -104,6 +124,15 @@ spec:
               readOnly: true
             - mountPath: "/var/log/bluesky"
               name: logdir
+            - name: etc
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: etc
+              mountPath: /etc/group
+              subPath: group
+          securityContext:
+            runAsGroup: {{ .Values.supervisor.runAsGroup }}
+            runAsUser: {{ .Values.supervisor.runAsUser }}
         - name: hyperion-callbacks
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
           command: ['/bin/bash', '-c']
@@ -113,6 +142,9 @@ spec:
               hyperion-callbacks \
                 --watchdog-port {{ .Values.supervisor.containerPort }} \
                 --stomp-config /etc/hyperion/blueapi_callbacks.yml
+              {{- if .Values.callbacks.enableDebugging }} \
+                --debug-port {{ .Values.callbacks.debugPort }}
+              {{- end }}
               {{- if .Values.application.dev }} \
                 --dev
               sleep 600
@@ -125,6 +157,11 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+          ports:
+            {{- if .Values.callbacks.enableDebugging }}
+            - name: debug
+              containerPort: {{ .Values.callbacks.debugPort }}
+            {{- end }}
           env:
             - name: LOG_DIR
               value: /var/log/bluesky
@@ -156,6 +193,12 @@ spec:
               name: zocalo-secrets
             - mountPath: "/etc/secrets/expeye"
               name: expeye-secrets
+            - name: etc
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: etc
+              mountPath: /etc/group
+              subPath: group
         - name: hyperion-scratch
           # container provided in order for vscode to attach to a writable scratch
           image: {{ .Values.application.imageRepository}}/hyperion:{{ .Values.application.imageVersion }}
@@ -163,11 +206,25 @@ spec:
           volumeMounts:
             - mountPath: "/scratch"
               name: scratch
+            - name: etc
+              mountPath: /etc/passwd
+              subPath: passwd
+            - name: etc
+              mountPath: /etc/group
+              subPath: group
+            - name: debug-home
+              mountPath: /home/{{ .Values.supervisor.userName }}
+          env:
+            - name: HOME
+              value: /home/{{ .Values.supervisor.userName }}
+          command: ['/bin/bash', '-c']
           resources:
             limits:
-              cpu: "1"
-              memory: "1Gi"
-          command: ['/bin/bash', '-c']
+              cpu: 2000m
+              memory: 4000Mi
+            requests:
+              cpu: 200m
+              memory: 400Mi
           args:
             - |
               while true; do sleep 60; done

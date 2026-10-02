@@ -1,0 +1,14 @@
+// To use this you should obviously have these all in the parent directory
+{
+  "folders": [
+    {
+      "path": ".."
+    },
+    {
+      "path": "../../dodal"
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "/app/mx-bluesky/.venv/bin/python"
+  }
+}
