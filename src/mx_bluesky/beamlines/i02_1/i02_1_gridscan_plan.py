@@ -57,7 +57,7 @@ from mx_bluesky.common.parameters.constants import (
 from mx_bluesky.common.parameters.device_composites import (
     FlyScanEssentialDevices,
 )
-from mx_bluesky.common.parameters.gridscan import PositiveFloat
+from mx_bluesky.common.parameters.gridscan import GridScanParams, PositiveFloat
 from mx_bluesky.common.utils.log import LOGGER
 
 DEFAULT_BOX_SIZE_UM = 2
@@ -127,7 +127,7 @@ def construct_i02_1_specific_features(
     )
 
 
-def _zebra_triggering_setup(fgs_composite: I021FlyScanXRayCentreComposite, _):
+def _zebra_triggering_setup(fgs_composite: I021FlyScanXRayCentreComposite, _, __):
     yield from setup_zebra_for_gridscan(fgs_composite.zebra)
 
 
@@ -210,10 +210,22 @@ def i02_1_gridscan_plan(
 
     beamline_specific = construct_i02_1_specific_features(composite, params)
     callbacks = create_gridscan_callbacks(params)
+    grid_scan_params = GridScanParams(
+        omega_starts_deg=params.omega_starts_deg,
+        x_start_um=params.x_start_um,
+        y_starts_um=params.y_starts_um,
+        z_starts_um=params.z_starts_um,
+        x_steps=params.x_steps,
+        y_steps=params.y_steps,
+        x_step_size_um=params.x_step_size_um,
+        y_step_sizes_um=params.y_step_sizes_um,
+    )
 
     @bpp.subs_decorator(callbacks)
     @ispyb_activation_decorator(params)
     def decorated_flyscan_plan():
-        yield from common_flyscan_xray_centre(composite, params, beamline_specific)
+        yield from common_flyscan_xray_centre(
+            composite, params, grid_scan_params, beamline_specific
+        )
 
     yield from decorated_flyscan_plan()

@@ -67,8 +67,8 @@ async def test_setup_zebra_for_extruder_pp_eiger_collection(zebra: Zebra, run_en
             zebra, DetectorName.EIGER, *inputs_list, wait=True
         )
     )
-    assert await zebra.output.out_pvs[1].get_value() == zebra.mapping.sources.AND4
-    assert await zebra.output.out_pvs[2].get_value() == zebra.mapping.sources.AND3
+    assert await zebra.output.out_ttl_pvs[1].get_value() == zebra.mapping.sources.AND4
+    assert await zebra.output.out_ttl_pvs[2].get_value() == zebra.mapping.sources.AND3
 
     assert await zebra.inputs.soft_in_1.get_value() == "No"
     assert (
@@ -89,10 +89,10 @@ async def test_setup_zebra_for_fastchip(zebra: Zebra, run_engine):
         )
     )
     # Check that SOFT_IN:B0 gets disabled
-    assert await zebra.output.out_pvs[1].get_value() == zebra.mapping.sources.AND3
+    assert await zebra.output.out_ttl_pvs[1].get_value() == zebra.mapping.sources.AND3
 
     # Check ttl out1 is set to AND3
-    assert await zebra.output.out_pvs[1].get_value() == zebra.mapping.sources.AND3
+    assert await zebra.output.out_ttl_pvs[1].get_value() == zebra.mapping.sources.AND3
     assert await zebra.pc.num_gates.get_value() == num_gates
     assert await zebra.pc.pulse_max.get_value() == num_exposures
     assert await zebra.pc.pulse_width.get_value() == exposure_time_s - 0.0001
@@ -114,7 +114,7 @@ async def test_open_fast_shutter_at_each_position_plan(zebra: Zebra, run_engine)
         expected_pulse_width, abs=1e-3
     )
 
-    assert await zebra.output.out_pvs[4].get_value() == zebra.mapping.sources.PULSE2
+    assert await zebra.output.out_ttl_pvs[4].get_value() == zebra.mapping.sources.PULSE2
 
 
 async def test_reset_pc_gate_and_pulse(zebra: Zebra, run_engine):
@@ -128,8 +128,10 @@ async def test_reset_pc_gate_and_pulse(zebra: Zebra, run_engine):
 async def test_reset_output_panel(zebra: Zebra, run_engine):
     run_engine(reset_output_panel(zebra))
 
-    assert await zebra.output.out_pvs[2].get_value() == zebra.mapping.sources.PC_GATE
-    assert await zebra.output.out_pvs[4].get_value() == zebra.mapping.sources.OR1
+    assert (
+        await zebra.output.out_ttl_pvs[2].get_value() == zebra.mapping.sources.PC_GATE
+    )
+    assert await zebra.output.out_ttl_pvs[4].get_value() == zebra.mapping.sources.OR1
     assert (
         await zebra.output.pulse_1.input.get_value() == zebra.mapping.sources.DISCONNECT
     )
@@ -147,7 +149,10 @@ async def test_zebra_return_to_normal(zebra: Zebra, run_engine):
     assert await zebra.pc.gate_trigger.get_value() == "Enc2"
     assert await zebra.pc.gate_start.get_value() == 0
 
-    assert await zebra.output.out_pvs[3].get_value() == zebra.mapping.sources.DISCONNECT
+    assert (
+        await zebra.output.out_ttl_pvs[3].get_value()
+        == zebra.mapping.sources.DISCONNECT
+    )
     assert (
         await zebra.output.pulse_1.input.get_value() == zebra.mapping.sources.DISCONNECT
     )

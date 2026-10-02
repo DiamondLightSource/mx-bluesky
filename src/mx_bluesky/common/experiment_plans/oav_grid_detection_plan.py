@@ -64,7 +64,7 @@ def optimum_grid_detect_angles(smargon: Smargon) -> MsgGenerator[list[float]]:
 
 def grid_detection_plan(
     composite: OavGridDetectionComposite,
-    parameters: OAVParameters,
+    oav_parameters: OAVParameters,
     snapshot_template: str,
     snapshot_dir: str,
     grid_width_microns: float,
@@ -76,7 +76,7 @@ def grid_detection_plan(
 
     Args:
         composite (OavGridDetectionComposite): Composite containing devices for doing a grid detection.
-        parameters (OAVParameters): Object containing parameters for setting up the OAV
+        oav_parameters (OAVParameters): Object containing parameters for setting up the OAV
         snapshot_template (str): A template for the name of the snapshots, expected to be filled in with an angle
         snapshot_dir (str): The location to save snapshots
         grid_width_microns (float): The width of the grid to scan in microns
@@ -91,7 +91,7 @@ def grid_detection_plan(
     yield from bps.wait()
 
     # Set relevant PVs to whatever the config dictates.
-    yield from pre_centring_setup_oav(oav, parameters, pin_tip_detection)
+    yield from pre_centring_setup_oav(oav, oav_parameters, pin_tip_detection)
 
     LOGGER.info("OAV Centring: Camera set up")
 

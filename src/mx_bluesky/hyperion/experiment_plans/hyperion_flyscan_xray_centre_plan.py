@@ -17,6 +17,7 @@ from mx_bluesky.common.device_setup_plans.setup_zebra_and_shutter import (
 from mx_bluesky.common.experiment_plans.common_flyscan_xray_centre_plan import (
     construct_beamline_specific_fast_gridscan_features,
 )
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
@@ -32,7 +33,11 @@ from mx_bluesky.hyperion.external_interaction.config_server import (
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
+from mx_bluesky.hyperion.parameters.gridscan import (
+    HyperionSpecifiedThreeDGridScan,
+    fast_gridscan_params,
+    panda_fast_gridscan_params,
+)
 
 
 class SmargonSpeedError(Exception):
@@ -42,6 +47,7 @@ class SmargonSpeedError(Exception):
 def construct_hyperion_specific_features(
     xrc_composite: HyperionFlyScanXRayCentreComposite,
     xrc_parameters: HyperionSpecifiedThreeDGridScan,
+    grid_scan_params: GridScanParams,
 ):
     """
     Get all the information needed to do the Hyperion-specific parts of the XRC flyscan.
@@ -70,10 +76,11 @@ def construct_hyperion_specific_features(
     if get_hyperion_feature_settings().USE_PANDA_FOR_GRIDSCAN:
         setup_trigger_plan = _panda_triggering_setup
         tidy_plan = partial(_panda_tidy, xrc_composite)
+        panda_fgs_params = panda_fast_gridscan_params(xrc_parameters, grid_scan_params)
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.panda_fast_grid_scan,
-            xrc_parameters.panda_fast_gridscan_params,
+            panda_fgs_params,
         )
         fgs_motors = xrc_composite.panda_fast_grid_scan
 
@@ -88,10 +95,11 @@ def construct_hyperion_specific_features(
             group="flyscan_zebra_tidy",
             wait=True,
         )
+        zebra_fgs_params = fast_gridscan_params(xrc_parameters, grid_scan_params)
         set_flyscan_params_plan = partial(
             set_fast_grid_scan_params,
             xrc_composite.zebra_fast_grid_scan,
-            xrc_parameters.fast_gridscan_params,
+            zebra_fgs_params,
         )
         fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_fast_gridscan_features(
@@ -118,6 +126,7 @@ def _panda_tidy(xrc_composite: HyperionFlyScanXRayCentreComposite):
 def _panda_triggering_setup(
     xrc_composite: HyperionFlyScanXRayCentreComposite,
     parameters: HyperionSpecifiedThreeDGridScan,
+    grid_scan_parameters: GridScanParams,
 ) -> MsgGenerator:
     LOGGER.info("Setting up Panda for flyscan")
 
@@ -131,15 +140,14 @@ def _panda_triggering_setup(
 
     smargon_speed_limit_mm_per_s = yield from bps.rd(xrc_composite.gonio.x.max_velocity)
 
+    panda_params = panda_fast_gridscan_params(parameters, grid_scan_parameters)
     sample_velocity_mm_per_s = (
-        parameters.panda_fast_gridscan_params.x_step_size_mm
-        * 1e3
-        / time_between_x_steps_ms
+        panda_params.x_step_size_mm * 1e3 / time_between_x_steps_ms
     )
     if sample_velocity_mm_per_s > smargon_speed_limit_mm_per_s:
         raise SmargonSpeedError(
             f"Smargon speed was calculated from x step size\
-            {parameters.panda_fast_gridscan_params.x_step_size_mm}mm and\
+            {panda_params.x_step_size_mm}mm and\
             time_between_x_steps_ms {time_between_x_steps_ms} as\
             {sample_velocity_mm_per_s}mm/s. The smargon's speed limit is\
             {smargon_speed_limit_mm_per_s}mm/s."
@@ -160,7 +168,7 @@ def _panda_triggering_setup(
 
     yield from setup_panda_for_flyscan(
         xrc_composite.panda,
-        parameters.panda_fast_gridscan_params,
+        panda_params,
         xrc_composite.gonio,
         parameters.exposure_time_s,
         time_between_x_steps_ms,

@@ -150,7 +150,7 @@ async def test_laser_check(
     ttl = I24_ZEBRA_MAPPING.outputs.TTL_JUNGFRAU
 
     assert await zebra.inputs.soft_in_1.get_value() == expected_in1
-    assert await zebra.output.out_pvs[ttl].get_value() == expected_out
+    assert await zebra.output.out_ttl_pvs[ttl].get_value() == expected_out
 
 
 @patch(

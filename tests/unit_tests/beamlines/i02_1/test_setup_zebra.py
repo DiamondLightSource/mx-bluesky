@@ -25,7 +25,7 @@ async def test_zebra_set_up_for_gridscan(
         lambda msg: (
             msg.command == "set"
             and msg.obj.name
-            == f"zebra-output-out_pvs-{zebra.mapping.outputs.TTL_EIGER}"
+            == f"zebra-output-out_ttl_pvs-{zebra.mapping.outputs.TTL_EIGER}"
             and msg.args[0] == zebra.mapping.sources.IN1_TTL
         ),
     )
@@ -49,7 +49,7 @@ async def test_tidy_up_zebra_after_gridscan(
         lambda msg: (
             msg.command == "set"
             and msg.obj.name
-            == f"zebra-output-out_pvs-{zebra.mapping.outputs.TTL_EIGER}"
+            == f"zebra-output-out_ttl_pvs-{zebra.mapping.outputs.TTL_EIGER}"
             and msg.args[0] == zebra.mapping.sources.OR1
         ),
     )

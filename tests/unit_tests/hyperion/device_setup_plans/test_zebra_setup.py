@@ -32,11 +32,11 @@ async def test_zebra_set_up_for_panda_gridscan(
 ):
     run_engine(setup_zebra_for_panda_flyscan(zebra, zebra_shutter, wait=True))
     assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
+        await zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_DETECTOR].get_value()
         == zebra.mapping.sources.IN1_TTL
     )
     assert (
-        await zebra.output.out_pvs[zebra.mapping.outputs.TTL_PANDA].get_value()
+        await zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_PANDA].get_value()
         == zebra.mapping.sources.IN3_TTL
     )
     assert await zebra_shutter.control_mode.get_value() == ZebraShutterControl.AUTO

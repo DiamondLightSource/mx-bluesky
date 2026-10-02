@@ -6,7 +6,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.attenuator.attenuator import BinaryFilterAttenuator
 from dodal.devices.backlight import Backlight
 from dodal.devices.beamlines.i04.beamsize import Beamsize
@@ -71,7 +71,7 @@ from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.
 from mx_bluesky.common.external_interaction.callbacks.grid.utils import (
     generate_start_info_from_omega_map,
 )
-from mx_bluesky.common.parameters.components import get_param_version
+from mx_bluesky.common.parameters.components import AperturePolicy, get_param_version
 from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     GridscanParamConstants,
@@ -84,7 +84,9 @@ from mx_bluesky.common.parameters.device_composites import (
 )
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
+    GridScanParams,
     SpecifiedThreeDGridScan,
+    fast_gridscan_params,
 )
 from mx_bluesky.common.preprocessors.preprocessors import (
     set_transmission_and_trigger_xbpm_feedback_before_collection_decorator,
@@ -115,7 +117,7 @@ def _change_beamsize(
     An aperture is needed to reduce scatter but the transfocator is best used for beamsize
     changes as it gives more flux compared to a bigger beam with a small aperture.
     """
-    parameters.selected_aperture = ApertureValue.LARGE
+    parameters.selected_aperture = AperturePolicy.LARGE
     yield from bps.abs_set(
         transfocator, beamsize, group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC
     )
@@ -224,7 +226,7 @@ def i04_default_grid_detect_and_xray_centre(
             PlanNameConstants.GRIDSCAN_OUTER,
         )
         def grid_detect_then_xray_centre_with_callbacks():
-            yield from grid_detect_then_xray_centre(
+            grid_scan_params = yield from grid_detect_then_xray_centre(
                 composite=composite,
                 parameters=grid_common_params,
                 xrc_params_type=SpecifiedThreeDGridScan,
@@ -239,6 +241,7 @@ def i04_default_grid_detect_and_xray_centre(
                 yield from get_results_and_move_to_xtal(
                     composite,
                     grid_common_params.specified_grid_params,
+                    grid_scan_params,
                     flyscan_event_handler,
                 )
             except CrystalNotFoundError:
@@ -297,6 +300,7 @@ def create_gridscan_callbacks() -> tuple[
 def construct_i04_specific_features(
     xrc_composite: GridDetectThenXRayCentreComposite,
     xrc_parameters: SpecifiedThreeDGridScan,
+    grid_scan_params: GridScanParams,
 ) -> BeamlineSpecificFGSFeatures:
     """
     Get all the information needed to do the i04 XRC flyscan.
@@ -327,10 +331,11 @@ def construct_i04_specific_features(
         group="flyscan_zebra_tidy",
         wait=True,
     )
+    zebra_fgs_params = fast_gridscan_params(xrc_parameters, grid_scan_params)
     set_flyscan_params_plan = partial(
         set_fast_grid_scan_params,
         xrc_composite.zebra_fast_grid_scan,
-        xrc_parameters.fast_gridscan_params,
+        zebra_fgs_params,
     )
     fgs_motors = xrc_composite.zebra_fast_grid_scan
     return construct_beamline_specific_fast_gridscan_features(
