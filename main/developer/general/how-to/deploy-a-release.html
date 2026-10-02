@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Deploy a New Release &#8212; mx-bluesky 1.6.16.dev11+g1b8d8f7da documentation</title>
+    <title>Deploy a New Release &#8212; mx-bluesky 1.6.16.dev12+gde640d5cf documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../../_static/documentation_options.js?v=43627b78"></script>
+    <script src="../../../_static/documentation_options.js?v=7f0d9afc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -59,7 +59,7 @@
     <link rel="icon" href="../../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Dev-Ops guides" href="dev-ops/dev-ops.html" />
+    <link rel="next" title="Deploying Hyperion on Kubernetes" href="deploy-hyperion-k8s.html" />
     <link rel="prev" title="Create a New Release" href="create-a-release.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -405,6 +405,7 @@
 <li class="toctree-l2"><a class="reference internal" href="contribute.html">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-a-release.html">Create a New Release</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Deploy a New Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deploy-hyperion-k8s.html">Deploying Hyperion on Kubernetes</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="dev-ops/build-docs.html">Build the docs using sphinx</a></li>
 <li class="toctree-l3"><a class="reference internal" href="dev-ops/lint.html">Run linting using pre-commit</a></li>
@@ -535,7 +536,7 @@
 <h1>Deploy a New Release<a class="headerlink" href="#deploy-a-new-release" title="Link to this heading">#</a></h1>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>This guide is for pre-containerised deployments. To see how deployments work using BlueAPI with kubernetes, please see <a class="reference external" href="setup-blueapi-for-mx.html">the updated guide</a>.</p>
+<p>This guide is for pre-containerised deployments. To see how deployments work using BlueAPI with kubernetes, please see <a class="reference external" href="setup-blueapi-for-mx.html">the updated guide</a>. For containerised Hyperion deployments, please refer to <a class="reference external" href="deploy-hyperion-kk8s.html">Deploying Hyperion on Kubernetes</a>.</p>
 </div>
 <p><strong>Remember to discuss any new deployments with the appropriate beamline scientist.</strong></p>
 <p>The <code class="docutils literal notranslate"><span class="pre">utility_scripts/deploy/deploy_mx_bluesky.py</span></code> script will deploy the latest mx-bluesky version to a specified beamline. Deployments live in <code class="docutils literal notranslate"><span class="pre">/dls_sw/ixx/software/bluesky/mx-bluesky_X.X.X</span></code>. To do a new deployment you should run the deploy script from your mx-bluesky dev environment with e.g.
@@ -578,11 +579,11 @@ If you have just created a new release, you may need to run git fetch –tags to
       </div>
     </a>
     <a class="right-next"
-       href="dev-ops/dev-ops.html"
+       href="deploy-hyperion-k8s.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Dev-Ops guides</p>
+        <p class="prev-next-title">Deploying Hyperion on Kubernetes</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

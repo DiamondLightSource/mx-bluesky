@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Hyperion Parameter class hierarchy &#8212; mx-bluesky 1.6.16.dev12+gde640d5cf documentation</title>
+    <title>Deploying Hyperion on Kubernetes &#8212; mx-bluesky 1.6.16.dev12+gde640d5cf documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/hyperion/reference/param-hierarchy';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'developer/general/how-to/deploy-hyperion-k8s';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/mx-bluesky/switcher.json';
@@ -59,8 +59,8 @@
     <link rel="icon" href="../../../_static/dls-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Hyperion Coordinate Systems" href="coordinate-systems.html" />
-    <link rel="prev" title="Hyperion Baton" href="baton.html" />
+    <link rel="next" title="Dev-Ops guides" href="dev-ops/dev-ops.html" />
+    <link rel="prev" title="Deploy a New Release" href="deploy-a-release.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -397,47 +397,47 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">General</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../general/index.html">General MX-Bluesky Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../general/tutorials/profile-tests.html">Unit test performance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/get-started.html">Get Started with mx-bluesky</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/setup-blueapi-for-mx.html">Setting up BlueAPI for an MX beamline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/contribute.html">Contributing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/create-a-release.html">Create a New Release</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/deploy-a-release.html">Deploy a New Release</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/how-to/deploy-hyperion-k8s.html">Deploying Hyperion on Kubernetes</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/how-to/dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/build-docs.html">Build the docs using sphinx</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/lint.html">Run linting using pre-commit</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/run-tests.html">Run the tests using pytest</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../general/how-to/dev-ops/update-tools.html">Update the tools</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">General MX-Bluesky Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/profile-tests.html">Unit test performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="get-started.html">Get Started with mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="setup-blueapi-for-mx.html">Setting up BlueAPI for an MX beamline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="create-a-release.html">Create a New Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deploy-a-release.html">Deploy a New Release</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Deploying Hyperion on Kubernetes</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="dev-ops/dev-ops.html">Dev-Ops guides</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="dev-ops/build-docs.html">Build the docs using sphinx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dev-ops/lint.html">Run linting using pre-commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dev-ops/run-tests.html">Run the tests using pytest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dev-ops/update-tools.html">Update the tools</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../general/explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../general/explanations/decisions/0003-python-version-support.html">3. Python version support</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../explanations/decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../explanations/decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../explanations/decisions/0002-repository-structure.html">2. mx-bluesky repository structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../explanations/decisions/0003-python-version-support.html">3. Python version support</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/explanations/callback_and_run_logic.html">Callbacks and Run Logic</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/explanations/containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../general/reference/standards.html">Standards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanations/callback_and_run_logic.html">Callbacks and Run Logic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanations/containerised_mx_bluesky.html">Containerised mx-bluesky</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/standards.html">Standards</a></li>
 </ul>
 </details></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Hyperion</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">Hyperion Developer Guide</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="readme.html">Hyperion Overview</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../hyperion/index.html">Hyperion Developer Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/readme.html">Hyperion Overview</a></li>
 
 
 
-<li class="toctree-l2"><a class="reference internal" href="baton.html">Hyperion Baton</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Hyperion Parameter class hierarchy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coordinate-systems.html">Hyperion Coordinate Systems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../system-tests.html">System Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../hyperion-blueapi.html">Hyperion on BlueAPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/baton.html">Hyperion Baton</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/param-hierarchy.html">Hyperion Parameter class hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/reference/coordinate-systems.html">Hyperion Coordinate Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/system-tests.html">System Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/hyperion-blueapi.html">Hyperion on BlueAPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../hyperion/how-to/update-panda-ioc.html">Update the PandA IOC</a></li>
 </ul>
 </details></li>
 </ul>
@@ -513,9 +513,9 @@
     <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Developer Guide</a></li>
     
     
-    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Hyperion Developer Guide</a></li>
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">General MX-Bluesky Developer Guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Hyperion Parameter class hierarchy</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Deploying Hyperion on Kubernetes</span></li>
   </ul>
 </nav>
 </div>
@@ -532,9 +532,44 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="hyperion-parameter-class-hierarchy">
-<h1>Hyperion Parameter class hierarchy<a class="headerlink" href="#hyperion-parameter-class-hierarchy" title="Link to this heading">#</a></h1>
-<img alt="../../../_images/4ec9754e93dbf2caf9ae621cdbc479da9b7eacc781bbaf2a16396487a5e3d242.svg" class="align-center" src="../../../_images/4ec9754e93dbf2caf9ae621cdbc479da9b7eacc781bbaf2a16396487a5e3d242.svg" />
+  <section id="deploying-hyperion-on-kubernetes">
+<h1>Deploying Hyperion on Kubernetes<a class="headerlink" href="#deploying-hyperion-on-kubernetes" title="Link to this heading">#</a></h1>
+<section id="initial-deployment">
+<h2>Initial deployment<a class="headerlink" href="#initial-deployment" title="Link to this heading">#</a></h2>
+<p>If deploying for the first time on a beamline, you will need to ensure that the following resources are present in the beamline namespace:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Secrets: Similar to the blueapi deployment, you will require the following secrets to be present:</dt><dd><ul>
+<li><p>rmq-creds: Credentials for the zocalo rabbitmq instance</p></li>
+<li><p>ispyb-hyperion-cfg: Credentials required for connecting to Expe-Eye</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>A rabbitmq deployment &lt;beamline&gt;-rabbitmq - this is for internal communication between the supervisor, blueapi and the callbacks.</p></li>
+</ul>
+<p>See  <a class="reference external" href="../explanations/containerised_mx_bluesky.html">Notes on the Hyperion K8s Deployment</a> for a more detailed description of the deployment.</p>
+</section>
+<section id="setting-up-beamline-services-and-deployments-repositories">
+<h2>Setting up beamline services and deployments repositories<a class="headerlink" href="#setting-up-beamline-services-and-deployments-repositories" title="Link to this heading">#</a></h2>
+<p>Deployment of hyperion is via ArgoCD and is enabled by creating an <code class="docutils literal notranslate"><span class="pre">ixx-hyperion</span></code> folder in the relevant <code class="docutils literal notranslate"><span class="pre">ixx-services</span></code> <code class="docutils literal notranslate"><span class="pre">services/</span></code> folder.</p>
+<p>For an example see the i03 deployment at <a class="reference external" href="https://gitlab.diamond.ac.uk/controls/containers/beamline/i03-services">https://gitlab.diamond.ac.uk/controls/containers/beamline/i03-services</a></p>
+<p>This will then need to be enabled by referencing it in the corresponding <code class="docutils literal notranslate"><span class="pre">ixx-deployment</span></code> <code class="docutils literal notranslate"><span class="pre">apps/values.yaml</span></code>.</p>
+</section>
+<section id="upgrading-hyperion-to-a-newer-version">
+<h2>Upgrading Hyperion to a newer version<a class="headerlink" href="#upgrading-hyperion-to-a-newer-version" title="Link to this heading">#</a></h2>
+<dl class="simple">
+<dt>In order to deploy a newer version of Hyperion you should make the following changes:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">services/ixx-hyperion/values.yaml</span></code> - edit the <code class="docutils literal notranslate"><span class="pre">hyperion.application.imageVersion</span></code> with the updated hyperion container image version. Also update <code class="docutils literal notranslate"><span class="pre">hyperion.initContainer.dodalBranch</span></code> with the dodal git tag that the initContainer should check out to scratch.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/ixx-hyperion/Chart.yaml</span></code> - Update dependencies.version for hyperion to the corresponding version of the <code class="docutils literal notranslate"><span class="pre">hyperion</span></code> helm chart.</p></li>
+</ul>
+</dd>
+</dl>
+<p>The above images and helm charts should be published on every release to <a class="reference external" href="https://github.com/orgs/DiamondLightSource/packages?repo_name=mx-bluesky">GHCR repository</a>.</p>
+<p>Push these changes to the services repository. ArgoCD will detect the changes and deploy a new image.</p>
+<p>In the event that other configuration changes are made which don’t require a new release, for most changes ArgoCD will detect a change in values.yaml and restart the deployment if necessary. However certain changes may result in the container configuration being updated live and so the pod will not restart. Hyperion will generally require a restart for such changes as it does not monitor the filesystem and for this it is sufficient to delete the pod from the Kubernetes dashboard which will result in the pod being recreated.</p>
+<p>When updating to a new version, note that the Persistent Volume Claim (PVC) for the scratch folder for the old version will not be removed - this is so that if reversion to the previous version is required the image is still present. In order to prevent a buildup of volumes, when they are no longer needed any live changes to the scratch folder should have PRs made for them if necessary and the PVCs manually deleted.</p>
+</section>
 </section>
 
 
@@ -548,20 +583,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="baton.html"
+       href="deploy-a-release.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Hyperion Baton</p>
+        <p class="prev-next-title">Deploy a New Release</p>
       </div>
     </a>
     <a class="right-next"
-       href="coordinate-systems.html"
+       href="dev-ops/dev-ops.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Hyperion Coordinate Systems</p>
+        <p class="prev-next-title">Dev-Ops guides</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -577,10 +612,24 @@
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-deployment">Initial deployment</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-up-beamline-services-and-deployments-repositories">Setting up beamline services and deployments repositories</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#upgrading-hyperion-to-a-newer-version">Upgrading Hyperion to a newer version</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/main/docs/developer/hyperion/reference/param-hierarchy.rst">
+    <a href="https://github.com/DiamondLightSource/mx-bluesky/edit/main/docs/developer/general/how-to/deploy-hyperion-k8s.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -595,7 +644,7 @@
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../../../_sources/developer/hyperion/reference/param-hierarchy.rst.txt">
+    <a href="../../../_sources/developer/general/how-to/deploy-hyperion-k8s.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
