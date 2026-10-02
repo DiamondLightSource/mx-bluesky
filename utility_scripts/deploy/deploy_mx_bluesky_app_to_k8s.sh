@@ -38,10 +38,6 @@ for option in "$@"; do
             cat <<EOM
 Deploys a mx_bluesky app (either hyperion or redis-to-murko) to kubernetes.
 
-Important!
-If you do not specify --checkout-to-prod YOU MUST run this from the mx_bluesky directory that will be bind-mounted to
-the container, NOT the directory that you built the container image from.
-
 Arguments:
   release                 Name of the helmchart release
   app_name                Use either "hyperion" or "redis-to-murko"
@@ -114,13 +110,7 @@ fi
 
 echo "Container image version that will be pulled is $APP_VERSION"
 
-#application.runAsUser=$EUID,\
-#application.runAsGroup=$GID,\
-#application.supplementalGroups=[$SUPPLEMENTAL_GIDS],\
-#application.externalHostname=test-$APP_NAME.diamond.ac.uk "
 if [[ -n $DEV ]]; then
-  GID=`id -g`
-  SUPPLEMENTAL_GIDS=37904
   HELM_OPTIONS+="--set \
 application.dev=true,\
 application.logDir=$PROJECTDIR/tmp,\

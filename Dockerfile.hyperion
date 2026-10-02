@@ -31,7 +31,7 @@ RUN mkdir -p /app/scripts && \
     chown hyperion:hyperion /app/scripts
 
 #############################################################################
-FROM base-image as uv-staging
+FROM base-image AS uv-staging
 
 # Copy the pyproject.toml and install dependencies for better caching when developing
 # & rerunning deployment scripts
@@ -43,7 +43,7 @@ RUN mkdir -p src/mx_bluesky && \
     uv sync --no-cache --locked
 
 #############################################################################
-FROM base-image as build
+FROM base-image AS build
 
 WORKDIR "/app/mx-bluesky"
 RUN mkdir /scratch && \
