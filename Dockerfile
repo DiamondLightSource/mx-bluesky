@@ -52,7 +52,7 @@ CMD [ "while true; do sleep 30; done;" ]
 
 
 # The runtime stage copies the built venv into a runtime container
-FROM ubuntu:noble AS runtime
+FROM ubuntu:resolute AS runtime
 
 # Add apt-get system dependecies for runtime here if needed
 # RUN apt-get update -y && apt-get install -y --no-install-recommends \
