@@ -74,7 +74,8 @@ spec:
               . /app/mx-bluesky/.venv/bin/activate
               hyperion --mode supervisor \
                 --client-config /etc/hyperion/client_config.yaml \
-                --supervisor-config /etc/hyperion/supervisor_config.yaml
+                --supervisor-config /etc/hyperion/supervisor_config.yaml \
+                --baton-name HyperionK8s
               {{- if .Values.supervisor.enableDebugging }} \
                 --debug-port {{ .Values.supervisor.debugPort }}
               {{- end }}

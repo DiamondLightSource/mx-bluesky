@@ -25,6 +25,7 @@ class HyperionArgs(CommonArgs):
     mode: HyperionMode = HyperionMode.UDC
     client_config: str | None = None
     supervisor_config: str | None = None
+    baton_name: str = "Hyperion"
 
 
 @dataclass(kw_only=True)
@@ -100,6 +101,11 @@ def parse_cli_args() -> HyperionArgs:
         "--supervisor-config",
         help="Specify the supervisor bluesky context configuration file.",
     )
+    parser.add_argument(
+        "--baton-name",
+        default="Hyperion",
+        help="Specify the baton string that identifies this instance of hyperion",
+    )
     args = parser.parse_args()
     return HyperionArgs(
         dev_mode=args.dev or False,
@@ -108,4 +114,5 @@ def parse_cli_args() -> HyperionArgs:
         client_config=args.client_config,
         debug_port=args.debug_port,
         wait_for_debug_attach=args.wait_for_attach,
+        baton_name=args.baton_name,
     )
