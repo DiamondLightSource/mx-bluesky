@@ -79,6 +79,62 @@ def read_beam_info_from_hardware(
     )
 
 
+def generate_ssx_event_chain(
+    parameters: ExtruderParameters | FixedTargetParameters,
+    shots_per_position: int,
+    pump_probe: bool,
+) -> dict:
+    events = [
+        {
+            "name": "dose" if shots_per_position > 1 else "probe",
+            "offset": 0,
+            "duration": parameters.exposure_time_s,
+            "period": parameters.exposure_time_s,
+            "repetition": shots_per_position,
+            "eventType": "XrayDetection",
+        }
+    ]
+    if pump_probe:
+        is_checker = False
+        match parameters:
+            case FixedTargetParameters(checker_pattern=is_checker):
+                # pump then probe - pump_delay corresponds to time *before* first image
+                pump_delay = (
+                    -parameters.laser_delay_s
+                    if parameters.pump_repeat is not PumpProbeSetting.Short2
+                    else parameters.laser_delay_s
+                )
+            case ExtruderParameters():
+                pump_delay = parameters.laser_delay_s
+        events.append(
+            {
+                "name": "Laser probe",
+                "offset": pump_delay,
+                "duration": parameters.laser_dwell_s,
+                "repetition": 1,
+                "eventType": "LaserExcitation",
+            },
+        )
+        if is_checker:
+            # If checkerboard, then we have separate exposures to cover that
+            events.append(
+                {
+                    "name": "apo",
+                    "offset": parameters.exposure_time_s * shots_per_position,
+                    "duration": parameters.exposure_time_s,
+                    "period": parameters.exposure_time_s,
+                    "repetition": shots_per_position,
+                    "eventType": "XrayDetection",
+                }
+            )
+
+    return {
+        "eventChain": {
+            "events": events,
+        }
+    }
+
+
 class DCID:
     """ Interfaces with ISPyB to allow ssx DCID/synchweb interaction.
 
@@ -160,38 +216,6 @@ class DCID:
 
             start_image_number = 1
 
-            events = [
-                {
-                    "name": "Xray probe",
-                    "offset": 0,
-                    "duration": self.parameters.exposure_time_s,
-                    "period": self.parameters.exposure_time_s,
-                    "repetition": shots_per_position,
-                    "eventType": "XrayDetection",
-                }
-            ]
-            if pump_probe:
-                match self.parameters:
-                    case FixedTargetParameters():
-                        # pump then probe - pump_delay corresponds to time *before* first image
-                        pump_delay = (
-                            -self.parameters.laser_delay_s
-                            if self.parameters.pump_repeat
-                            is not PumpProbeSetting.Short2
-                            else self.parameters.laser_delay_s
-                        )
-                    case ExtruderParameters():
-                        pump_delay = self.parameters.laser_delay_s
-                events.append(
-                    {
-                        "name": "Laser probe",
-                        "offset": pump_delay,
-                        "duration": self.parameters.laser_dwell_s,
-                        "repetition": 1,
-                        "eventType": "LaserExcitation",
-                    },
-                )
-
             data = {
                 "detectorDistance": self.parameters.detector_distance_mm,
                 "detectorId": self.detector.id,
@@ -210,12 +234,13 @@ class DCID:
                 },
                 "xBeam": xbeam,
                 "yBeam": ybeam,
-                "ssx": {
-                    "eventChain": {
-                        "events": events,
-                    }
-                },
+                "ssx": generate_ssx_event_chain(
+                    self.parameters,
+                    shots_per_position=shots_per_position,
+                    pump_probe=pump_probe,
+                ),
             }
+
             if beamsize_x and beamsize_y:
                 data["beamSizeAtSampleX"] = beamsize_x / 1000
                 data["beamSizeAtSampleY"] = beamsize_y / 1000
