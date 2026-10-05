@@ -4,7 +4,10 @@ from unittest.mock import patch
 import pytest
 
 # Ensure that the blueapi entry point is not invoked by doctest as this will fail
-collect_ignore = ["src/mx_bluesky/hyperion/blueapi/plans.py"]
+collect_ignore = [
+    "src/mx_bluesky/hyperion/blueapi/plans.py",
+    "src/mx_bluesky/hyperion/blueapi/i04_1_plans.py",
+]
 
 
 pytest_plugins = ["dodal.testing.fixtures.run_engine"]
