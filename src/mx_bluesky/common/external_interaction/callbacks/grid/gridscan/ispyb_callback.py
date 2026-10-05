@@ -3,10 +3,12 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
 from time import time
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator, make_decorator
+from dodal.devices.detector import DetectorParams
+from pydantic import BaseModel
 
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
@@ -31,7 +33,7 @@ from mx_bluesky.common.external_interaction.ispyb.ispyb_store import (
 )
 from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import PlanNameConstants
-from mx_bluesky.common.parameters.gridscan import SpecifiedGrids
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.common.utils.exceptions import (
     ISPyBDepositionNotMadeError,
     SampleError,
@@ -41,11 +43,16 @@ from mx_bluesky.common.utils.log import ISPYB_ZOCALO_CALLBACK_LOGGER, set_dcgid_
 if TYPE_CHECKING:
     from event_model import RunStart, RunStop
 
-T = TypeVar("T", bound="SpecifiedGrids")
+T = TypeVar("T", bound="DiffractionExperimentWithSample")
 D = TypeVar("D")
 
 
-def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
+def ispyb_activation_wrapper(
+    plan_generator: MsgGenerator,
+    parameters: BaseModel,
+    grid_scan_params: GridScanParams,
+    detector_params: DetectorParams,
+):
     return bpp.set_run_key_wrapper(
         bpp.run_wrapper(
             plan_generator,
@@ -53,6 +60,8 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
                 "activate_callbacks": ["GridscanISPyBCallback"],
                 "subplan_name": PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
+                "detector_params": detector_params.model_dump_json(),
+                "grid_scan_params": grid_scan_params.model_dump_json(),
             },
         ),
         PlanNameConstants.TRIGGER_GRIDSCAN_ISPYB_CALLBACK,
@@ -62,7 +71,7 @@ def ispyb_activation_wrapper(plan_generator: MsgGenerator, parameters):
 ispyb_activation_decorator = make_decorator(ispyb_activation_wrapper)
 
 
-class GridscanISPyBCallback(BaseISPyBCallback):
+class GridscanISPyBCallback(BaseISPyBCallback, Generic[T]):
     """Callback class to handle the deposition of experiment parameters into the ISPyB
     database. Listens for 'event' and 'descriptor' documents. Creates the ISpyB entry on
     receiving an 'event' document for the 'ispyb_reading_hardware' event, and updates the
@@ -86,9 +95,17 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         *,
         emit: Callable[..., Any] | None = None,
     ) -> None:
+        """
+        Construct a new instance of the callbacks.
+
+        Args:
+            param_type: Concrete type of the parameter model that will be deserialized in the start document.
+            emit: Optional downstream callback that will be chained onto this callback to receive modified events.
+        """
         super().__init__(emit=emit)
         self.ispyb: StoreInIspyb
-        self.param_type = param_type
+        self.param_type: type[T] = param_type
+        self.grid_scan_params: GridScanParams | None = None
         self._start_of_fgs_uid: str | None = None
         self._processing_start_time: float | None = None
         self._grid_num_to_id_map: dict[int, int] = {}
@@ -102,8 +119,18 @@ class GridscanISPyBCallback(BaseISPyBCallback):
                 f"uid: {self._start_of_fgs_uid}"
             )
             mx_bluesky_parameters = doc.get("mx_bluesky_parameters")
+            detector_params_json = doc.get("detector_params")
+            grid_scan_params_json = doc.get("grid_scan_params")
             assert isinstance(mx_bluesky_parameters, str)
+            assert isinstance(detector_params_json, str)
+            assert isinstance(grid_scan_params_json, str)
             self.params = self.param_type.model_validate_json(mx_bluesky_parameters)
+            self.detector_params = DetectorParams.model_validate_json(
+                detector_params_json
+            )
+            self.grid_scan_params = GridScanParams.model_validate_json(
+                grid_scan_params_json
+            )
 
             # Fill ispyb deposition with all relevant info, including grid info
             self.fill_gridscan_deposition_and_store(lambda: self._get_scan_infos(doc))
@@ -131,14 +158,13 @@ class GridscanISPyBCallback(BaseISPyBCallback):
         self,
         event_sourced_data_collection_info: DataCollectionInfo,
         event_sourced_position_info: DataCollectionPositionInfo | None,
-        params: DiffractionExperimentWithSample,
     ) -> Sequence[ScanDataInfo]:
         assert self.ispyb_ids.data_collection_ids, (
             "Expect at least one valid data collection to record scan data"
         )
-        assert isinstance(self.params, SpecifiedGrids)
+        assert self.grid_scan_params
         scan_data_infos = []
-        for grid_num in range(self.params.num_grids):
+        for grid_num in range(self.grid_scan_params.num_grids):
             id = self.ispyb_ids.data_collection_ids[grid_num]
             self._grid_num_to_id_map[grid_num] = id
             scan_data_info = ScanDataInfo(
@@ -189,21 +215,24 @@ class GridscanISPyBCallback(BaseISPyBCallback):
     def fill_gridscan_deposition_and_store(
         self, make_scan_infos_with_grid_info: Callable[..., Sequence[ScanDataInfo]]
     ):
-        assert isinstance(self.params, SpecifiedGrids)
+        assert self.params
+        assert self.grid_scan_params
+        assert self.detector_params
 
         # Do initial deposition using all info except grid info
         self.ispyb = StoreInIspyb(self.ispyb_config)
         self.data_collection_group_info = populate_data_collection_group(self.params)
         scan_data_infos = []
-        assert self.params.num_grids > 0
-        for grid in range(self.params.num_grids):
+        assert self.grid_scan_params.num_grids > 0
+        for grid in range(self.grid_scan_params.num_grids):
             scan_data_infos.append(
                 ScanDataInfo(
                     data_collection_info=populate_remaining_data_collection_info(
-                        f"MX-Bluesky: Xray centring {grid + 1}/{self.params.num_grids} -",
+                        f"MX-Bluesky: Xray centring {grid + 1}/{self.grid_scan_params.num_grids} -",
                         None,
                         DataCollectionInfo(),
                         self.params,
+                        self.detector_params,
                     )
                 )
             )

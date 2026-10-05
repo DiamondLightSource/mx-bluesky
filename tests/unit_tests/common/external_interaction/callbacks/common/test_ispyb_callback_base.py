@@ -8,12 +8,14 @@ from bluesky.run_engine import RunEngine
 from mx_bluesky.common.external_interaction.callbacks.common.ispyb_callback_base import (
     BaseISPyBCallback,
 )
+from mx_bluesky.common.parameters.components import DiffractionExperimentWithSample
 from mx_bluesky.common.parameters.constants import USE_NUMTRACKER
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import create_detector_params_for_grid_scan
 
 
 def test_visit_extracted_from_numtracker(
-    run_engine: RunEngine, test_three_d_grid_params: SpecifiedThreeDGridScan
+    run_engine: RunEngine,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
     test_visit = "test_visit"
 
@@ -22,8 +24,8 @@ def test_visit_extracted_from_numtracker(
 
     callback = BaseISPyBCallback()
     callback.activity_gated_stop = MagicMock()
-    test_three_d_grid_params.visit = USE_NUMTRACKER
-    callback.params = test_three_d_grid_params
+    minimal_diffraction_expt_with_sample.visit = USE_NUMTRACKER
+    callback.params = minimal_diffraction_expt_with_sample
     run_engine.subscribe(callback)
 
     @bpp.run_decorator(
@@ -40,12 +42,13 @@ def test_visit_extracted_from_numtracker(
 
 
 def test_exception_when_instrument_session_doesnt_exist(
-    run_engine: RunEngine, test_three_d_grid_params: SpecifiedThreeDGridScan
+    run_engine: RunEngine,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
     callback = BaseISPyBCallback()
     callback.activity_gated_stop = MagicMock()
-    test_three_d_grid_params.visit = USE_NUMTRACKER
-    callback.params = test_three_d_grid_params
+    minimal_diffraction_expt_with_sample.visit = USE_NUMTRACKER
+    callback.params = minimal_diffraction_expt_with_sample
     run_engine.subscribe(callback)
 
     @bpp.run_decorator(
@@ -76,10 +79,13 @@ def _get_working_doc():
 )
 def test_handle_ispyb_transmission_flux_read_if_no_beamsize_warning(
     mock_logger: MagicMock,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
     callback = BaseISPyBCallback()
-    callback.params = test_three_d_grid_params
+    callback.params = minimal_diffraction_expt_with_sample
+    callback.detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
     doc = _get_working_doc()
     callback._handle_ispyb_transmission_flux_read(doc)  # type: ignore
     mock_logger.warning.assert_has_calls(
@@ -92,13 +98,16 @@ def test_handle_ispyb_transmission_flux_read_if_no_beamsize_warning(
 )
 def test_handle_ispyb_transmission_flux_read_if_params_specify_beamsize(
     mock_logger: MagicMock,
-    test_three_d_grid_params: SpecifiedThreeDGridScan,
+    minimal_diffraction_expt_with_sample: DiffractionExperimentWithSample,
 ):
-    test_three_d_grid_params.beam_size_x = 0  # type: ignore
-    test_three_d_grid_params.beam_size_y = 1  # type: ignore
+    minimal_diffraction_expt_with_sample.beam_size_x = 0  # type: ignore
+    minimal_diffraction_expt_with_sample.beam_size_y = 1  # type: ignore
 
     callback = BaseISPyBCallback()
-    callback.params = test_three_d_grid_params
+    callback.params = minimal_diffraction_expt_with_sample
+    callback.detector_params = create_detector_params_for_grid_scan(
+        minimal_diffraction_expt_with_sample
+    )
     doc = _get_working_doc()
     callback._handle_ispyb_transmission_flux_read(doc)  # type: ignore
 

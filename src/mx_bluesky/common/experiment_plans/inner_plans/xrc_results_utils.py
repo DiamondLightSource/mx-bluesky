@@ -108,6 +108,19 @@ def _generate_dummy_xrc_result(
 def grid_position_to_motor_position(
     grid_scan_params: GridScanParams, grid_pos: np.ndarray
 ) -> np.ndarray:
+    """Converts a grid position, given as steps in the x, y, z grid,
+    to a real motor position.
+
+    Args:
+        grid_pos (ndarray): The x, y, z position in grid steps. The origin is
+            at the centre of the first grid box
+        grid_scan_params: Parameters of the grid
+    Returns:
+        ndarray: The motor position this corresponds to.
+
+    Raises:
+        IndexError if the desired position is outside the grid.
+    """
     assert grid_scan_params.num_grids == 2
     motor_pos = (
         np.array(

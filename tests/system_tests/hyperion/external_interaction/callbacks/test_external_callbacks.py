@@ -41,8 +41,14 @@ from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_decorator,
 )
-from mx_bluesky.common.parameters.components import WithSnapshot
-from mx_bluesky.common.parameters.gridscan import GridScanParams
+from mx_bluesky.common.parameters.components import (
+    DiffractionExperimentWithSample,
+    WithSnapshot,
+)
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    create_detector_params_for_grid_scan,
+)
 from mx_bluesky.common.parameters.rotation import (
     RotationScan,
 )
@@ -60,9 +66,8 @@ from mx_bluesky.hyperion.external_interaction.callbacks.stomp.dispatcher import 
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, HyperionConstants
 from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionFlyScanXRayCentreComposite,
+    HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.parameters.gridscan import HyperionSpecifiedThreeDGridScan
 
 from .....conftest import fake_read
 from ..conftest import fetch_comment  # noqa  # type: ignore
@@ -243,8 +248,9 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     oav_for_system_test: OAV,
     smargon: Smargon,
     run_engine_with_external_callbacks: RunEngine,
-    dummy_params: HyperionSpecifiedThreeDGridScan,
-    fgs_composite_for_fake_zocalo: HyperionFlyScanXRayCentreComposite,
+    external_callback_expt_params: DiffractionExperimentWithSample,
+    external_callback_grid_scan_params: GridScanParams,
+    fgs_composite_for_fake_zocalo: HyperionGridDetectThenXRayCentreComposite,
     fetch_comment,  # noqa
     fetch_datacollection_ids_for_group_id,
     fake_grid_snapshot_plan,
@@ -258,35 +264,33 @@ async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     doc_catcher = DocumentCatcher()
     run_engine.subscribe(doc_catcher)
 
-    grid_scan_params = GridScanParams(
-        omega_starts_deg=dummy_params.omega_starts_deg,
-        x_start_um=dummy_params.x_start_um,
-        y_starts_um=dummy_params.y_starts_um,
-        z_starts_um=dummy_params.z_starts_um,
-        x_steps=dummy_params.x_steps,
-        y_steps=dummy_params.y_steps,
-        x_step_size_um=dummy_params.x_step_size_um,
-        y_step_sizes_um=dummy_params.y_step_sizes_um,
-    )
+    grid_scan_params = external_callback_grid_scan_params
     # Run the xray centring plan
     beamline_specific = construct_hyperion_specific_features(
-        fgs_composite_for_fake_zocalo, dummy_params, grid_scan_params
+        fgs_composite_for_fake_zocalo,
+        external_callback_expt_params,
+        grid_scan_params,
+    )
+
+    detector_params = create_detector_params_for_grid_scan(
+        external_callback_expt_params
     )
 
     @zocalo_stage_decorator(fgs_composite_for_fake_zocalo.zocalo)
-    @ispyb_activation_decorator(dummy_params)
+    @ispyb_activation_decorator(external_callback_expt_params, detector_params)
     def wrapped_xray_centre():
         yield from fake_grid_snapshot_plan(smargon, oav_for_system_test)
         yield from common_flyscan_xray_centre(
             fgs_composite_for_fake_zocalo,
-            dummy_params,
+            external_callback_expt_params,
+            detector_params,
             grid_scan_params,
             beamline_specific,
         )
         yield from fetch_xrc_results_from_zocalo(
             fgs_composite_for_fake_zocalo.zocalo,
             grid_scan_params,
-            dummy_params.sample_id,
+            external_callback_expt_params.sample_id,
         )
 
     run_engine(wrapped_xray_centre())
