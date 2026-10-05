@@ -23,6 +23,4 @@ class I02_1FgsParams(DiffractionExperimentWithSample):  # noqa: N801
 
     # Overrides of default values in the superclass
     exposure_time_s: float = Field(default=GridscanParamConstants.EXPOSURE_TIME_S)
-    ispyb_experiment_type: IspybExperimentType = Field(
-        default=IspybExperimentType.GRIDSCAN_3D
-    )
+    ispyb_experiment_type: IspybExperimentType = Field(default=IspybExperimentType.SAD)

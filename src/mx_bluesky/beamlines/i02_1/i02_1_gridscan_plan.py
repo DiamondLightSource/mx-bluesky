@@ -161,9 +161,7 @@ class ExternalGridScanParams(BaseModel):
     detector_distance_mm: float
     sample_id: int
 
-    # GDA branch needs to update for these params
-    x_step_size_um: PositiveFloat
-    y_step_sizes_um: list[PositiveFloat]
+    box_size_um: PositiveFloat
     omega_start_deg: int
 
 
@@ -195,8 +193,8 @@ def get_internal_params(
         z_starts_um=[params.z_start_um],
         x_steps=params.x_steps,
         y_steps=[params.y_steps],
-        x_step_size_um=params.x_step_size_um,
-        y_step_sizes_um=params.y_step_sizes_um,
+        x_step_size_um=params.box_size_um,
+        y_step_sizes_um=[params.box_size_um],
     )
     return fgs_params, grid_scan_params
 
