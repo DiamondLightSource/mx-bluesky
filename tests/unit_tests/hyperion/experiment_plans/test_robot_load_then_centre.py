@@ -11,14 +11,14 @@ from dodal.devices.robot import SampleLocation
 from mx_bluesky.common.experiment_plans.inner_plans.xrc_results_utils import (
     _fire_xray_centre_result_event,
 )
+from mx_bluesky.hyperion.blueapi.composites import (
+    HyperionGridDetectThenXRayCentreComposite,
+)
 from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
     RobotLoadThenCentreComposite,
     robot_load_then_xray_centre,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST
-from mx_bluesky.hyperion.parameters.device_composites import (
-    HyperionGridDetectThenXRayCentreComposite,
-)
 from mx_bluesky.hyperion.parameters.gridscan import (
     PinTipCentreThenXrayCentre,
 )
@@ -68,8 +68,8 @@ def mock_pin_centre_then_gridscan_plan(*args, **kwargs):
     "mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan.robot_load_and_change_energy_plan",
     MagicMock(return_value=iter([])),
 )
-def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
-    mock_centring_plan: MagicMock,
+def test_robot_load_then_xray_centre_calls_pin_centre_then_gridscan_plan_with_expected_parameters(
+    mock_pin_centre_then_gridscan_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     run_engine: RunEngine,
@@ -77,19 +77,21 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     run_engine(
         robot_load_then_xray_centre(robot_load_composite, robot_load_then_centre_params)
     )
-    composite_passed = mock_centring_plan.call_args[0][0]
-    params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
-    detector_params_passed: DetectorParams = mock_centring_plan.call_args[0][2]
+    composite_passed = mock_pin_centre_then_gridscan_plan.call_args[0][1]
+    params_passed: PinTipCentreThenXrayCentre = (
+        mock_pin_centre_then_gridscan_plan.call_args[0][2]
+    )
 
     for name, value in vars(composite_passed).items():
-        assert value == getattr(robot_load_composite, name)
+        assert name == "detector" or value == getattr(robot_load_composite, name)
 
     for name in HyperionGridDetectThenXRayCentreComposite.__dataclass_fields__.keys():
         assert getattr(composite_passed, name), f"{name} not in composite"
 
+    assert composite_passed.detector is robot_load_composite.eiger
+
     assert isinstance(params_passed, PinTipCentreThenXrayCentre)
     assert params_passed.file_name == robot_load_then_centre_params.file_name
-    assert detector_params_passed.expected_energy_ev == 11100
 
 
 @patch(
@@ -101,7 +103,7 @@ def test_when_plan_run_then_centring_plan_run_with_expected_parameters(
     MagicMock(return_value=iter([])),
 )
 def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
-    mock_centring_plan: MagicMock,
+    mock_pin_centre_then_gridscan_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
@@ -114,7 +116,9 @@ def test_when_plan_run_with_requested_energy_specified_energy_set_on_eiger(
     )
     det_params = robot_load_composite.eiger.set_detector_parameters.call_args[0][0]
     assert det_params.expected_energy_ev == 11100
-    detector_params_passed: DetectorParams = mock_centring_plan.call_args[0][2]
+    detector_params_passed: DetectorParams = (
+        mock_pin_centre_then_gridscan_plan.call_args[0][3]
+    )
     assert detector_params_passed.expected_energy_ev == 11100
 
 

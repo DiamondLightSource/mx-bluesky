@@ -1,6 +1,12 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.event_mapping import (
+    HWReadDuringMapper,
+    HWReadDuringPayload,
+)
 from mx_bluesky.hyperion.external_interaction.callbacks.rotation.ispyb_callback import (
     RotationISPyBCallback,
 )
@@ -52,14 +58,21 @@ EXPECTED_DATA_COLLECTION = {
 }
 
 
+@pytest.fixture
+def mock_hw_read_mapper() -> HWReadDuringMapper:
+    return lambda _: HWReadDuringPayload(
+        bit_depth=8, ispyb_detector_id=78, roi_mode=False
+    )
+
+
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_activity_gated_start(
-    mock_ispyb_conn, test_rotation_start_outer_document, tmp_path
+    mock_ispyb_conn, test_rotation_start_outer_document, tmp_path, mock_hw_read_mapper
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
 
     callback.activity_gated_start(test_rotation_start_outer_document)
     create_dcg_request = mock_ispyb_conn.calls_for(DCGS_RE)[0].request
@@ -86,9 +99,12 @@ def test_activity_gated_start(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_hardware_read_events(
-    mock_ispyb_conn, test_rotation_start_outer_document, test_event_data
+    mock_ispyb_conn,
+    test_rotation_start_outer_document,
+    test_event_data,
+    mock_hw_read_mapper,
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
         test_event_data.test_rotation_start_main_document  # pyright: ignore
@@ -132,9 +148,12 @@ def test_hardware_read_events(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_flux_read_events(
-    mock_ispyb_conn, test_rotation_start_outer_document, test_event_data
+    mock_ispyb_conn,
+    test_rotation_start_outer_document,
+    test_event_data,
+    mock_hw_read_mapper,
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
         test_event_data.test_rotation_start_main_document  # pyright: ignore
@@ -173,9 +192,12 @@ def test_flux_read_events(
     new=MagicMock(return_value=EXPECTED_START_TIME),
 )
 def test_oav_rotation_snapshot_triggered_event(
-    mock_ispyb_conn, test_rotation_start_outer_document, test_event_data
+    mock_ispyb_conn,
+    test_rotation_start_outer_document,
+    test_event_data,
+    mock_hw_read_mapper,
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
         test_event_data.test_rotation_start_main_document  # pyright: ignore
@@ -214,8 +236,9 @@ def test_activity_gated_stop(
     test_rotation_start_outer_document,
     test_rotation_stop_outer_document,
     test_event_data,
+    mock_hw_read_mapper,
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(
         test_event_data.test_rotation_start_main_document  # pyright: ignore
@@ -246,9 +269,12 @@ def test_activity_gated_stop(
 
 
 def test_comment_correct_after_hardware_read(
-    mock_ispyb_conn, test_rotation_start_outer_document, test_event_data
+    mock_ispyb_conn,
+    test_rotation_start_outer_document,
+    test_event_data,
+    mock_hw_read_mapper,
 ):
-    callback = RotationISPyBCallback()
+    callback = RotationISPyBCallback(hw_read_during_mapper=mock_hw_read_mapper)
     test_rotation_start_outer_document["mx_bluesky_parameters"] = (
         test_rotation_start_outer_document["mx_bluesky_parameters"].replace(
             '"comment":"test"', '"comment":"a lovely unit test"'
