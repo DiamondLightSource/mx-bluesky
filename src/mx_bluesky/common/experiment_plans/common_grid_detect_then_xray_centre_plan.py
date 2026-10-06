@@ -7,18 +7,15 @@ from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.backlight import InOut
 from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.zocalo import ZocaloResults
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
-)
-from mx_bluesky.common.device_setup_plans.manipulate_sample import (
-    move_aperture_if_required,
 )
 from mx_bluesky.common.device_setup_plans.utils import (
     DiffractionExtendedDevices,
@@ -42,7 +39,6 @@ from mx_bluesky.common.external_interaction.callbacks.common.grid_detection_call
 from mx_bluesky.common.external_interaction.callbacks.grid.grid_detect_and_scan.ispyb_callback import (
     ispyb_activation_decorator,
 )
-from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.common.parameters.constants import (
     OavConstants,
     PlanGroupCheckpointConstants,
@@ -79,6 +75,7 @@ def grid_detect_then_xray_centre(
     beamline_specific: BeamlineSpecificFGSFeatures[
         TGridDetectAndGridScanExtendedDevices, TParameters
     ],
+    beamsize_device_plans: BeamSizePlans,
     oav_config: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator[GridScanParams]:
     """
@@ -94,6 +91,7 @@ def grid_detect_then_xray_centre(
         detector_params (DetectorParams): Detector parameters.
         beamline_specific: Provides experiment plans for the beamline specific customisation points.
         oav_config (str): Optional path to the OAV configuration
+        beamsize_device_plans: Provides device-specific beam size plans.
     Returns:
         GridScanParams: The detected grid parameters.
     """
@@ -112,6 +110,7 @@ def grid_detect_then_xray_centre(
             oav_params,
             detector_params,
             beamline_specific,
+            beamsize_device_plans,
         )
 
     assert parameters.trigger_mode != TriggerMode.SET_FRAMES, (
@@ -140,6 +139,7 @@ def detect_grid_and_do_gridscan(
     beamline_specific: BeamlineSpecificFGSFeatures[
         TGridDetectAndGridScanExtendedDevices, TParameters
     ],
+    beamsize_device_plans: BeamSizePlans,
 ) -> MsgGenerator[GridScanParams]:
     """
     Main experiment plan for grid detection and gridscan.
@@ -151,6 +151,7 @@ def detect_grid_and_do_gridscan(
         oav_params (OAVParameters): Parameters for the OAV
         detector_params (DetectorParams): Detector parameters.
         beamline_specific: Provides experiment plans for the beamline specific customisation points.
+        beamsize_device_plans: Provides device-specific setup plans for beam size
     Returns:
         GridScanParams: The detected grid parameters.
     """
@@ -163,22 +164,21 @@ def detect_grid_and_do_gridscan(
     grid_params_callback = GridDetectionCallback()
 
     # Determine the aperture value before moving it for the OAV in case aperture_policy is CURRENT_POSITION
-    aperture_value = yield from _xrc_aperture_value_from_policy(
-        parameters.selected_aperture, composite.aperture_scatterguard
+    aperture_value = yield from beamsize_device_plans.beam_size_for_xrc(
+        composite, parameters.selected_aperture
     )
 
     yield from setup_beamline_for_oav(
         composite.gonio,
         composite.backlight,
-        composite.aperture_scatterguard,
+        composite,
+        beamsize_device_plans,
         wait=True,
     )
 
     # Start moving the aperture/scatterguard into position without moving it in
-    yield from bps.prepare(
-        composite.aperture_scatterguard,
-        aperture_value,
-        group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
+    yield from beamsize_device_plans.prepare_beam_size(
+        composite, aperture_value, PlanGroupCheckpointConstants.PREPARE_APERTURE
     )
 
     yield from bpp.subs_wrapper(
@@ -199,10 +199,10 @@ def detect_grid_and_do_gridscan(
     )
 
     yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
-    yield from move_aperture_if_required(
-        composite.aperture_scatterguard,
+    yield from beamsize_device_plans.perform_beam_size(
+        composite,
         aperture_value,
-        group=PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
+        PlanGroupCheckpointConstants.GRID_READY_FOR_DC,
     )
     grid_scan_params = create_parameters_for_flyscan_xray_centre(
         grid_params_callback.get_grid_parameters()
@@ -247,24 +247,3 @@ def create_parameters_for_flyscan_xray_centre(
     )
     LOGGER.info(f"Parameters for FGS: {grid_scan_params}")
     return grid_scan_params
-
-
-def _xrc_aperture_value_from_policy(
-    policy: AperturePolicy, aperture_scatterguard: ApertureScatterguard
-) -> MsgGenerator[ApertureValue | None]:
-    match policy:
-        case AperturePolicy.SMALL | AperturePolicy.AUTO:
-            return ApertureValue.SMALL
-        case AperturePolicy.MEDIUM:
-            return ApertureValue.MEDIUM
-        case AperturePolicy.LARGE:
-            return ApertureValue.LARGE
-        case AperturePolicy.CURRENT_POSITION:
-            previous_aperture_position = yield from bps.rd(aperture_scatterguard)
-            assert isinstance(previous_aperture_position, ApertureValue)
-            LOGGER.info(
-                f"Using previously set aperture position {previous_aperture_position}"
-            )
-            return previous_aperture_position
-        case _:
-            raise ValueError(f"Unsupported aperture policy {policy}")

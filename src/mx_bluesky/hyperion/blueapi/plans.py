@@ -44,8 +44,11 @@ __all__ = [
     "robot_unload",
 ]
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    I03HyperionGridDetectThenXRayCentreComposite,
 )
 
 
@@ -60,7 +63,7 @@ _init_plan_module()
 def pin_tip_centre_then_xray_centre(
     visit: str,
     storage_directory: str,
-    composite: HyperionGridDetectThenXRayCentreComposite = inject(),
+    composite: I03HyperionGridDetectThenXRayCentreComposite = inject(),
     robot: BartRobot = inject("robot"),
 ) -> MsgGenerator:
     """
@@ -75,11 +78,15 @@ def pin_tip_centre_then_xray_centre(
     internal_params = pin_tip_centre_then_xray_centre_to_internal(
         visit, storage_directory, sample_id, sample_puck, sample_pin
     )
-    beamline_specific = construct_hyperion_specific_features(composite, internal_params)
+    beamsize_device_plans = Phase1ApertureScatterguardPlans()
+    beamline_specific = construct_hyperion_specific_features(
+        composite, internal_params, beamsize_device_plans
+    )
 
     yield from _pin_tip_centre_then_xray_centre(
         beamline_specific,
         composite,
         internal_params,
         TopNByMaxCountSelection(n=1),
+        Phase1ApertureScatterguardPlans(),
     )

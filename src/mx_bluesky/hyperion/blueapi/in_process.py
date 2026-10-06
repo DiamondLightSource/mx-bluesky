@@ -9,11 +9,19 @@ from this file constitutes the hyperion-blueapi interface to the hyperion superv
 process.
 """
 
+from __future__ import annotations
+
+import dataclasses
+
+import pydantic
+from blueapi.core import BlueskyContext
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.beamsize.beamsize import BeamsizeBase
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import BartRobot
 from dodal.devices.smargon import Smargon
@@ -21,6 +29,7 @@ from dodal.devices.smargon import Smargon
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     robot_unload as _robot_unload,
 )
+from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
     load_centre_collect_to_internal,
@@ -48,10 +57,28 @@ __all__ = [
     "robot_unload",
 ]
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class I03LoadCentreCollectComposite(
+    LoadCentreCollectComposite[ApertureScatterguardComposite]
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
+    eiger: EigerDetector
+
+    @property
+    def beamsize_composite(self) -> ApertureScatterguardComposite:
+        return self
+
 
 def load_centre_collect(
     parameters: LoadCentreCollectParams,
-    composite: LoadCentreCollectComposite = inject(),
+    composite: I03LoadCentreCollectComposite = inject(),
 ) -> MsgGenerator:
     """
     Attempt a complete data collection experiment, consisting of the following:
@@ -63,8 +90,16 @@ def load_centre_collect(
           move to that centre and do a collection with the specified parameters.
     """
     yield from _load_centre_collect_full(
-        composite, load_centre_collect_to_internal(parameters)
+        composite,
+        Phase1ApertureScatterguardPlans(),
+        load_centre_collect_to_internal(parameters),
     )
+
+
+@dataclasses.dataclass
+class RobotUnloadComposite(ApertureScatterguardComposite):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
 
 
 def robot_unload(
@@ -73,12 +108,23 @@ def robot_unload(
     smargon: Smargon = inject("gonio"),
     aperture_scatterguard: ApertureScatterguard = inject("aperture_scatterguard"),
     lower_gonio: XYZStage = inject("lower_gonio"),
+    beamsize: BeamsizeBase = inject("beamsize"),
 ) -> MsgGenerator:
     """
     Unload the currently mounted pin into the location that it was loaded from.
     This is to be invoked as the final step upon successful completion of the UDC queue.
     """
-    yield from _robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, visit)
+    beamsize_devices = RobotUnloadComposite(
+        aperture_scatterguard=aperture_scatterguard, beamsize=beamsize
+    )
+    yield from _robot_unload(
+        robot,
+        smargon,
+        beamsize_devices,
+        Phase1ApertureScatterguardPlans(),
+        lower_gonio,
+        visit,
+    )
 
 
 def clean_up_udc(
@@ -107,3 +153,8 @@ def move_to_udc_default_state(
     Move beamline hardware to known positions prior to UDC start.
     """
     yield from _move_to_udc_default_state(composite)
+
+
+def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
+    """Create the necessary devices for the plan."""
+    return device_composite_from_context(context, I03LoadCentreCollectComposite)

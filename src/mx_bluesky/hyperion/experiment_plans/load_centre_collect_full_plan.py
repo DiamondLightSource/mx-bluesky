@@ -4,19 +4,19 @@ from collections.abc import Generator
 
 import numpy as np
 import pydantic
-from blueapi.core import BlueskyContext
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_wrapper
 from bluesky.utils import MsgGenerator
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.baton import Baton
+from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_parameters import OAVParameters
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.parameters.components import AperturePolicy, WithSnapshot
 from mx_bluesky.common.parameters.rotation import (
     RotationScanPerSweep,
 )
 from mx_bluesky.common.utils.aperture_selection import select_aperture_for_bbox_mm
-from mx_bluesky.common.utils.context import device_composite_from_context
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler, XRayCentreResult
@@ -27,6 +27,7 @@ from mx_bluesky.hyperion.experiment_plans.robot_load_then_centre_plan import (
 from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
     RotationScan,
     RotationScanComposite,
+    TBeamSizeComposite,
     rotation_scan_internal,
 )
 from mx_bluesky.hyperion.parameters.constants import CONST, I03Constants
@@ -35,19 +36,22 @@ from mx_bluesky.hyperion.utils.centre_selection import samples_and_hits_to_colle
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class LoadCentreCollectComposite(RobotLoadThenCentreComposite, RotationScanComposite):
+class LoadCentreCollectComposite(
+    RobotLoadThenCentreComposite[EigerDetector, TBeamSizeComposite],
+    RotationScanComposite[TBeamSizeComposite],
+):
     """Composite that provides access to the required devices."""
 
     baton: Baton
 
-
-def create_devices(context: BlueskyContext) -> LoadCentreCollectComposite:
-    """Create the necessary devices for the plan."""
-    return device_composite_from_context(context, LoadCentreCollectComposite)
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger
 
 
 def load_centre_collect_full(
     composite: LoadCentreCollectComposite,
+    beamsize_device_plans: BeamSizePlans,
     parameters: LoadCentreCollect,
     oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
@@ -92,7 +96,10 @@ def load_centre_collect_full(
         try:
             yield from subs_wrapper(
                 robot_load_then_xray_centre(
-                    composite, parameters.robot_load_then_centre, oav_config_file
+                    composite,
+                    beamsize_device_plans,
+                    parameters.robot_load_then_centre,
+                    oav_config_file,
                 ),
                 flyscan_event_handler,
             )
@@ -134,7 +141,9 @@ def load_centre_collect_full(
             multi_rotation.demand_energy_ev
             == parameters.robot_load_then_centre.demand_energy_ev
         ), "Setting a different energy for gridscan and rotation is not supported"
-        yield from rotation_scan_internal(composite, multi_rotation, oav_params)
+        yield from rotation_scan_internal(
+            composite, multi_rotation, beamsize_device_plans, oav_params
+        )
 
     yield from plan_with_callback_subs()
 

@@ -1,4 +1,5 @@
-from typing import Generic, cast
+from abc import abstractmethod
+from typing import Generic, TypeVar
 
 import pydantic
 from dodal.devices.aperturescatterguard import ApertureScatterguard
@@ -21,9 +22,11 @@ from dodal.devices.xbpm_feedback import XBPMFeedback
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import MXZebraShutter
 from dodal.devices.zocalo import ZocaloResults
-from ophyd_async.fastcs.eiger import EigerDetector as FastCSEiger
 from ophyd_async.fastcs.panda import HDFPanda
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+)
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan import (
     GridDetectAndGridScanExtendedDevices,
@@ -33,14 +36,17 @@ from mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan
 use_fast_cs_eiger: bool = False
 
 
+TBeamSizeComposite = TypeVar("TBeamSizeComposite")
+
+
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class HyperionGridDetectThenXRayCentreComposite(
-    GridDetectAndGridScanExtendedDevices[TDetector], Generic[TDetector]
+    GridDetectAndGridScanExtendedDevices[TDetector],
+    Generic[TDetector, TBeamSizeComposite],
 ):
     """All devices which are directly or indirectly required by Hyperion Grid Detect and XRC plan"""
 
     # Required to implement GridDetectAndGridScanExtendedDevices
-    aperture_scatterguard: ApertureScatterguard
     backlight: Backlight
     beamstop: Beamstop
     detector_motion: DetectorMotion
@@ -52,17 +58,12 @@ class HyperionGridDetectThenXRayCentreComposite(
 
     # Additional devices for sample environment, beam
     attenuator: BinaryFilterAttenuator
-    beamsize: BeamsizeBase
     dcm: DoubleCrystalMonochromator
     flux: Flux
     s4_slit_gaps: MinimalSlits
     sample_shutter: MXZebraShutter
     undulator: UndulatorInKeV
     xbpm_feedback: XBPMFeedback
-
-    # Available detectors
-    eiger: EigerDetector
-    fastcs_eiger: FastCSEiger
 
     # Available gridscan devices
     panda: HDFPanda
@@ -71,5 +72,28 @@ class HyperionGridDetectThenXRayCentreComposite(
     zebra_fast_grid_scan: ZebraFastGridScanThreeD
 
     @property
-    def detector(self) -> TDetector:
-        return cast(TDetector, self.fastcs_eiger if use_fast_cs_eiger else self.eiger)
+    @abstractmethod
+    def detector(self) -> TDetector: ...
+
+    @property
+    @abstractmethod
+    def beamsize_composite(self) -> TBeamSizeComposite: ...
+
+
+@pydantic.dataclasses.dataclass()
+class I03HyperionGridDetectThenXRayCentreComposite(
+    HyperionGridDetectThenXRayCentreComposite[
+        EigerDetector, ApertureScatterguardComposite
+    ]
+):
+    aperture_scatterguard: ApertureScatterguard
+    beamsize: BeamsizeBase
+    eiger: EigerDetector
+
+    @property
+    def beamsize_composite(self) -> ApertureScatterguardComposite:
+        return self
+
+    @property
+    def detector(self) -> EigerDetector:
+        return self.eiger

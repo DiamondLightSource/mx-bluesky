@@ -15,6 +15,8 @@ from dodal.devices.thawer import Thawer
 from dodal.devices.webcam import Webcam
 from dodal.log import LOGGER
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
+from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
@@ -24,6 +26,7 @@ from mx_bluesky.common.device_setup_plans.utils import (
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.hyperion.blueapi.composites import (
     HyperionGridDetectThenXRayCentreComposite,
+    TBeamSizeComposite,
 )
 from mx_bluesky.hyperion.device_setup_plans.utils import (
     fill_in_energy_if_not_supplied,
@@ -51,7 +54,9 @@ from mx_bluesky.hyperion.parameters.robot_load import RobotLoadThenCentre
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
-class RobotLoadThenCentreComposite(HyperionGridDetectThenXRayCentreComposite):
+class RobotLoadThenCentreComposite(
+    HyperionGridDetectThenXRayCentreComposite[TDetector, TBeamSizeComposite]
+):
     """
     Extends the grid detect and grid scan devices to include additional devices needed for
     robot load and changing energy.
@@ -74,6 +79,7 @@ def _flyscan_plan_from_robot_load_params(
     composite: HyperionGridDetectThenXRayCentreComposite,
     params: RobotLoadThenCentre,
     detector_params: DetectorParams,
+    beamsize_device_plans: BeamSizePlans,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from pin_centre_then_gridscan_plan(
@@ -81,6 +87,7 @@ def _flyscan_plan_from_robot_load_params(
         composite,
         params.pin_centre_then_xray_centre_params,
         detector_params,
+        beamsize_device_plans,
         oav_config_file,
     )
 
@@ -89,12 +96,14 @@ def _robot_load_then_flyscan_plan(
     beamline_specific: BeamlineSpecificFGSFeatures,
     composite: RobotLoadThenCentreComposite,
     grid_detect_composite: HyperionGridDetectThenXRayCentreComposite,
+    beamsize_device_plans: BeamSizePlans,
     params: RobotLoadThenCentre,
     detector_params: DetectorParams,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ):
     yield from robot_load_and_change_energy_plan(
         cast(RobotLoadAndEnergyChangeComposite, composite),
+        beamsize_device_plans,
         params.robot_load_params,
     )
 
@@ -103,12 +112,14 @@ def _robot_load_then_flyscan_plan(
         grid_detect_composite,
         params,
         detector_params,
+        beamsize_device_plans,
         oav_config_file,
     )
 
 
 def robot_load_then_xray_centre(
     composite: RobotLoadThenCentreComposite,
+    beamsize_device_plans: BeamSizePlans,
     parameters: RobotLoadThenCentre,
     oav_config_file: str = OavConstants.OAV_CONFIG_JSON,
 ) -> MsgGenerator:
@@ -143,7 +154,9 @@ def robot_load_then_xray_centre(
     grid_detect_and_gridscan_composite = composite
 
     beamline_specific = construct_hyperion_specific_features(
-        grid_detect_and_gridscan_composite, parameters
+        grid_detect_and_gridscan_composite,
+        parameters,
+        beamsize_device_plans,
     )
 
     if doing_sample_load:
@@ -152,6 +165,7 @@ def robot_load_then_xray_centre(
             beamline_specific,
             composite,
             grid_detect_and_gridscan_composite,
+            beamsize_device_plans,
             parameters,
             detector_params,
             oav_config_file,
@@ -171,6 +185,7 @@ def robot_load_then_xray_centre(
                 grid_detect_and_gridscan_composite,
                 parameters,
                 detector_params,
+                beamsize_device_plans,
                 oav_config_file,
             )
             LOGGER.info("Pin already loaded but chi changed so centring")

@@ -22,9 +22,6 @@ from ophyd_async.core import completed_status, set_mock_attr, set_mock_value
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
     DiffractionEssentialDevices,
 )
-from mx_bluesky.common.device_setup_plans.detector.eiger import (
-    eiger_hw_read_during_mapper,
-)
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
     read_hardware_plan,
@@ -61,6 +58,9 @@ from mx_bluesky.common.parameters.gridscan import (
 )
 from mx_bluesky.common.utils.exceptions import (
     WarningError,
+)
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _hw_read_during_mapper,
 )
 from tests.conftest import (
     RunEngineSimulator,
@@ -122,7 +122,7 @@ class TestFlyscanXrayCentrePlan:
     ):
         ispyb_callback = GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
-            hw_read_during_mapper=eiger_hw_read_during_mapper,
+            hw_read_during_mapper=_hw_read_during_mapper,
         )
         run_engine.subscribe(ispyb_callback)
 

@@ -59,12 +59,14 @@ if __name__ == "__main__":
 
     with (
         patch(
-            "mx_bluesky.hyperion.external_interaction.callbacks.__main__.setup_callbacks",
-            return_value=mock_setup_callbacks(),
-        ),
+            "mx_bluesky.hyperion.external_interaction.callbacks.__main__.load_beamline_module",
+        ) as mock_load_beamline_module,
         patch(
             "mx_bluesky.hyperion.external_interaction.callbacks.__main__.StompDispatcherContextMgr",
             PatchedStompCallbackMgr,
         ),
     ):
+        mock_load_beamline_module.return_value.setup_callbacks.side_effect = (
+            mock_setup_callbacks
+        )
         main()

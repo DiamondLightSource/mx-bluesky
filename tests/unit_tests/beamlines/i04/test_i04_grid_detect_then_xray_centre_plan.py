@@ -334,9 +334,6 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_triggers_xbpm
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
 )
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.move_aperture_if_required",
-)
-@patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.GridDetectionCallback",
 )
 @patch(
@@ -353,7 +350,6 @@ def test_i04_default_grid_detect_and_xray_centre_does_undulator_check_before_col
     mock_run_gridscan: MagicMock,
     mock_create_parameters: MagicMock,
     mock_grid_params_callback: MagicMock,
-    mock_move_aperture_if_required: MagicMock,
     mock_grid_detection_plan: MagicMock,
     mock_create_gridscan_callbacks: MagicMock,
     run_engine: RunEngine,

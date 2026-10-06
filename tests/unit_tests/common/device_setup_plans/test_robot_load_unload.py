@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from types import SimpleNamespace
 from unittest.mock import ANY, MagicMock
 
 import pytest
@@ -16,6 +17,10 @@ from ophyd_async.core import (
     set_mock_value,
 )
 
+from mx_bluesky.beamlines.phase1.beamsize.phase1_aperture_scatterguard import (
+    ApertureScatterguardComposite,
+    Phase1ApertureScatterguardPlans,
+)
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     prepare_for_robot_load,
     robot_unload,
@@ -37,6 +42,13 @@ def loaded_robot(robot: BartRobot):
     return robot
 
 
+@pytest.fixture
+def beamsize_devices(
+    aperture_scatterguard: ApertureScatterguard,
+) -> ApertureScatterguardComposite:
+    return SimpleNamespace(aperture_scatterguard=aperture_scatterguard)  # type: ignore
+
+
 # Remove when in bluesky proper, see https://github.com/bluesky/bluesky/issues/1924
 def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], bool]]):
     remaining_predicates = set(predicates)
@@ -53,47 +65,59 @@ def assert_messages_any_order(messages: list, predicates: list[Callable[[Msg], b
 
 
 async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: ApertureScatterguardComposite,
     smargon: Smargon,
     run_engine: RunEngine,
 ):
     set_mock_attr(
         smargon.stub_offsets, "set", MagicMock(side_effect=lambda _: completed_status())
     )
-    get_mock_put(aperture_scatterguard.selected_aperture).reset_mock()
+    get_mock_put(beamsize_devices.aperture_scatterguard.selected_aperture).reset_mock()
 
     set_mock_value(smargon.x.user_setpoint, 10)
     set_mock_value(smargon.z.user_setpoint, 5)
     set_mock_value(smargon.omega.user_setpoint, 90)
 
-    run_engine(prepare_for_robot_load(aperture_scatterguard, smargon))
+    run_engine(
+        prepare_for_robot_load(
+            beamsize_devices, Phase1ApertureScatterguardPlans(), smargon
+        )
+    )
 
     assert await smargon.x.user_setpoint.get_value() == 0
     assert await smargon.z.user_setpoint.get_value() == 0
     assert await smargon.omega.user_setpoint.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
-    get_mock_put(aperture_scatterguard.selected_aperture).assert_called_once_with(
-        ApertureValue.OUT_OF_BEAM
-    )
+    get_mock_put(
+        beamsize_devices.aperture_scatterguard.selected_aperture
+    ).assert_called_once_with(ApertureValue.OUT_OF_BEAM)
 
 
 async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
     robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices,
     lower_gonio: XYZStage,
     sim_run_engine: RunEngineSimulator,
 ):
     msgs = sim_run_engine.simulate_plan(
-        robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "")
+        robot_unload(
+            robot,
+            smargon,
+            beamsize_devices,
+            Phase1ApertureScatterguardPlans(),
+            lower_gonio,
+            "",
+        )
     )
 
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: (
             msg.command == "set"
-            and msg.obj.name == aperture_scatterguard.selected_aperture.name
+            and msg.obj.name
+            == beamsize_devices.aperture_scatterguard.selected_aperture.name
             and msg.args[0] == ApertureValue.OUT_OF_BEAM
         ),
     )
@@ -142,7 +166,7 @@ async def test_when_robot_unload_called_then_sample_area_prepared_before_load(
 async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and_put_back_after(
     robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices,
     lower_gonio: XYZStage,
     sim_run_engine: RunEngineSimulator,
 ):
@@ -157,7 +181,14 @@ async def test_given_lower_gonio_needs_moving_then_it_is_homed_before_unload_and
     sim_run_engine.add_read_handler_for(robot.sample_id, 1000)
 
     msgs = sim_run_engine.simulate_plan(
-        robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "")
+        robot_unload(
+            robot,
+            smargon,
+            beamsize_devices,
+            Phase1ApertureScatterguardPlans(),
+            lower_gonio,
+            "",
+        )
     )
 
     msgs = assert_messages_any_order(
@@ -198,7 +229,7 @@ def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
     run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: ApertureScatterguardComposite,
     lower_gonio: XYZStage,
 ):
     callback = RobotLoadISPyBCallback()
@@ -208,7 +239,14 @@ def test_when_unload_plan_run_then_initial_unload_ispyb_deposition_made(
     set_mock_value(robot.sample_id, expected_sample_id := 1234)
 
     run_engine(
-        robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2")
+        robot_unload(
+            robot,
+            smargon,
+            beamsize_devices,
+            Phase1ApertureScatterguardPlans(),
+            lower_gonio,
+            "cm37235-2",
+        )
     )
 
     mock_expeye.start_robot_action.assert_called_once_with(
@@ -220,7 +258,7 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     run_engine: RunEngine,
     robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: ApertureScatterguardComposite,
     lower_gonio: XYZStage,
 ):
     callback = RobotLoadISPyBCallback()
@@ -236,7 +274,14 @@ def test_when_unload_plan_run_then_full_ispyb_deposition_made(
     mock_expeye.start_robot_action.return_value = action_id
 
     run_engine(
-        robot_unload(robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2")
+        robot_unload(
+            robot,
+            smargon,
+            beamsize_devices,
+            Phase1ApertureScatterguardPlans(),
+            lower_gonio,
+            "cm37235-2",
+        )
     )
 
     mock_expeye.start_robot_action.assert_called_once_with(
@@ -257,7 +302,7 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     run_engine: RunEngine,
     loaded_robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: ApertureScatterguardComposite,
     lower_gonio: XYZStage,
 ):
     class TestError(Exception): ...
@@ -273,7 +318,12 @@ def test_when_unload_plan_fails_then_error_deposited_in_ispyb(
     with pytest.raises(TestError):
         run_engine(
             robot_unload(
-                loaded_robot, smargon, aperture_scatterguard, lower_gonio, "cm37235-2"
+                loaded_robot,
+                smargon,
+                beamsize_devices,
+                Phase1ApertureScatterguardPlans(),
+                lower_gonio,
+                "cm37235-2",
             )
         )
 

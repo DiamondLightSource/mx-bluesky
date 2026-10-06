@@ -1,25 +1,29 @@
 from __future__ import annotations
 
+from typing import TypeVar
+
 import bluesky.plan_stubs as bps
-from dodal.devices.aperturescatterguard import (
-    ApertureScatterguard,
-    ApertureValue,
-)
 from dodal.devices.backlight import Backlight, InOut
 from dodal.devices.detector.detector_motion import DetectorMotion, ShutterState
 from dodal.devices.smargon import CombinedMove, Smargon
 from dodal.devices.thawer import OnOff, Thawer
 
-from mx_bluesky.common.parameters.components import AperturePolicy
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import (
+    BeamSizePlans,
+    TBeamSizeValue,
+)
 from mx_bluesky.common.parameters.constants import PlanGroupCheckpointConstants
 from mx_bluesky.common.utils.log import LOGGER
 
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
+T = TypeVar("T")
+
 
 def setup_sample_environment(
-    aperture_scatterguard: ApertureScatterguard,
-    aperture_policy: AperturePolicy,
+    beamsize_devices: T,
+    beamsize_device_plans: BeamSizePlans[T, TBeamSizeValue],
+    aperture_value: TBeamSizeValue,
     backlight: Backlight,
     thawer: Thawer,
     group="setup_senv",
@@ -30,48 +34,11 @@ def setup_sample_environment(
 
     yield from bps.abs_set(backlight, InOut.OUT, group=group)
 
-    aperture_value = _rotation_aperture_value_from_policy(aperture_policy)
-
-    yield from move_aperture_if_required(
-        aperture_scatterguard, aperture_value, group=group
+    yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
+    yield from beamsize_device_plans.perform_beam_size(
+        beamsize_devices, aperture_value, group
     )
-
     yield from bps.abs_set(thawer, OnOff.OFF, group=group)
-
-
-def prepare_aperture_for_rotation_if_required(
-    aperture_scatterguard: ApertureScatterguard,
-    aperture_policy: AperturePolicy,
-):
-    aperture_value = _rotation_aperture_value_from_policy(aperture_policy)
-    if aperture_value:
-        yield from bps.prepare(
-            aperture_scatterguard,
-            aperture_value,
-            group=PlanGroupCheckpointConstants.PREPARE_APERTURE,
-        )
-
-
-def move_aperture_if_required(
-    aperture_scatterguard: ApertureScatterguard,
-    aperture_value: ApertureValue | None,
-    group="move_aperture",
-):
-    if not aperture_value:
-        previous_aperture_position = yield from bps.rd(aperture_scatterguard)
-        assert isinstance(previous_aperture_position, ApertureValue)
-        LOGGER.info(
-            f"Using previously set aperture position {previous_aperture_position}"
-        )
-
-    else:
-        LOGGER.info(f"Setting aperture position to {aperture_value}")
-        yield from bps.wait(PlanGroupCheckpointConstants.PREPARE_APERTURE)
-        yield from bps.abs_set(
-            aperture_scatterguard.selected_aperture,
-            aperture_value,
-            group=group,
-        )
 
 
 def cleanup_sample_environment(
@@ -118,19 +85,3 @@ def move_phi_chi(
     yield from bps.abs_set(smargon, CombinedMove(phi=phi, chi=chi), group=group)
     if wait:
         yield from bps.wait(group)
-
-
-def _rotation_aperture_value_from_policy(
-    policy: AperturePolicy,
-) -> ApertureValue | None:
-    match policy:
-        case AperturePolicy.SMALL:
-            return ApertureValue.SMALL
-        case AperturePolicy.MEDIUM:
-            return ApertureValue.MEDIUM
-        case AperturePolicy.LARGE | AperturePolicy.AUTO:
-            return ApertureValue.LARGE
-        case AperturePolicy.CURRENT_POSITION:
-            return None
-        case _:
-            raise ValueError(f"Unsupported aperture policy {policy}")

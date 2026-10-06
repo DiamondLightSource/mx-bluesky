@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from typing import Any, TypeVar
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
-from dodal.devices.aperturescatterguard import ApertureScatterguard, ApertureValue
 from dodal.devices.motors import XYZStage
 from dodal.devices.robot import SAMPLE_LOCATION_EMPTY, BartRobot
 from dodal.devices.smargon import CombinedMove, Smargon, StubPosition
 from dodal.plan_stubs.motor_utils import MoveTooLargeError, home_and_reset_wrapper
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.parameters.constants import (
     DocDescriptorNames,
     HardwareConstants,
@@ -52,13 +54,14 @@ def do_plan_while_lower_gonio_at_home(plan: MsgGenerator, lower_gonio: XYZStage)
     return "reset-lower_gonio"
 
 
+T = TypeVar("T")
+
+
 def prepare_for_robot_load(
-    aperture_scatterguard: ApertureScatterguard, smargon: Smargon
+    beamsize_devices: T, beamsize_plans: BeamSizePlans[T, Any], smargon: Smargon
 ):
-    yield from bps.abs_set(
-        aperture_scatterguard.selected_aperture,
-        ApertureValue.OUT_OF_BEAM,
-        group="prepare_robot_load",
+    yield from beamsize_plans.make_safe_for_robot_load_plan(
+        beamsize_devices, "prepare_robot_load"
     )
 
     yield from bps.mv(smargon.stub_offsets, StubPosition.RESET_TO_ROBOT_LOAD)
@@ -72,14 +75,15 @@ def prepare_for_robot_load(
 def robot_unload(
     robot: BartRobot,
     smargon: Smargon,
-    aperture_scatterguard: ApertureScatterguard,
+    beamsize_devices: T,
+    beamsize_plans: BeamSizePlans[T, Any],
     lower_gonio: XYZStage,
     visit: str | None,
 ):
     """Unloads the currently mounted pin into the location that it was loaded from. The
     loaded location is stored on the robot and so need not be provided.
     """
-    yield from prepare_for_robot_load(aperture_scatterguard, smargon)
+    yield from prepare_for_robot_load(beamsize_devices, beamsize_plans, smargon)
     sample_id = yield from bps.rd(robot.sample_id)
 
     @bpp.run_decorator(

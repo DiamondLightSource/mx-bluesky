@@ -24,6 +24,7 @@ from dodal.devices.thawer import OnOff, Thawer
 from dodal.devices.webcam import Webcam
 from dodal.devices.xbpm_feedback import XBPMFeedback
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.robot_load_unload import (
     do_plan_while_lower_gonio_at_home,
     prepare_for_robot_load,
@@ -146,6 +147,7 @@ def robot_load_and_snapshots(
 
 def robot_load_and_change_energy_plan(
     composite: RobotLoadAndEnergyChangeComposite,
+    beamsize_plans: BeamSizePlans,
     params: RobotLoadAndEnergyChange,
 ):
     assert params.sample_puck is not None
@@ -153,7 +155,7 @@ def robot_load_and_change_energy_plan(
 
     sample_location = SampleLocation(params.sample_puck, params.sample_pin)
 
-    yield from prepare_for_robot_load(composite.aperture_scatterguard, composite.gonio)
+    yield from prepare_for_robot_load(composite, beamsize_plans, composite.gonio)
 
     yield from bpp.set_run_key_wrapper(
         bpp.run_wrapper(

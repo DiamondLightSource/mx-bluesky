@@ -78,7 +78,6 @@ from mx_bluesky.common.device_setup_plans.detector.beamline_specific import (
 )
 from mx_bluesky.common.device_setup_plans.detector.eiger import (
     create_eiger_beamline_specific,
-    eiger_hw_read_during_mapper,
     eiger_zocalo_hw_read_mapper,
 )
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
@@ -117,13 +116,15 @@ from mx_bluesky.common.parameters.gridscan import (
     create_detector_params_for_grid_scan,
 )
 from mx_bluesky.hyperion.blueapi.composites import (
-    HyperionGridDetectThenXRayCentreComposite,
+    I03HyperionGridDetectThenXRayCentreComposite,
 )
-from mx_bluesky.hyperion.experiment_plans.rotation_scan_plan import (
-    RotationScanComposite,
+from mx_bluesky.hyperion.external_interaction.callbacks.beamline.i03 import (
+    _hw_read_during_mapper,
 )
 from tests.conftest import TEST_BEAMLINE_PARAMETERS, raw_params_from_file
 from tests.test_data.oav import TEST_DISPLAY_CONFIG, TEST_OAV_ZOOM_LEVELS
+
+from ..conftest import RotationScanCompositeWithBeamSize
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -239,7 +240,7 @@ def create_gridscan_callbacks() -> tuple[
     return (
         GridscanNexusFileCallback(
             param_type=DiffractionExperimentWithSample,
-            hw_read_mapper=eiger_hw_read_during_mapper,
+            hw_read_mapper=_hw_read_during_mapper,
         ),
         GridDetectAndScanISPyBCallback(
             param_type=DiffractionExperimentWithSample,
@@ -251,7 +252,7 @@ def create_gridscan_callbacks() -> tuple[
                 ),
                 hw_read_mapper=eiger_zocalo_hw_read_mapper,
             ),
-            hw_read_during_mapper=eiger_hw_read_during_mapper,
+            hw_read_during_mapper=_hw_read_during_mapper,
         ),
     )
 
@@ -532,7 +533,7 @@ async def grid_detect_xrc_devices(
     undulator,
     dcm,
 ):
-    yield HyperionGridDetectThenXRayCentreComposite(
+    yield I03HyperionGridDetectThenXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
         attenuator=attenuator,
         backlight=backlight,
@@ -561,7 +562,7 @@ async def grid_detect_xrc_devices(
 
 @pytest.fixture
 async def hyperion_grid_detect_xrc_devices(
-    grid_detect_xrc_devices: HyperionGridDetectThenXRayCentreComposite,
+    grid_detect_xrc_devices: I03HyperionGridDetectThenXRayCentreComposite,
 ):
     return grid_detect_xrc_devices
 
@@ -746,7 +747,7 @@ def fake_create_rotation_devices(
         },
         "gonio-wrapped_omega",
     )
-    return RotationScanComposite(
+    return RotationScanCompositeWithBeamSize(
         attenuator=attenuator,
         backlight=backlight,
         beamsize=beamsize,
