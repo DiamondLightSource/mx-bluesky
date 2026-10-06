@@ -12,11 +12,11 @@ from dodal.devices.detector import DetectorParams, TriggerMode
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.zocalo import ZocaloResults
 
+from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.detector.beamline_specific import TDetector
 from mx_bluesky.common.device_setup_plans.gridscan.beamline_specific import (
     BeamlineSpecificFGSFeatures,
 )
-from mx_bluesky.common.device_setup_plans.beamsize.beamsize import BeamSizePlans
 from mx_bluesky.common.device_setup_plans.utils import (
     DiffractionExtendedDevices,
     start_preparing_data_collection_then_do_plan,
