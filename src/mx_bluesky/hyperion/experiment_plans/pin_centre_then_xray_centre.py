@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from bluesky import plan_stubs as bps
 from bluesky.preprocessors import run_decorator, set_run_key_decorator, subs_decorator
 from bluesky.utils import MsgGenerator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.smargon import CombinedMove
 
+from mx_bluesky.common.parameters.components import WithSnapshot
 from mx_bluesky.common.parameters.constants import OavConstants
 from mx_bluesky.common.utils.xrc_result import XRayCentreEventHandler
 from mx_bluesky.hyperion.blueapi.mixins import MultiXtalSelection
@@ -41,6 +44,10 @@ def pin_tip_centre_then_xray_centre(
 
     xrc_event_handler = XRayCentreEventHandler()
 
+    snapshot_path = Path(parameters.storage_directory) / "snapshots"
+    snapshot_path.mkdir(exist_ok=True, parents=True)
+    snapshot_params = WithSnapshot(snapshot_directory=snapshot_path)
+
     @subs_decorator(xrc_event_handler)
     @set_run_key_decorator(CONST.PLAN.PIN_TIP_CENTRE_THEN_XRC)
     @run_decorator(
@@ -53,6 +60,7 @@ def pin_tip_centre_then_xray_centre(
             "activate_callbacks": [
                 "BeamDrawingCallback",
             ],
+            "with_snapshot": snapshot_params.model_dump_json(),
         }
     )
     def pin_centre_flyscan_then_fetch_results() -> MsgGenerator:
