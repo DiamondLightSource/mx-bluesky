@@ -8,7 +8,7 @@
 # but we don't include the source folder structure for mx-bluesky or dodal since these will be
 # deployed in a separate volume by the initContainer for the scratch folder
 
-FROM python:3.12 AS base-image
+FROM python:3.15 AS base-image
 
 ARG DEBIAN_FRONTEND=noninteractive
 
