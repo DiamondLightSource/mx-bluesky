@@ -7,7 +7,7 @@ from ophyd_async.core import set_mock_value
 
 from mx_bluesky.common.utils.context import find_device_in_context
 from mx_bluesky.hyperion.__main__ import main
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
+from mx_bluesky.hyperion.baton_handler import _hyperion_baton_user
 
 
 @pytest.fixture(autouse=True)
@@ -17,7 +17,7 @@ def patch_setup_devices():
     def patched_setup_devices(context: BlueskyContext, dev_mode: bool):
         setup_devices(context, True)
         # reapply requested user to the newly created fake baton
-        baton_with_requested_user(context, HYPERION_USER)
+        baton_with_requested_user(context, _hyperion_baton_user)
 
     # Patch setup_devices to patch the baton again when it is re-created
     with (
@@ -40,7 +40,7 @@ def patch_udc_default_state():
 
 
 def baton_with_requested_user(
-    bluesky_context: BlueskyContext, user: str = HYPERION_USER
+    bluesky_context: BlueskyContext, user: str = _hyperion_baton_user
 ) -> Baton:
     baton = find_device_in_context(bluesky_context, "baton", Baton)
     set_mock_value(baton.requested_user, user)

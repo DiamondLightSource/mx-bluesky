@@ -30,6 +30,7 @@ from .web_gui_plans.oav_plans import (
     focus_on_oav_view,
     move_block_on_arrow_click,
     move_nudge_on_arrow_click,
+    move_on_oav_view_click,
     move_window_on_arrow_click,
 )
 
@@ -56,6 +57,7 @@ __all__ = [
     "focus_on_oav_view",
     "move_block_on_arrow_click",
     "move_nudge_on_arrow_click",
+    "move_on_oav_view_click",
     "move_window_on_arrow_click",
     # Jungfrau specific
     "do_pedestal_darks",

@@ -37,8 +37,8 @@ from mx_bluesky.common.utils.exceptions import (
 from mx_bluesky.common.utils.log import LOGGER
 from mx_bluesky.hyperion._plan_runner_params import RobotUnload, UDCCleanup, Wait
 from mx_bluesky.hyperion.baton_handler import (
-    HYPERION_USER,
     NO_USER,
+    _hyperion_baton_user,
     _initialise_udc,
     run_forever,
     run_udc_when_requested,
@@ -84,7 +84,7 @@ def patch_setup_devices(request):
             except ValueError:
                 # No baton, setup devices and configure it
                 setup_devices(context, True)
-                baton_with_requested_user(context, HYPERION_USER)
+                baton_with_requested_user(context, _hyperion_baton_user)
 
     with (
         patch(
@@ -140,13 +140,13 @@ def bluesky_context(
             mock=True,
         )
         synchrotron_with_countdown(context)
-        baton_with_requested_user(context, HYPERION_USER)
+        baton_with_requested_user(context, _hyperion_baton_user)
         yield context
 
 
 @pytest.fixture
 def bluesky_context_with_sim_run_engine(sim_run_engine: RunEngineSimulator):
-    baton_requested_user = HYPERION_USER
+    baton_requested_user = _hyperion_baton_user
     countdown = 1200
 
     # Baton for sim run engine
@@ -224,7 +224,7 @@ def single_collection_agamemnon_request_then_wait_forever(
 
 
 def baton_with_requested_user(
-    bluesky_context: BlueskyContext, user: str = HYPERION_USER
+    bluesky_context: BlueskyContext, user: str = _hyperion_baton_user
 ) -> Baton:
     baton = find_device_in_context(bluesky_context, "baton", Baton)
     set_mock_value(baton.requested_user, user)
@@ -280,7 +280,7 @@ def test_loop_until_hyperion_requested(
 
     def set_hyperion_requested(*args):
         yield from bps.null()
-        set_mock_value(baton.requested_user, HYPERION_USER)
+        set_mock_value(baton.requested_user, _hyperion_baton_user)
 
     mock_calls: list[Any] = [MagicMock()] * (number_of_sleep_calls - 1)
     mock_calls.append(set_hyperion_requested())
@@ -303,7 +303,7 @@ def test_when_hyperion_requested_then_hyperion_set_to_current_user(
 
     run_udc_when_requested(bluesky_context, udc_runner)
 
-    assert get_mock_put(baton.current_user).mock_calls[0] == call(HYPERION_USER)
+    assert get_mock_put(baton.current_user).mock_calls[0] == call(_hyperion_baton_user)
 
 
 @patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state")
@@ -325,7 +325,7 @@ def test_when_hyperion_requested_then_default_state_and_collection_run(
 
 
 async def _assert_baton_released(baton: Baton):
-    assert await baton.requested_user.get_value() != HYPERION_USER
+    assert await baton.requested_user.get_value() != _hyperion_baton_user
     assert get_mock_put(baton.current_user).mock_calls[-1] == call(NO_USER)
 
 
@@ -608,7 +608,7 @@ async def test_run_forever_resumes_collection_when_baton_taken_away(
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
             assert len(mock_create_parameters_from_agamemnon.mock_calls) == 1
             # Re-request baton, wait until hyperion picks up baton
-            await baton.requested_user.set(HYPERION_USER)
+            await baton.requested_user.set(_hyperion_baton_user)
             while udc_runner.current_status != Status.BUSY:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
         finally:
@@ -651,7 +651,7 @@ async def test_run_forever_resumes_collection_when_normal_completion_and_baton_r
             while await baton.current_user.get_value() != NO_USER:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
             assert len(mock_create_parameters_from_agamemnon.mock_calls) == 2
-            await baton.requested_user.set(HYPERION_USER)
+            await baton.requested_user.set(_hyperion_baton_user)
             while udc_runner.current_status != Status.BUSY:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
         finally:
@@ -727,7 +727,7 @@ def test_run_forever_clears_error_status_on_resume(
             baton = find_device_in_context(udc_runner.context, "baton", Baton)
             while await baton.current_user.get_value() != NO_USER:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
-            await baton.requested_user.set(HYPERION_USER)
+            await baton.requested_user.set(_hyperion_baton_user)
             while udc_runner.current_status != Status.BUSY:  # type: ignore
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)
         finally:
@@ -773,7 +773,7 @@ async def test_commissioning_signal_set_on_baton_acquire(
         try:
             mock_set_commissioning_signal.assert_not_called()
             LOGGER.debug("Set requested user")
-            set_mock_value(baton.requested_user, HYPERION_USER)
+            set_mock_value(baton.requested_user, _hyperion_baton_user)
             LOGGER.debug("Wait for create_parameters call")
             while len(parent.create_parameters_from_agamemnon.mock_calls) == 0:
                 await sleep(SLEEP_FAST_SPIN_WAIT_S)

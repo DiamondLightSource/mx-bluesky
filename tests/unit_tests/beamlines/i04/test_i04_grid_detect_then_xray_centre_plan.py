@@ -46,6 +46,7 @@ from mx_bluesky.beamlines.i04.experiment_plans.i04_grid_detect_then_xray_centre_
 from mx_bluesky.common.parameters.constants import PlanNameConstants
 from mx_bluesky.common.parameters.gridscan import (
     GenericGrid,
+    GridScanParams,
     SpecifiedThreeDGridScan,
 )
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
@@ -127,6 +128,20 @@ def i04_grid_detect_then_xrc_default_params(
         smargon=smargon,
         detector_motion=detector_motion,
         transfocator=transfocator,
+    )
+
+
+@pytest.fixture
+def i04_grid_scan_params() -> GridScanParams:
+    return GridScanParams(
+        omega_starts_deg=[0, 90],
+        x_start_um=0,
+        y_starts_um=[0, 0],
+        z_starts_um=[0, 0],
+        x_steps=10,
+        y_steps=[10, 10],
+        x_step_size_um=10,
+        y_step_sizes_um=[10, 10],
     )
 
 
@@ -264,11 +279,15 @@ def test_i04_default_grid_detect_and_xray_centre_sets_transmission_triggers_xbpm
     sim_run_engine: RunEngineSimulator,
     zocalo: ZocaloResults,
     test_three_d_grid_params,
+    three_d_grid_scan_params: GridScanParams,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
     desired_transmission = 0.4
     mock_fix_transmission_and_exp_time.return_value = (desired_transmission, 1)
-    mock_create_parameters.return_value = test_three_d_grid_params
+    mock_create_parameters.return_value = (
+        test_three_d_grid_params,
+        three_d_grid_scan_params,
+    )
     sim_run_engine.add_handler(
         "locate",
         lambda msg: {"readback": np.array([0, 0])},
@@ -346,9 +365,10 @@ def test_i04_default_grid_detect_and_xray_centre_does_undulator_check_before_col
     mock_create_gridscan_callbacks: MagicMock,
     run_engine: RunEngine,
     test_three_d_grid_params,
+    i04_grid_scan_params,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
 ):
-    mock_create_parameters.return_value = test_three_d_grid_params
+    mock_create_parameters.return_value = test_three_d_grid_params, i04_grid_scan_params
     mock_run_gridscan.side_effect = CompleteError
     with pytest.raises(CompleteError):
         run_engine(i04_grid_detect_then_xrc_default_params())
@@ -579,9 +599,13 @@ def test_grid_detect_then_xrc_stages_and_unstages_zocalo_and_gets_results(
     )
 
 
+def null_decorator(plan):
+    return plan
+
+
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_wrapper",
-    lambda plan, _: plan,
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_decorator",
+    lambda parameters: null_decorator,
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
@@ -607,8 +631,12 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
     test_three_d_grid_params: SpecifiedThreeDGridScan,
     run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    i04_grid_scan_params,
 ):
-    mock_create_flyscan_params.return_value = test_three_d_grid_params
+    mock_create_flyscan_params.return_value = (
+        test_three_d_grid_params,
+        i04_grid_scan_params,
+    )
     run_engine(
         i04_grid_detect_then_xrc_default_params(
             udc=False,
@@ -622,8 +650,8 @@ def test_detect_grid_and_do_gridscan_gives_params_specified_grid(
 
 
 @patch(
-    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_wrapper",
-    lambda plan, _: plan,
+    "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.ispyb_activation_decorator",
+    lambda parameters: null_decorator,
 )
 @patch(
     "mx_bluesky.common.experiment_plans.common_grid_detect_then_xray_centre_plan.grid_detection_plan",
@@ -649,6 +677,7 @@ def test_i04_grid_detect_then_xrc_only_sets_aperture_at_start_of_plan(
     test_three_d_grid_params: SpecifiedThreeDGridScan,
     run_engine: RunEngine,
     i04_grid_detect_then_xrc_default_params: partial[MsgGenerator],
+    i04_grid_scan_params: GridScanParams,
 ):
     aperture_scatterguard: ApertureScatterguard = (
         i04_grid_detect_then_xrc_default_params.keywords["aperture_scatterguard"]
@@ -673,7 +702,10 @@ def test_i04_grid_detect_then_xrc_only_sets_aperture_at_start_of_plan(
 
     mock_get_xrc_results.return_value = fake_get_xrc_results_plan()
 
-    mock_create_flyscan_params.return_value = test_three_d_grid_params
+    mock_create_flyscan_params.return_value = (
+        test_three_d_grid_params,
+        i04_grid_scan_params,
+    )
     run_engine(
         i04_grid_detect_then_xrc_default_params(
             udc=False,

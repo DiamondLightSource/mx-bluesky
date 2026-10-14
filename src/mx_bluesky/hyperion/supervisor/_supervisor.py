@@ -1,5 +1,5 @@
-import time
 from collections.abc import Sequence
+from time import sleep  # noqa
 
 from blueapi.client.client import BlueapiClient
 from blueapi.client.event_bus import BlueskyStreamingError
@@ -143,7 +143,7 @@ class SupervisorRunner(PlanRunner):
                         LOGGER.warning(
                             "Could not connect to blueapi client.", exc_info=e
                         )
-                        time.sleep(delay)  # noqa
+                        sleep(delay)  # noqa
                         delay += delay
                     except BlueskyStreamingError:
                         raise

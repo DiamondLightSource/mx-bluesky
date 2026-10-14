@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.zebra.zebra import RotationDirection
 from h5py import Dataset, ExternalLink, Group
 
 from mx_bluesky.common.experiment_plans.inner_plans.read_hardware import (
@@ -114,13 +115,18 @@ def apply_metafile_mapping(exceptions: dict, mapping: dict):
             exceptions[key] = mapping_value
 
 
+@pytest.mark.parametrize(
+    "direction", [RotationDirection.POSITIVE, RotationDirection.NEGATIVE]
+)
 @pytest.mark.timeout(2)
 def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
     test_params: SingleRotationScan,
     tmpdir,
     fake_create_rotation_devices: RotationScanComposite,
     run_engine: RunEngine,
+    direction: RotationDirection,
 ):
+    test_params.rotation_direction = direction
     test_params.chi_start_deg = 0
     test_params.phi_start_deg = 0
     run_number = test_params.detector_params.run_number
@@ -195,14 +201,17 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
             "sample": {
                 "beam": {"incident_wavelength": np.isclose},
                 "transformations": {
-                    "_missing": {"omega_end"},
-                    "_ignore": {"omega"},
-                    "omega_increment_set": 0.1,
-                    "omega_end": lambda a, b: np.all(np.isclose(a, b, atol=1e-03)),
+                    "omega_increment_set": 0.1 * direction.multiplier,
+                    "omega": lambda a, b: np.all(
+                        np.isclose(a, b[:] * direction.multiplier, atol=1e-03)
+                    ),
+                    "omega_end": lambda a, b: np.all(
+                        np.isclose(a, b[:] * direction.multiplier, atol=1e-03)
+                    ),
                 },
                 "sample_omega": {
                     "_ignore": {"omega_end", "omega"},
-                    "omega_increment_set": 0.1,
+                    "omega_increment_set": 0.1 * direction.multiplier,
                 },
                 "sample_x": {"sam_x": np.isclose},
                 "sample_y": {"sam_y": np.isclose},
@@ -226,9 +235,14 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
         h5py.File(nexus_filename, "r") as hyperion_nexus,
     ):
         apply_metafile_mapping(exceptions, dectris_device_mapping(meta_filename))
-        _compare_actual_and_expected_nexus_output(
-            hyperion_nexus, example_nexus, exceptions
-        )
+        try:
+            _compare_actual_and_expected_nexus_output(
+                hyperion_nexus, example_nexus, exceptions
+            )
+        except Exception as e:
+            raise AssertionError(
+                f"Comparison failed between expected={example_nexus_path} and actual={nexus_filename}:"
+            ) from e
 
 
 @pytest.mark.timeout(2)
@@ -270,7 +284,8 @@ def test_rotation_scan_nexus_output_compared_to_existing_file(
         hyperion_omega: np.ndarray = np.array(
             hyperion_nexus["/entry/data/omega"][:]  # type: ignore
         )
-        example_omega: np.ndarray = example_nexus["/entry/data/omega"][:]  # type: ignore
+        # parameter file rotation direction is Negative
+        example_omega: np.ndarray = example_nexus["/entry/data/omega"][:] * -1  # type: ignore
         assert np.allclose(hyperion_omega, example_omega)
 
         assert isinstance(

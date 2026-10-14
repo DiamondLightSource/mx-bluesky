@@ -213,10 +213,10 @@ def setup_zebra_for_extruder_with_pump_probe_plan(
     det_ttl = TTL_EIGER
     laser_ttl = TTL_LASER  # may change with additional detectors
     yield from bps.abs_set(
-        zebra.output.out_pvs[det_ttl], zebra.mapping.sources.AND4, group=group
+        zebra.output.out_ttl_pvs[det_ttl], zebra.mapping.sources.AND4, group=group
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[laser_ttl], zebra.mapping.sources.AND3, group=group
+        zebra.output.out_ttl_pvs[laser_ttl], zebra.mapping.sources.AND3, group=group
     )
 
     yield from bps.abs_set(
@@ -330,7 +330,7 @@ def setup_zebra_for_fastchip_plan(
     # And calculate some of the other settings
     if det_type == "eiger":
         yield from bps.abs_set(
-            zebra.output.out_pvs[TTL_EIGER], zebra.mapping.sources.AND3, group=group
+            zebra.output.out_ttl_pvs[TTL_EIGER], zebra.mapping.sources.AND3, group=group
         )
 
     # Square wave - needs a small drop to make it work for eiger
@@ -395,7 +395,7 @@ def open_fast_shutter_at_each_position_plan(
 
     # Fast shutter
     yield from bps.abs_set(
-        zebra.output.out_pvs[TTL_FAST_SHUTTER],
+        zebra.output.out_ttl_pvs[TTL_FAST_SHUTTER],
         zebra.mapping.sources.PULSE2,
         group=group,
     )
@@ -415,13 +415,13 @@ def reset_pc_gate_and_pulse(zebra: Zebra, group: str = "reset_pc"):
 def reset_output_panel(zebra: Zebra, group: str = "reset_zebra_outputs"):
     # Reset TTL out
     yield from bps.abs_set(
-        zebra.output.out_pvs[2], zebra.mapping.sources.PC_GATE, group=group
+        zebra.output.out_ttl_pvs[2], zebra.mapping.sources.PC_GATE, group=group
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[3], zebra.mapping.sources.DISCONNECT, group=group
+        zebra.output.out_ttl_pvs[3], zebra.mapping.sources.DISCONNECT, group=group
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[4], zebra.mapping.sources.OR1, group=group
+        zebra.output.out_ttl_pvs[4], zebra.mapping.sources.OR1, group=group
     )
 
     yield from bps.abs_set(

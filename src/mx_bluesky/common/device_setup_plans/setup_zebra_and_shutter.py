@@ -62,7 +62,7 @@ def setup_zebra_for_gridscan(
     )
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
+        zebra.output.out_ttl_pvs[ttl_detector],
         zebra.mapping.sources.IN3_TTL,
         group=group,
     )
@@ -138,7 +138,7 @@ def tidy_up_zebra_after_gridscan(
     ttl_detector = ttl_input_for_detector_to_use or zebra.mapping.outputs.TTL_DETECTOR
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
+        zebra.output.out_ttl_pvs[ttl_detector],
         zebra.mapping.sources.PC_PULSE,
         group=group,
     )
@@ -212,7 +212,7 @@ def setup_zebra_for_rotation(
     )
     # Trigger the detector with a pulse
     yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
+        zebra.output.out_ttl_pvs[ttl_detector],
         zebra.mapping.sources.PC_PULSE,
         group=group,
     )

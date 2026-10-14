@@ -12,6 +12,7 @@ from daq_config_server.models.feature_settings.hyperion_feature_settings import 
 from dodal.devices.zebra.zebra import RotationDirection
 from requests import ConnectionError, HTTPError, Response, Timeout
 
+from mx_bluesky.common.parameters.components import AperturePolicy
 from mx_bluesky.hyperion._plan_runner_params import Wait
 from mx_bluesky.hyperion.blueapi.parameters import (
     LoadCentreCollectParams,
@@ -551,4 +552,36 @@ def test_create_parameters_from_agamemnon_fails_on_400_error_and_ends_udc(
     mock_sleep.assert_not_called()
     mock_alert_service.raise_error_alert.assert_called_once_with(
         "Agamemnon returned unexpected HTTP response status code 400", {}
+    )
+
+
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_collect_multipin.json"],
+    indirect=True,
+)
+def test_create_parameters_from_agamemnon_selects_large_aperture_for_multipin(
+    agamemnon_response,
+):
+    params = create_parameters_from_agamemnon()
+    load_centre_collect_params: LoadCentreCollectParams = params[0]  # type: ignore
+    assert (
+        load_centre_collect_params.multi_rotation_scan.selected_aperture
+        == AperturePolicy.LARGE
+    )
+
+
+@pytest.mark.parametrize(
+    "agamemnon_response",
+    ["tests/test_data/agamemnon/example_native.json"],
+    indirect=True,
+)
+def test_create_parameters_from_agamemnon_selects_auto_aperture_for_single_sample_pin(
+    agamemnon_response,
+):
+    params = create_parameters_from_agamemnon()
+    load_centre_collect_params: LoadCentreCollectParams = params[0]  # type: ignore
+    assert (
+        load_centre_collect_params.multi_rotation_scan.selected_aperture
+        == AperturePolicy.AUTO
     )

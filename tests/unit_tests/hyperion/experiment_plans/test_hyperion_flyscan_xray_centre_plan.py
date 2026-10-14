@@ -28,6 +28,7 @@ from mx_bluesky.common.parameters.constants import (
     DeviceSettingsConstants,
 )
 from mx_bluesky.common.parameters.device_composites import FlyScanEssentialDevices
+from mx_bluesky.common.parameters.gridscan import GridScanParams
 from mx_bluesky.hyperion.experiment_plans.hyperion_flyscan_xray_centre_plan import (
     SmargonSpeedError,
 )
@@ -98,6 +99,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         hyperion_flyscan_xrc_composite: HyperionFlyScanXRayCentreComposite,
         hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+        hyperion_grid_scan_params: GridScanParams,
         run_engine_with_subs: ReWithSubs,
         beamline_specific: BeamlineSpecificFGSFeatures,
     ):
@@ -113,6 +115,7 @@ class TestFlyscanXrayCentrePlan:
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
                     hyperion_fgs_params,
+                    hyperion_grid_scan_params,
                     beamline_specific,
                 )
             )
@@ -150,6 +153,7 @@ class TestFlyscanXrayCentrePlan:
         run_gridscan: MagicMock,
         sim_run_engine: RunEngineSimulator,
         hyperion_fgs_params: HyperionSpecifiedThreeDGridScan,
+        hyperion_grid_scan_params: GridScanParams,
         hyperion_flyscan_xrc_composite: FlyScanEssentialDevices,
         beamline_specific: BeamlineSpecificFGSFeatures,
         zocalo: ZocaloResults,
@@ -170,6 +174,7 @@ class TestFlyscanXrayCentrePlan:
             common_flyscan_xray_centre(
                 hyperion_flyscan_xrc_composite,
                 hyperion_fgs_params,
+                hyperion_grid_scan_params,
                 beamline_specific,
             )
         )
@@ -202,6 +207,16 @@ class TestFlyscanXrayCentrePlan:
         run_engine: RunEngine,
     ):
         fgs_params_use_panda.x_step_size_um = 10000
+        grid_scan_params = GridScanParams(
+            omega_starts_deg=fgs_params_use_panda.omega_starts_deg,
+            x_start_um=fgs_params_use_panda.x_start_um,
+            y_starts_um=fgs_params_use_panda.y_starts_um,
+            z_starts_um=fgs_params_use_panda.z_starts_um,
+            x_steps=fgs_params_use_panda.x_steps,
+            y_steps=fgs_params_use_panda.y_steps,
+            x_step_size_um=10000,
+            y_step_sizes_um=fgs_params_use_panda.y_step_sizes_um,
+        )
         fgs_params_use_panda.detector_params.exposure_time_s = 0.01
 
         # this exception should only be raised if we're using the panda
@@ -210,6 +225,7 @@ class TestFlyscanXrayCentrePlan:
                 common_flyscan_xray_centre(
                     hyperion_flyscan_xrc_composite,
                     fgs_params_use_panda,
+                    grid_scan_params,
                     beamline_specific,
                 )
             )
@@ -241,6 +257,16 @@ class TestFlyscanXrayCentrePlan:
         beamline_specific: BeamlineSpecificFGSFeatures,
         tmp_path: Path,
     ):
+        grid_scan_params = GridScanParams(
+            omega_starts_deg=fgs_params_use_panda.omega_starts_deg,
+            x_start_um=fgs_params_use_panda.x_start_um,
+            y_starts_um=fgs_params_use_panda.y_starts_um,
+            z_starts_um=fgs_params_use_panda.z_starts_um,
+            x_steps=fgs_params_use_panda.x_steps,
+            y_steps=fgs_params_use_panda.y_steps,
+            x_step_size_um=fgs_params_use_panda.x_step_size_um,
+            y_step_sizes_um=fgs_params_use_panda.y_step_sizes_um,
+        )
         sim_run_engine.add_read_handler_for(
             fgs_composite_with_panda_pcap.gonio.x.max_velocity, 10
         )
@@ -250,7 +276,10 @@ class TestFlyscanXrayCentrePlan:
 
         msgs = sim_run_engine.simulate_plan(
             common_flyscan_xray_centre(
-                fgs_composite_with_panda_pcap, fgs_params_use_panda, beamline_specific
+                fgs_composite_with_panda_pcap,
+                fgs_params_use_panda,
+                grid_scan_params,
+                beamline_specific,
             )
         )
 

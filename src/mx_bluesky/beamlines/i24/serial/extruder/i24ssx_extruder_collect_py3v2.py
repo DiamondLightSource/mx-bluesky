@@ -118,13 +118,13 @@ def laser_check(
 
     if mode == "laseron":
         yield from bps.abs_set(
-            zebra.output.out_pvs[laser_ttl], zebra.mapping.sources.SOFT_IN3
+            zebra.output.out_ttl_pvs[laser_ttl], zebra.mapping.sources.SOFT_IN3
         )
         yield from set_shutter_mode(zebra, "auto")
 
     if mode == "laseroff":
         yield from bps.abs_set(
-            zebra.output.out_pvs[laser_ttl], zebra.mapping.sources.DISCONNECT
+            zebra.output.out_ttl_pvs[laser_ttl], zebra.mapping.sources.DISCONNECT
         )
         yield from set_shutter_mode(zebra, "manual")
 

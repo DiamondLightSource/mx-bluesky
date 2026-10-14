@@ -84,7 +84,10 @@ from mx_bluesky.common.parameters.constants import (
     EnvironmentConstants,
     PlanNameConstants,
 )
-from mx_bluesky.common.parameters.gridscan import SpecifiedThreeDGridScan
+from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
+    SpecifiedThreeDGridScan,
+)
 from mx_bluesky.common.parameters.rotation import RotationScan
 from mx_bluesky.common.utils.exceptions import CrystalNotFoundError
 from mx_bluesky.common.utils.log import (
@@ -95,7 +98,7 @@ from mx_bluesky.common.utils.log import (
     _get_logging_dirs,
     do_default_logging_setup,
 )
-from mx_bluesky.hyperion.baton_handler import HYPERION_USER
+from mx_bluesky.hyperion.baton_handler import _hyperion_baton_user
 from mx_bluesky.hyperion.parameters.device_composites import (
     HyperionFlyScanXRayCentreComposite,
 )
@@ -365,6 +368,20 @@ def test_three_d_grid_params(tmp_path, patch_beamline_env_variable):
 
 
 @pytest.fixture
+def three_d_grid_scan_params(test_three_d_grid_params):
+    return GridScanParams(
+        omega_starts_deg=test_three_d_grid_params.omega_starts_deg,
+        x_steps=test_three_d_grid_params.x_steps,
+        y_steps=test_three_d_grid_params.y_steps,
+        x_start_um=test_three_d_grid_params.x_start_um,
+        y_starts_um=test_three_d_grid_params.y_starts_um,
+        z_starts_um=test_three_d_grid_params.z_starts_um,
+        x_step_size_um=test_three_d_grid_params.x_step_size_um,
+        y_step_sizes_um=test_three_d_grid_params.y_step_sizes_um,
+    )
+
+
+@pytest.fixture
 def eiger():
     eiger = i03.eiger.build(mock=True)
     set_mock_attr(eiger, "stage", MagicMock(side_effect=lambda: completed_status()))  # type: ignore
@@ -416,8 +433,8 @@ def backlight():
 @pytest.fixture
 def baton():
     baton = i03.baton.build(connect_immediately=True, mock=True)
-    set_mock_value(baton.requested_user, HYPERION_USER)
-    set_mock_value(baton.current_user, HYPERION_USER)
+    set_mock_value(baton.requested_user, _hyperion_baton_user)
+    set_mock_value(baton.current_user, _hyperion_baton_user)
     return baton
 
 

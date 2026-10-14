@@ -5,10 +5,7 @@
     "detector_distance_mm": 100.0,
     "demand_energy_ev": 100,
     "exposure_time_s": 0.1,
-    "omega_starts_deg": [
-        0,
-        90
-    ],
+    "omega_start_deg": 0.0,
     "file_name": "file_name",
     "scan_width_deg": 180.0,
     "rotation_axis": "omega",

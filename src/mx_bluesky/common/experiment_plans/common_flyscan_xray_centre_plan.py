@@ -31,6 +31,7 @@ from mx_bluesky.common.parameters.device_composites import (
     GonioWithOmegaType,
 )
 from mx_bluesky.common.parameters.gridscan import (
+    GridScanParams,
     SpecifiedGrids,
 )
 from mx_bluesky.common.utils.exceptions import (
@@ -117,6 +118,7 @@ def construct_beamline_specific_fast_gridscan_features(
 def common_flyscan_xray_centre(
     composite: FlyScanEssentialDevices[GonioWithOmegaType],
     parameters: SpecifiedGrids,
+    grid_scan_parameters: GridScanParams,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ) -> MsgGenerator:
     """Main entry point of the MX-Bluesky x-ray centering flyscan
@@ -125,6 +127,7 @@ def common_flyscan_xray_centre(
         composite (FlyScanEssentialDevices): Devices required to perform this plan.
 
         parameters (SpecifiedThreeDGridScan): Parameters required to perform this plan.
+        grid_scan_parameters (GridScanParams): Parameters defining the grid scan(s) to be carried out.
 
         beamline_specific (BeamlineSpecificFGSFeatures): Configure the beamline-specific version
         of this plan: For example triggering setup and tidy up plans, as well as what to do with the
@@ -150,6 +153,7 @@ def common_flyscan_xray_centre(
             md={
                 "subplan_name": PlanNameConstants.GRIDSCAN_OUTER,
                 "mx_bluesky_parameters": parameters.model_dump_json(),
+                "grid_scan_parameters": grid_scan_parameters,
                 "activate_callbacks": [
                     "GridscanNexusFileCallback",
                 ],
@@ -161,10 +165,14 @@ def common_flyscan_xray_centre(
             params: SpecifiedGrids,
             beamline_specific: BeamlineSpecificFGSFeatures,
         ) -> MsgGenerator:
-            yield from beamline_specific.setup_trigger_plan(fgs_composite, parameters)
+            yield from beamline_specific.setup_trigger_plan(
+                fgs_composite, parameters, grid_scan_parameters
+            )
 
             LOGGER.info("Starting grid scan")
-            yield from run_gridscan(fgs_composite, params, beamline_specific)
+            yield from run_gridscan(
+                fgs_composite, params, grid_scan_parameters, beamline_specific
+            )
 
             LOGGER.info("Grid scan finished")
 
@@ -177,12 +185,13 @@ def common_flyscan_xray_centre(
 def run_gridscan(
     fgs_composite: FlyScanEssentialDevices[GonioWithOmegaType],
     parameters: SpecifiedGrids,
+    grid_scan_params: GridScanParams,
     beamline_specific: BeamlineSpecificFGSFeatures,
 ):
     with TRACER.start_span("moving_omega_to_0"):
         yield from bps.abs_set(
             fgs_composite.gonio.wrapped_omega.phase,
-            parameters.omega_starts_deg[0],
+            grid_scan_params.omega_starts_deg[0],
             wait=True,
         )
 
@@ -209,7 +218,7 @@ def run_gridscan(
         beamline_specific.fgs_motors,
         fgs_composite.eiger,
         fgs_composite.synchrotron,
-        parameters.scan_points,
+        grid_scan_params.scan_points,
         parameters.omega_starts_deg,
         plan_during_collection=beamline_specific.read_during_collection_plan,
     )

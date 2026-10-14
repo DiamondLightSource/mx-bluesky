@@ -19,7 +19,7 @@ def setup_zebra_for_gridscan(
     """
     ttl_detector = ttl_detector or zebra.mapping.outputs.TTL_EIGER
     yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
+        zebra.output.out_ttl_pvs[ttl_detector],
         zebra.mapping.sources.IN1_TTL,
     )
     if wait:
@@ -36,7 +36,7 @@ def tidy_up_zebra_after_gridscan(
     ttl_detector = ttl_detector or zebra.mapping.outputs.TTL_EIGER
 
     yield from bps.abs_set(
-        zebra.output.out_pvs[ttl_detector],
+        zebra.output.out_ttl_pvs[ttl_detector],
         zebra.mapping.sources.OR1,
         group=group,
     )

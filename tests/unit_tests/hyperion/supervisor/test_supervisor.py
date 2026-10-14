@@ -391,7 +391,7 @@ def test_sample_error_skips_subsequent_instructions(
     mock_blueapi_client.run_task.assert_called_once_with(ANY, on_event=ANY)
 
 
-@patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
+@patch("mx_bluesky.hyperion.supervisor._supervisor.sleep")
 def test_supervisor_retries_service_unavailable_error(
     mock_sleep: MagicMock,
     runner: SupervisorRunner,
@@ -433,7 +433,7 @@ def test_supervisor_retries_service_unavailable_error(
         BlueskyRequestError(422, "Test message"),
     ],
 )
-@patch("mx_bluesky.hyperion.supervisor._supervisor.time.sleep")
+@patch("mx_bluesky.hyperion.supervisor._supervisor.sleep")
 def test_supervisor_hands_back_baton_if_non_retryable_error(
     mock_sleep: MagicMock,
     runner: SupervisorRunner,
