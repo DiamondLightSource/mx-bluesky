@@ -17,7 +17,7 @@ RUN apt update -y && \
     apt upgrade -y && \
     apt install -y libgl1 libglib2.0-0
 
-COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /uvx /bin/
 
 FROM base AS work
 
