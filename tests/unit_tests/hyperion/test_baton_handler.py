@@ -527,6 +527,70 @@ def test_baton_handler_loop_waits_if_wait_instruction_received(
     )
 
 
+@patch(
+    "mx_bluesky.hyperion.baton_handler.create_parameters_from_agamemnon",
+    MagicMock(
+        side_effect=[
+            [Wait.model_validate({"duration_s": 12.34})],
+            [],
+        ]
+    ),
+)
+@patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state", MagicMock())
+def test_baton_handler_waits_after_setting_current_user_and_returning_baton(
+    bluesky_context_with_sim_run_engine: tuple[list[Msg], BlueskyContext],
+    sim_run_engine: RunEngineSimulator,
+):
+    msgs, context = bluesky_context_with_sim_run_engine
+    udc_runner = InProcessRunner(context, True)
+    udc_runner.reset_callback_watchdog_timer()
+
+    run_udc_when_requested(context, udc_runner)
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "baton-current_user"
+            and msg.args[0] == "Hyperion"
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+        ),
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "baton-requested_user"
+            and msg.args[0] == NO_USER
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "baton-current_user"
+            and msg.args[0] == NO_USER
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "wait" and msg.kwargs["group"] == msgs[0].kwargs["group"]
+        ),
+    )
+
+
 @patch("mx_bluesky.hyperion.in_process_runner.move_to_udc_default_state", MagicMock())
 def test_main_loop_rejects_unrecognised_instruction_when_received(
     bluesky_context_with_sim_run_engine: tuple[list[Msg], BlueskyContext],
@@ -1152,3 +1216,14 @@ def test_baton_handler_ignores_synchrotron_countdown_if_commissioning_mode_enabl
 
     run_udc_when_requested(bluesky_context, udc_runner)
     mock_load_centre_collect.assert_called_once()
+
+
+def test_baton_handler_problem(bluesky_context: BlueskyContext, baton: Baton):
+    baton = baton_with_requested_user(bluesky_context, "Hyperion")
+
+    def set_and_read_baton() -> MsgGenerator:
+        yield from bps.rd(baton.requested_user)
+        yield from bps.abs_set(baton.requested_user, NO_USER)
+        yield from bps.rd(baton.requested_user)
+
+    bluesky_context.run_engine(set_and_read_baton())

@@ -82,7 +82,7 @@ def run_udc_when_requested(context: BlueskyContext, runner: PlanRunner):
     def acquire_baton() -> MsgGenerator:
         yield from _wait_for_hyperion_requested(baton)
         LOGGER.debug("Hyperion is now current baton holder.")
-        yield from bps.abs_set(baton.current_user, _hyperion_baton_user)
+        yield from bps.abs_set(baton.current_user, _hyperion_baton_user, wait=True)
 
     def collect() -> MsgGenerator:
         """
@@ -231,7 +231,7 @@ def _unrequest_baton(baton: Baton) -> MsgGenerator[str]:
     requested_user = yield from bps.rd(baton.requested_user)
     if requested_user == _hyperion_baton_user:
         LOGGER.debug("Hyperion no longer requesting baton")
-        yield from bps.abs_set(baton.requested_user, NO_USER)
+        yield from bps.abs_set(baton.requested_user, NO_USER, wait=True)
         return NO_USER
     return requested_user
 
