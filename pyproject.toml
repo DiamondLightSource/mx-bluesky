@@ -5,7 +5,12 @@ build-backend = "setuptools.build_meta"
 [tool.uv]
 # Restrict lockfile to a sane subset of platforms
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
-constraint-dependencies = ["starlette>=1.1.0"]
+constraint-dependencies = [
+    "starlette>=1.1.0",
+    "certifi>=v2026.10.19"
+]
+# https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
+required-version = ">=0.13.5"
 
 [project]
 name = "mx-bluesky"
