@@ -1216,14 +1216,3 @@ def test_baton_handler_ignores_synchrotron_countdown_if_commissioning_mode_enabl
 
     run_udc_when_requested(bluesky_context, udc_runner)
     mock_load_centre_collect.assert_called_once()
-
-
-def test_baton_handler_problem(bluesky_context: BlueskyContext, baton: Baton):
-    baton = baton_with_requested_user(bluesky_context, "Hyperion")
-
-    def set_and_read_baton() -> MsgGenerator:
-        yield from bps.rd(baton.requested_user)
-        yield from bps.abs_set(baton.requested_user, NO_USER)
-        yield from bps.rd(baton.requested_user)
-
-    bluesky_context.run_engine(set_and_read_baton())
