@@ -10,12 +10,20 @@ The Athena DAQ platform is intended to run in microservices using kubernetes. A 
 In the ``ixx-services`` repository:
 
 * Go to ``ixx-services/services/ixx-blueapi``
-  * In Chart.yaml bump the version of dependencies.version for mx-bluesky-blueapi to the required version
-  * If blueapi has had a new chart release this should also be updated
-  * Bump the chart version
+  * In Chart.yaml bump the version in dependencies.version for mx-bluesky-blueapi to the required version
+  * Also update blueapi to match the version in the uv lockfile.
+  * Bump the top-level chart version
 * Go to ``ixx-services/services/ixx-blueapi/values.yaml``
   * Bump ``blueaip.image.tag``
   * Update ``target_revision`` in ``blueapi.worker.scratch.repositories`` for ``dodal`` and ``mx-bluesky``
+
+### Deploying the changes
+
+Before pushing the new changes, rename the previous scratch folder e.g. "/dls_sw/ixx/bluesky/scratch.x.y.z" to retain it, and create a new empty scratch folder in its place. Ensure that the ``runAsUser`` in the values.yaml can write to it so that the initContainer can check out a new version.
+
+When the changes are pushed, ArgoCD should pick up the new version of the helm chart and deploy it. Verify that the initContainer (setup-scratch) log files show that the correct target revisions of mx-bluesky, dodal were checked out.  
+
+Remove old scratch folders when they are no longer needed.
 
 ## Deploying mx-bluesky on k8s to a new beamline
 
