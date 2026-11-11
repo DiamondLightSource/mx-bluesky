@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from itertools import accumulate
+from math import isclose
 from typing import Annotated, Any, Self
 
 from annotated_types import Len
@@ -25,9 +26,23 @@ from mx_bluesky.common.parameters.components import (
     WithSample,
 )
 from mx_bluesky.common.parameters.constants import (
+    USE_NUMTRACKER,
     DetectorParamConstants,
     RotationParamConstants,
 )
+
+
+def images_in_sweep(scan_width_deg: float, rotation_increment_deg: float) -> int:
+    """How many images a sweep of this width contains at this increment.
+
+    Truncating the raw quotient loses an image whenever the division lands a hair under a
+    whole number, which floating point does often enough to matter: 2.15 / 0.05 is
+    42.99999999999999, so a 2.15 deg sweep at 0.05 deg would collect 42 images. A sweep
+    that genuinely does not divide exactly, such as 10 deg at 0.3 deg, still rounds down.
+    """
+    quotient = scan_width_deg / rotation_increment_deg
+    nearest = round(quotient)
+    return nearest if isclose(quotient, nearest, rel_tol=1e-9) else int(quotient)
 
 
 class RotationScanPerSweep(OptionalGonioAngleStarts, WithSample):
@@ -70,6 +85,16 @@ class RotationExperiment(DiffractionExperiment):
         if self.run_number:
             optional_args["run_number"] = self.run_number
         assert self.detector_distance_mm is not None
+        if self.storage_directory == USE_NUMTRACKER:
+            # DetectorParams demands a directory that exists, so this used to make one -
+            # but under numtracker storage_directory is the placeholder string rather
+            # than a path, and making that left a directory literally called
+            # "from numtracker" in the working directory.
+            raise ValueError(
+                "detector_params is unavailable until numtracker has supplied a storage "
+                "directory; see https://github.com/DiamondLightSource/mx-bluesky/issues/1527"
+            )
+        # TODO don't write to storage here https://github.com/DiamondLightSource/mx-bluesky/issues/1780
         os.makedirs(self.storage_directory, exist_ok=True)
         return DetectorParams(
             detector_size_constants=DetectorParamConstants.DETECTOR,
@@ -116,7 +141,7 @@ class SingleRotationScan(
 
     @property
     def num_images(self) -> int:
-        return int(self.scan_width_deg / self.rotation_increment_deg)
+        return images_in_sweep(self.scan_width_deg, self.rotation_increment_deg)
 
 
 class RotationScan(RotationExperiment, SplitScan):
@@ -140,7 +165,9 @@ class RotationScan(RotationExperiment, SplitScan):
         start_img = 0.0
         for scan in self.rotation_scans:
             scan.nexus_vds_start_img = int(start_img)
-            start_img += scan.scan_width_deg / self.rotation_increment_deg
+            start_img += images_in_sweep(
+                scan.scan_width_deg, self.rotation_increment_deg
+            )
         return self
 
     @model_validator(mode="after")
@@ -161,7 +188,7 @@ class RotationScan(RotationExperiment, SplitScan):
 
     def _num_images_per_scan(self):
         return [
-            int(scan.scan_width_deg / self.rotation_increment_deg)
+            images_in_sweep(scan.scan_width_deg, self.rotation_increment_deg)
             for scan in self.rotation_scans
         ]
 

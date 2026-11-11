@@ -17,7 +17,7 @@ from ophyd_async.fastcs.jungfrau import (
     GainMode,
     create_jungfrau_external_triggering_info,
 )
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from mx_bluesky.beamlines.i24.jungfrau_commissioning.callbacks.metadata_writer import (
     JsonMetadataWriter,
@@ -65,7 +65,10 @@ class ExternalRotationScanParams(BaseModel):
     transmission_fractions: list[float]
     exposure_time_s: float
     omega_start_deg: float = 0
-    rotation_increment_per_image_deg: float = 0.1
+    rotation_increment_per_image_deg: float = Field(default=0.1, gt=0)
+    # The number of images collected is scan_width_deg / rotation_increment_per_image_deg,
+    # so the two of these together are what set the length of the collection.
+    scan_width_deg: float = Field(default=360, gt=0)
     filename: str = "rotations"
     detector_distance_mm: float = DEFAULT_DETECTOR_DISTANCE_MM
     sample_id: int
@@ -92,6 +95,12 @@ def _get_internal_rotation_params(
         transmission_frac=transmission,
         exposure_time_s=entry_params.exposure_time_s,
         storage_directory=USE_NUMTRACKER,
+        detector_distance_mm=entry_params.detector_distance_mm,
+        # Both of these have defaults on SingleRotationScan, so leaving them out does not
+        # fail: it quietly collects 0 to 360 degrees at 0.1 deg per image instead.
+        omega_start_deg=entry_params.omega_start_deg,
+        rotation_increment_deg=entry_params.rotation_increment_per_image_deg,
+        scan_width_deg=entry_params.scan_width_deg,
     )
 
 
@@ -117,9 +126,7 @@ def set_up_beamline_for_rotation(
     move aperture in, move beamstop out and move det stages in. Wait for this parallel
     move to finish."""
 
-    hutch_shutter_state: ShutterState = yield from bps.rd(
-        composite.hutch_shutter.status
-    )
+    hutch_shutter_state: ShutterState = yield from bps.rd(composite.shutter.status)
     LOGGER.info(f"Hutch shutter: {hutch_shutter_state}")
     if hutch_shutter_state != ShutterState.OPEN:
         LOGGER.error(f"Hutch shutter is not open! State is {hutch_shutter_state}")
@@ -135,11 +142,11 @@ def set_up_beamline_for_rotation(
         AperturePositions.IN,
         composite.beamstop.pos_select,
         BeamstopPositions.DATA_COLLECTION,
-        composite.det_stage.y,
+        composite.detector_motion.y,
         JF_DET_STAGE_Y_POSITION_MM,
         composite.backlight.backlight_position,
         BacklightPositions.OUT,
-        composite.det_stage.z,
+        composite.detector_motion.z,
         det_z_mm,
         composite.attenuator,
         transmission_frac,
@@ -169,7 +176,7 @@ def single_rotation_plan(
 
         # This value isn't actually used, see https://github.com/DiamondLightSource/mx-bluesky/issues/1224
         _motor_time_to_speed = 1
-        _max_velocity_deg_s = yield from bps.rd(composite.gonio.omega.max_velocity)
+        _max_velocity_deg_s = yield from bps.rd(composite.vgonio.omega.max_velocity)
 
         motion_values = calculate_motion_profile(
             params, _motor_time_to_speed, _max_velocity_deg_s
@@ -193,11 +200,14 @@ def single_rotation_plan(
             motion_values: RotationMotionProfile,
             composite: RotationScanComposite,
         ):
+            # Not params.detector_params.exposure_time_s: that is the same number by way
+            # of building Eiger-shaped DetectorParams, which needs a storage directory
+            # this plan does not have until numtracker supplies one.
             _jf_trigger_info = create_jungfrau_external_triggering_info(
-                params.num_images, params.detector_params.exposure_time_s
+                params.num_images, params.exposure_time_s
             )
 
-            axis = composite.gonio.omega
+            axis = composite.vgonio.omega
 
             # can move to start as fast as possible
             yield from bps.abs_set(
@@ -219,6 +229,9 @@ def single_rotation_plan(
                 direction=motion_values.direction,
                 shutter_opening_deg=motion_values.shutter_opening_deg,
                 shutter_opening_s=motion_values.shutter_time_s,
+                # i24 names its zebra outputs per detector, so TTL_DETECTOR - which the
+                # shared plan defaults to, and which i03/i04/i23 do map - is unset here.
+                ttl_input_for_detector_to_use=composite.zebra.mapping.outputs.TTL_JUNGFRAU,
             )
 
             yield from bps.wait(PlanGroupCheckpointConstants.ROTATION_READY_FOR_DC)
@@ -239,7 +252,7 @@ def single_rotation_plan(
                 [
                     composite.dcm.energy_in_keV,
                     composite.dcm.wavelength_in_a,
-                    composite.det_stage.z,
+                    composite.detector_motion.z,
                     composite.jungfrau.writer.file_path,  # noqa: SLF001 N
                 ],
                 PlanNameConstants.ROTATION_DEVICE_READ,

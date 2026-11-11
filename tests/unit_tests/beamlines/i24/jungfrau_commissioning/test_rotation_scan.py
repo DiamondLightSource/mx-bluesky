@@ -17,6 +17,7 @@ from mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_s
     HutchClosedError,
     RotationScanComposite,
     _cleanup_plan,
+    _get_internal_rotation_params,
     rotation_scan_plan,
     set_up_beamline_for_rotation,
     single_rotation_plan,
@@ -44,6 +45,44 @@ def get_good_multi_rotation_params(transmissions: list[float], tmp_path):
     params["transmission_fractions"] = transmissions
     params["num_images"] = 1
     return ExternalRotationScanParams(**params)
+
+
+def test_requested_sweep_reaches_the_internal_rotation_params():
+    """Every field defining the sweep is defaulted on SingleRotationScan, so one that is
+    not forwarded does not raise: it silently collects 0 to 360 deg at 0.1 deg instead."""
+    external = ExternalRotationScanParams(
+        transmission_fractions=[0.1],
+        exposure_time_s=0.01,
+        omega_start_deg=45,
+        rotation_increment_per_image_deg=0.2,
+        scan_width_deg=90,
+        sample_id=123456,
+    )
+
+    internal = _get_internal_rotation_params(external, 0.1)
+
+    assert internal.omega_start_deg == 45
+    assert internal.rotation_increment_deg == 0.2
+    assert internal.scan_width_deg == 90
+    # The count the detector is armed for is derived from the two of them.
+    assert internal.num_images == 450
+
+
+@pytest.mark.parametrize(
+    "rotation_increment_per_image_deg, scan_width_deg",
+    [(0, 360), (0.1, 0), (-0.1, 360), (0.1, -90)],
+)
+def test_a_sweep_of_no_images_is_rejected(
+    rotation_increment_per_image_deg: float, scan_width_deg: float
+):
+    with pytest.raises(ValueError):
+        ExternalRotationScanParams(
+            transmission_fractions=[0.1],
+            exposure_time_s=0.01,
+            sample_id=123456,
+            rotation_increment_per_image_deg=rotation_increment_per_image_deg,
+            scan_width_deg=scan_width_deg,
+        )
 
 
 @patch(
@@ -74,7 +113,7 @@ async def test_rotation_scan_plan_in_re(
     required_hardware_read_signals = [
         rotation_composite.dcm.energy_in_keV,
         rotation_composite.dcm.wavelength_in_a,
-        rotation_composite.det_stage.z,
+        rotation_composite.detector_motion.z,
         rotation_composite.jungfrau.writer.file_path,
     ]
 
@@ -93,7 +132,7 @@ async def test_rotation_scan_plan_in_re(
     mock_calc_motion_profile.assert_called_once_with(
         params,
         1,
-        await rotation_composite.gonio.omega.max_velocity.get_value(),
+        await rotation_composite.vgonio.omega.max_velocity.get_value(),
     )
     mock_setup_zebra.assert_called_once()
     mock_zebra_arm.assert_called_once()
@@ -119,7 +158,7 @@ def test_single_rotation_plan_in_simulator(
     tmp_path,
 ):
     params = get_good_single_rotation_params(tmp_path)
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
     msgs = sim_run_engine.simulate_plan(
         single_rotation_plan(rotation_composite, params)
     )
@@ -144,7 +183,7 @@ def test_single_rotation_plan_in_simulator(
     # Set omega axis then wait for JF to complete
     assert_message_and_return_remaining(
         msgs,
-        lambda msg: msg.command == "set" and msg.obj == rotation_composite.gonio.omega,
+        lambda msg: msg.command == "set" and msg.obj == rotation_composite.vgonio.omega,
     )
     assert_message_and_return_remaining(
         msgs,
@@ -166,6 +205,41 @@ def test_single_rotation_plan_in_simulator(
 
 
 @patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.set_up_beamline_for_rotation",
+    new=MagicMock(),
+)
+@patch(
+    "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.fly_jungfrau",
+    new=MagicMock(),
+)
+def test_single_rotation_plan_triggers_the_jungfrau_zebra_output(
+    sim_run_engine: RunEngineSimulator,
+    rotation_composite: RotationScanComposite,
+    tmp_path,
+):
+    """i24 wires the jungfrau to a zebra output it calls TTL_JUNGFRAU, not the
+    TTL_DETECTOR the shared rotation setup defaults to. Reading the unmapped
+    TTL_DETECTOR raises UnmappedZebraError, so pin the output actually driven."""
+    zebra = rotation_composite.zebra
+    jungfrau_output = zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_JUNGFRAU]
+
+    params = get_good_single_rotation_params(tmp_path)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
+    msgs = sim_run_engine.simulate_plan(
+        single_rotation_plan(rotation_composite, params)
+    )
+
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: (
+            msg.command == "set"
+            and msg.obj is jungfrau_output
+            and msg.args == (zebra.mapping.sources.PC_PULSE,)
+        ),
+    )
+
+
+@patch(
     "mx_bluesky.beamlines.i24.jungfrau_commissioning.experiment_plans.rotation_scan_plan.single_rotation_plan"
 )
 def test_rotation_plan_multiple_transmissions(
@@ -176,7 +250,7 @@ def test_rotation_plan_multiple_transmissions(
 ):
     desired_transmission_fracs = [0.2, 0.4, 0.6]
     params = get_good_multi_rotation_params(desired_transmission_fracs, tmp_path)
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
     run_engine(rotation_scan_plan(rotation_composite, params))
     called_transmission_fracs = [
         mock_single_rotation.call_args_list[i].args[1].transmission_frac
@@ -191,15 +265,15 @@ async def test_set_up_beamline_for_rotation_success(
 ):
     trans_frac = 0.1
     det_z = 200
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.OPEN)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.OPEN)
     run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 
     assert await asyncio.gather(
         rotation_composite.aperture.position.get_value(),
         rotation_composite.beamstop.pos_select.get_value(),
-        rotation_composite.det_stage.y.user_readback.get_value(),
+        rotation_composite.detector_motion.y.user_readback.get_value(),
         rotation_composite.backlight.backlight_position.pos_level.get_value(),
-        rotation_composite.det_stage.z.user_readback.get_value(),
+        rotation_composite.detector_motion.z.user_readback.get_value(),
         rotation_composite.attenuator.actual_transmission.get_value(),
     ) == [
         AperturePositions.IN,
@@ -217,7 +291,7 @@ def test_set_up_beamline_for_rotation_error_on_closed_hutch(
 ):
     trans_frac = 0.1
     det_z = 200
-    set_mock_value(rotation_composite.hutch_shutter.status, ShutterState.CLOSED)
+    set_mock_value(rotation_composite.shutter.status, ShutterState.CLOSED)
     with pytest.raises(HutchClosedError):
         run_engine(set_up_beamline_for_rotation(rotation_composite, det_z, trans_frac))
 

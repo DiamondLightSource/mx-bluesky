@@ -15,7 +15,7 @@ class JsonMetadataWriter(CallbackBase):
 
     To use, subscribe the Bluesky RunEngine to an instance of this class.
     E.g.:
-        metadata_writer_callback = JsonMetadataWriter(parameters)
+        metadata_writer_callback = JsonMetadataWriter()
         RE.subscribe(metadata_writer_callback)
     Or decorate a plan using bluesky.preprocessors.subs_decorator.
 
@@ -57,10 +57,10 @@ class JsonMetadataWriter(CallbackBase):
             self.wavelength_in_a = data.get("dcm-wavelength_in_a")
             self.energy_in_kev = data.get("dcm-energy_in_keV")
             self.detector_distance_mm = data.get("detector_motion-z")
-            assert data.get("detector-writer-file_path"), (
-                "No detector writer path was found"
+            assert data.get("jungfrau-writer-file_path"), (
+                f"No detector writer path was found, the reading held {sorted(data)}"
             )
-            self.final_path = Path(data.get("detector-writer-file_path"))
+            self.final_path = Path(data["jungfrau-writer-file_path"])
 
             LOGGER.info(
                 f"Metadata writer received parameters, energy_in_kev: {self.energy_in_kev}, wavelength: {self.wavelength_in_a}, det_distance_mm: {self.detector_distance_mm}, file path: {self.final_path}"
@@ -73,6 +73,12 @@ class JsonMetadataWriter(CallbackBase):
             and doc.get("run_start") == self.run_start_uid
             and self.final_path
         ):
+            # The detector IOC creates this directory, and does so from a different NFS
+            # client, after we have already looked the path up here to prepare the
+            # writer. This client therefore holds a cached negative lookup for it and
+            # open() fails with ENOENT for as long as that is trusted. mkdir cannot be
+            # answered out of that cache, so it clears the entry before we write.
+            self.final_path.mkdir(parents=True, exist_ok=True)
             with open(self.final_path / READING_DUMP_FILENAME, "w") as f:
                 f.write(
                     json.dumps(
