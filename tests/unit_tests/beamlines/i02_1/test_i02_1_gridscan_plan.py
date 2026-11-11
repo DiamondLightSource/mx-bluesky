@@ -211,6 +211,10 @@ def test_i02_1_flyscan_xray_centre_in_re(
 @patch(
     "mx_bluesky.common.external_interaction.callbacks.grid.gridscan.ispyb_callback.StoreInIspyb"
 )
+@patch(
+    "mx_bluesky.common.external_interaction.callbacks.common.ispyb_mapping.get_current_time_string",
+    new=MagicMock(return_value="2024-01-01 00:00:00"),
+)
 def test_ispyb_activated_correct_params(
     mock_store_ispyb: MagicMock,
     mock_create_features: MagicMock,
