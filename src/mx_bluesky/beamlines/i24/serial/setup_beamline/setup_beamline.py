@@ -1,8 +1,6 @@
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
-from daq_config_server.models.lookup_tables import DetectorXYLookupTable
-from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i24.aperture import Aperture, AperturePositions
 from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.beamlines.i24.beamstop import Beamstop, BeamstopPositions
@@ -10,10 +8,8 @@ from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.dual_backlight import BacklightPositions, DualBacklight
 from dodal.devices.detector.det_dim_constants import DetectorSizeConstants
 from dodal.devices.motors import YZStage
-from dodal.devices.util.lookup_tables import (
-    linear_interpolation_lut,
-)
 
+from mx_bluesky.beamlines.i24.beam_center import beam_center_mm_from_lut
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.setup_beamline import pv
 from mx_bluesky.beamlines.i24.serial.setup_beamline.ca import caget, caput
@@ -24,23 +20,15 @@ def compute_beam_center_position_from_lut(
     detector_distance_mm: float,
     det_size_constants: DetectorSizeConstants,
 ) -> tuple[float, float]:
-    """Calculate the beam center position for the detector distance \
+    """Calculate the beam center position, in pixels, for the detector distance \
     using the values in the lookup table for the conversion.
     """
-    lut_columns = (
-        get_config_client().get_file_contents(lut_path, DetectorXYLookupTable).columns
-    )
-
-    calc_x = linear_interpolation_lut(lut_columns[0], lut_columns[1])
-    beam_x_mm = calc_x(detector_distance_mm)
+    beam_x_mm, beam_y_mm = beam_center_mm_from_lut(lut_path, detector_distance_mm)
     beam_x = (
         beam_x_mm
         * det_size_constants.det_size_pixels.width
         / det_size_constants.det_dimension.width
     )
-
-    calc_y = linear_interpolation_lut(lut_columns[0], lut_columns[2])
-    beam_y_mm = calc_y(detector_distance_mm)
     beam_y = (
         beam_y_mm
         * det_size_constants.det_size_pixels.height
