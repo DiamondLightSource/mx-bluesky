@@ -35,8 +35,12 @@ TOKEN_ENV_VAR = "SSX_DCSERVER_TOKEN"
 DEFAULT_TIMEOUT_S = 10
 
 
-class DCServerError(Exception):
-    """The dcserver would not accept a request."""
+class DCServerError(requests.HTTPError):
+    """The dcserver would not accept a request.
+
+    An HTTPError, carrying the response, so that callers which catch HTTPError or read
+    `e.response.text` see no difference from calling requests themselves.
+    """
 
 
 def _raise_for_status(response: requests.Response) -> None:
@@ -48,7 +52,9 @@ def _raise_for_status(response: requests.Response) -> None:
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
-        raise DCServerError(f"{e}. The server said: {response.text}") from e
+        raise DCServerError(
+            f"{e}. The server said: {response.text}", response=response
+        ) from e
 
 
 def get_dcserver_url() -> str:
@@ -85,18 +91,46 @@ def resolution_at_detector_edge(
     )
 
 
+def _log_request(method: str, path: str, data: dict[str, Any]) -> None:
+    """Log the request as JSON, so a failed one can be replayed from the log by hand."""
+    try:
+        DCSERVER_LOGGER.info(
+            'BRIDGE: %s "%s" --data=%s', method, path, repr(json.dumps(data))
+        )
+    except (TypeError, ValueError):
+        DCSERVER_LOGGER.error(
+            "Could not convert %s %s data to JSON; field types: %s",
+            method,
+            path,
+            {k: type(v) for k, v in data.items()},
+        )
+        raise
+
+
 def create_data_collection(
-    data: dict[str, Any], timeout: float = DEFAULT_TIMEOUT_S
+    data: dict[str, Any],
+    *,
+    server: str | None = None,
+    timeout: float = DEFAULT_TIMEOUT_S,
+    autosample: bool = False,
 ) -> int:
     """Create an ISPyB data collection, returning its DCID.
 
     The server rejects fields it does not know about, so `data` must only hold keys from
     its DataCollectionIn schema; detectorId, fileTemplate, imageDirectory, startTime,
     visit and group are required.
+
+    Args:
+        data: The DataCollectionIn body.
+        server: The dcserver to use, if not get_dcserver_url().
+        timeout: Request timeout, in seconds.
+        autosample: Ask the server to derive a sample for the collection when the data
+            does not name one. Best effort: deriving none is not an error.
     """
-    DCSERVER_LOGGER.info('BRIDGE: POST "/dc" --data=%s', repr(json.dumps(data)))
+    _log_request("POST", "/dc", data)
     response = requests.post(
-        f"{get_dcserver_url()}/dc",
+        f"{server or get_dcserver_url()}/dc",
+        params={"autosample": "true"} if autosample else None,
         json=data,
         timeout=timeout,
         headers=get_auth_header(),
@@ -106,14 +140,23 @@ def create_data_collection(
 
 
 def update_data_collection(
-    dcid: int, data: dict[str, Any], timeout: float = DEFAULT_TIMEOUT_S
+    dcid: int,
+    data: dict[str, Any],
+    *,
+    server: str | None = None,
+    timeout: float = DEFAULT_TIMEOUT_S,
 ) -> None:
-    """Update an existing ISPyB data collection, e.g. to mark it finished."""
-    DCSERVER_LOGGER.info(
-        'BRIDGE: PATCH "/dc/%s" --data=%s', dcid, repr(json.dumps(data))
-    )
+    """Update an existing ISPyB data collection, e.g. to mark it finished.
+
+    Args:
+        dcid: The data collection to update.
+        data: The fields to change.
+        server: The dcserver to use, if not get_dcserver_url().
+        timeout: Request timeout, in seconds.
+    """
+    _log_request("PATCH", f"/dc/{dcid}", data)
     response = requests.patch(
-        f"{get_dcserver_url()}/dc/{dcid}",
+        f"{server or get_dcserver_url()}/dc/{dcid}",
         json=data,
         timeout=timeout,
         headers=get_auth_header(),

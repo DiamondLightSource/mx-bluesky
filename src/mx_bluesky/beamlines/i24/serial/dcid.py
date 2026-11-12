@@ -9,10 +9,11 @@ from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 
-from mx_bluesky.beamlines.i24.dcserver import (  # noqa: F401  re-exported for callers and tests
-    get_auth_header,
+from mx_bluesky.beamlines.i24.dcserver import (
+    create_data_collection,
     get_dcserver_url,
     resolution_at_detector_edge,
+    update_data_collection,
 )
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
@@ -103,7 +104,7 @@ class DCID:
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
-        self.dcid = None
+        self.dcid: int | None = None
 
     def generate_dcid(
         self,
@@ -204,27 +205,9 @@ class DCID:
                 data["beamSizeAtSampleX"] = beamsize_x / 1000
                 data["beamSizeAtSampleY"] = beamsize_y / 1000
 
-            # Log what we are doing here
-            try:
-                SSX_LOGGER.info(
-                    "BRIDGE: POST /dc --data %s",
-                    repr(json.dumps(data)),
-                )
-            except Exception:
-                SSX_LOGGER.info(
-                    "Caught exception converting data to JSON. Data:\n%s\nVERBOSE:\n%s",
-                    str({k: type(v) for k, v in data.items()}),
-                )
-                raise
-
-            resp = requests.post(
-                f"{self.server}/dc?autosample=true",
-                json=data,
-                timeout=self.timeout,
-                headers=get_auth_header(),
+            self.dcid = create_data_collection(
+                data, server=self.server, timeout=self.timeout, autosample=True
             )
-            resp.raise_for_status()
-            self.dcid = resp.json()["dataCollectionId"]
             SSX_LOGGER.info("Generated DCID %s", self.dcid)
         except requests.HTTPError as e:
             self.error = True
@@ -309,16 +292,9 @@ class DCID:
                 )
                 return
 
-            SSX_LOGGER.info(
-                'BRIDGE: PATCH "/dc/%s" --data=%s', self.dcid, repr(json.dumps(data))
+            update_data_collection(
+                self.dcid, data, server=self.server, timeout=self.timeout
             )
-            response = requests.patch(
-                f"{self.server}/dc/{self.dcid}",
-                json=data,
-                timeout=self.timeout,
-                headers=get_auth_header(),
-            )
-            response.raise_for_status()
             SSX_LOGGER.info("Successfully updated end time for DCID %d", self.dcid)
         except Exception as e:
             resp_obj = getattr(e, "response", None)
