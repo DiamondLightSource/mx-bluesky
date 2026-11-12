@@ -66,6 +66,22 @@ def test_no_credentials_warns_rather_than_failing(
     assert get_auth_header() == {}
 
 
+@patch("mx_bluesky.beamlines.i24.dcserver.DCSERVER_LOGGER")
+def test_missing_credentials_are_only_warned_about_once(
+    fake_logger, monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    monkeypatch.delenv(TOKEN_ENV_VAR, raising=False)
+    monkeypatch.setattr(
+        "mx_bluesky.beamlines.i24.dcserver.CREDENTIALS_LOCATION",
+        str(tmp_path / "not-a-file"),
+    )
+
+    for _ in range(3):
+        assert get_auth_header() == {}
+
+    fake_logger.warning.assert_called_once()
+
+
 def test_an_unregistered_request_is_refused_rather_than_made():
     """The autouse RequestsMock in this tree's conftest, checked rather than assumed.
 

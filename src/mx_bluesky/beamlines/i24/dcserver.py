@@ -8,6 +8,7 @@ than under serial/, which is where they started.
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import math
@@ -62,6 +63,14 @@ def get_dcserver_url() -> str:
     return os.environ.get(SERVER_ENV_VAR) or DEFAULT_DCSERVER_URL
 
 
+@functools.cache
+def _warn_no_credentials(location: str) -> None:
+    """Warn once per key file location, rather than on every request that lacks it."""
+    DCSERVER_LOGGER.warning(
+        "Could not read %s; attempting to proceed without credentials", location
+    )
+
+
 def get_auth_header() -> dict[str, str]:
     """Build the Authorisation header, from $SSX_DCSERVER_TOKEN or the key file.
 
@@ -72,10 +81,7 @@ def get_auth_header() -> dict[str, str]:
     token = os.environ.get(TOKEN_ENV_VAR)
     if not token:
         if not os.path.isfile(CREDENTIALS_LOCATION):
-            DCSERVER_LOGGER.warning(
-                "Could not read %s; attempting to proceed without credentials",
-                CREDENTIALS_LOCATION,
-            )
+            _warn_no_credentials(CREDENTIALS_LOCATION)
             return {}
         with open(CREDENTIALS_LOCATION) as f:
             token = f.read().strip()
