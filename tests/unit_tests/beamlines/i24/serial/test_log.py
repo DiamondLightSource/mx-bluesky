@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from mx_bluesky.beamlines.i24.dcserver import DCSERVER_LOGGER
 from mx_bluesky.beamlines.i24.serial import log
 
 
@@ -75,6 +76,30 @@ def test_logging_config_with_filehandler(
         assert dummy_logger.handlers[1].level == logging.DEBUG
         # Clear FileHandler to avoid other tests failing if it is kept open
         dummy_logger.removeHandler(dummy_logger.handlers[1])
+        _destroy_handlers(dummy_logger.parent)
+
+
+@patch("mx_bluesky.beamlines.i24.serial.log.Path.mkdir")
+@patch("mx_bluesky.beamlines.i24.serial.log.do_default_logging_setup")
+@patch("mx_bluesky.beamlines.i24.serial.log._integrate_bluesky_logs")
+def test_dcserver_logs_reach_the_serial_handlers(
+    mock_integrate_logs, mock_default, mock_dir, dummy_logger, run_engine
+):
+    """The dcserver client is shared with the jungfrau plans, so it logs to a logger of
+    its own; SSX_LOGGER does not propagate, so the serial handlers are put on it."""
+    with patch("mx_bluesky.beamlines.i24.serial.log.DODAL_LOGGER"):
+        log.config("dummy.log", delayed=True, dev_mode=True)
+        assert DCSERVER_LOGGER.handlers == dummy_logger.handlers
+        assert any(
+            isinstance(handler, logging.FileHandler)
+            for handler in DCSERVER_LOGGER.handlers
+        )
+
+        run_engine(log.clean_up_log_config_at_end())
+        assert DCSERVER_LOGGER.handlers == []
+
+        # Clear FileHandler to avoid other tests failing if it is kept open
+        _destroy_handlers(dummy_logger)
         _destroy_handlers(dummy_logger.parent)
 
 

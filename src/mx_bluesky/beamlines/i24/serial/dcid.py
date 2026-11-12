@@ -1,9 +1,6 @@
 import datetime
 import json
-import math
-import os
 import subprocess
-from functools import lru_cache
 
 import bluesky.plan_stubs as bps
 import requests
@@ -12,6 +9,12 @@ from dodal.devices.beamlines.i24.beam_center import DetectorBeamCenter
 from dodal.devices.beamlines.i24.dcm import DCM
 from dodal.devices.beamlines.i24.focus_mirrors import FocusMirrorsMode
 
+from mx_bluesky.beamlines.i24.dcserver import (
+    create_data_collection,
+    get_dcserver_url,
+    resolution_at_detector_edge,
+    update_data_collection,
+)
 from mx_bluesky.beamlines.i24.serial.fixed_target.ft_utils import PumpProbeSetting
 from mx_bluesky.beamlines.i24.serial.log import SSX_LOGGER
 from mx_bluesky.beamlines.i24.serial.parameters import (
@@ -25,24 +28,6 @@ from mx_bluesky.beamlines.i24.serial.setup_beamline import Detector, Eiger
 # Collection start/end script to kick off analysis
 COLLECTION_START_SCRIPT = "/dls_sw/i24/scripts/RunAtStartOfCollect-i24-ssx.sh"
 COLLECTION_END_SCRIPT = "/dls_sw/i24/scripts/RunAtEndOfCollect-i24-ssx.sh"
-
-DEFAULT_ISPYB_SERVER = "https://ssx-dcserver.diamond.ac.uk"
-
-CREDENTIALS_LOCATION = "/scratch/ssx_dcserver.key"
-
-
-@lru_cache(maxsize=1)
-def get_auth_header() -> dict:
-    """Read the credentials file and build the Authorisation header"""
-    if not os.path.isfile(CREDENTIALS_LOCATION):
-        SSX_LOGGER.warning(
-            "Could not read %s; attempting to proceed without credentials",
-            CREDENTIALS_LOCATION,
-        )
-        return {}
-    with open(CREDENTIALS_LOCATION) as f:
-        token = f.read().strip()
-    return {"Authorization": "Bearer " + token}
 
 
 def read_beam_info_from_hardware(
@@ -115,11 +100,11 @@ class DCID:
             case _:
                 raise ValueError("Unknown detector:", expt_params.detector_name)
 
-        self.server = server or DEFAULT_ISPYB_SERVER
+        self.server = server or get_dcserver_url()
         self.emit_errors = emit_errors
         self.error = False
         self.timeout = timeout
-        self.dcid = None
+        self.dcid: int | None = None
 
     def generate_dcid(
         self,
@@ -220,27 +205,9 @@ class DCID:
                 data["beamSizeAtSampleX"] = beamsize_x / 1000
                 data["beamSizeAtSampleY"] = beamsize_y / 1000
 
-            # Log what we are doing here
-            try:
-                SSX_LOGGER.info(
-                    "BRIDGE: POST /dc --data %s",
-                    repr(json.dumps(data)),
-                )
-            except Exception:
-                SSX_LOGGER.info(
-                    "Caught exception converting data to JSON. Data:\n%s\nVERBOSE:\n%s",
-                    str({k: type(v) for k, v in data.items()}),
-                )
-                raise
-
-            resp = requests.post(
-                f"{self.server}/dc?autosample=true",
-                json=data,
-                timeout=self.timeout,
-                headers=get_auth_header(),
+            self.dcid = create_data_collection(
+                data, server=self.server, timeout=self.timeout, autosample=True
             )
-            resp.raise_for_status()
-            self.dcid = resp.json()["dataCollectionId"]
             SSX_LOGGER.info("Generated DCID %s", self.dcid)
         except requests.HTTPError as e:
             self.error = True
@@ -325,16 +292,9 @@ class DCID:
                 )
                 return
 
-            SSX_LOGGER.info(
-                'BRIDGE: PATCH "/dc/%s" --data=%s', self.dcid, repr(json.dumps(data))
+            update_data_collection(
+                self.dcid, data, server=self.server, timeout=self.timeout
             )
-            response = requests.patch(
-                f"{self.server}/dc/{self.dcid}",
-                json=data,
-                timeout=self.timeout,
-                headers=get_auth_header(),
-            )
-            response.raise_for_status()
             SSX_LOGGER.info("Successfully updated end time for DCID %d", self.dcid)
         except Exception as e:
             resp_obj = getattr(e, "response", None)
@@ -362,10 +322,9 @@ def get_resolution(detector: Detector, distance: float, wavelength: float) -> fl
     Args:
         detector (Detector): Detector instance, Eiger().
         distance (float): Distance to detector, in mm.
-        wavelength (float): Beam wavelength, in Å.
+        wavelength (float): Beam wavelength, in Å.
 
     Returns:
-        Maximum resolution, in Å.
+        Maximum resolution, in Å.
     """
-    width = detector.image_size_mm[0]
-    return round(wavelength / (2 * math.sin(math.atan(width / (2 * distance)) / 2)), 2)
+    return resolution_at_detector_edge(detector.image_size_mm[0], distance, wavelength)
