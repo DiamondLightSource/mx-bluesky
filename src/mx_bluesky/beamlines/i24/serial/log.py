@@ -165,10 +165,10 @@ def setup_collection_logs(expt: str, dev_mode: bool = False) -> MsgGenerator:
 def clean_up_log_config_at_end() -> MsgGenerator:
     """A small plan for blueapi to tidy up logging configuration."""
     # See https://github.com/DiamondLightSource/mx-bluesky/issues/609
-    for handler in SSX_LOGGER.handlers:
+    for handler in list(SSX_LOGGER.handlers):
         SSX_LOGGER.removeHandler(handler)
     for handler in list(DCSERVER_LOGGER.handlers):
         DCSERVER_LOGGER.removeHandler(handler)
-    for handler in DODAL_LOGGER.handlers:
+    for handler in list(DODAL_LOGGER.handlers):
         DODAL_LOGGER.removeHandler(handler)
     yield from bps.null()
